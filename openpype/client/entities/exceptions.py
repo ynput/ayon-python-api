@@ -1,0 +1,2 @@
+class ImmutableAttributeError(Exception):
+    pass
