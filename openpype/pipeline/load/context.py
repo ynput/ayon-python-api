@@ -42,7 +42,7 @@ class LoadPluginsContext:
     def add_known_abstract_class(self, cls):
         self._known_abstract_classes.append(cls)
 
-    def clear(self):
+    def clear_plugins(self):
         self._last_loaded = None
         self._registered_plugins = []
         self._registered_plugin_paths = []
