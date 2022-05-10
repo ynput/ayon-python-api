@@ -39,3 +39,37 @@ Mockup of possible hierarchy of OpenPype4 client.
 - right now current context is defined by project, asset and task (project, folder, task)
 - how to handle them in code? right now they're handled using environment variables `legacy_io.Session` with keys `AVALON_PROJECT`, `AVALON_ASSET` and `AVALON_TASK`. I would preffer to use environment variables only as initial values for current context but don't change it afterwards (also not use). There should be single access to current context ideally part of host implementation so there is single access to it. Similarly should be handled registered host related plugins. Avoid singletons as much as possible. They're too dangerous, hard to maintain and document.
 - What will define initial values of process context? Suggesting Project name, Folder id and Task id which are used on process start to create "context object" which would also give access to folder name, type and task name, type + other possible things? Context object should handle changes of them (e.g. when folder changes then task should be "unset" because it is not the same parent).
+
+
+## 5.9.2022 Meeting Notes
+- host and modules are both considered as Addons
+    - module is some logic that don't have host implementation
+    - host is implementation of dcc can be related to multiple DCCs (e.g. Nuke + Nuke X)
+- addons are individual parts of code
+    - "zip files" when downloaded which are versioned
+    - addons probably won't be in built client application but default implementation will be available as separated repositories
+- server will care about providing these files and about telling which will be used
+    - we have to find out how to discover them
+- pip could be used to deploy dependencies
+    - pip can download from custom server (OpenPype server)
+- a lot of addon code won't be part of client application but part of server so we don't have to handle so much as in v3
+    - for example settings won't be part of addon on client side
+- we've decided that addons won't be imported dynamically but path to their python package will be added to sys.path (and PYTHONPATH) on start
+    - this requires that they must have unique "non common" name so they can be safely imported
+    - for example 'ftrack' is too generic, instead of that should be used something like 'openpype_ftrack' (this won't be forced, just recommended)
+    - we have to find out how to "discover" them
+- `openpype.lib` must contain only "ready to use" functions from any part of code
+- abstract implementation of host will be moved from `openpype.pipeline` to `openpype.hosts`
+- host will have 2 implementations public and in-dcc implementation
+    - public is available from any part of code and must not contain any in DCC related code
+    - in-dcc implementation can use any logic related to implementation itself
+- public host interface is for methods and functionality that can be used before the application is launched
+    - right now: workfile extensions and host specific environments that are not modifiable
+- in-dcc implementation is access point to all current singletons and global functions
+    - current context
+    - registered plugins
+    - workfile functions
+    - load related functions
+- there will be defined interfaces that will define which methods must be implemented for specific functionality
+    - for example loading/creation require some methods
+    - the interfaces should not be forced to be used as mixins but just as a place of definition what "developer" must implemend and how to make things work
