@@ -5,7 +5,7 @@ from openpype.lib.event_system import EventSystem
 from openpype.pipeline.load import LoaderContext
 
 
-class CurrentContext:
+class CurrentContext(object):
     """Definition of context.
 
     QUESTION:
@@ -34,10 +34,43 @@ class CurrentContext:
 
 
 @six.add_metaclass(ABCMeta)
-class HostImplementation:
+class HostDefinition(object):
+    """Public implementation of host."""
+
+    @abstractproperty
+    def name(self):
+        """Name of host, must be unique in single OpenPype server environment.
+
+        There just can't be 2 implementations of 'maya' host.
+        """
+        pass
+
+    def add_implementation_envs(self, env, application):
+        """Modify environments before the application is launched.
+
+        Args:
+            env (dict): Environments that were prepared from settings and
+                prelaunched hooks.
+            application (Application): Object of application loaded from
+                settings.
+        """
+        pass
+
+    def get_workfile_extensions(self):
+        return []
+
+
+@six.add_metaclass(ABCMeta)
+class HostImplementation(object):
     """Host implementation class.
 
-    What was before considered as functions in host implementation folder.
+    What was before considered as functions in host implementation folder. The
+    host implementation should primarily care about adding ability of creation
+    (mark subsets to be published) and optionaly about referencing published
+    representations as containers.
+
+    # TODO
+    - should probably care about tools and their loading
 
     Installation of host in OP3:
     ```python
@@ -55,17 +88,33 @@ class HostImplementation:
     ```
     """
 
+    # Event system specific for a host
+    _event_system = None
+    # Load context
+    _load_context = None
+
     def __init__(self):
         """Initialization of host.
 
         Part of what 'install' did.
+
+        QUESTION: Maybe this class could create 'HostDefinition' object
+        to have access to host name (avoid duplicity) and file extensions.
         """
 
-        # Event system specific for a host
-        self._event_system = EventSystem()
-        # Load context
-        self._load_context = LoaderContext(self)
-        # ...
+        pass
+
+    @property
+    def event_system(self):
+        if self._event_system is None:
+            self._event_system = EventSystem()
+        return self._event_system
+
+    @property
+    def load_context(self):
+        if self._load_context is None:
+            self._load_context = LoaderContext(self)
+        return self._load_context
 
     @abstractproperty
     def name(self):
@@ -125,3 +174,87 @@ class HostImplementation:
         """
 
         pass
+
+
+class ILoadHost:
+    """Implementation requirements to be able use reference of representations.
+
+    The load plugins can do referencing even without implementation of methods
+    here, but switch and removement of containers would not be possible.
+
+    QUESTION: Is list container dependency of host or load plugins?
+    """
+
+    def list_containers(self):
+        """Retreive referenced containers from scene.
+
+        This can be implemented in hosts where referencing can be used.
+
+        NOTE: This method is not abstract because there are hosts that do
+            not support loading at all.
+        """
+        return []
+
+
+@six.add_metaclass(ABCMeta)
+class IWorkfileHost:
+    """Implementation requirements to be able use workfile utils and tool.
+
+    This interface is more or less just giving idea what is needed to implement
+    in host implementation, but does not have necessarily to inherit from this
+    interface.
+    """
+
+    @abstractmethod
+    def get_workfile_extensions(self):
+        """Extensions that can be used as save.
+
+        QUESTION: This could potentially use 'HostDefinition'.
+        """
+
+        return []
+
+    @abstractmethod
+    def save_workfile(self, dst_path=None):
+        """Save currently opened scene.
+
+        Args:
+            dst_path (str): Where the current scene should be saved. Or use
+                current path if 'None' is passed.
+        """
+
+        pass
+
+    @abstractmethod
+    def open_workfile(self, filepath):
+        """Open passed filepath in the host.
+
+        Args:
+            filepath (str): Path to workfile.
+        """
+
+        pass
+
+    @abstractmethod
+    def get_current_workfile(self):
+        """Retreive path to current opened file.
+
+        Returns:
+            str: Path to file which is currently opened.
+            None: If nothing is opened.
+        """
+
+        return None
+
+    def has_unsaved_changes(self):
+        """Currently opened scene is saved.
+
+        Not all hosts can know if current scene is saved because the API of
+        dcc does not support it.
+
+        Returns:
+            bool: Scene is saved.
+            None: Can't tell.
+        """
+
+        return None
