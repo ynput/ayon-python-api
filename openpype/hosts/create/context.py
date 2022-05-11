@@ -12,7 +12,7 @@ from openpype.api import (
     get_system_settings,
     get_project_settings
 )
-from openpype.pipeline.plugin_discover import discover_class
+from openpype.lib.python_module_discovery import discover_class
 
 from .creator_plugins import (
     BaseCreator,
