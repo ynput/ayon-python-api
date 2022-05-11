@@ -57,7 +57,7 @@ Mockup of possible hierarchy of OpenPype4 client.
 - we've decided that addons won't be imported dynamically but path to their python package will be added to sys.path (and PYTHONPATH) on start
     - this requires that they must have unique "non common" name so they can be safely imported
     - for example 'ftrack' is too generic, instead of that should be used something like 'openpype_ftrack' (this won't be forced, just recommended)
-    - we have to find out how to "discover" them
+    - we have to find out how to "discover" them, probably using server connection and knowing where are stored on the machine
 - `openpype.lib` must contain only "ready to use" functions from any part of code
 - abstract implementation of host will be moved from `openpype.pipeline` to `openpype.hosts`
 - host will have 2 implementations public and in-dcc implementation
@@ -73,3 +73,77 @@ Mockup of possible hierarchy of OpenPype4 client.
 - there will be defined interfaces that will define which methods must be implemented for specific functionality
     - for example loading/creation require some methods
     - the interfaces should not be forced to be used as mixins but just as a place of definition what "developer" must implemend and how to make things work
+
+## Tools
+- How to define tools? Should tools be "Host tools" and "Standalone tools"?
+- Not all tools we have now are UI tools. But all curent non-UI tools can be converted into addons.
+- Tools can be host specific how to "discover" them?
+    - Should there be a dynamic way how to add host tools (using Addons)?
+    - How to handle UI changes based on available/enabled AddOn?
+        - e.g. SyncServer may not be available but at this moment is in core of Loader
+- We should be prepared for "detached UI" (Logic and UI does not happen in same process)
+    - This require to create some kind of communication between controller and UI (probably python 2 compatible)
+    - Any part of UI must not use any calls to server but only to controller
+        - Controller must have a model which will provide data so UI models can use them
+    - Advantages:
+        - Tool UI don't have to be running inside host
+        - UI does not stuck when host have to do some logic
+        - UI waiting does not stuck host
+        - UI related callback that must happen during more then one dcc loop are doable (Blender implementation issues)
+    - UI code should be separated from controller
+
+## Applications
+- How and where to define applications (dccs) and their hosts?
+- There are applications that have host implementation (expected to be launched on task) and applications that don't have host and have custom launch actions (e.g. DJV, RV)
+- Where to put implementation of applications on client side.
+    - it requires settings and local settings
+    -
+
+## Settings
+- How much should be settings handled on client side?
+- Only part that would make sense to be handled on client side are "local settings" and local roots
+    - this is connected to retrieving of representation path which is now "simple" in terms that the representation has single file or sequence but considering that representation could potentially have more then one file (resources) in that case loader should call some function which would return paths for the machine
+
+
+### Dowloaded updates/addons/python packages on machine
+In OP3 there is single zip file containing core functionality with modules and hosts. For v4 it is expected that core functionality will still be in some kind of zip but
+modules and hosts will be maintained by their own zips.
+--- Some dir in local data ---
+|- openpype-v4.0.0.zip
+|   |- openpype
+|
+|- adobe-server-v1.0.0.zip
+|   |- openpype_adobe_server
+|
+|- ftrack-v1.3.2.zip
+|   |- openpype_ftrack
+|
+|- ftrack-v1.3.3.zip
+|   |- openpype_ftrack
+|
+|- photoshop-v1.0.0.zip
+|   |- openpype_photoshop
+|
+|- photoshop-v1.0.0+staging.zip
+|   |- openpype_photoshop
+|
+|- maya-v1.0.0.zip
+|   |- openpype_maya
+|
+|- nuke-v1.0.0.zip
+|   |- openpype_nuke
+|
+|- webserver-v1.0.0.zip
+|   |- openpype_webserver
+|
+|- site-packages-v1.0.0.zip
+|   |- requests
+|   |- six.py
+|
+|- site-packages-v1.0.1.zip
+|   |- requests
+|   |- ftrack_api
+|   |- six.py
+|
+|- ...
+This is how I imagine the files will look like in reality on machine.
