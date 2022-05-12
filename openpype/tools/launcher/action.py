@@ -3,24 +3,39 @@ from uuid import uuid4
 import six
 
 
-class LoaderSelectionContext(object):
-    """Context marking selection for actions and action items.
+class LauncherSelectionContext(object):
+    """Selection context which defines what is selected in Launcher tool.
 
-    Loader tool can have multiselection on all levels per project. In other
-    words there can be selected different folders, taks, subsets and
-    representations at the same time.
+    Launcher expect to have only singleselections on each entity. All
+    of passed entities can be empty (or None).
+
+    Question:
+        Should project settings be added to selection context? Actions may have
+        different logic based on project settings and it would be better
+        to receive them only once for all actions instead of retrieving them in
+        each separated action.
+
+    Args:
+        project (ProjectEntity): Selected project.
+        folder (FolderEntity): Selected folder.
+        task (TaskEntity): Selected task.
     """
 
-    def __init__(self, project, folders, tasks, subsets, representations):
+    def __init__(self, project, folder, task):
         self.project = project
-        self.folders = folders
-        self.tasks = tasks
-        self.subsets = subsets
-        self.representations = representations
+        self.folder = folder
+        self.task = task
 
 
-class ActionItem(object):
+class LauncherActionItem(object):
     """Item representing single action item of loader action.
+
+    Action item should have identifier to be able retrigger the action using
+    action identifier and identifier of action item.
+
+    Action item 'id' is used to identify which exactly action items was
+    triggered. NOTE: This maybe won't be needed but can be used for
+    process2process communication.
 
     Args:
         action (LoaderAction): Action to which is item related to.
@@ -28,17 +43,21 @@ class ActionItem(object):
         label (str): Label of the action.
         groups (list<str>): Possible groups of sub-labels. Can be used to
             "create submenu/s".
-        context (LoaderSelectionContext): Context in which will be the action
-            item triggered.
+        context (SelectionContext): Context in which will be the action item
+            triggered.
     """
 
-    def __init__(self, action, context, label, icon=None, groups=None):
+    def __init__(
+        self, action, identifier, context, label, icon=None, groups=None
+    ):
         if groups is None:
             groups = []
 
+        # Unique identifier of the object
         self._id = str(uuid4())
         self.action = action
         self.label = label
+        self.identifier = identifier
         self.icon = icon
         self.groups = groups
         self._context = context
@@ -85,13 +104,21 @@ class ActionItem(object):
 
 
 @six.add_metaclass(ABCMeta)
-class LoaderAction(object):
+class LauncherAction(object):
     """Action for loader tool.
 
     Action can be shown on project, folder, subset, verison, representation.
+
+    Launcher action may not be project specific.
+
+    Args:
+        systme_settings (dict): Studio system settings.
     """
 
-    def __init__(self, system_settings, project_settings):
+    label = None
+    groups = None
+
+    def __init__(self, system_settings):
         pass
 
     @abstractproperty
@@ -116,12 +143,12 @@ class LoaderAction(object):
         It is possible to create sub contexts for each action item.
 
         Args:
-            context (LoaderSelectionContext): Context for which should be
-                created action items.
+            context (SelectionContext): Context for which should be created
+                action items.
 
         Returns:
-            list<ActionItem>: Action items that can be triggered on passed
-                context.
+            list<LauncherActionItem>: Action items that can be triggered on
+                passed context.
         """
 
         return []
@@ -131,7 +158,8 @@ class LoaderAction(object):
         """ Trigger loader action and do what the action should do.
 
         Args:
-            action_item (ActionItem): Item created by the action to be
+            action_item (LauncherActionItem): Item created by the action to be
                 triggered.
         """
+
         pass
