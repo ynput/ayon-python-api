@@ -11,5 +11,5 @@ connection objects with changes tracker (transaction based).
 It is expected that it is possible to connect to more then one server, even
 if it probably won't be primary behavior. That means the implementation of
 connection objects must not be singleton based.
-Usse cases:
+Use cases:
 -

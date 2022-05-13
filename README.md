@@ -95,9 +95,12 @@ Mockup of possible hierarchy of OpenPype4 client.
 ## Applications
 - How and where to define applications (dccs) and their hosts?
 - There are applications that have host implementation (expected to be launched on task) and applications that don't have host and have custom launch actions (e.g. DJV, RV)
+    - Application != Host but some applications require their implementation too because can't be launched on task (or it doesn't make sense)
+- All of them may have icons, pre/post launch hooks
 - Where to put implementation of applications on client side.
-    - it requires settings and local settings
-    -
+    - it requires system settings and local settings
+
+RESULT: Logic will be moved to a pipeline package. There must be ability in Application settings to tell if application has host implementation (and which) and if can be executed on task.
 
 ## Settings
 - How much should be settings handled on client side?
@@ -147,3 +150,4 @@ modules and hosts will be maintained by their own zips.
 |
 |- ...
 This is how I imagine the files will look like in reality on machine.
+- Where this logic will be located?
