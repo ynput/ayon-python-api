@@ -111,6 +111,7 @@ RESULT: Logic will be moved to a pipeline package. There must be ability in Appl
 ### Dowloaded updates/addons/python packages on machine
 In OP3 there is single zip file containing core functionality with modules and hosts. For v4 it is expected that core functionality will still be in some kind of zip but
 modules and hosts will be maintained by their own zips.
+```
 --- Some dir in local data ---
 |- openpype-v4.0.0.zip
 |   |- openpype
@@ -139,15 +140,16 @@ modules and hosts will be maintained by their own zips.
 |- webserver-v1.0.0.zip
 |   |- openpype_webserver
 |
-|- site-packages-v1.0.0.zip
+|- site-packages-windows-v1.0.0.zip
 |   |- requests
 |   |- six.py
 |
-|- site-packages-v1.0.1.zip
+|- site-packages-windows-v1.0.1.zip
 |   |- requests
 |   |- ftrack_api
 |   |- six.py
 |
 |- ...
+```
 This is how I imagine the files will look like in reality on machine.
 - Where this logic will be located?
