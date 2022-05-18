@@ -35,7 +35,12 @@ class CurrentContext(object):
 
 @six.add_metaclass(ABCMeta)
 class HostDefinition(object):
-    """Public implementation of host."""
+    """Public interface of host.
+
+    Implemented definition can be created and imported at any time from any
+    python implementation. Is used to execute methods that can be used
+    out (and in) of DCC process.
+    """
 
     @abstractproperty
     def name(self):
@@ -46,7 +51,7 @@ class HostDefinition(object):
         pass
 
     def add_implementation_envs(self, env, application):
-        """Modify environments before the application is launched.
+        """Modify environments before the DCC application is launched.
 
         Args:
             env (dict): Environments that were prepared from settings and
@@ -57,6 +62,17 @@ class HostDefinition(object):
         pass
 
     def get_workfile_extensions(self):
+        """Extensions that can be used as workfile.
+
+        Host won't be able to use workfile tool if empty list is returned.
+
+        This method is not required as some virtual hosts without DCC
+        application even don't have workfile.
+
+        Returns:
+            list[str]: List of extensions with dot ('.').
+        """
+
         return []
 
 
@@ -64,6 +80,9 @@ class HostDefinition(object):
 class HostImplementation(object):
     """Host implementation class.
 
+    Implementation of host which is
+
+    In OpenPype v3 context:
     What was before considered as functions in host implementation folder. The
     host implementation should primarily care about adding ability of creation
     (mark subsets to be published) and optionaly about referencing published
@@ -98,23 +117,44 @@ class HostImplementation(object):
 
         Part of what 'install' did.
 
-        QUESTION: Maybe this class could create 'HostDefinition' object
-        to have access to host name (avoid duplicity) and file extensions.
+        QUESTIONS
+        - Maybe this class should create 'HostDefinition' object
+            to have access to host name (avoid duplicity) and file extensions.
+        - We may need to implement global variable 'registered_host' in global
+            scope for backwards compatibility with OP3 and easier backport
+            of already implemented hosts.
+            - This is connected to registering load, create and publish paths.
         """
 
         pass
 
     @property
-    def event_system(self):
-        if self._event_system is None:
-            self._event_system = EventSystem()
-        return self._event_system
-
-    @property
     def load_context(self):
+        """Access to host load context to load/update/remove containers.
+
+        Load context is 'dynamically created' on first access of the attribute.
+
+        Returns:
+            LoaderContext: Load context containing load related logic.
+        """
+
         if self._load_context is None:
             self._load_context = LoaderContext(self)
         return self._load_context
+
+    @property
+    def event_system(self):
+        """Access to host event system to catch/trigger events.
+
+        Event system is 'dynamically created' on first access of the attribute.
+
+        Returns:
+            EventSystem: Event system which cares about triggering of events.
+        """
+
+        if self._event_system is None:
+            self._event_system = EventSystem()
+        return self._event_system
 
     @abstractproperty
     def name(self):
@@ -182,7 +222,11 @@ class ILoadHost:
     The load plugins can do referencing even without implementation of methods
     here, but switch and removement of containers would not be possible.
 
-    QUESTION: Is list container dependency of host or load plugins?
+    QUESTIONS
+    - Is list container dependency of host or load plugins?
+    - Should this be directly in HostImplementation?
+        - how to find out if referencing is available?
+        - do we need to know that?
     """
 
     def list_containers(self):
