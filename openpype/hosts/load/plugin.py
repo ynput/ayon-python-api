@@ -8,7 +8,7 @@ import six
 
 
 @six.add_metaclass(ABCMeta)
-class BaseLoadPlugin(object):
+class LoadPlugin(object):
     """Plugin handling reference, switch and removement of containers.
 
     QUESTION: Is import plugin a different kind of plugin or different type?
@@ -18,6 +18,10 @@ class BaseLoadPlugin(object):
     order = 0
     # QUESTION is there change then we would want disable load plugin?
     enabled = True
+
+    # Attributes for default implementation
+    families = []
+    extensions = []
 
     def __init__(self, system_settings, project_settings, load_context):
         self._load_context = load_context
@@ -46,12 +50,15 @@ class BaseLoadPlugin(object):
         """Unique (not dynamic) identifier of load plugin."""
         pass
 
-    @abstractmethod
     def is_compatible(self, family, representation):
-        # QUESTION what are expected Arguments?
         """Is Load plugin compatible for representation."""
 
-        pass
+        if self.families and family not in self.families:
+            return False
+
+        if self.extensions and representation["ext"] not in self.extensions:
+            return False
+        return True
 
     @abstractmethod
     def load_representations(self, representations, load_definitions):
@@ -67,11 +74,12 @@ class BaseLoadPlugin(object):
 
         return []
 
-    @abstractmethod
     def can_switch_container(self, container):
         """Can load plugin handle swith of a container."""
 
-        pass
+        if container["load_identifier"] == self.identifier:
+            return True
+        return False
 
     @abstractmethod
     def switch_container(self, container, representation):
@@ -95,19 +103,27 @@ class BaseLoadPlugin(object):
     #     pass
 
 
-class LoadPlugin(BaseLoadPlugin):
-    families = []
-    extensions = []
+class ImportPlugin(LoadPlugin):
+    """Plugin handling reference, switch and removement of containers.
 
-    def is_compatible(self, family, representation):
-        if self.families and family not in self.families:
-            return False
+    QUESTION: Is import plugin a different kind of plugin or different type?
+    """
 
-        if self.extensions and representation["ext"] not in self.extensions:
-            return False
-        return True
-
-    def can_switch(self, container):
-        if container["load_identifier"] == self.identifier:
-            return True
+    def can_switch_container(self, container):
         return False
+
+    def switch_container(self, container, representation):
+        """Switch container to newer version."""
+
+        raise NotImplementedError((
+            "Import plugin \"{}\" does not have implemented"
+            " 'switch_container'."
+        ).format(self.__class__.__name__))
+
+    def remove_containers(self, containers):
+        """Remove container content and metadata from scene."""
+
+        raise NotImplementedError((
+            "Import plugin \"{}\" does not have implemented"
+            " 'remove_containers'."
+        ).format(self.__class__.__name__))
