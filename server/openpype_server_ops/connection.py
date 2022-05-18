@@ -22,3 +22,6 @@ class OpenPypeServerConnection:
 
     def get_addon_versions(self, addon_names):
         pass
+
+    def get_dependency_bundle_version(self):
+        pass
