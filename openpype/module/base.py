@@ -11,7 +11,6 @@ class OpenPypeModule(object):
     """Base class of pype module.
 
     Attributes:
-        id (UUID): Module's id.
         enabled (bool): Is module enabled.
         name (str): Module name.
         manager (ModulesManager): Manager that created the module.
@@ -36,6 +35,7 @@ class OpenPypeModule(object):
 
     @property
     def id(self):
+        """Identifier of module only for lifetime of object."""
         if self._id is None:
             self._id = uuid4()
         return self._id
@@ -66,6 +66,7 @@ class OpenPypeModule(object):
         The best practise is to create click group for whole module which is
         used to separate commands.
 
+        ```
         class MyPlugin(OpenPypeModule):
             ...
             def cli(self, module_click_group):
@@ -79,5 +80,10 @@ class OpenPypeModule(object):
         @cli_main.command()
         def mycommand():
             print("my_command")
+        ```
+
+        In that case can be called:
+        `./openpype_console modules <module name> mycommand`
         """
+
         pass
