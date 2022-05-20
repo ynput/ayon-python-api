@@ -1,3 +1,13 @@
+"""Utils related to load plugins.
+
+All of these functions are related to loading and working with representations.
+
+But probably not all of these should be here but maybe should be moved to
+openpype.pipeline as their function can be used elsewhere and also are using
+or may use some implementation from openpype.pipeline which could cause
+cross imports.
+"""
+
 import os
 import platform
 import logging
@@ -259,12 +269,13 @@ def get_representation_path_from_context(repre_context):
 def get_representation_path(project_anatomy, representation):
     """Get filename from representation document
 
-    There are three ways of getting the path from representation which are
-    tried in following sequence until successful.
-    1. Get template from representation['data']['template'] and data from
-       representation['context']. Then format template with the data.
-    2. Get template from project['config'] and format it with default data set
-    3. Get representation['data']['path'] and use it directly
+    Get template from representation['data']['template'] and data from
+    representation['context']. Then format template with the data.
+
+    NOTE:
+    This function may be obsolete at the moment when representation will
+    contain more then one file or filesequence (resources). Or is there still
+    requirement to have then one "main" file?
 
     Args:
         project_anatomy (Anatomy): Prepared project anatomy.
@@ -272,7 +283,6 @@ def get_representation_path(project_anatomy, representation):
 
     Returns:
         str: fullpath of the representation
-
     """
 
     template = representation["data"]["template"]

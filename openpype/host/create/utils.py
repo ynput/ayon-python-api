@@ -1,3 +1,11 @@
+"""Utility functions related to creation.
+
+Function are related to creation but can be also used elsewhere in some cases.
+
+For example subset name should be defined on creation but in some cases it is
+needed to create subset name dynamically during publishing.
+"""
+
 import re
 from openpype.client import (
     get_project_settings,

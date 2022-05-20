@@ -9,11 +9,12 @@ import logging
 import collections
 
 from openpype.host.process_tools import registered_host
-from .lib import get_subset_name
+from .utils import get_subset_name
 
 
 class LegacyCreator(object):
     """Determine how assets are created"""
+
     label = None
     family = None
     defaults = None

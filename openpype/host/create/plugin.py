@@ -7,7 +7,7 @@ from abc import (
 )
 import six
 
-from .lib import get_subset_name_with_task_entity
+from .utils import get_subset_name_with_task_entity
 
 
 class CreatorError(Exception):

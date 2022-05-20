@@ -8,7 +8,7 @@ from contextlib import contextmanager
 
 import pyblish.logic
 
-from openpype.api import (
+from openpype.client.settings import (
     get_system_settings,
     get_project_settings
 )
@@ -26,6 +26,7 @@ UpdateData = collections.namedtuple("UpdateData", ["instance", "changes"])
 
 class ImmutableKeyError(TypeError):
     """Accessed key is immutable so does not allow changes or removements."""
+
     def __init__(self, key, msg=None):
         self.immutable_key = key
         if not msg:
@@ -666,12 +667,6 @@ class CreateContext:
         discover_publish_plugins(bool): Discover publish plugins during reset
             phase.
     """
-    # Methods required in host implementaion to be able create instances
-    #   or change context data.
-    required_methods = (
-        "get_context_data",
-        "update_context_data"
-    )
 
     def __init__(
         self, host, headless=False, reset=True,
@@ -698,21 +693,6 @@ class CreateContext:
         self._publish_attributes = PublishAttributes(self, {})
         self._original_context_data = {}
 
-        # Validate host implementation
-        # - defines if context is capable of handling context data
-        host_is_valid = True
-        missing_methods = self.get_host_misssing_methods(host)
-        if missing_methods:
-            host_is_valid = False
-            joined_methods = ", ".join(
-                ['"{}"'.format(name) for name in missing_methods]
-            )
-            self.log.warning((
-                "Host miss required methods to be able use creation."
-                " Missing methods: {}"
-            ).format(joined_methods))
-
-        self._host_is_valid = host_is_valid
         # Currently unused variable
         self.headless = headless
 
@@ -755,24 +735,6 @@ class CreateContext:
         """Access to global publish attributes."""
         return self._publish_attributes
 
-    @classmethod
-    def get_host_misssing_methods(cls, host):
-        """Collect missing methods from host.
-
-        Args:
-            host(ModuleType): Host implementaion.
-        """
-        missing = set()
-        for attr_name in cls.required_methods:
-            if not hasattr(host, attr_name):
-                missing.add(attr_name)
-        return missing
-
-    @property
-    def host_is_valid(self):
-        """Is host valid for creation."""
-        return self._host_is_valid
-
     @property
     def log(self):
         """Dynamic access to logger."""
@@ -803,27 +765,13 @@ class CreateContext:
 
         All changes will be lost if were not saved explicitely.
         """
-        self.reset_current_context()
+
         self.reset_plugins(discover_publish_plugins)
         self.reset_context_data()
 
         with self.bulk_instances_collection():
             self.reset_instances()
             self.execute_autocreators()
-
-    def reset_current_context(self):
-        """Give ability to reset avalon context.
-
-        Reset is based on optional host implementation of `get_current_context`
-        function or using `legacy_io.Session`.
-
-        Some hosts have ability to change context file without using workfiles
-        tool but that change is not propagated to
-        """
-
-        project_name = folder_id = task_name = None
-        context= self.host.get_current_context()
-        # TODO implement
 
     def reset_plugins(self, discover_publish_plugins=True):
         """Reload plugins.
@@ -912,11 +860,6 @@ class CreateContext:
         These data are not related to any instance but may be needed for whole
         publishing.
         """
-
-        if not self.host_is_valid:
-            self._original_context_data = {}
-            self._publish_attributes = PublishAttributes(self, {})
-            return
 
         original_data = self.host.get_context_data() or {}
         self._original_context_data = copy.deepcopy(original_data)
@@ -1064,10 +1007,6 @@ class CreateContext:
 
     def save_changes(self):
         """Save changes. Update all changed values."""
-
-        if not self.host_is_valid:
-            missing_methods = self.get_host_misssing_methods(self.host)
-            raise HostMissRequiredMethod(self.host, missing_methods)
 
         self._save_context_changes()
         self._save_instance_changes()
