@@ -1,129 +1,142 @@
 import logging
-from abc import (
-    ABCMeta,
-    abstractproperty,
-    abstractmethod,
-)
-import six
+
+from .utils import get_representation_path_from_context
 
 
-@six.add_metaclass(ABCMeta)
-class LoadPlugin(object):
-    """Plugin handling reference, switch and removement of containers.
+class LoaderPlugin(list):
+    """Load representation into host application
 
-    QUESTION: Is import plugin a different kind of plugin or different type?
+    Arguments:
+        context (dict): avalon-core:context-1.0
+        name (str, optional): Use pre-defined name
+        namespace (str, optional): Use pre-defined namespace
+
+    .. versionadded:: 4.0
+       This class was introduced
+
     """
 
-    _log = None
+    families = list()
+    representations = list()
     order = 0
-    # QUESTION is there change then we would want disable load plugin?
-    enabled = True
+    is_multiple_contexts_compatible = False
 
-    # Attributes for default implementation
-    families = []
-    extensions = []
+    options = []
 
-    def __init__(self, system_settings, project_settings, load_context):
-        self._load_context = load_context
+    log = logging.getLogger("LoaderPlugin")
+    log.propagate = True
 
-    @property
-    def load_context(self):
-        return self._load_context
+    def __init__(self, context):
+        self.fname = self.filepath_from_context(context)
 
-    @property
-    def host(self):
-        self.load_context.host
+    @classmethod
+    def apply_settings(cls, project_settings, host_name=None):
+        plugin_type = "load"
 
-    def get_load_plugin_by_id(self, identifier):
-        return self.load_context.get_load_plugin_by_id(identifier)
+        plugin_type_settings = (
+            project_settings
+            .get(host_name, {})
+            .get(plugin_type, {})
+        )
+        global_type_settings = (
+            project_settings
+            .get("global", {})
+            .get(plugin_type, {})
+        )
+        if not global_type_settings and not plugin_type_settings:
+            return
 
-    @property
-    def log(self):
-        """Logger object available at the moment of accessing it."""
+        plugin_name = cls.__name__
 
-        if self._log is None:
-            self._log = logging.getLogger(self.__class__.__name__)
-        return self._log
+        plugin_settings = None
+        # Look for plugin settings in host specific settings
+        if plugin_name in plugin_type_settings:
+            plugin_settings = plugin_type_settings[plugin_name]
 
-    @abstractproperty
-    def identifier(self):
-        """Unique (not dynamic) identifier of load plugin."""
-        pass
+        # Look for plugin settings in global settings
+        elif plugin_name in global_type_settings:
+            plugin_settings = global_type_settings[plugin_name]
 
-    def is_compatible(self, family, representation):
-        """Is Load plugin compatible for representation."""
+        if not plugin_settings:
+            return
 
-        if self.families and family not in self.families:
-            return False
+        print(">>> We have preset for {}".format(plugin_name))
+        for option, value in plugin_settings.items():
+            if option == "enabled" and value is False:
+                setattr(cls, "active", False)
+                print("  - is disabled by preset")
+            else:
+                setattr(cls, option, value)
+                print("  - setting `{}`: `{}`".format(option, value))
 
-        if self.extensions and representation["ext"] not in self.extensions:
-            return False
-        return True
+    @classmethod
+    def get_representations(cls):
+        return cls.representations
 
-    @abstractmethod
-    def load_representations(self, representations, load_definitions):
-        """Load representations."""
+    @classmethod
+    def filepath_from_context(cls, context):
+        return get_representation_path_from_context(context)
 
-        pass
+    def load(self, context, name=None, namespace=None, options=None):
+        """Load asset via database
 
-    def get_load_definitions(self):
-        """Optional definitions that can be filled for loading.
+        Arguments:
+            context (dict): Full parenthood of representation to load
+            name (str, optional): Use pre-defined name
+            namespace (str, optional): Use pre-defined namespace
+            options (dict, optional): Additional settings dictionary
 
-        Can more specifically define how representation will be loaded.
+        """
+        raise NotImplementedError("Loader.load() must be "
+                                  "implemented by subclass")
+
+    def update(self, container, representation):
+        """Update `container` to `representation`
+
+        Arguments:
+            container (avalon-core:container-1.0): Container to update,
+                from `host.ls()`.
+            representation (dict): Update the container to this representation.
+
+        """
+        raise NotImplementedError("Loader.update() must be "
+                                  "implemented by subclass")
+
+    def remove(self, container):
+        """Remove a container
+
+        Arguments:
+            container (avalon-core:container-1.0): Container to remove,
+                from `host.ls()`.
+
+        Returns:
+            bool: Whether the container was deleted
+
         """
 
-        return []
+        raise NotImplementedError("Loader.remove() must be "
+                                  "implemented by subclass")
 
-    def can_switch_container(self, container):
-        """Can load plugin handle swith of a container."""
+    @classmethod
+    def get_options(cls, contexts):
+        """
+            Returns static (cls) options or could collect from 'contexts'.
 
-        if container["load_identifier"] == self.identifier:
-            return True
-        return False
-
-    @abstractmethod
-    def switch_container(self, container, representation):
-        """Switch container to newer version."""
-
-        pass
-
-    @abstractmethod
-    def remove_containers(self, containers):
-        """Remove container content and metadata from scene."""
-
-        pass
-
-    # QUESTION is getting of containers job for host or load plugins?
-    # - what if load plugin disappeared and other replaced it with
-    #   different
-    # @abstractmethod
-    # def get_containers(self):
-    #     """Get containers from scene."""
-    #
-    #     pass
+            Args:
+                contexts (list): of repre or subset contexts
+            Returns:
+                (list)
+        """
+        return cls.options or []
 
 
-class ImportPlugin(LoadPlugin):
-    """Plugin handling reference, switch and removement of containers.
-
-    QUESTION: Is import plugin a different kind of plugin or different type?
+class SubsetLoaderPlugin(LoaderPlugin):
+    """Load subset into host application
+    Arguments:
+        context (dict): avalon-core:context-1.0
+        name (str, optional): Use pre-defined name
+        namespace (str, optional): Use pre-defined namespace
     """
 
-    def can_switch_container(self, container):
-        return False
-
-    def switch_container(self, container, representation):
-        """Switch container to newer version."""
-
-        raise NotImplementedError((
-            "Import plugin \"{}\" does not have implemented"
-            " 'switch_container'."
-        ).format(self.__class__.__name__))
-
-    def remove_containers(self, containers):
-        """Remove container content and metadata from scene."""
-
-        raise NotImplementedError((
-            "Import plugin \"{}\" does not have implemented"
-            " 'remove_containers'."
-        ).format(self.__class__.__name__))
+    def __init__(self, context):
+        pass
