@@ -1,16 +1,10 @@
 import os
 import platform
-import copy
-import getpass
 import logging
 import inspect
 import numbers
 
-import six
-
-from openpype.lib import StringTemplate, TemplateUnsolved
-from openpype.pipeline import Anatomy
-
+from openpype.lib import StringTemplate
 
 log = logging.getLogger(__name__)
 
@@ -262,7 +256,7 @@ def get_representation_path_from_context(repre_context):
     pass
 
 
-def get_representation_path(project_name, representation):
+def get_representation_path(project_anatomy, representation):
     """Get filename from representation document
 
     There are three ways of getting the path from representation which are
@@ -273,6 +267,7 @@ def get_representation_path(project_name, representation):
     3. Get representation['data']['path'] and use it directly
 
     Args:
+        project_anatomy (Anatomy): Prepared project anatomy.
         representation(dict): representation document from the database
 
     Returns:
@@ -283,10 +278,8 @@ def get_representation_path(project_name, representation):
     template = representation["data"]["template"]
 
     context = representation["context"]
-    context["root"] = root
-    path = StringTemplate.format_strict_template(
-        template, context
-    )
+    context["root"] = project_anatomy.roots
+    path = StringTemplate.format_strict_template(template, context)
     # Force replacing backslashes with forward slashed if not on
     #   windows
     if platform.system().lower() != "windows":
