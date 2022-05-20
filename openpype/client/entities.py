@@ -23,6 +23,10 @@ def get_folders(project_name, folder_ids=None, fields=None):
     pass
 
 
+def get_task(project_name, folder_id, task_name, fields=None):
+    pass
+
+
 def get_tasks(project_name, folder_ids=None, fields=None):
     pass
 

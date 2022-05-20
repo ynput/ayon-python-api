@@ -119,11 +119,22 @@ class HostImplementation(object):
 
         QUESTIONS
         - Maybe this class should create 'HostDefinition' object
-            to have access to host name (avoid duplicity) and file extensions.
+            to have access to host name (avoid duplicity) and file extensions
+            or should be passed in.
         - We may need to implement global variable 'registered_host' in global
             scope for backwards compatibility with OP3 and easier backport
             of already implemented hosts.
             - This is connected to registering load, create and publish paths.
+        - Should expect context (project, folder, task) as arguments in which
+            current is?
+        """
+
+        pass
+
+    def register_default_plugins(self):
+        """Register OpenPype global plugins.
+
+        Register default OpenPype plugin paths.
         """
 
         pass
@@ -214,6 +225,18 @@ class HostImplementation(object):
         """
 
         pass
+
+    def get_parent_widget(self):
+        """Parent widget for UI tools.
+
+        Default implementation returns 'None'.
+
+        Returns:
+            QtWidgets.QWidget: Widget which will be used as parent for all
+                UI tools.
+        """
+
+        return None
 
 
 class ILoadHost:

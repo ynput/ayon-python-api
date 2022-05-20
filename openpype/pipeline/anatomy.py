@@ -1,3 +1,10 @@
+"""Anatomy simplify access to project core data.
+
+The main advantage is access to project roots and templates with auto-parsing
+of roots and template inner keys. Can be also used for direct template
+formatting.
+"""
+
 import os
 import re
 import copy
@@ -81,6 +88,7 @@ class BaseAnatomy(object):
 
         Method added to replace `{task}` with `{task[name]}` in templates.
         """
+
         templates_data = anatomy_data.get("templates")
         if templates_data:
             # Replace `{task}` with `{task[name]}` in templates
@@ -103,33 +111,40 @@ class BaseAnatomy(object):
     @property
     def templates(self):
         """Wrap property `templates` of Anatomy's AnatomyTemplates instance."""
+
         return self._templates_obj.templates
 
     @property
     def templates_obj(self):
         """Return `AnatomyTemplates` object of current Anatomy instance."""
+
         return self._templates_obj
 
     def format(self, *args, **kwargs):
         """Wrap `format` method of Anatomy's `templates_obj`."""
+
         return self._templates_obj.format(*args, **kwargs)
 
     def format_all(self, *args, **kwargs):
         """Wrap `format_all` method of Anatomy's `templates_obj`."""
+
         return self._templates_obj.format_all(*args, **kwargs)
 
     @property
     def roots(self):
         """Wrap `roots` property of Anatomy's `roots_obj`."""
+
         return self._roots_obj.roots
 
     @property
     def roots_obj(self):
         """Return `Roots` object of current Anatomy instance."""
+
         return self._roots_obj
 
     def root_environments(self):
         """Return OPENPYPE_ROOT_* environments for current project in dict."""
+
         return self._roots_obj.root_environments()
 
     def root_environmets_fill_data(self, template=None):
@@ -139,26 +154,32 @@ class BaseAnatomy(object):
             template (str): Template for environment variable key fill.
                 By default is set to `"${}"`.
         """
+
         return self.roots_obj.root_environmets_fill_data(template)
 
     def find_root_template_from_path(self, *args, **kwargs):
         """Wrapper for Roots `find_root_template_from_path`."""
+
         return self.roots_obj.find_root_template_from_path(*args, **kwargs)
 
     def path_remapper(self, *args, **kwargs):
         """Wrapper for Roots `path_remapper`."""
+
         return self.roots_obj.path_remapper(*args, **kwargs)
 
     def all_root_paths(self):
         """Wrapper for Roots `all_root_paths`."""
+
         return self.roots_obj.all_root_paths()
 
     def set_root_environments(self):
         """Set OPENPYPE_ROOT_* environments for current project."""
+
         self._roots_obj.set_root_environments()
 
     def root_names(self):
         """Return root names for current project."""
+
         return self.root_names_from_templates(self.templates)
 
     def _root_keys_from_templates(self, data):
@@ -187,6 +208,7 @@ class BaseAnatomy(object):
 
     def root_value_for_template(self, template):
         """Returns value of root key from template."""
+
         root_templates = []
         for group in re.findall(self.root_key_regex, template):
             root_templates.append("{" + group + "}")
@@ -213,6 +235,7 @@ class BaseAnatomy(object):
             list/None: List of all root names from templates as strings when
             multiroot setup is used, otherwise None is returned.
         """
+
         roots = list(self._root_keys_from_templates(templates))
         # Return empty list if no roots found in templates
         if not roots:
@@ -243,6 +266,7 @@ class BaseAnatomy(object):
         Return:
             str: formatted path
         """
+
         # NOTE does not care if there are different keys than "root"
         return template_path.format(**{"root": self.roots})
 
@@ -264,6 +288,7 @@ class BaseAnatomy(object):
         Returns:
             str: Path with filled root.
         """
+
         output = str(rootless_path)
         for group in re.findall(cls.root_key_regex, rootless_path):
             replacement = "{" + group + "}"
@@ -307,6 +332,7 @@ class BaseAnatomy(object):
         Raise:
             ValueError: When project's roots were not found in entered path.
         """
+
         success, rootless_path = self.find_root_template_from_path(filepath)
         if not success:
             raise ValueError(
@@ -347,6 +373,7 @@ class Anatomy(BaseAnatomy):
 
     def reset(self):
         """Reset values of cached data in templates and roots objects."""
+
         self.set_data(
             get_anatomy_settings(self.project_name, self._site_name)
         )
@@ -472,6 +499,7 @@ class AnatomyTemplates(TemplatesDict):
 
     def default_templates(self):
         """Return default templates data with solved inner keys."""
+
         return self.solve_template_inner_links(
             self.anatomy["templates"]
         )
@@ -499,6 +527,7 @@ class AnatomyTemplates(TemplatesDict):
     @classmethod
     def replace_inner_keys(cls, matches, value, key_values, key):
         """Replacement of inner keys in template values."""
+
         for match in matches:
             anatomy_sub_keys = (
                 cls.inner_key_name_pattern.findall(match)
@@ -545,6 +574,7 @@ class AnatomyTemplates(TemplatesDict):
         when first inner key's value refers to second inner key's value where
         first is used.
         """
+
         keys_to_solve = set(key_values.keys())
         while True:
             found = False
@@ -630,6 +660,7 @@ class AnatomyTemplates(TemplatesDict):
                     key_2: "value_2"
                     key_4: "value_3/value_2"
         """
+
         default_key_values = templates.pop("defaults", {})
         for key, value in tuple(templates.items()):
             if isinstance(value, dict):
@@ -746,6 +777,7 @@ class AnatomyTemplates(TemplatesDict):
                 attribute set to False so accessing unfilled keys in templates
                 won't raise any exceptions.
         """
+
         return self.format(in_data, strict=False)
 
 
@@ -818,6 +850,7 @@ class RootItem(FormatObject):
                 multiple roots are set. In that case e.g. `"root[work]"` is
                 returned.
         """
+
         if not self.name:
             return "root"
 
@@ -828,10 +861,12 @@ class RootItem(FormatObject):
 
     def clean_path(self, path):
         """Just replace backslashes with forward slashes."""
+
         return str(path).replace("\\", "/")
 
     def clean_root(self, root):
         """Makes sure root value does not end with slash."""
+
         if root:
             root = self.clean_path(root)
             while root.endswith("/"):
@@ -840,6 +875,7 @@ class RootItem(FormatObject):
 
     def _clean_roots(self, raw_data):
         """Clean all values of raw root item values."""
+
         cleaned = {}
         for key, value in raw_data.items():
             cleaned[key] = self.clean_root(value)
@@ -864,6 +900,7 @@ class RootItem(FormatObject):
                 None is returned else returns remapped path with "{root}"
                 or "{root[<name>]}".
         """
+
         cleaned_path = self.clean_path(path)
         if dst_platform:
             dst_root_clean = self.cleaned_data.get(dst_platform)
@@ -949,6 +986,7 @@ class RootItem(FormatObject):
             If any of raw data value wouldn't match path's root output is::
                 (False, "C:/windows/path/root/projects/my_project/file.ext")
         """
+
         result = False
         output = str(path)
 
@@ -991,6 +1029,7 @@ class Roots:
 
     def reset(self):
         """Reset current roots value."""
+
         self._roots = None
 
     def path_remapper(
@@ -1014,6 +1053,7 @@ class Roots:
                 None is returned else returns remapped path with "{root}"
                 or "{root[<name>]}".
         """
+
         if roots is None:
             roots = self.roots
 
@@ -1052,6 +1092,7 @@ class Roots:
         Raises:
             ValueError: When roots are not entered and can't be loaded.
         """
+
         if roots is None:
             log.debug(
                 "Looking for matching root in path \"{}\".".format(path)
@@ -1113,10 +1154,12 @@ class Roots:
                     "OPENPYPE_ROOT": "P:/projects"
                 }
         """
+
         return self._root_environments()
 
     def all_root_paths(self, roots=None):
         """Return all paths for all roots of all platforms."""
+
         if roots is None:
             roots = self.roots
 
@@ -1160,6 +1203,7 @@ class Roots:
             template (str): Template for environment variable key fill.
                 By default is set to `"${}"`.
         """
+
         if template is None:
             template = "${}"
         return self._root_environmets_fill_data(template)
@@ -1191,6 +1235,7 @@ class Roots:
     @property
     def project_name(self):
         """Return project name which will be used for loading root values."""
+
         return self.anatomy.project_name
 
     @property
@@ -1203,6 +1248,7 @@ class Roots:
             roots settings. That may happen when project use multiroot
             templates but default roots miss their keys.
         """
+
         if self.project_name != self.loaded_project:
             self._roots = None
 
@@ -1242,6 +1288,7 @@ class Roots:
             `RootItem` or `dict` with multiple `RootItem`s when multiroot
             setting is used.
         """
+
         if not parent_keys:
             parent_keys = []
         is_last = False

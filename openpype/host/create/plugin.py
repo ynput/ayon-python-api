@@ -7,7 +7,7 @@ from abc import (
 )
 import six
 
-from openpype.pipeline import get_subset_name_with_folder
+from .lib import get_subset_name_with_task_entity
 
 
 class CreatorError(Exception):
@@ -163,7 +163,7 @@ class BaseCreator:
         return self.icon
 
     def get_dynamic_data(
-        self, variant, task_name, folder, project_name, host_name
+        self, variant, task_entity, folder_entity, project_name, host_name
     ):
         """Dynamic data for subset name filling.
 
@@ -174,7 +174,13 @@ class BaseCreator:
         return {}
 
     def get_subset_name(
-        self, variant, task_name, folder, project_name, host_name=None
+        self,
+        variant,
+        task_entity,
+        folder_entity,
+        project_name,
+        host_name,
+        project_settings
     ):
         """Return subset name for passed context.
 
@@ -187,17 +193,17 @@ class BaseCreator:
         """
 
         dynamic_data = self.get_dynamic_data(
-            variant, task_name, folder, project_name, host_name
+            variant, task_entity, folder_entity, project_name, host_name
         )
 
-        return get_subset_name_with_folder(
+        return get_subset_name_with_task_entity(
             self.family,
             variant,
-            task_name,
-            folder,
-            project_name,
+            task_entity,
             host_name,
-            dynamic_data=dynamic_data
+            project_name,
+            project_settings,
+            dynamic_data
         )
 
     def get_instance_attr_defs(self):
