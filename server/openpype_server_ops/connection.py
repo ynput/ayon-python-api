@@ -11,7 +11,7 @@ class OpenPypeServerConnection:
         pass
 
     def close(self):
-        """Close connection.
+        """Close connection and cleanup.
 
         Method should pass if connection was already closed or was not created.
         """
@@ -66,4 +66,5 @@ class OpenPypeServerConnection:
         pass
 
     def get_addon_paths(self):
+        """Paths to addon directories that should be added to 'sys.path'."""
         pass

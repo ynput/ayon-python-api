@@ -108,49 +108,151 @@ RESULT: Logic will be moved to a pipeline package. There must be ability in Appl
 - Only part that would make sense to be handled on client side are "local settings" and local roots
     - this is connected to retrieving of representation path which is now "simple" in terms that the representation has single file or sequence but considering that representation could potentially have more then one file (resources) in that case loader should call some function which would return paths for the machine
 
-
 ### Dowloaded updates/addons/python packages on machine
-In OP3 there is single zip file containing core functionality with modules and hosts. For v4 it is expected that core functionality will still be in some kind of zip but
-modules and hosts will be maintained by their own zips.
+In OP3 there is single zip file containing core functionality with modules and hosts. In v4 it would be possible that core functionality will still be in some kind of zip, but modules and hosts could be maintained by their own zips. Also we've added `+staging` to name of file to differentiate between production and staging variants because we had only single file to handle. That make sense if we can't define which versions of addons are meant as staging and production. But in theory this does not have to be handled using name but rather ask server which versions are "staging" versions? So server can tell which are meant as staging versions.
+
+**Advantages**
+- each addon has it's own version and versioned settings
+    - easier or even possible handling of settings version conversion, because version conversion happens for exact addon which is not based on single "global" version of openpype
+- easy to develop single addon
+- we can get rid of "staging" part from version name
+- overrides for each addon won't be lost if there is some issue
+
+**Disadvantages**
+- production and staging has to be defined (probably manually) by each individual version of an addon
+- server side of addon must have ability to have 2 versions of client side and probably 2 settings models
+    - in other words server side addon should have ability to have 1 and more versions available
+- server side has to handle more logic
+    - care about which addon is set as production/staging to resolve settings overrides
+    - settings must have 2 variants (production/staging) with different models for both versions
+        - this will probably have to have anyway?
+    - settings must have more abilities of settings version resolving
+- there probably should be ability to ask for specific versions of addons during development?
+
+This would probably make logic on server more complex, primarily on settings version resolving.
+
+### Possible structures on disk
+#### OpenPype v3 structure
+Flat hierarchy with package that contains all addons.
 ```
 --- Some dir in local data ---
-|- openpype-v4.0.0.zip
+|- openpype-v3.9.3
 |   |- openpype
 |
-|- adobe-server-v1.0.0.zip
+|- openpype-v3.9.4
+|   |- openpype
+|
+|- openpype-v3.9.5+staging
+|   |- openpype
+|
+|- ...
+```
+
+#### Option n1
+Flat hierarchy.
+```
+--- Some dir in local data ---
+|- openpype-v4.0.0
+|   |- openpype
+|
+|- adobe-server-v1.0.0
 |   |- openpype_adobe_server
 |
-|- ftrack-v1.3.2.zip
+|- ftrack-v1.3.2
 |   |- openpype_ftrack
 |
-|- ftrack-v1.3.3.zip
+|- ftrack-v1.3.3
 |   |- openpype_ftrack
 |
-|- photoshop-v1.0.0.zip
+|- photoshop-v1.0.0
 |   |- openpype_photoshop
 |
-|- photoshop-v1.0.0+staging.zip
+|- photoshop-v1.0.1
 |   |- openpype_photoshop
 |
-|- maya-v1.0.0.zip
+|- maya-v1.0.0
 |   |- openpype_maya
 |
-|- nuke-v1.0.0.zip
+|- nuke-v1.0.0
 |   |- openpype_nuke
 |
-|- webserver-v1.0.0.zip
+|- webserver-v1.0.0
 |   |- openpype_webserver
 |
-|- site-packages-windows-v1.0.0.zip
+|- site-packages-windows-v1.0.0
 |   |- requests
 |   |- six.py
 |
-|- site-packages-windows-v1.0.1.zip
+|- site-packages-windows-v1.0.1
 |   |- requests
 |   |- ftrack_api
 |   |- six.py
 |
 |- ...
 ```
-This is how I imagine the files will look like in reality on machine.
-- Where this logic will be located?
+
+#### Option n2
+Group them e.g. using addon name.
+```
+--- Some dir in local data ---
+|- openpype
+|   |- v4.0.0
+|       |- openpype
+|
+|- adobe-server
+|   |- v1.0.0
+|       |- openpype_adobe_server
+|
+|- ftrack
+|   |- v1.3.2
+|       |- openpype_ftrack
+|   |- v1.3.3
+|       |- openpype_ftrack
+|
+|- photoshop
+|   |- v1.0.0
+|       |- openpype_photoshop
+|   |- v1.0.1
+|       |- openpype_photoshop
+|
+|- maya
+|   |- v1.0.0
+|       |- openpype_maya
+|
+|- nuke
+|   |- v1.0.0
+|       |- openpype_nuke
+|
+|- webserver
+|   |- v1.0.0
+|      |- openpype_webserver
+|
+|- site-packages-windows
+|   |- v1.0.0
+|      |- requests
+|      |- six.py
+|   |- v1.0.1
+|      |- requests
+|      |- ftrack_api
+|      |- six.py
+|
+|- ...
+```
+
+
+## Server side addon
+What will server side addon contain and how will be discovered?
+
+There must be a public info (class, manifest, ...) that will be used to discover the addon and provide information about it.
+
+Server side addon will probably have client side, versioned packages. Each versioned package should have settings model, python dependencies, other addon dependencies and zip file for client side. All of these information can change in each version of addon so they probably can't be at the public interface of addon but the public interface probably should be a class that will implement methods which would give information about these.
+
+There must be a way how to tell which versions are available and what requirements they have.
+
+Requirements must be somehow validated. Not sure if python dependencies can be validated directly on server side but dependency to other addons should happen there. Question is how to show that dependency is "not matched". Disable addon and show it somehow?
+
+### Questions
+- How they're deployed to server?
+- When does server discover them?
+- How they become available and enabled?
+- At which point pyton requirements are checked?

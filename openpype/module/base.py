@@ -7,8 +7,15 @@ import six
 
 
 @six.add_metaclass(ABCMeta)
-class OpenPypeModule(object):
-    """Base class of pype module.
+class OpenPypeModuleAddon(object):
+    """Public interface of OpenPype module addon.
+
+    Way how module addons are discovered. Public interface of addon that want
+    to implement module related logic.
+
+    Module is non-host implementation logic. In some cases may be application
+    considered as both host and module when they're used in both ways or some
+    logic related to multiple hosts can be deployed using module.
 
     Attributes:
         enabled (bool): Is module enabled.

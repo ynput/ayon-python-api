@@ -34,8 +34,10 @@ class CurrentContext(object):
 
 
 @six.add_metaclass(ABCMeta)
-class HostDefinition(object):
-    """Public interface of host.
+class OpenPypeHostAddon(object):
+    """Public interface of host implementation used to discover host addons.
+
+    Host addons are discovered like Module Addons but.
 
     Implemented definition can be created and imported at any time from any
     python implementation. Is used to execute methods that can be used
