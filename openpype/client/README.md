@@ -20,5 +20,11 @@ harder to maintain entities during publishing.
 
 ??? Question implement this option as optional usage. It is maybe bigger chunk
 for initial implementation then we may need.
-It will have it's usage for project management syncrhonizations
+It will have it's usage for project management synchronizations
     - e.g. ftrack -> OpenPype
+
+
+### Note
+This could be extracted to separated python module? This is real client logic,
+the rest of code is related to OpenPype application, pipeline and tools which
+are changing a lot over time.
