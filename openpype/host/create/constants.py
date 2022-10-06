@@ -1,6 +1,0 @@
-SUBSET_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_."
-
-
-__all__ = (
-    "SUBSET_NAME_ALLOWED_SYMBOLS",
-)
