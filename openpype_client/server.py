@@ -107,7 +107,12 @@ class GraphQlResponse:
 
 
 class ServerAPIBase(object):
-    """
+    """Base handler of connection to server.
+
+    Requires url to server which is used as base for api and graphql calls.
+
+    Login cause that a session is used
+
     Args:
         base_url(str): Example: http://localhost:5000
     """
@@ -176,6 +181,22 @@ class ServerAPIBase(object):
         self._token_validated = False
         self.close_session()
 
+    def create_session(self):
+        if self._session is not None:
+            raise ValueError("Session is already created.")
+
+        session = requests.Session()
+        session.headers.update(self.get_headers())
+
+        self._session_functions_mapping = {
+            RequestTypes.get: session.get,
+            RequestTypes.post: session.post,
+            RequestTypes.put: session.put,
+            RequestTypes.patch: session.patch,
+            RequestTypes.delete: session.delete
+        }
+        self._session = session
+
     def close_session(self):
         if self._session is None:
             return
@@ -213,6 +234,8 @@ class ServerAPIBase(object):
 
             current_username = user_info.get("name")
             if current_username == username:
+                self.close_session()
+                self.create_session()
                 return
 
         self.reset_token()
@@ -231,24 +254,22 @@ class ServerAPIBase(object):
 
         if not self.has_valid_token:
             raise AuthenticationError("Invalid credentials")
-
-        session = requests.Session()
-        session.headers.update(self.get_headers())
-        self._session_functions_mapping = {
-            RequestTypes.get: session.get,
-            RequestTypes.post: session.post,
-            RequestTypes.put: session.put,
-            RequestTypes.patch: session.patch,
-            RequestTypes.delete: session.delete
-        }
-        self._session = session
+        self.create_session()
 
     def logout(self):
         if self._access_token:
-            from openpype_common.connection import logout
-
-            logout(self._base_url, self._access_token)
+            self._logout()
             self.reset_token()
+
+    def _logout(self):
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(self._access_token)
+        }
+        requests.post(
+            self._base_url + "/api/auth/logout",
+            headers=headers
+        )
 
     def query_graphl(self, query, variables=None):
         data = {"query": query, "variables": variables or {}}
@@ -464,6 +485,12 @@ class ServerAPIBase(object):
 
 
 class ServerAPI(ServerAPIBase):
+    """Extended server api which also handles storing tokens and url.
+
+    Created object expect to have set environment variables
+    'OPENPYPE_SERVER_URL' and 'OPENPYPE_TOKEN' to be able use it.
+    """
+
     def __init__(self):
         url = self.get_url()
         token = self.get_token()
@@ -471,12 +498,27 @@ class ServerAPI(ServerAPIBase):
         super(ServerAPI, self).__init__(url, token)
 
         self.validate_server_availability()
+        self.create_session()
 
     def login(self, username, password):
         previous_token = self._access_token
         super(ServerAPI, self).login(username, password)
         if self.has_valid_token and previous_token != self._access_token:
             os.environ["OPENPYPE_TOKEN"] = self._access_token
+
+    def logout(self):
+        if not self._access_token:
+            return
+
+        try:
+            # Note: This is from desktop app maybe should not be here
+            from openpype_common.connection import logout
+
+            logout(self._base_url, self._access_token)
+            self.reset_token()
+
+        except:
+            self._logout()
 
     @staticmethod
     def get_url():
