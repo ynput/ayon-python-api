@@ -488,6 +488,12 @@ class ServerAPI(ServerAPIBase):
 
 
 class GlobalContext:
+    """Singleton connection holder.
+
+    Goal is to avoid create connection on import which can be dangerous in
+    some cases.
+    """
+
     _connection = None
 
     @classmethod
@@ -498,4 +504,13 @@ class GlobalContext:
 
 
 def get_server_api_connection():
+    """Access to global scope object of ServerAPI.
+
+    This access expect to have set environment variables 'OPENPYPE_SERVER_URL'
+    and 'OPENPYPE_TOKEN'.
+
+    Returns:
+        ServerAPI: Object of connection to server.
+    """
+
     return GlobalContext.get_server_api_connection()
