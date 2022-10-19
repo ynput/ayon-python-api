@@ -34,6 +34,9 @@ def get_projects(active=None, library=None, fields=None):
         List[Dict[str, Any]]: List of queried projects.
     """
 
+    if fields is not None:
+        fields = set(fields)
+
     con = get_server_api_connection()
     if not fields:
         return con.get_rest_projects(active, library)
@@ -56,12 +59,14 @@ def get_project(project_name, fields=None):
             not found.
     """
 
+    if fields is not None:
+        fields = set(fields)
+
     # Skip if both are disabled
     con = get_server_api_connection()
     if not fields:
         return con.get_rest_project(project_name)
 
-    fields = set(fields)
     query = project_graphql_query(fields)
     query.set_variable_value("projectName", project_name)
 
@@ -147,6 +152,7 @@ def get_folders(
 
         filters["parentFolderIds"] = list(parent_ids)
 
+            
     if not fields:
         fields = DEFAULT_FOLDER_FIELDS
     fields = set(fields)
