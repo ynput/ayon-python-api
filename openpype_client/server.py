@@ -30,6 +30,9 @@ class RequestType:
     def __init__(self, name):
         self.name = name
 
+    def __hash__(self):
+        return self.name.__hash__()
+
 
 class RequestTypes:
     get = RequestType("GET")
