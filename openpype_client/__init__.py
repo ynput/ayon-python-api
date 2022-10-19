@@ -1,6 +1,11 @@
 from .server import (
     ServerAPIBase,
     get_server_api_connection,
+    get,
+    post,
+    put,
+    patch,
+    delete,
 )
 
 from .entities import (
@@ -43,6 +48,11 @@ from .entities import (
 __all__ = (
     "ServerAPIBase",
     "get_server_api_connection",
+    "get",
+    "post",
+    "put",
+    "patch",
+    "delete",
 
     "get_projects",
     "get_project",
