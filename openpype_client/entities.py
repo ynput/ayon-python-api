@@ -52,7 +52,7 @@ def get_projects(active=None, library=None, fields=None, con=None):
 
     else:
         query = projects_graphql_query(fields)
-        for parsed_data in query.continuos_query(con):
+        for parsed_data in query.continuous_query(con):
             for project in parsed_data["projects"]:
                 yield project
 
@@ -176,8 +176,8 @@ def get_folders(
 
     if con is None:
         con = get_server_api_connection()
-    for parsed_data in query.continuos_query(con):
-        for folder in parsed_data["projects"]["folders"]:
+    for parsed_data in query.continuous_query(con):
+        for folder in parsed_data["project"]["folders"]:
             if active is None or active is folder["active"]:
                 yield folder
 
@@ -235,8 +235,8 @@ def get_tasks(
 
     if con is None:
         con = get_server_api_connection()
-    for parsed_data in query.continuos_query(con):
-        for task in parsed_data["projects"]["tasks"]:
+    for parsed_data in query.continuous_query(con):
+        for task in parsed_data["project"]["tasks"]:
             if active is None or active is task["active"]:
                 yield task
 
