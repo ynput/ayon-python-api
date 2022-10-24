@@ -30,6 +30,8 @@ def get_projects(active=None, library=None, fields=None, con=None):
         library (Union[bool, None]): Filter library projects. Filter is
             disabled when 'None' is passed.
         fields (Union[Iterable[str], None]): fields to be queried for project.
+        con (ServerAPIBase): Prepared connection object with logged user.
+            Global connection is used if not passed.
 
     Returns:
         List[Dict[str, Any]]: List of queried projects.
@@ -63,7 +65,9 @@ def get_project(project_name, fields=None, con=None):
 
     Args:
         project_name (str): Name of project.
-        fields (Union[Iterable(str), None]): fields to be queried for project.
+        fields (Union[Iterable[str], None]): fields to be queried for project.
+        con (ServerAPIBase): Prepared connection object with logged user.
+            Global connection is used if not passed.
 
     Returns:
         Union[Dict[str, Any], None]: Project entity data or None if project was
@@ -118,6 +122,8 @@ def get_folders(
             returned if is set to None.
         fields (Union[Iterable[str], None]): Fields to be queried for folder.
             All possible folder fields are returned if 'None' is passed.
+        con (ServerAPIBase): Prepared connection object with logged user.
+            Global connection is used if not passed.
 
     Returns:
         Iterable[dict[str, Any]]: Queried folder entities.
@@ -250,6 +256,8 @@ def get_folder_by_id(project_name, folder_id, fields=None, con=None):
         folder_id (str): Folder's id.
         fields (Iterable[str]): Fields that should be returned. All fields are
             returned if 'None' is passed.
+        con (ServerAPIBase): Prepared connection object with logged user.
+            Global connection is used if not passed.
 
     Returns:
         Union[dict, None]: Folder entity data or None if was not found.
@@ -472,8 +480,10 @@ def get_versions(
         standard (bool): Receive versions which are not hero when set to true.
         latest (bool): Return only latest version of standard versions.
             This can be combined only with 'standard' attribute set to True.
-        fields (Union[Iterable(str), None]): Fields to be queried for version.
+        fields (Union[Iterable[str], None]): Fields to be queried for version.
             All possible folder fields are returned if 'None' is passed.
+        con (ServerAPIBase): Prepared connection object with logged user.
+            Global connection is used if not passed.
 
     Returns:
         List[Dict[str, Any]]: Queried version entities.
@@ -702,9 +712,11 @@ def get_representations(
             version ids. This filter discard all other filters.
         active (bool): Receive active/inactive representaions. All are returned
             when 'None' is passed.
-        fields (Union[Iterable(str), None]): Fields to be queried for
+        fields (Union[Iterable[str], None]): Fields to be queried for
             representation. All possible fields are returned if 'None' is
             passed.
+        con (ServerAPIBase): Prepared connection object with logged user.
+            Global connection is used if not passed.
 
     Returns:
         List[Dict[str, Any]]: Queried representation entities.
@@ -846,6 +858,8 @@ def get_thumbnail_id_from_source(project_name, src_type, src_id, con=None):
         project_name (str): Name of project where to look for queried entities.
         src_type (str): Type of source entity ('asset', 'version').
         src_id (Union[str, ObjectId]): Id of source entity.
+        con (ServerAPIBase): Prepared connection object with logged user.
+            Global connection is used if not passed.
 
     Returns:
         ObjectId: Thumbnail id assigned to entity.
