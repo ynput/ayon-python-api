@@ -22,6 +22,8 @@ from .entities import (
     get_folder_by_path,
     get_folders,
 
+    get_tasks,
+
     get_folder_ids_with_subsets,
     get_subset_by_id,
     get_subset_by_name,
@@ -66,6 +68,8 @@ __all__ = (
     "get_folder_by_name",
     "get_folder_by_path",
     "get_folders",
+
+    "get_tasks",
 
     "get_folder_ids_with_subsets",
     "get_subset_by_id",

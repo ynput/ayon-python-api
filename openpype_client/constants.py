@@ -34,7 +34,6 @@ TASK_ATTRIBS = {
     "frameEnd",
     "handleEnd",
     "handleStart",
-    "newAttribute",
     "pixelAspect",
     "resolutionHeight",
     "resolutionWidth",

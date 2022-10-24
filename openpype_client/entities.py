@@ -2,6 +2,7 @@ import collections
 
 from .constants import (
     DEFAULT_FOLDER_FIELDS,
+    DEFAULT_TASK_FIELDS,
     DEFAULT_SUBSET_FIELDS,
     DEFAULT_VERSION_FIELDS,
     DEFAULT_REPRESENTATION_FIELDS,
@@ -224,7 +225,7 @@ def get_tasks(
         filters["folderIds"] = list(folder_ids)
 
     if not fields:
-        fields = DEFAULT_FOLDER_FIELDS
+        fields = DEFAULT_TASK_FIELDS
     fields = set(fields)
     if active is not None:
         fields.add("active")
@@ -525,9 +526,10 @@ def get_versions(
 
     if con is None:
         con = get_server_api_connection()
-    parsed_data = query.query(con)
 
-    return parsed_data.get("project", {}).get("versions", [])
+    for parsed_data in query.continuous_query(con):
+        for version in parsed_data["project"]["versions"]:
+            yield version
 
 
 def get_version_by_id(project_name, version_id, fields=None, con=None):
