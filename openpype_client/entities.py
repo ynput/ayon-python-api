@@ -246,8 +246,8 @@ def get_folder_by_id(project_name, folder_id, fields=None):
     folders = get_folders(
         project_name, folder_ids=[folder_id], fields=fields
     )
-    if folders:
-        return folders[0]
+    for folder in folders:
+        return folder
     return None
 
 
@@ -255,8 +255,8 @@ def get_folder_by_path(project_name, folder_path, fields=None):
     folders = get_folders(
         project_name, folder_paths=[folder_path], fields=fields
     )
-    if folders:
-        return folders[0]
+    for folder in folders:
+        return folder
     return None
 
 
@@ -264,8 +264,8 @@ def get_folder_by_name(project_name, folder_name, fields=None):
     folders = get_folders(
         project_name, folder_names=[folder_name], fields=fields
     )
-    if folders:
-        return folders[0]
+    for folder in folders:
+        return folder
     return None
 
 
@@ -389,8 +389,8 @@ def get_subsets(
 
 def get_subset_by_id(project_name, subset_id, fields=None):
     subsets = get_subsets(project_name, subset_ids=[subset_id], fields=fields)
-    if subsets:
-        return subsets[0]
+    for subset in subsets:
+        return subset
     return None
 
 
@@ -401,8 +401,8 @@ def get_subset_by_name(project_name, subset_name, folder_id, fields=None):
         folder_ids=[folder_id],
         fields=fields
     )
-    if subsets:
-        return subsets[0]
+    for subset in subsets:
+        return subset
     return None
 
 
