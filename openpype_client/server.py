@@ -268,9 +268,10 @@ class ServerAPIBase(object):
             raise AuthenticationError("Invalid credentials")
         self.create_session()
 
-    def logout(self):
+    def logout(self, soft=False):
         if self._access_token:
-            self._logout()
+            if not soft:
+                self._logout()
             self.reset_token()
 
     def _logout(self):
