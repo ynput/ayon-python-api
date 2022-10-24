@@ -163,15 +163,10 @@ def get_folders(
         query.set_variable_value(attr, filter_value)
 
     con = get_server_api_connection()
-    parsed_data = query.query(con)
-    folders = parsed_data["project"]["folders"]
-    if active is None:
-        return folders
-    return [
-        folder
-        for folder in folders
-        if folder["active"] is active
-    ]
+    for parsed_data in query.continuos_query(con):
+        for folder in parsed_data["projects"]["folders"]:
+            if active is None or active is folder["active"]:
+                yield folder
 
 
 def get_tasks(
