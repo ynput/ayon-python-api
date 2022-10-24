@@ -112,11 +112,11 @@ def get_folders(
             is direct child of project.
         active (Union[bool, None]): Filter active/inactive folders. Both are
             returned if is set to None.
-        fields (Union[Iterable(str), None]): Fields to be queried for folder.
+        fields (Union[Iterable[str], None]): Fields to be queried for folder.
             All possible folder fields are returned if 'None' is passed.
 
     Returns:
-        List[Dict[str, Any]]: Queried folder entities.
+        Iterable[dict[str, Any]]: Queried folder entities.
     """
 
     if not project_name:
