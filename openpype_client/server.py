@@ -495,7 +495,8 @@ class ServerAPI(ServerAPIBase):
     """Extended server api which also handles storing tokens and url.
 
     Created object expect to have set environment variables
-    'OPENPYPE_SERVER_URL' and 'OPENPYPE_TOKEN' to be able use it.
+    'OPENPYPE_SERVER_URL'. Also is expecting filled 'OPENPYPE_TOKEN'
+    but that can be filled afterwards with calling 'login' method.
     """
 
     def __init__(self):
@@ -508,6 +509,12 @@ class ServerAPI(ServerAPIBase):
         self.create_session()
 
     def login(self, username, password):
+        """Login to the server or change user.
+
+        If user is the same as current user and token is available the
+        login is skipped.
+        """
+
         previous_token = self._access_token
         super(ServerAPI, self).login(username, password)
         if self.has_valid_token and previous_token != self._access_token:
