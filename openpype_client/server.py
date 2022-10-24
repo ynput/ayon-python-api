@@ -10,6 +10,7 @@ from .constants import (
     SERVER_TOKEN_ENV_KEY,
 )
 from .graphql import INTROSPECTION_QUERY
+from .utils import logout_from_server
 
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 
@@ -273,14 +274,7 @@ class ServerAPIBase(object):
             self.reset_token()
 
     def _logout(self):
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer {}".format(self._access_token)
-        }
-        requests.post(
-            self._base_url + "/api/auth/logout",
-            headers=headers
-        )
+        logout_from_server(self._base_url, self._access_token)
 
     def query_graphql(self, query, variables=None):
         data = {"query": query, "variables": variables or {}}
