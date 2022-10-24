@@ -28,23 +28,32 @@ def get_projects(active=None, library=None, fields=None):
             is disabled when 'None' is passed.
         library (Union[bool, None]): Filter library projects. Filter is
             disabled when 'None' is passed.
-        fields (Union[Iterable(str), None]): fields to be queried for project.
+        fields (Union[Iterable[str], None]): fields to be queried for project.
 
     Returns:
         List[Dict[str, Any]]: List of queried projects.
     """
 
-    if fields is not None:
+    if fields is None:
+        use_rest = True
+    else:
+        use_rest = False
         fields = set(fields)
+        for field in fields:
+            if field.startswith("config"):
+                use_rest = True
+                break
 
     con = get_server_api_connection()
-    if not fields:
-        return con.get_rest_projects(active, library)
+    if use_rest:
+        for project in con.get_rest_projects(active, library):
+            yield project
 
-    query = projects_graphql_query(fields)
-    parsed_data = query.query(con)
-
-    return parsed_data["projects"]
+    else:
+        query = projects_graphql_query(fields)
+        for parsed_data in query.continuos_query(con):
+            for project in parsed_data["projects"]:
+                yield project
 
 
 def get_project(project_name, fields=None):
