@@ -763,16 +763,11 @@ def get_representations(
 
     if con is None:
         con = get_server_api_connection()
-    parsed_data = query.query(con)
 
-    representations = parsed_data.get("project", {}).get("representations", [])
-    if active is None:
-        representations = [
-            repre
-            for repre in representations
-            if repre["active"] == active
-        ]
-    return representations
+    for parsed_data in query.continuous_query(con):
+        for repre in parsed_data["project"]["representations"]:
+            if active is None or active is repre["active"]:
+                yield repre
 
 
 def get_representation_by_id(
