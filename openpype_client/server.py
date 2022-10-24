@@ -5,6 +5,10 @@ from http import HTTPStatus
 
 import requests
 
+from .constants import (
+    SERVER_URL_ENV_KEY,
+    SERVER_TOKEN_ENV_KEY,
+)
 from .graphql import INTROSPECTION_QUERY
 
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
@@ -518,15 +522,15 @@ class ServerAPI(ServerAPIBase):
         previous_token = self._access_token
         super(ServerAPI, self).login(username, password)
         if self.has_valid_token and previous_token != self._access_token:
-            os.environ["OPENPYPE_TOKEN"] = self._access_token
+            os.environ[SERVER_TOKEN_ENV_KEY] = self._access_token
 
     @staticmethod
     def get_url():
-        return os.environ.get("OPENPYPE_SERVER_URL")
+        return os.environ.get(SERVER_URL_ENV_KEY)
 
     @staticmethod
     def get_token():
-        return os.environ.get("OPENPYPE_TOKEN")
+        return os.environ.get(SERVER_TOKEN_ENV_KEY)
 
 
 class GlobalContext:
