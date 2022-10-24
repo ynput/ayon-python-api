@@ -188,6 +188,11 @@ class ServerAPIBase(object):
             self._token_is_valid = False
         return self._token_is_valid
 
+    def set_token(self, token):
+        self.reset_token()
+        self._access_token = token
+        self.get_user_info()
+
     def reset_token(self):
         self._access_token = None
         self._token_validated = False
