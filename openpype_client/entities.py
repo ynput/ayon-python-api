@@ -235,12 +235,19 @@ def get_tasks(
                 yield task
 
 
-
-def get_whole_project(*args, **kwargs):
-    raise NotImplementedError("'get_whole_project' not implemented")
-
-
 def get_folder_by_id(project_name, folder_id, fields=None):
+    """Receive folder data by it's id.
+
+    Args:
+        project_name (str): Name of project where to look for queried entities.
+        folder_id (str): Folder's id.
+        fields (Iterable[str]): Fields that should be returned. All fields are
+            returned if 'None' is passed.
+
+    Returns:
+        Union[dict, None]: Folder entity data or None if was not found.
+    """
+
     folders = get_folders(
         project_name, folder_ids=[folder_id], fields=fields
     )
