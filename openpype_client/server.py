@@ -278,7 +278,7 @@ class ServerAPIBase(object):
             headers=headers
         )
 
-    def query_graphl(self, query, variables=None):
+    def query_graphql(self, query, variables=None):
         data = {"query": query, "variables": variables or {}}
         response = self._do_rest_request(
             RequestTypes.post,
@@ -319,7 +319,7 @@ class ServerAPIBase(object):
         return server_schema["components"]["schemas"]
 
     def get_graphql_schema(self):
-        return self.query_graphl(INTROSPECTION_QUERY).data
+        return self.query_graphql(INTROSPECTION_QUERY).data
 
     def _do_rest_request(self, function, url, **kwargs):
         if self._session is None:
