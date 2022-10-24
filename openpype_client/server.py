@@ -532,6 +532,18 @@ class ServerAPI(ServerAPIBase):
     def get_token():
         return os.environ.get(SERVER_TOKEN_ENV_KEY)
 
+    @staticmethod
+    def set_environments(url, token):
+        """Change url and token environemnts in currently running process.
+
+        Args:
+            url (str): New server url.
+            token (str): User's token.
+        """
+
+        os.environ[SERVER_URL_ENV_KEY] = url or ""
+        os.environ[SERVER_TOKEN_ENV_KEY] = token or ""
+
 
 class GlobalContext:
     """Singleton connection holder.
