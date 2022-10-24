@@ -513,20 +513,6 @@ class ServerAPI(ServerAPIBase):
         if self.has_valid_token and previous_token != self._access_token:
             os.environ["OPENPYPE_TOKEN"] = self._access_token
 
-    def logout(self):
-        if not self._access_token:
-            return
-
-        try:
-            # Note: This is from desktop app maybe should not be here
-            from openpype_common.connection import logout
-
-            logout(self._base_url, self._access_token)
-            self.reset_token()
-
-        except:
-            self._logout()
-
     @staticmethod
     def get_url():
         return os.environ.get("OPENPYPE_SERVER_URL")
