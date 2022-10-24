@@ -76,6 +76,10 @@ class RestApiResponse(object):
     def detail(self):
         return self.get("detail", HTTPStatus(self.status).description)
 
+    @property
+    def status_code(self):
+        return self.status
+
     def __repr__(self):
         return "<{}: {} ({})>".format(
             self.__class__.__name__, self.status, self.detail
