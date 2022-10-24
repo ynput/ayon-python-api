@@ -523,8 +523,8 @@ def get_version_by_id(project_name, version_id, fields=None):
         fields=fields,
         hero=True
     )
-    if versions:
-        return versions[0]
+    for version in versions:
+        return version
     return None
 
 
@@ -546,8 +546,8 @@ def get_hero_version_by_id(project_name, version_id, fields=None):
         version_ids=[version_id],
         fields=fields
     )
-    if versions:
-        return versions[0]
+    for version in versions:
+        return version
     return None
 
 
@@ -557,8 +557,8 @@ def get_hero_version_by_subset_id(project_name, subset_id, fields=None):
         subset_ids=[subset_id],
         fields=fields
     )
-    if versions:
-        return versions[0]
+    for version in versions:
+        return version
     return None
 
 
@@ -748,8 +748,8 @@ def get_representation_by_id(project_name, representation_id, fields=None):
         representation_ids=[representation_id],
         fields=fields
     )
-    if representations:
-        return representations[0]
+    for representation in representations:
+        return representation
     return None
 
 
@@ -762,8 +762,8 @@ def get_representation_by_name(
         version_ids=[version_id],
         fields=fields
     )
-    if representations:
-        return representations[0]
+    for representation in representations:
+        return representation
     return None
 
 
