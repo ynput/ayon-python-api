@@ -20,7 +20,7 @@ from .graphql_queries import (
 from .server import get_server_api_connection
 
 
-def get_projects(active=None, library=None, fields=None):
+def get_projects(active=None, library=None, fields=None, con=None):
     """Get projects.
 
     Args:
@@ -44,7 +44,8 @@ def get_projects(active=None, library=None, fields=None):
                 use_rest = True
                 break
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     if use_rest:
         for project in con.get_rest_projects(active, library):
             yield project
@@ -56,7 +57,7 @@ def get_projects(active=None, library=None, fields=None):
                 yield project
 
 
-def get_project(project_name, fields=None):
+def get_project(project_name, fields=None, con=None):
     """Get project.
 
     Args:
@@ -72,7 +73,8 @@ def get_project(project_name, fields=None):
         fields = set(fields)
 
     # Skip if both are disabled
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     if not fields:
         return con.get_rest_project(project_name)
 
@@ -93,7 +95,8 @@ def get_folders(
     folder_names=None,
     parent_ids=None,
     active=None,
-    fields=None
+    fields=None,
+    con=None
 ):
     """Query folders from server.
 
@@ -171,7 +174,8 @@ def get_folders(
     for attr, filter_value in filters.items():
         query.set_variable_value(attr, filter_value)
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     for parsed_data in query.continuos_query(con):
         for folder in parsed_data["projects"]["folders"]:
             if active is None or active is folder["active"]:
@@ -185,7 +189,8 @@ def get_tasks(
     task_types=None,
     folder_ids=None,
     active=None,
-    fields=None
+    fields=None,
+    con=None
 ):
     if not project_name:
         return []
@@ -228,14 +233,15 @@ def get_tasks(
     for attr, filter_value in filters.items():
         query.set_variable_value(attr, filter_value)
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     for parsed_data in query.continuos_query(con):
         for task in parsed_data["projects"]["tasks"]:
             if active is None or active is task["active"]:
                 yield task
 
 
-def get_folder_by_id(project_name, folder_id, fields=None):
+def get_folder_by_id(project_name, folder_id, fields=None, con=None):
     """Receive folder data by it's id.
 
     Args:
@@ -249,25 +255,25 @@ def get_folder_by_id(project_name, folder_id, fields=None):
     """
 
     folders = get_folders(
-        project_name, folder_ids=[folder_id], fields=fields
+        project_name, folder_ids=[folder_id], fields=fields, con=con
     )
     for folder in folders:
         return folder
     return None
 
 
-def get_folder_by_path(project_name, folder_path, fields=None):
+def get_folder_by_path(project_name, folder_path, fields=None, con=None):
     folders = get_folders(
-        project_name, folder_paths=[folder_path], fields=fields
+        project_name, folder_paths=[folder_path], fields=fields, con=con
     )
     for folder in folders:
         return folder
     return None
 
 
-def get_folder_by_name(project_name, folder_name, fields=None):
+def get_folder_by_name(project_name, folder_name, fields=None, con=None):
     folders = get_folders(
-        project_name, folder_names=[folder_name], fields=fields
+        project_name, folder_names=[folder_name], fields=fields, con=con
     )
     for folder in folders:
         return folder
@@ -278,7 +284,7 @@ def get_archived_assets(*args, **kwargs):
     raise NotImplementedError("'get_archived_assets' not implemented")
 
 
-def get_folder_ids_with_subsets(project_name, folder_ids=None):
+def get_folder_ids_with_subsets(project_name, folder_ids=None, con=None):
     if folder_ids is not None:
         folder_ids = set(folder_ids)
         if not folder_ids:
@@ -290,7 +296,8 @@ def get_folder_ids_with_subsets(project_name, folder_ids=None):
     if folder_ids:
         query.set_variable_value("folderIds", list(folder_ids))
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     parsed_data = query.query(con)
     folders = parsed_data["project"]["folders"]
     return {
@@ -306,7 +313,8 @@ def get_subsets(
     folder_ids=None,
     names_by_folder_ids=None,
     archived=False,
-    fields=None
+    fields=None,
+    con=None
 ):
     if not project_name:
         return []
@@ -370,7 +378,8 @@ def get_subsets(
     for attr, filter_value in filters.items():
         query.set_variable_value(attr, filter_value)
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     parsed_data = query.query(con)
 
     subsets = parsed_data.get("project", {}).get("subsets", [])
@@ -392,31 +401,37 @@ def get_subsets(
     return list(subsets)
 
 
-def get_subset_by_id(project_name, subset_id, fields=None):
-    subsets = get_subsets(project_name, subset_ids=[subset_id], fields=fields)
-    for subset in subsets:
-        return subset
-    return None
-
-
-def get_subset_by_name(project_name, subset_name, folder_id, fields=None):
+def get_subset_by_id(project_name, subset_id, fields=None, con=None):
     subsets = get_subsets(
-        project_name,
-        subset_names=[subset_name],
-        folder_ids=[folder_id],
-        fields=fields
+        project_name, subset_ids=[subset_id], fields=fields, con=con
     )
     for subset in subsets:
         return subset
     return None
 
 
-def get_subset_families(project_name, subset_ids=None):
+def get_subset_by_name(
+    project_name, subset_name, folder_id, fields=None, con=None
+):
+    subsets = get_subsets(
+        project_name,
+        subset_names=[subset_name],
+        folder_ids=[folder_id],
+        fields=fields,
+        con=con
+    )
+    for subset in subsets:
+        return subset
+    return None
+
+
+def get_subset_families(project_name, subset_ids=None, con=None):
     if subset_ids is not None:
         subsets = get_subsets(
             project_name,
             subset_ids=subset_ids,
-            fields=["data.family"]
+            fields=["data.family"],
+            con=con
         )
         return {
             subset["data"]["family"]
@@ -431,7 +446,8 @@ def get_subset_families(project_name, subset_ids=None):
     project_query.set_filter("name", project_name_var)
     project_query.add_field("subsetFamilies")
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     parsed_data = query.query(con)
 
     return set(parsed_data.get("project", {}).get("subsetFamilies", []))
@@ -445,7 +461,8 @@ def get_versions(
     hero=True,
     standard=True,
     latest=None,
-    fields=None
+    fields=None,
+    con=None
 ):
     """Get version entities based on passed filters from server.
 
@@ -510,52 +527,61 @@ def get_versions(
     for attr, filter_value in filters.items():
         query.set_variable_value(attr, filter_value)
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     parsed_data = query.query(con)
 
     return parsed_data.get("project", {}).get("versions", [])
 
 
-def get_version_by_id(project_name, version_id, fields=None):
+def get_version_by_id(project_name, version_id, fields=None, con=None):
     versions = get_versions(
         project_name,
         version_ids=[version_id],
         fields=fields,
-        hero=True
+        hero=True,
+        con=con
     )
     for version in versions:
         return version
     return None
 
 
-def get_version_by_name(project_name, version, subset_id, fields=None):
+def get_version_by_name(
+    project_name, version, subset_id, fields=None, con=None
+):
     versions = get_versions(
         project_name,
         subset_ids=[subset_id],
         versions=[version],
-        fields=fields
+        fields=fields,
+        con=con
     )
     if versions:
         return versions[0]
     return None
 
 
-def get_hero_version_by_id(project_name, version_id, fields=None):
+def get_hero_version_by_id(project_name, version_id, fields=None, con=None):
     versions = get_hero_versions(
         project_name,
         version_ids=[version_id],
-        fields=fields
+        fields=fields,
+        con=con
     )
     for version in versions:
         return version
     return None
 
 
-def get_hero_version_by_subset_id(project_name, subset_id, fields=None):
+def get_hero_version_by_subset_id(
+    project_name, subset_id, fields=None, con=None
+):
     versions = get_hero_versions(
         project_name,
         subset_ids=[subset_id],
-        fields=fields
+        fields=fields,
+        con=con
     )
     for version in versions:
         return version
@@ -566,7 +592,8 @@ def get_hero_versions(
     project_name,
     subset_ids=None,
     version_ids=None,
-    fields=None
+    fields=None,
+    con=None
 ):
     return get_versions(
         project_name,
@@ -574,16 +601,18 @@ def get_hero_versions(
         subset_ids=subset_ids,
         hero=True,
         standard=False,
-        fields=fields
+        fields=fields,
+        con=con
     )
 
 
-def get_last_versions(project_name, subset_ids, fields=None):
+def get_last_versions(project_name, subset_ids, fields=None, con=None):
     versions = get_versions(
         project_name,
         subset_ids=subset_ids,
         latest=True,
-        fields=fields
+        fields=fields,
+        con=con
     )
     return {
         version["parent"]: version
@@ -591,12 +620,15 @@ def get_last_versions(project_name, subset_ids, fields=None):
     }
 
 
-def get_last_version_by_subset_id(project_name, subset_id, fields=None):
+def get_last_version_by_subset_id(
+    project_name, subset_id, fields=None, con=None
+):
     versions = get_versions(
         project_name,
         subset_ids=[subset_id],
         latest=True,
-        fields=fields
+        fields=fields,
+        con=con
     )
     if not versions:
         return versions[0]
@@ -604,22 +636,22 @@ def get_last_version_by_subset_id(project_name, subset_id, fields=None):
 
 
 def get_last_version_by_subset_name(
-    project_name, subset_name, folder_id, fields=None
+    project_name, subset_name, folder_id, fields=None, con=None
 ):
     if not folder_id:
         return None
 
     subset = get_subset_by_name(
-        project_name, subset_name, folder_id, fields=["_id"]
+        project_name, subset_name, folder_id, fields=["_id"], con=con
     )
     if not subset:
         return None
     return get_last_version_by_subset_id(
-        project_name, subset["id"], fields=fields
+        project_name, subset["id"], fields=fields, con=con
     )
 
 
-def version_is_latest(project_name, version_id):
+def version_is_latest(project_name, version_id, con=None):
     query = GraphQlQuery("VersionIsLatest")
     project_name_var = query.add_variable(
         "projectName", "String!", project_name
@@ -635,7 +667,8 @@ def version_is_latest(project_name, version_id):
     latest_version_query = subset_query.add_field("latestVersion")
     latest_version_query.add_field("id")
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     parsed_data = query.query(con)
     latest_version = (
         parsed_data["project"]["version"]["subset"]["latestVersion"]
@@ -650,7 +683,8 @@ def get_representations(
     version_ids=None,
     names_by_version_ids=None,
     active=None,
-    fields=None
+    fields=None,
+    con=None
 ):
     """Get version entities based on passed filters from server.
 
@@ -729,7 +763,8 @@ def get_representations(
     for attr, filter_value in filters.items():
         query.set_variable_value(attr, filter_value)
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
     parsed_data = query.query(con)
 
     representations = parsed_data.get("project", {}).get("representations", [])
@@ -742,11 +777,14 @@ def get_representations(
     return representations
 
 
-def get_representation_by_id(project_name, representation_id, fields=None):
+def get_representation_by_id(
+    project_name, representation_id, fields=None, con=None
+):
     representations = get_representations(
         project_name,
         representation_ids=[representation_id],
-        fields=fields
+        fields=fields,
+        con=con
     )
     for representation in representations:
         return representation
@@ -754,35 +792,36 @@ def get_representation_by_id(project_name, representation_id, fields=None):
 
 
 def get_representation_by_name(
-    project_name, representation_name, version_id, fields=None
+    project_name, representation_name, version_id, fields=None, con=None
 ):
     representations = get_representations(
         project_name,
         representation_names=[representation_name],
         version_ids=[version_id],
-        fields=fields
+        fields=fields,
+        con=con
     )
     for representation in representations:
         return representation
     return None
 
 
-def get_representation_parents(project_name, representation):
+def get_representation_parents(project_name, representation, con=None):
     if not representation:
         return None
 
     repre_id = representation["_id"]
     parents_by_repre_id = get_representations_parents(
-        project_name, [representation]
+        project_name, [representation], con=con
     )
     return parents_by_repre_id[repre_id]
 
 
-def get_representations_parents(project_name, representation_ids):
+def get_representations_parents(project_name, representation_ids, con=None):
     if not representation_ids:
         return {}
 
-    project = get_project(project_name)
+    project = get_project(project_name, con=con)
     repre_ids = set(representation_ids)
     output = {
         repre_id: (None, None, None, None)
@@ -793,7 +832,8 @@ def get_representations_parents(project_name, representation_ids):
     query.set_variable_value("projectName", project_name)
     query.set_variable_value("representationIds", list(repre_ids))
 
-    con = get_server_api_connection()
+    if con is None:
+        con = get_server_api_connection()
 
     parsed_data = query.query(con)
     for repre in parsed_data["project"]["representations"]:
@@ -806,7 +846,7 @@ def get_representations_parents(project_name, representation_ids):
     return output
 
 
-def get_thumbnail_id_from_source(project_name, src_type, src_id):
+def get_thumbnail_id_from_source(project_name, src_type, src_id, con=None):
     """Receive thumbnail id from source entity.
 
     Args:
@@ -824,13 +864,13 @@ def get_thumbnail_id_from_source(project_name, src_type, src_id):
 
     if src_type == "subset":
         subset = get_subset_by_id(
-            project_name, src_id, fields=["data.thumbnail_id"]
+            project_name, src_id, fields=["data.thumbnail_id"], con=con
         ) or {}
         return subset.get("data", {}).get("thumbnail_id")
 
     if src_type == "folder":
         subset = get_folder_by_id(
-            project_name, src_id, fields=["data.thumbnail_id"]
+            project_name, src_id, fields=["data.thumbnail_id"], con=con
         ) or {}
         return subset.get("data", {}).get("thumbnail_id")
 
