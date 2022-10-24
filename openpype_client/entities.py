@@ -280,10 +280,6 @@ def get_folder_by_name(project_name, folder_name, fields=None, con=None):
     return None
 
 
-def get_archived_assets(*args, **kwargs):
-    raise NotImplementedError("'get_archived_assets' not implemented")
-
-
 def get_folder_ids_with_subsets(project_name, folder_ids=None, con=None):
     if folder_ids is not None:
         folder_ids = set(folder_ids)
