@@ -8,6 +8,11 @@ from .server import (
     delete,
 )
 
+from .settings import (
+    get_project_settings,
+    get_addon_settings,
+)
+
 from .entities import (
     get_projects,
     get_project,
@@ -50,6 +55,9 @@ __all__ = (
     "put",
     "patch",
     "delete",
+
+    "get_project_settings",
+    "get_addon_settings",
 
     "get_projects",
     "get_project",
