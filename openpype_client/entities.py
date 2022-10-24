@@ -152,7 +152,6 @@ def get_folders(
 
         filters["parentFolderIds"] = list(parent_ids)
 
-            
     if not fields:
         fields = DEFAULT_FOLDER_FIELDS
     fields = set(fields)
@@ -226,16 +225,11 @@ def get_tasks(
         query.set_variable_value(attr, filter_value)
 
     con = get_server_api_connection()
-    parsed_data = query.query(con)
-    tasks = parsed_data["project"]["tasks"]
+    for parsed_data in query.continuos_query(con):
+        for task in parsed_data["projects"]["tasks"]:
+            if active is None or active is task["active"]:
+                yield task
 
-    if active is None:
-        return tasks
-    return [
-        task
-        for task in tasks
-        if task["active"] is active
-    ]
 
 
 def get_whole_project(*args, **kwargs):
