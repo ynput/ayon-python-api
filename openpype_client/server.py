@@ -73,7 +73,9 @@ class FolderNotFound(MissingEntityError):
 class RestApiResponse(object):
     """API Response."""
 
-    def __init__(self, status_code, data):
+    def __init__(self, status_code, data=None):
+        if data is None:
+            data = {}
         self.status = status_code
         self.data = data
 
@@ -350,11 +352,12 @@ class ServerAPIBase(object):
             )
         else:
             if response.text == "":
-                data = None
                 response = RestApiResponse(response.status_code)
             else:
                 try:
-                    data = response.json()
+                    response = RestApiResponse(
+                        response.status_code, response.json()
+                    )
                 except JSONDecodeError:
                     response = RestApiResponse(
                         500,
@@ -363,8 +366,7 @@ class ServerAPIBase(object):
                                 response.text)
                         }
                     )
-                else:
-                    response = RestApiResponse(response.status_code, data)
+
         self.log.debug("Response {}".format(str(response)))
         return response
 
