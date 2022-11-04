@@ -197,7 +197,7 @@ class ServerAPIBase(object):
 
     def reset_token(self):
         self._access_token = None
-        self._token_validated = False
+        self._token_is_valid = None
         self.close_session()
 
     def create_session(self):
