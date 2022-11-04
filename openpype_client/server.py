@@ -291,7 +291,7 @@ class ServerAPIBase(object):
             if _detail:
                 details = " {}".format(_detail)
 
-            raise AuthenticationError("Login failed".format(details))
+            raise AuthenticationError("Login failed {}".format(details))
 
         self._access_token = response["token"]
 
