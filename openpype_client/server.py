@@ -266,10 +266,15 @@ class ServerAPIBase(object):
             name=username,
             password=password
         )
-        token = None
-        if response:
-            token = response["token"]
-        self._access_token = token
+        if response.status_code != 200:
+            _detail = response.data.get("detail")
+            details = ""
+            if _detail:
+                details = " {}".format(_detail)
+
+            raise AuthenticationError("Login failed".format(details))
+
+        self._access_token = response["token"]
 
         if not self.has_valid_token:
             raise AuthenticationError("Invalid credentials")
