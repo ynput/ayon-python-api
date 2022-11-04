@@ -645,7 +645,8 @@ class ServerAPIBase(object):
         parsed_data = query.query(self)
 
         data = parsed_data["project"]
-        data["name"] = project_name
+        if data is not None:
+            data["name"] = project_name
         return data
 
     def get_folders(
