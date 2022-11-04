@@ -1,19 +1,18 @@
 from .server import (
     ServerAPIBase,
+)
+
+from .server_api import (
+    ServerAPI,
+
     get_server_api_connection,
+
     get,
     post,
     put,
     patch,
     delete,
-)
 
-from .settings import (
-    get_project_settings,
-    get_addon_settings,
-)
-
-from .entities import (
     get_projects,
     get_project,
 
@@ -46,11 +45,16 @@ from .entities import (
     get_representations_parents,
     get_representation_parents,
     get_thumbnail_id_from_source,
+
+    get_project_settings,
+    get_addon_settings,
 )
 
 
 __all__ = (
     "ServerAPIBase",
+
+    "ServerAPI",
     "get_server_api_connection",
     "get",
     "post",
