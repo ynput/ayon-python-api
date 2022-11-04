@@ -1064,7 +1064,7 @@ class ServerAPIBase(object):
             for version in parsed_data["project"]["versions"]:
                 yield version
 
-    def get_version_by_id(project_name, version_id, fields=None):
+    def get_version_by_id(self, project_name, version_id, fields=None):
         versions = self.get_versions(
             project_name,
             version_ids=[version_id],
