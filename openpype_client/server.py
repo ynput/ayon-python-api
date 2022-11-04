@@ -473,6 +473,20 @@ class ServerAPIBase(object):
 
         return copy.deepcopy(attributes)
 
+    # Anatomy presets
+    def get_project_anatomy_presets(self, add_default=True):
+        result = self.get("anatomy/presets")
+        presets = result.data
+        if add_default:
+            presets.append(self.get_project_anatomy_preset())
+        return presets
+
+    def get_project_anatomy_preset(self, preset_name=None):
+        if preset_name is None:
+            preset_name = "_"
+        result = self.get("anatomy/presets/{}".format(preset_name))
+        return result.data
+
     # Settings getters
     def get_full_project_settings(self, project_name):
         result = self.get("projects/{}/settings".format(project_name))
