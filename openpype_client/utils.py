@@ -4,6 +4,11 @@ except ImportError:
     from urllib.parse import urlparse
 
 import requests
+import uuid
+
+
+def create_entity_id():
+    return uuid.uuid1().hex
 
 
 class UrlError(Exception):
