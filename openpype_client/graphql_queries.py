@@ -184,7 +184,7 @@ def versions_graphql_query(fields):
     project_name_var = query.add_variable("projectName", "String!")
     subset_ids_var = query.add_variable("subsetIds", "[String!]")
     version_ids_var = query.add_variable("versionIds", "[String!]")
-    versions_var = query.add_variable("versions", "[Int]")
+    versions_var = query.add_variable("versions", "[Int!]")
     hero_only_var = query.add_variable("heroOnly", "Boolean")
     latest_only_var = query.add_variable("latestOnly", "Boolean")
     hero_or_latest_only_var = query.add_variable(
@@ -234,7 +234,7 @@ def representations_graphql_query(fields):
     repres_field = project_field.add_field("representations", has_edges=True)
     repres_field.set_filter("ids", repre_ids_var)
     repres_field.set_filter("versionIds", version_ids_var)
-    repres_field.set_filter("representationNames", repre_names_var)
+    repres_field.set_filter("names", repre_names_var)
 
     nested_fields = fields_to_dict(set(fields))
 
