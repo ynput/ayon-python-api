@@ -7,11 +7,13 @@ from http import HTTPStatus
 import requests
 
 from .constants import (
+    DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
     DEFAULT_TASK_FIELDS,
     DEFAULT_SUBSET_FIELDS,
     DEFAULT_VERSION_FIELDS,
     DEFAULT_REPRESENTATION_FIELDS,
+    REPRESENTATION_FILES_FIELDS,
 )
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
@@ -22,7 +24,7 @@ from .graphql_queries import (
     subsets_graphql_query,
     versions_graphql_query,
     representations_graphql_query,
-    reprersentations_parents_qraphql_query,
+    representations_parents_qraphql_query,
 )
 
 from .utils import logout_from_server
@@ -473,6 +475,48 @@ class ServerAPIBase(object):
 
         return copy.deepcopy(attributes)
 
+    def get_all_fields_for_type(self, entity_type):
+        attributes = self.get_attributes_for_type(entity_type)
+        if entity_type == "project":
+            return DEFAULT_PROJECT_FIELDS | {
+                "attrib.{}".format(attr)
+                for attr in attributes
+            }
+
+        if entity_type == "folder":
+            return DEFAULT_FOLDER_FIELDS | {
+                "attrib.{}".format(attr)
+                for attr in attributes
+            }
+
+        if entity_type == "task":
+            return DEFAULT_TASK_FIELDS | {
+                "attrib.{}".format(attr)
+                for attr in attributes
+            }
+
+        if entity_type == "subset":
+            return DEFAULT_SUBSET_FIELDS | {
+                "attrib.{}".format(attr)
+                for attr in attributes
+            }
+
+        if entity_type == "version":
+            return DEFAULT_VERSION_FIELDS | {
+                "attrib.{}".format(attr)
+                for attr in attributes
+            }
+
+        if entity_type == "representation":
+            return (
+                DEFAULT_REPRESENTATION_FIELDS
+                | REPRESENTATION_FILES_FIELDS
+                | {
+                    "attrib.{}".format(attr)
+                    for attr in attributes
+                }
+            )
+
     # Anatomy presets
     def get_project_anatomy_presets(self, add_default=True):
         result = self.get("anatomy/presets")
@@ -633,10 +677,19 @@ class ServerAPIBase(object):
                 if project was not found.
         """
 
+        use_rest = True
         if fields is not None:
-            fields = set(fields)
+            use_rest = False
+            _fields = set()
+            for field in fields:
+                if field.startswith("config"):
+                    use_rest = True
+                    break
+                _fields.add(field)
 
-        if not fields:
+            fields = _fields
+
+        if use_rest:
             return self.get_rest_project(project_name)
 
         query = project_graphql_query(fields)
@@ -728,9 +781,11 @@ class ServerAPIBase(object):
 
             filters["parentFolderIds"] = list(parent_ids)
 
-        if not fields:
-            fields = DEFAULT_FOLDER_FIELDS
-        fields = set(fields)
+        if fields:
+            fields = set(fields)
+        else:
+            fields = self.get_all_fields_for_type("folder")
+
         if active is not None:
             fields.add("active")
 
@@ -785,7 +840,8 @@ class ServerAPIBase(object):
             filters["folderIds"] = list(folder_ids)
 
         if not fields:
-            fields = DEFAULT_TASK_FIELDS
+            fields = self.get_all_fields_for_type("task")
+
         fields = set(fields)
         if active is not None:
             fields.add("active")
@@ -821,7 +877,6 @@ class ServerAPIBase(object):
             return folder
         return None
 
-
     def get_folder_by_path(self, project_name, folder_path, fields=None):
         folders = self.get_folders(
             project_name, folder_paths=[folder_path], fields=fields
@@ -830,7 +885,6 @@ class ServerAPIBase(object):
             return folder
         return None
 
-
     def get_folder_by_name(self, project_name, folder_name, fields=None):
         folders = self.get_folders(
             project_name, folder_names=[folder_name], fields=fields
@@ -838,7 +892,6 @@ class ServerAPIBase(object):
         for folder in folders:
             return folder
         return None
-
 
     def get_folder_ids_with_subsets(self, project_name, folder_ids=None):
         if folder_ids is not None:
@@ -858,7 +911,6 @@ class ServerAPIBase(object):
             folder["id"]
             for folder in folders
         }
-
 
     def get_subsets(
         self,
@@ -905,12 +957,12 @@ class ServerAPIBase(object):
                 return []
 
         # Convert fields and add minimum required fields
-        if fields is None:
-            fields = set(DEFAULT_SUBSET_FIELDS)
-        else:
+        if fields:
             fields = set(fields) | {"id", "active"}
+        else:
+            fields = self.get_all_fields_for_type("subset")
 
-        # Add 'name' and 'folderId' if 'name_by_asset_ids' filter is entered
+        # Add 'name' and 'folderId' if 'names_by_folder_ids' filter is entered
         if names_by_folder_ids:
             fields.add("name")
             fields.add("folderId")
@@ -1031,7 +1083,7 @@ class ServerAPIBase(object):
         """
 
         if not fields:
-            fields = DEFAULT_VERSION_FIELDS
+            fields = self.get_all_fields_for_type("version")
         fields = set(fields)
 
         filters = {
@@ -1241,7 +1293,7 @@ class ServerAPIBase(object):
         """
 
         if not fields:
-            fields = DEFAULT_REPRESENTATION_FIELDS
+            fields = self.get_all_fields_for_type("representation")
         fields = set(fields)
 
         if active is not None:
@@ -1294,6 +1346,12 @@ class ServerAPIBase(object):
         for parsed_data in query.continuous_query(self):
             for repre in parsed_data["project"]["representations"]:
                 if active is None or active is repre["active"]:
+                    if "context" in repre:
+                        orig_context = repre["context"]
+                        context = {}
+                        if orig_context and orig_context != "null":
+                            context = json.loads(orig_context)
+                        repre["context"] = context
                     yield repre
 
     def get_representation_by_id(
@@ -1342,7 +1400,13 @@ class ServerAPIBase(object):
             for repre_id in representation_ids
         }
 
-        query = reprersentations_parents_qraphql_query()
+        version_fields = self.get_all_fields_for_type("version")
+        subset_fields = self.get_all_fields_for_type("subset")
+        folder_fields = self.get_all_fields_for_type("folder")
+
+        query = representations_parents_qraphql_query(
+            version_fields, subset_fields, folder_fields
+        )
         query.set_variable_value("projectName", project_name)
         query.set_variable_value("representationIds", list(repre_ids))
 
@@ -1362,7 +1426,7 @@ class ServerAPIBase(object):
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            src_type (str): Type of source entity ('asset', 'version').
+            src_type (str): Type of source entity ('folder', 'version').
             src_id (Union[str, ObjectId]): Id of source entity.
 
         Returns:
