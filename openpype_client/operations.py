@@ -204,6 +204,8 @@ def new_representation_entity(
     """Create skeleton data of representation entity.
 
     Args:
+        name (str): Representation name considered as unique identifier
+            of representation under version.
         version_id (str): Id of parent version.
         context (Dict[str, Any]): Representation context used to fill template.
         attribs (Dict[str, Any]): Explicitly set attributes of representation.
