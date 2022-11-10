@@ -70,3 +70,18 @@ REPRESENTATION_FILES_FIELDS = {
     "files.path",
     "files.size",
 }
+
+# --- Workfile info ---
+DEFAULT_WORKFILE_INFO_FIELDS = {
+    "active",
+    "createdAt",
+    "createdBy",
+    "id",
+    "name",
+    "path",
+    "projectName",
+    "taskId",
+    "thumbnailId",
+    "updatedAt",
+    "updatedBy",
+}
