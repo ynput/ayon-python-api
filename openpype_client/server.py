@@ -855,6 +855,27 @@ class ServerAPIBase(object):
                 if active is None or active is task["active"]:
                     yield task
 
+    def get_task_by_name(
+        self, project_name, folder_id, task_name, fields=None
+    ):
+        for task in self.get_tasks(
+            project_name,
+            folder_ids=[folder_id],
+            task_names=[task_name],
+            fields=fields
+        ):
+            return task
+        return None
+
+    def get_task_by_id(self, project_name, task_id, fields=None):
+        for task in self.get_tasks(
+            project_name,
+            task_ids=[task_id],
+            fields=fields
+        ):
+            return task
+        return None
+
 
     def get_folder_by_id(self, project_name, folder_id, fields=None):
         """Receive folder data by it's id.
