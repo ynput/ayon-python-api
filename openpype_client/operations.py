@@ -791,7 +791,7 @@ class OperationsSession(object):
                 must be added to operations list after it's parent is added.
 
         Returns:
-            MongoCreateOperation: Object of update operation.
+            CreateOperation: Object of update operation.
         """
 
         operation = CreateOperation(
@@ -877,7 +877,7 @@ def create_project(
         con (ServerAPI): Connection to server with logged user.
 
     Raises:
-        ValueError: When project name already exists in MongoDB.
+        ValueError: When project name already exists.
 
     Returns:
         Dict[str, Any]: Created project entity.
