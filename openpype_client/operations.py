@@ -760,7 +760,7 @@ class OperationsSession(object):
                 results.append(result.data)
 
         for result in results:
-            if result["success"]:
+            if result.get("success"):
                 continue
 
             if "operations" not in result:
