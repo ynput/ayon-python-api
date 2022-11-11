@@ -9,15 +9,13 @@ from abc import ABCMeta, abstractproperty
 import six
 
 from .server_api import get_server_api_connection
-from .utils import create_entity_id
+from .utils import create_entity_id, REMOVED_VALUE
 
 
 PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
 PROJECT_NAME_REGEX = re.compile(
     "^[{}]+$".format(PROJECT_NAME_ALLOWED_SYMBOLS)
 )
-
-REMOVED_VALUE = object()
 
 
 def _create_or_convert_to_id(entity_id=None):
