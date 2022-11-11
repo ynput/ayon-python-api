@@ -69,7 +69,7 @@ def new_folder_entity(
         # This will be ignored
         "parentId": parent_id,
         "data": data,
-        "attribs": attribs,
+        "attrib": attribs,
         "thumbnailId": thumbnail_id
     }
 
@@ -103,7 +103,7 @@ def new_subset_entity(
         "id": _create_or_convert_to_id(entity_id),
         "name": name,
         "family": family,
-        "attribs": attribs,
+        "attrib": attribs,
         "data": data,
         "folderId": _create_or_convert_to_id(folder_id)
     }
@@ -150,7 +150,7 @@ def new_version_entity(
         "id": _create_or_convert_to_id(entity_id),
         "version": int(version),
         "subsetId": _create_or_convert_to_id(subset_id),
-        "attribs": attribs,
+        "attrib": attribs,
         "data": data
     }
 
@@ -193,7 +193,7 @@ def new_hero_version_entity(
         "id": _create_or_convert_to_id(entity_id),
         "version": -abs(int(version)),
         "subsetId": subset_id,
-        "attribs": attribs,
+        "attrib": attribs,
         "data": data
     }
 
