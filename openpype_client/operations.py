@@ -199,7 +199,7 @@ def new_hero_version_entity(
 
 
 def new_representation_entity(
-    name, version_id, context, attribs=None, data=None, entity_id=None
+    name, version_id, attribs=None, data=None, entity_id=None
 ):
     """Create skeleton data of representation entity.
 
@@ -228,9 +228,7 @@ def new_representation_entity(
         "versionId": _create_or_convert_to_id(version_id),
         "name": name,
         "data": data,
-
-        # Imprint shortcut to context for performance reasons.
-        "context": context
+        "attrib": attribs
     }
 
 
