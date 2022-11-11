@@ -573,7 +573,7 @@ class ServerAPIBase(object):
             return response.data
         return None
 
-    def get_rest_projects(self, active=None, library=None):
+    def get_rest_projects(self, active=True, library=None):
         """Receive available project entity data.
 
         User must be logged in.
@@ -593,7 +593,7 @@ class ServerAPIBase(object):
             if project:
                 yield project
 
-    def get_project_names(self, active=None, library=None):
+    def get_project_names(self, active=True, library=None):
         """Receive available project names.
 
         User must be logged in.
@@ -631,7 +631,7 @@ class ServerAPIBase(object):
                 project_names.append(project["name"])
         return project_names
 
-    def get_projects(self, active=None, library=None, fields=None):
+    def get_projects(self, active=True, library=None, fields=None):
         """Get projects.
 
         Args:
@@ -711,7 +711,7 @@ class ServerAPIBase(object):
         folder_paths=None,
         folder_names=None,
         parent_ids=None,
-        active=None,
+        active=True,
         fields=None
     ):
         """Query folders from server.
@@ -807,7 +807,7 @@ class ServerAPIBase(object):
         task_names=None,
         task_types=None,
         folder_ids=None,
-        active=None,
+        active=True,
         fields=None
     ):
         if not project_name:
@@ -864,6 +864,7 @@ class ServerAPIBase(object):
             project_name,
             folder_ids=[folder_id],
             task_names=[task_name],
+            active=None,
             fields=fields
         ):
             return task
@@ -873,6 +874,7 @@ class ServerAPIBase(object):
         for task in self.get_tasks(
             project_name,
             task_ids=[task_id],
+            active=None,
             fields=fields
         ):
             return task
@@ -894,7 +896,10 @@ class ServerAPIBase(object):
         """
 
         folders = self.get_folders(
-            project_name, folder_ids=[folder_id], fields=fields
+            project_name,
+            folder_ids=[folder_id],
+            active=None,
+            fields=fields
         )
         for folder in folders:
             return folder
@@ -902,7 +907,10 @@ class ServerAPIBase(object):
 
     def get_folder_by_path(self, project_name, folder_path, fields=None):
         folders = self.get_folders(
-            project_name, folder_paths=[folder_path], fields=fields
+            project_name,
+            folder_paths=[folder_path],
+            active=None,
+            fields=fields
         )
         for folder in folders:
             return folder
@@ -910,7 +918,10 @@ class ServerAPIBase(object):
 
     def get_folder_by_name(self, project_name, folder_name, fields=None):
         folders = self.get_folders(
-            project_name, folder_names=[folder_name], fields=fields
+            project_name,
+            folder_names=[folder_name],
+            active=None,
+            fields=fields
         )
         for folder in folders:
             return folder
@@ -942,7 +953,7 @@ class ServerAPIBase(object):
         subset_names=None,
         folder_ids=None,
         names_by_folder_ids=None,
-        archived=False,
+        active=True,
         fields=None
     ):
         if not project_name:
@@ -981,9 +992,12 @@ class ServerAPIBase(object):
 
         # Convert fields and add minimum required fields
         if fields:
-            fields = set(fields) | {"id", "active"}
+            fields = set(fields) | {"id"}
         else:
             fields = self.get_all_fields_for_type("subset")
+
+        if active is not None:
+            fields.add("active")
 
         # Add 'name' and 'folderId' if 'names_by_folder_ids' filter is entered
         if names_by_folder_ids:
@@ -1010,6 +1024,12 @@ class ServerAPIBase(object):
         parsed_data = query.query(self)
 
         subsets = parsed_data.get("project", {}).get("subsets", [])
+        if active is not None:
+            subsets = [
+                subset
+                for subset in subsets
+                if subset["active"] is active
+            ]
 
         # Filter subsets by 'names_by_folder_ids'
         if names_by_folder_ids:
@@ -1029,7 +1049,10 @@ class ServerAPIBase(object):
 
     def get_subset_by_id(self, project_name, subset_id, fields=None):
         subsets = self.get_subsets(
-            project_name, subset_ids=[subset_id], fields=fields
+            project_name,
+            subset_ids=[subset_id],
+            active=None,
+            fields=fields
         )
         for subset in subsets:
             return subset
@@ -1042,6 +1065,7 @@ class ServerAPIBase(object):
             project_name,
             subset_names=[subset_name],
             folder_ids=[folder_id],
+            active=None,
             fields=fields
         )
         for subset in subsets:
@@ -1053,7 +1077,8 @@ class ServerAPIBase(object):
             subsets = self.get_subsets(
                 project_name,
                 subset_ids=subset_ids,
-                fields=["data.family"]
+                fields=["data.family"],
+                active=None,
             )
             return {
                 subset["data"]["family"]
@@ -1081,6 +1106,7 @@ class ServerAPIBase(object):
         hero=True,
         standard=True,
         latest=None,
+        active=True,
         fields=None
     ):
         """Get version entities based on passed filters from server.
@@ -1108,6 +1134,12 @@ class ServerAPIBase(object):
         if not fields:
             fields = self.get_all_fields_for_type("version")
         fields = set(fields)
+
+        if active is not None:
+            fields.add("active")
+
+        # Make sure fields have minimum required fields
+        fields |= {"id", "version"}
 
         filters = {
             "projectName": project_name
@@ -1159,6 +1191,7 @@ class ServerAPIBase(object):
             project_name,
             version_ids=[version_id],
             fields=fields,
+            active=None,
             hero=True
         )
         for version in versions:
@@ -1172,6 +1205,7 @@ class ServerAPIBase(object):
             project_name,
             subset_ids=[subset_id],
             versions=[version],
+            active=None,
             fields=fields
         )
         for version in versions:
@@ -1205,6 +1239,7 @@ class ServerAPIBase(object):
         project_name,
         subset_ids=None,
         version_ids=None,
+        active=True,
         fields=None
     ):
         return self.get_versions(
@@ -1213,14 +1248,18 @@ class ServerAPIBase(object):
             subset_ids=subset_ids,
             hero=True,
             standard=False,
+            active=active,
             fields=fields
         )
 
-    def get_last_versions(self, project_name, subset_ids, fields=None):
+    def get_last_versions(
+        self, project_name, subset_ids, active=True, fields=None
+    ):
         versions = self.get_versions(
             project_name,
             subset_ids=subset_ids,
             latest=True,
+            active=active,
             fields=fields
         )
         return {
@@ -1229,12 +1268,13 @@ class ServerAPIBase(object):
         }
 
     def get_last_version_by_subset_id(
-        self, project_name, subset_id, fields=None
+        self, project_name, subset_id, active=True, fields=None
     ):
         versions = self.get_versions(
             project_name,
             subset_ids=[subset_id],
             latest=True,
+            active=active,
             fields=fields
         )
         for version in versions:
@@ -1242,7 +1282,7 @@ class ServerAPIBase(object):
         return None
 
     def get_last_version_by_subset_name(
-        self, project_name, subset_name, folder_id, fields=None
+        self, project_name, subset_name, folder_id, active=True, fields=None
     ):
         if not folder_id:
             return None
@@ -1253,7 +1293,7 @@ class ServerAPIBase(object):
         if not subset:
             return None
         return self.get_last_version_by_subset_id(
-            project_name, subset["id"], fields=fields
+            project_name, subset["id"], active=active, fields=fields
         )
 
     def version_is_latest(self, project_name, version_id):
@@ -1285,7 +1325,7 @@ class ServerAPIBase(object):
         representation_names=None,
         version_ids=None,
         names_by_version_ids=None,
-        active=None,
+        active=True,
         fields=None
     ):
         """Get version entities based on passed filters from server.
@@ -1383,7 +1423,8 @@ class ServerAPIBase(object):
         representations = self.get_representations(
             project_name,
             representation_ids=[representation_id],
-            fields=fields
+            active=None,
+            fields=fields,
         )
         for representation in representations:
             return representation
@@ -1396,7 +1437,8 @@ class ServerAPIBase(object):
             project_name,
             representation_names=[representation_name],
             version_ids=[version_id],
-            fields=fields
+            active=None,
+            fields=fields,
         )
         for representation in representations:
             return representation
