@@ -401,6 +401,19 @@ class FailedOperations(Exception):
     pass
 
 
+def entity_data_json_default(value):
+    if isinstance(value, datetime.datetime):
+        return int(value.timestamp())
+
+    raise TypeError(
+        "Object of type {} is not JSON serializable".format(str(type(value)))
+    )
+
+
+def failed_json_default(value):
+    return "< Failed value {} > {}".format(type(value), str(value))
+
+
 @six.add_metaclass(ABCMeta)
 class AbstractOperation(object):
     """Base operation class.
@@ -748,6 +761,17 @@ class OperationsSession(object):
             for operation in operations:
                 body = operation.to_server_operation()
                 if body is not None:
+                    try:
+                        body = json.loads(
+                            json.dumps(body, default=entity_data_json_default)
+                        )
+                    except:
+                        raise ValueError("Couldn't json parse body: {}".format(
+                            json.dumps(
+                                body, indent=4, default=failed_json_default
+                            )
+                        ))
+
                     body_by_id[operation.id] = body
                     operations_body.append(body)
 
