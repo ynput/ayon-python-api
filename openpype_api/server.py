@@ -1,3 +1,5 @@
+import os
+import re
 import json
 import logging
 import collections
@@ -16,6 +18,7 @@ from .constants import (
     REPRESENTATION_FILES_FIELDS,
     DEFAULT_WORKFILE_INFO_FIELDS,
 )
+from .thumbnails import ThumbnailCache
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
     project_graphql_query,
@@ -97,11 +100,20 @@ class FolderNotFound(MissingEntityError):
 class RestApiResponse(object):
     """API Response."""
 
-    def __init__(self, status_code, data=None):
+    def __init__(self, status_code, data=None, content=None, headers=None):
         if data is None:
             data = {}
         self.status = status_code
         self.data = data
+        self.content = content
+        self.headers = headers or {}
+
+    def __getattr__(self, attr):
+        return getattr(self._response, attr)
+
+    @property
+    def content_type(self):
+        return self.headers.get("Content-Type")
 
     @property
     def detail(self):
@@ -182,6 +194,8 @@ class ServerAPIBase(object):
         # Attributes cache
         self._attributes_schema = None
         self._entity_type_attributes_cache = {}
+
+        self._thumbnail_cache = ThumbnailCache(True)
 
     @property
     def access_token(self):
@@ -331,25 +345,26 @@ class ServerAPIBase(object):
         try:
             response = function(url, **kwargs)
         except ConnectionRefusedError:
-            response = RestApiResponse(
+            new_response = RestApiResponse(
                 500,
                 {"detail": "Unable to connect the server. Connection refused"}
             )
         except requests.exceptions.ConnectionError:
-            response = RestApiResponse(
+            new_response = RestApiResponse(
                 500,
                 {"detail": "Unable to connect the server. Connection error"}
             )
         else:
-            if response.text == "":
-                response = RestApiResponse(response.status_code)
-            else:
+            content_type = response.headers.get("Content-Type")
+            if content_type == "application/json":
                 try:
-                    response = RestApiResponse(
-                        response.status_code, response.json()
+                    new_response = RestApiResponse(
+                        response.status_code,
+                        response.json(),
+                        headers=response.headers,
                     )
                 except JSONDecodeError:
-                    response = RestApiResponse(
+                    new_response = RestApiResponse(
                         500,
                         {
                             "detail": "The response is not a JSON: {}".format(
@@ -357,58 +372,86 @@ class ServerAPIBase(object):
                         }
                     )
 
-        self.log.debug("Response {}".format(str(response)))
-        return response
+            elif content_type in ("image/jpeg", "image/png"):
+                new_response = RestApiResponse(
+                    response.status_code,
+                    headers=response.headers,
+                    content=response.content
+                )
 
-    def post(self, entrypoint, **kwargs):
+            else:
+                new_response = RestApiResponse(
+                    response.status_code,
+                    headers=response.headers,
+                )
+
+        self.log.debug("Response {}".format(str(new_response)))
+        return new_response
+
+    def raw_post(self, entrypoint, **kwargs):
         entrypoint = entrypoint.lstrip("/").rstrip("/")
         self.log.debug("Executing [POST] {}".format(entrypoint))
         url = "{}/{}".format(self._rest_url, entrypoint)
         return self._do_rest_request(
             RequestTypes.post,
             url,
-            json=kwargs
+            **kwargs
         )
 
-    def put(self, entrypoint, **kwargs):
+    def raw_put(self, entrypoint, **kwargs):
         entrypoint = entrypoint.lstrip("/").rstrip("/")
         self.log.debug("Executing [PUT] {}".format(entrypoint))
         url = "{}/{}".format(self._rest_url, entrypoint)
         return self._do_rest_request(
             RequestTypes.put,
             url,
-            json=kwargs
+            **kwargs
         )
 
-    def patch(self, entrypoint, **kwargs):
+    def raw_patch(self, entrypoint, **kwargs):
         entrypoint = entrypoint.lstrip("/").rstrip("/")
         self.log.debug("Executing [PATCH] {}".format(entrypoint))
         url = "{}/{}".format(self._rest_url, entrypoint)
         return self._do_rest_request(
             RequestTypes.patch,
             url,
-            json=kwargs
+            **kwargs
         )
 
-    def get(self, entrypoint, **kwargs):
+    def raw_get(self, entrypoint, **kwargs):
         entrypoint = entrypoint.lstrip("/").rstrip("/")
         self.log.debug("Executing [GET] {}".format(entrypoint))
         url = "{}/{}".format(self._rest_url, entrypoint)
         return self._do_rest_request(
             RequestTypes.get,
             url,
-            params=kwargs
+            **kwargs
         )
 
-    def delete(self, entrypoint, **kwargs):
+    def raw_delete(self, entrypoint, **kwargs):
         entrypoint = entrypoint.lstrip("/").rstrip("/")
         self.log.debug("Executing [DELETE] {}".format(entrypoint))
         url = "{}/{}".format(self._rest_url, entrypoint)
         return self._do_rest_request(
             RequestTypes.delete,
             url,
-            params=kwargs
+            **kwargs
         )
+
+    def post(self, entrypoint, **kwargs):
+        return self.raw_post(entrypoint, json=kwargs)
+
+    def put(self, entrypoint, **kwargs):
+        return self.raw_put(entrypoint, json=kwargs)
+
+    def patch(self, entrypoint, **kwargs):
+        return self.raw_patch(entrypoint, json=kwargs)
+
+    def get(self, entrypoint, **kwargs):
+        return self.raw_get(entrypoint, params=kwargs)
+
+    def delete(self, entrypoint, **kwargs):
+        return self.raw_delete(entrypoint, params=kwargs)
 
     def query_graphql(self, query, variables=None):
         data = {"query": query, "variables": variables or {}}
@@ -1582,6 +1625,139 @@ class ServerAPIBase(object):
             return workfile_info
         return None
 
+    def get_thumbnail(
+        self, project_name, entity_type, entity_id, thumbnail_id=None
+    ):
+        """Get thumbnail from server.
+
+        Permissions of thumbnails are related to entities so thumbnails must be
+        queried per entity. Thus an entity type and entity type is required to
+        be passed.
+
+        If thumbnail id is passed logic can look into locally cached thumbnails
+        before calling server which can enhance loading time. If thumbnail id
+        is not passed the thumbnail is always downloaded even if is available.
+
+        Notes:
+            It is recommended to use one of prepared entity type specific
+                methods 'get_folder_thumbnail', 'get_version_thumbnail' or
+                'get_workfile_thumbnail'.
+            We do recommend pass thumbnail id if you have access to it. Each
+                entity that allows thumbnails has 'thumbnailId' field so it can
+                be queried.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            entity_type (str): Entity type which passed entity id represents.
+            entity_id (str): Entity id for which thumbnail should be returned.
+            thumbnail_id (str): Prepared thumbnail id from entity. Used only
+                to check if thumbnail was already cached.
+
+        Returns:
+            Union[str, None]: Path to downlaoded thumbnail or none if entity
+                does not have any (or if user does not have permissions).
+        """
+
+        # Look for thumbnail into cache and return the path if was found
+        filepath = self._thumbnail_cache.get_thumbnail_filepath(
+            project_name, thumbnail_id
+        )
+        if filepath:
+            return filepath
+
+        if entity_type in (
+            "folder",
+            "version",
+            "workfile",
+        ):
+            entity_type += "s"
+
+        # Receive thumbnail content from server
+        result = self.raw_get("projects/{}/{}/{}/thumbnail".format(
+            project_name,
+            entity_type,
+            entity_id
+        ))
+
+        if result.content_type is None:
+            return None
+
+        # It is expected the response contains thumbnail id otherwise the
+        #   content cannot be cached and filepath returned
+        thumbnail_id = result.headers.get("X-Thumbnail-Id")
+        if thumbnail_id is None:
+            return None
+
+        # Cache thumbnail and return it's path
+        return self._thumbnail_cache.store_thumbnail(
+            project_name,
+            thumbnail_id,
+            result.content,
+            result.content_type
+        )
+
+    def get_folder_thumbnail(
+        self, project_name, folder_id, thumbnail_id=None
+    ):
+        """Prepared method to receive thumbnail for folder entity.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            folder_id (str): Folder id for which thumbnail should be returned.
+            thumbnail_id (str): Prepared thumbnail id from entity. Used only
+                to check if thumbnail was already cached.
+
+        Returns:
+            Union[str, None]: Path to downlaoded thumbnail or none if entity
+                does not have any (or if user does not have permissions).
+        """
+
+        return self.get_thumbnail(
+            project_name, "folder", folder_id, thumbnail_id
+        )
+
+    def get_version_thumbnail(
+        self, project_name, version_id, thumbnail_id=None
+    ):
+        """Prepared method to receive thumbnail for version entity.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            version_id (str): Version id for which thumbnail should be
+                returned.
+            thumbnail_id (str): Prepared thumbnail id from entity. Used only
+                to check if thumbnail was already cached.
+
+        Returns:
+            Union[str, None]: Path to downlaoded thumbnail or none if entity
+                does not have any (or if user does not have permissions).
+        """
+
+        return self.get_thumbnail(
+            project_name, "version", version_id, thumbnail_id
+        )
+
+    def get_workfile_thumbnail(
+        self, project_name, workfile_id, thumbnail_id=None
+    ):
+        """Prepared method to receive thumbnail for workfile entity.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            workfile_id (str): Worfile id for which thumbnail should be
+                returned.
+            thumbnail_id (str): Prepared thumbnail id from entity. Used only
+                to check if thumbnail was already cached.
+
+        Returns:
+            Union[str, None]: Path to downlaoded thumbnail or none if entity
+                does not have any (or if user does not have permissions).
+        """
+
+        return self.get_thumbnail(
+            project_name, "workfile", workfile_id, thumbnail_id
+        )
+
     def create_project(
         self,
         project_name,
@@ -1667,3 +1843,52 @@ class ServerAPIBase(object):
                     project_name, result.data["detail"]
                 )
             )
+
+    def create_thumbnail(self, project_name, src_filepath):
+        """Create new thumbnail on server from passed path.
+
+        Args:
+            project_name (str): Project where the thumbnail will be created
+                and can be used.
+            src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+        Returns:
+            str: Created thumbnail id.
+
+        Todos:
+            Define more specific exceptions for thumbnail creation.
+
+        Raises:
+            ValueError: When thumbnail creation fails (due to many reasons).
+        """
+
+        if not os.path.exists(src_filepath):
+            raise ValueError("Entered filepath does not exist.")
+
+        ext = os.path.splitext(src_filepath)[-1].lower()
+        if ext == ".png":
+            mime_type = "image/png"
+
+        elif ext in (".jpeg", ".jpg"):
+            mime_type = "image/jpeg"
+
+        else:
+            raise ValueError(
+                "Thumbnail source file has unknown extensions {}".format(ext))
+
+        with open(src_filepath, "rb") as stream:
+            content = stream.read()
+
+        response = self.raw_post(
+            "projects/{}/thumbnails".format(project_name),
+            headers={"Content-Type": mime_type},
+            data=content
+        )
+        if response.status_code != 200:
+            _detail = response.data.get("detail")
+            details = ""
+            if _detail:
+                details = " {}".format(_detail)
+            raise ValueError(
+                "Failed to create thumbnail.{}".format(details))
+        return response.data["id"]
