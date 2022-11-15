@@ -1,4 +1,3 @@
-import re
 import copy
 import json
 import collections
@@ -10,12 +9,6 @@ import six
 
 from .server_api import get_server_api_connection
 from .utils import create_entity_id, REMOVED_VALUE
-
-
-PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
-PROJECT_NAME_REGEX = re.compile(
-    "^[{}]+$".format(PROJECT_NAME_ALLOWED_SYMBOLS)
-)
 
 
 def _create_or_convert_to_id(entity_id=None):
@@ -908,49 +901,22 @@ def create_project(
     if con is None:
         con = get_server_api_connection()
 
-    if con.get_project(project_name, fields=["name"]):
-        raise ValueError("Project with name \"{}\" already exists".format(
-            project_name
-        ))
-
-    if not PROJECT_NAME_REGEX.match(project_name):
-        raise ValueError((
-            "Project name \"{}\" contain invalid characters"
-        ).format(project_name))
-
-    preset = con.get_project_anatomy_preset(preset_name)
-
-    result = con.post(
-        "projects",
-        name=project_name,
-        code=project_code,
-        anatomy=preset,
-        library=library_project
+    return con.create_project(
+        project_name,
+        project_code,
+        library_project,
+        preset_name
     )
-    if result.status != 201:
-        details = "Unknown details ({})".format(result.status)
-        if result.data:
-            details = result.data.get("detail") or details
-        raise ValueError("Failed to create project \"{}\": {}".format(
-            project_name, details
-        ))
-
-    return con.get_project(project_name)
 
 
 def delete_project(project_name, con=None):
     if con is None:
         con = get_server_api_connection()
 
-    if not con.get_project(project_name, fields=["name"]):
-        raise ValueError("Project with name \"{}\" was not found".format(
-            project_name
-        ))
+    return con.delete_project(project_name)
 
-    result = con.delete("projects/{}".format(project_name))
-    if result.status_code != 204:
-        raise ValueError(
-            "Failed to delete project \"{}\". {}".format(
-                project_name, result.data["detail"]
-            )
-        )
+
+def create_thumbnail(project_name, src_filepath, con=None):
+    if con is None:
+        con = get_server_api_connection()
+    return con.create_thumbnail(project_name, src_filepath)
