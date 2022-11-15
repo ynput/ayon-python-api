@@ -255,6 +255,51 @@ def get_addon_settings(*args, **kwargs):
     return con.get_addon_settings(*args, **kwargs)
 
 
-def get_thumbnail_id_from_source(*args, **kwargs):
+def create_project(
+    project_name,
+    project_code,
+    library_project=False,
+    preset_name=None
+):
     con = get_server_api_connection()
-    return con.get_thumbnail_id_from_source(*args, **kwargs)
+    return con.create_project(
+        project_name,
+        project_code,
+        library_project,
+        preset_name
+    )
+
+
+def delete_project(project_name):
+    con = get_server_api_connection()
+    return con.delete_project(project_name)
+
+
+def create_thumbnail(project_name, src_filepath):
+    con = get_server_api_connection()
+    return con.create_thumbnail(project_name, src_filepath)
+
+
+def get_thumbnail(project_name, entity_type, entity_id, thumbnail_id=None):
+    con = get_server_api_connection()
+    con.get_thumbnail(project_name, entity_type, entity_id, thumbnail_id)
+
+
+def get_folder_thumbnail(project_name, folder_id, thumbnail_id=None):
+    con = get_server_api_connection()
+    return con.get_folder_thumbnail(project_name, folder_id, thumbnail_id)
+
+
+def get_version_thumbnail(project_name, version_id, thumbnail_id=None):
+    con = get_server_api_connection()
+    return con.get_version_thumbnail(project_name, version_id, thumbnail_id)
+
+
+def get_workfile_thumbnail(project_name, workfile_id, thumbnail_id=None):
+    con = get_server_api_connection()
+    return con.get_workfile_thumbnail(project_name, workfile_id, thumbnail_id)
+
+
+def create_thumbnail(project_name, src_filepath):
+    con = get_server_api_connection()
+    return con.create_thumbnail(project_name, src_filepath)

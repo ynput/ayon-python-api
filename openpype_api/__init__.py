@@ -15,6 +15,8 @@ from .server_api import (
 
     get_projects,
     get_project,
+    create_project,
+    delete_project,
 
     get_folder_by_id,
     get_folder_by_name,
@@ -48,6 +50,12 @@ from .server_api import (
 
     get_project_settings,
     get_addon_settings,
+
+    create_thumbnail,
+    get_thumbnail,
+    get_folder_thumbnail,
+    get_version_thumbnail,
+    get_workfile_thumbnail,
 )
 
 
