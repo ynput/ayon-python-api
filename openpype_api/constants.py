@@ -7,7 +7,6 @@ DEFAULT_PROJECT_FIELDS = {
     "name",
     "code",
     "config",
-    "data",
     "createdAt",
 }
 
