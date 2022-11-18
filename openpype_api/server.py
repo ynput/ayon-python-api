@@ -536,7 +536,7 @@ class ServerAPIBase(object):
 
         return copy.deepcopy(attributes)
 
-    def get_all_fields_for_type(self, entity_type):
+    def get_default_fields_for_type(self, entity_type):
         attributes = self.get_attributes_for_type(entity_type)
         if entity_type == "project":
             return DEFAULT_PROJECT_FIELDS | {
@@ -865,7 +865,7 @@ class ServerAPIBase(object):
         if fields:
             fields = set(fields)
         else:
-            fields = self.get_all_fields_for_type("folder")
+            fields = self.get_default_fields_for_type("folder")
 
         if active is not None:
             fields.add("active")
@@ -927,7 +927,7 @@ class ServerAPIBase(object):
             filters["folderIds"] = list(folder_ids)
 
         if not fields:
-            fields = self.get_all_fields_for_type("task")
+            fields = self.get_default_fields_for_type("task")
 
         fields = set(fields)
         if active is not None:
@@ -1119,7 +1119,7 @@ class ServerAPIBase(object):
         if fields:
             fields = set(fields) | {"id"}
         else:
-            fields = self.get_all_fields_for_type("subset")
+            fields = self.get_default_fields_for_type("subset")
 
         if active is not None:
             fields.add("active")
@@ -1276,7 +1276,7 @@ class ServerAPIBase(object):
         """
 
         if not fields:
-            fields = self.get_all_fields_for_type("version")
+            fields = self.get_default_fields_for_type("version")
         fields = set(fields)
 
         if active is not None:
@@ -1578,7 +1578,7 @@ class ServerAPIBase(object):
         """
 
         if not fields:
-            fields = self.get_all_fields_for_type("representation")
+            fields = self.get_default_fields_for_type("representation")
         fields = set(fields)
 
         if active is not None:
@@ -1702,9 +1702,9 @@ class ServerAPIBase(object):
             for repre_id in representation_ids
         }
 
-        version_fields = self.get_all_fields_for_type("version")
-        subset_fields = self.get_all_fields_for_type("subset")
-        folder_fields = self.get_all_fields_for_type("folder")
+        version_fields = self.get_default_fields_for_type("version")
+        subset_fields = self.get_default_fields_for_type("subset")
+        folder_fields = self.get_default_fields_for_type("folder")
 
         query = representations_parents_qraphql_query(
             version_fields, subset_fields, folder_fields
