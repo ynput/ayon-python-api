@@ -14,11 +14,11 @@ DEFAULT_PROJECT_FIELDS = {
 DEFAULT_FOLDER_FIELDS = {
     "id",
     "name",
+    "folderType",
     "path",
     "parentId",
     "active",
-    "parents",
-    "thumbnailId"
+    "thumbnailId",
 }
 
 # --- Tasks ---
@@ -26,6 +26,8 @@ DEFAULT_TASK_FIELDS = {
     "id",
     "name",
     "taskType",
+    "folderId",
+    "active",
     "assignees",
 }
 
@@ -33,9 +35,9 @@ DEFAULT_TASK_FIELDS = {
 DEFAULT_SUBSET_FIELDS = {
     "id",
     "name",
+    "folderId",
     "active",
     "family",
-    "folderId",
 }
 
 # --- Versions ---
@@ -43,9 +45,9 @@ DEFAULT_VERSION_FIELDS = {
     "id",
     "name",
     "version",
-    "active",
     "subsetId",
     "taskId",
+    "active",
     "author",
     "thumbnailId",
     "createdAt",
