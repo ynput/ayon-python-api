@@ -46,7 +46,6 @@ from .server_api import (
     get_representations,
     get_representations_parents,
     get_representation_parents,
-    get_thumbnail_id_from_source,
 
     get_project_settings,
     get_addon_settings,
