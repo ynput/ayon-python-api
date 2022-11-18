@@ -156,6 +156,17 @@ class GraphQlResponse:
         return "<{}>".format(self.__class__.__name__)
 
 
+def fill_own_attribs(entity):
+    attrib = entity.get("attrib")
+    if attrib is None:
+        return
+
+    attributes = set(entity["ownAttrib"])
+    for key in tuple(entity["attrib"].keys()):
+        if key not in attributes:
+            attrib[key] = None
+
+
 class ServerAPIBase(object):
     """Base handler of connection to server.
 
@@ -679,7 +690,9 @@ class ServerAPIBase(object):
                 project_names.append(project["name"])
         return project_names
 
-    def get_projects(self, active=True, library=None, fields=None):
+    def get_projects(
+        self, active=True, library=None, fields=None, own_attributes=False
+    ):
         """Get projects.
 
         Args:
@@ -689,6 +702,8 @@ class ServerAPIBase(object):
                 disabled when 'None' is passed.
             fields (Union[Iterable[str], None]): fields to be queried
                 for project.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
 
         Returns:
             List[Dict[str, Any]]: List of queried projects.
@@ -699,6 +714,8 @@ class ServerAPIBase(object):
         else:
             use_rest = False
             fields = set(fields)
+            if own_attributes:
+                fields.add("ownAttrib")
             for field in fields:
                 if field.startswith("config"):
                     use_rest = True
@@ -706,21 +723,27 @@ class ServerAPIBase(object):
 
         if use_rest:
             for project in self.get_rest_projects(active, library):
+                if own_attributes:
+                    fill_own_attribs(project)
                 yield project
 
         else:
             query = projects_graphql_query(fields)
             for parsed_data in query.continuous_query(self):
                 for project in parsed_data["projects"]:
+                    if own_attributes:
+                        fill_own_attribs(project)
                     yield project
 
-    def get_project(self, project_name, fields=None):
+    def get_project(self, project_name, fields=None, own_attributes=False):
         """Get project.
 
         Args:
             project_name (str): Name of project.
             fields (Union[Iterable[str], None]): fields to be queried
                 for project.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
 
         Returns:
             Union[Dict[str, Any], None]: Project entity data or None
@@ -740,17 +763,24 @@ class ServerAPIBase(object):
             fields = _fields
 
         if use_rest:
-            return self.get_rest_project(project_name)
+            project = self.get_rest_project(project_name)
+            if own_attributes:
+                fill_own_attribs(project)
+            return project
 
+        if own_attributes:
+            field.add("ownAttrib")
         query = project_graphql_query(fields)
         query.set_variable_value("projectName", project_name)
 
         parsed_data = query.query(self)
 
-        data = parsed_data["project"]
-        if data is not None:
-            data["name"] = project_name
-        return data
+        project = parsed_data["project"]
+        if project is not None:
+            project["name"] = project_name
+            if own_attributes:
+                fill_own_attribs(project)
+        return project
 
     def get_folders(
         self,
@@ -760,7 +790,8 @@ class ServerAPIBase(object):
         folder_names=None,
         parent_ids=None,
         active=True,
-        fields=None
+        fields=None,
+        own_attributes=False
     ):
         """Query folders from server.
 
@@ -839,6 +870,9 @@ class ServerAPIBase(object):
         if active is not None:
             fields.add("active")
 
+        if own_attributes:
+            fields.add("ownAttrib")
+
         query = folders_graphql_query(fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
@@ -846,6 +880,8 @@ class ServerAPIBase(object):
         for parsed_data in query.continuous_query(self):
             for folder in parsed_data["project"]["folders"]:
                 if active is None or active is folder["active"]:
+                    if own_attributes:
+                        fill_own_attribs(folder)
                     yield folder
 
     def get_tasks(
@@ -856,7 +892,8 @@ class ServerAPIBase(object):
         task_types=None,
         folder_ids=None,
         active=True,
-        fields=None
+        fields=None,
+        own_attributes=False
     ):
         if not project_name:
             return []
@@ -896,6 +933,9 @@ class ServerAPIBase(object):
         if active is not None:
             fields.add("active")
 
+        if own_attributes:
+            fields.add("ownAttrib")
+
         query = tasks_graphql_query(fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
@@ -903,33 +943,54 @@ class ServerAPIBase(object):
         for parsed_data in query.continuous_query(self):
             for task in parsed_data["project"]["tasks"]:
                 if active is None or active is task["active"]:
+                    if own_attributes:
+                        fill_own_attribs(task)
                     yield task
 
     def get_task_by_name(
-        self, project_name, folder_id, task_name, fields=None
+        self,
+        project_name,
+        folder_id,
+        task_name,
+        fields=None,
+        own_attributes=False
     ):
         for task in self.get_tasks(
             project_name,
             folder_ids=[folder_id],
             task_names=[task_name],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         ):
             return task
         return None
 
-    def get_task_by_id(self, project_name, task_id, fields=None):
+    def get_task_by_id(
+        self,
+        project_name,
+        task_id,
+        fields=None,
+        own_attributes=False
+    ):
         for task in self.get_tasks(
             project_name,
             task_ids=[task_id],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         ):
             return task
         return None
 
 
-    def get_folder_by_id(self, project_name, folder_id, fields=None):
+    def get_folder_by_id(
+        self,
+        project_name,
+        folder_id,
+        fields=None,
+        own_attributes=False
+    ):
         """Receive folder data by it's id.
 
         Args:
@@ -947,29 +1008,44 @@ class ServerAPIBase(object):
             project_name,
             folder_ids=[folder_id],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for folder in folders:
             return folder
         return None
 
-    def get_folder_by_path(self, project_name, folder_path, fields=None):
+    def get_folder_by_path(
+        self,
+        project_name,
+        folder_path,
+        fields=None,
+        own_attributes=False
+    ):
         folders = self.get_folders(
             project_name,
             folder_paths=[folder_path],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for folder in folders:
             return folder
         return None
 
-    def get_folder_by_name(self, project_name, folder_name, fields=None):
+    def get_folder_by_name(
+        self,
+        project_name,
+        folder_name,
+        fields=None,
+        own_attributes=False
+    ):
         folders = self.get_folders(
             project_name,
             folder_names=[folder_name],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for folder in folders:
             return folder
@@ -1002,7 +1078,8 @@ class ServerAPIBase(object):
         folder_ids=None,
         names_by_folder_ids=None,
         active=True,
-        fields=None
+        fields=None,
+        own_attributes=False
     ):
         if not project_name:
             return []
@@ -1047,6 +1124,9 @@ class ServerAPIBase(object):
         if active is not None:
             fields.add("active")
 
+        if own_attributes:
+            fields.add("ownAttrib")
+
         # Add 'name' and 'folderId' if 'names_by_folder_ids' filter is entered
         if names_by_folder_ids:
             fields.add("name")
@@ -1072,12 +1152,14 @@ class ServerAPIBase(object):
         parsed_data = query.query(self)
 
         subsets = parsed_data.get("project", {}).get("subsets", [])
-        if active is not None:
-            subsets = [
-                subset
-                for subset in subsets
-                if subset["active"] is active
-            ]
+        if active is not None or own_attributes:
+            _subsets = []
+            for subset in subsets:
+                if active is None or subset["active"] is active:
+                    if own_attributes:
+                        fill_own_attribs(subset)
+                    _subsets.append(subset)
+            subsets = _subsets
 
         # Filter subsets by 'names_by_folder_ids'
         if names_by_folder_ids:
@@ -1095,26 +1177,39 @@ class ServerAPIBase(object):
 
         return list(subsets)
 
-    def get_subset_by_id(self, project_name, subset_id, fields=None):
+    def get_subset_by_id(
+        self,
+        project_name,
+        subset_id,
+        fields=None,
+        own_attributes=False
+    ):
         subsets = self.get_subsets(
             project_name,
             subset_ids=[subset_id],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for subset in subsets:
             return subset
         return None
 
     def get_subset_by_name(
-        self, project_name, subset_name, folder_id, fields=None
+        self,
+        project_name,
+        subset_name,
+        folder_id,
+        fields=None,
+        own_attributes=False
     ):
         subsets = self.get_subsets(
             project_name,
             subset_names=[subset_name],
             folder_ids=[folder_id],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for subset in subsets:
             return subset
@@ -1155,7 +1250,8 @@ class ServerAPIBase(object):
         standard=True,
         latest=None,
         active=True,
-        fields=None
+        fields=None,
+        own_attributes=False
     ):
         """Get version entities based on passed filters from server.
 
@@ -1188,6 +1284,8 @@ class ServerAPIBase(object):
 
         # Make sure fields have minimum required fields
         fields |= {"id", "version"}
+        if own_attributes:
+            fields.add("ownAttrib")
 
         filters = {
             "projectName": project_name
@@ -1255,51 +1353,79 @@ class ServerAPIBase(object):
                     if not hero and version["version"] < 0:
                         continue
 
+                    if own_attributes:
+                        fill_own_attribs(version)
+
                     yield version
 
-    def get_version_by_id(self, project_name, version_id, fields=None):
+    def get_version_by_id(
+        self,
+        project_name,
+        version_id,
+        fields=None,
+        own_attributes=False
+    ):
         versions = self.get_versions(
             project_name,
             version_ids=[version_id],
-            fields=fields,
             active=None,
-            hero=True
+            hero=True,
+            fields=fields,
+            own_attributes=own_attributes
         )
         for version in versions:
             return version
         return None
 
     def get_version_by_name(
-        self, project_name, version, subset_id, fields=None
+        self,
+        project_name,
+        version,
+        subset_id,
+        fields=None,
+        own_attributes=False
     ):
         versions = self.get_versions(
             project_name,
             subset_ids=[subset_id],
             versions=[version],
             active=None,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for version in versions:
             return version
         return None
 
-    def get_hero_version_by_id(self, project_name, version_id, fields=None):
+    def get_hero_version_by_id(
+        self,
+        project_name,
+        version_id,
+        fields=None,
+        own_attributes=False
+    ):
         versions = self.get_hero_versions(
             project_name,
             version_ids=[version_id],
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for version in versions:
             return version
         return None
 
     def get_hero_version_by_subset_id(
-        self, project_name, subset_id, fields=None
+        self,
+        project_name,
+        subset_id,
+        fields=None,
+        own_attributes=False
     ):
         versions = self.get_hero_versions(
             project_name,
             subset_ids=[subset_id],
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for version in versions:
             return version
@@ -1311,7 +1437,8 @@ class ServerAPIBase(object):
         subset_ids=None,
         version_ids=None,
         active=True,
-        fields=None
+        fields=None,
+        own_attributes=False
     ):
         return self.get_versions(
             project_name,
@@ -1320,18 +1447,25 @@ class ServerAPIBase(object):
             hero=True,
             standard=False,
             active=active,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
 
     def get_last_versions(
-        self, project_name, subset_ids, active=True, fields=None
+        self,
+        project_name,
+        subset_ids,
+        active=True,
+        fields=None,
+        own_attributes=False
     ):
         versions = self.get_versions(
             project_name,
             subset_ids=subset_ids,
             latest=True,
             active=active,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         return {
             version["parent"]: version
@@ -1339,21 +1473,33 @@ class ServerAPIBase(object):
         }
 
     def get_last_version_by_subset_id(
-        self, project_name, subset_id, active=True, fields=None
+        self,
+        project_name,
+        subset_id,
+        active=True,
+        fields=None,
+        own_attributes=False
     ):
         versions = self.get_versions(
             project_name,
             subset_ids=[subset_id],
             latest=True,
             active=active,
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         )
         for version in versions:
             return version
         return None
 
     def get_last_version_by_subset_name(
-        self, project_name, subset_name, folder_id, active=True, fields=None
+        self,
+        project_name,
+        subset_name,
+        folder_id,
+        active=True,
+        fields=None,
+        own_attributes=False
     ):
         if not folder_id:
             return None
@@ -1364,7 +1510,11 @@ class ServerAPIBase(object):
         if not subset:
             return None
         return self.get_last_version_by_subset_id(
-            project_name, subset["id"], active=active, fields=fields
+            project_name,
+            subset["id"],
+            active=active,
+            fields=fields,
+            own_attributes=own_attributes
         )
 
     def version_is_latest(self, project_name, version_id):
@@ -1397,7 +1547,8 @@ class ServerAPIBase(object):
         version_ids=None,
         names_by_version_ids=None,
         active=True,
-        fields=None
+        fields=None,
+        own_attributes=False
     ):
         """Get version entities based on passed filters from server.
 
@@ -1432,6 +1583,9 @@ class ServerAPIBase(object):
 
         if active is not None:
             fields.add("active")
+
+        if own_attributes:
+            fields.add("ownAttrib")
 
         filters = {
             "projectName": project_name
@@ -1486,10 +1640,17 @@ class ServerAPIBase(object):
                         if orig_context and orig_context != "null":
                             context = json.loads(orig_context)
                         repre["context"] = context
+
+                    if own_attributes:
+                        fill_own_attribs(repre)
                     yield repre
 
     def get_representation_by_id(
-        self, project_name, representation_id, fields=None
+        self,
+        project_name,
+        representation_id,
+        fields=None,
+        own_attributes=False
     ):
         representations = self.get_representations(
             project_name,
@@ -1502,7 +1663,12 @@ class ServerAPIBase(object):
         return None
 
     def get_representation_by_name(
-        self, project_name, representation_name, version_id, fields=None
+        self,
+        project_name,
+        representation_name,
+        version_id,
+        fields=None,
+        own_attributes=False
     ):
         representations = self.get_representations(
             project_name,
@@ -1562,7 +1728,8 @@ class ServerAPIBase(object):
         workfile_ids=None,
         task_ids=None,
         paths=None,
-        fields=None
+        fields=None,
+        own_attributes=False
     ):
         filters = {}
         if task_ids is not None:
@@ -1586,6 +1753,8 @@ class ServerAPIBase(object):
         if not fields:
             fields = DEFAULT_WORKFILE_INFO_FIELDS
         fields = set(fields)
+        if own_attributes:
+            fields.add("ownAttrib")
 
         query = workfiles_info_graphql_query()
 
@@ -1594,10 +1763,12 @@ class ServerAPIBase(object):
 
         for parsed_data in query.continuous_query(self):
             for workfile_info in parsed_data["project"]["workfiles"]:
+                if own_attributes:
+                    fill_own_attribs(workfile_info)
                 yield workfile_info
 
     def get_workfile_info(
-        self, project_name, task_id, path, fields=None
+        self, project_name, task_id, path, fields=None, own_attributes=False
     ):
         if not task_id or not path:
             return None
@@ -1606,13 +1777,14 @@ class ServerAPIBase(object):
             project_name,
             task_ids=[task_id],
             paths=[path],
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         ):
             return workfile_info
         return None
 
     def get_workfile_info_by_id(
-        self, project_name, workfile_id, fields=None
+        self, project_name, workfile_id, fields=None, own_attributes=False
     ):
         if not workfile_id:
             return None
@@ -1620,7 +1792,8 @@ class ServerAPIBase(object):
         for workfile_info in self.get_workfiles_info(
             project_name,
             workfile_ids=[workfile_id],
-            fields=fields
+            fields=fields,
+            own_attributes=own_attributes
         ):
             return workfile_info
         return None
@@ -1769,8 +1942,7 @@ class ServerAPIBase(object):
 
         This project creation function is not validating project entity on
         creation. It is because project entity is created blindly with only
-        minimum required information about project which is it's name, code, type
-        and schema.
+        minimum required information about project which is it's name, code.
 
         Entered project name must be unique and project must not exist yet.
 
