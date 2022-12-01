@@ -1,16 +1,30 @@
+import datetime
+import uuid
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
 
 import requests
-import uuid
 
 REMOVED_VALUE = object()
 
 
 def create_entity_id():
     return uuid.uuid1().hex
+
+
+def entity_data_json_default(value):
+    if isinstance(value, datetime.datetime):
+        return int(value.timestamp())
+
+    raise TypeError(
+        "Object of type {} is not JSON serializable".format(str(type(value)))
+    )
+
+
+def failed_json_default(value):
+    return "< Failed value {} > {}".format(type(value), str(value))
 
 
 def prepare_attribute_changes(old_entity, new_entity, replace=False):

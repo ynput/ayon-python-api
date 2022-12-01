@@ -4,6 +4,8 @@ import json
 import logging
 import collections
 import copy
+import datetime
+import uuid
 from http import HTTPStatus
 
 import requests
@@ -31,8 +33,15 @@ from .graphql_queries import (
     representations_parents_qraphql_query,
     workfiles_info_graphql_query,
 )
-
-from .utils import logout_from_server
+from .exceptions import (
+    FailedOperations,
+)
+from .utils import (
+    logout_from_server,
+    create_entity_id,
+    entity_data_json_default,
+    failed_json_default
+)
 
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 # This should be collected from server schema
