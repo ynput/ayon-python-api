@@ -521,7 +521,10 @@ class ServerAPIBase(object):
         server_schema = self.get_server_schema()
         return server_schema["components"]["schemas"]
 
-    def get_attributes_schema(self):
+    def get_attributes_schema(self, use_cache=True):
+        if not use_cache:
+            self.reset_attributes_schema()
+
         if self._attributes_schema is None:
             result = self.get("attributes")
             if result.status_code != 200:
