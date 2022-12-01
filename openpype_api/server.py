@@ -467,6 +467,12 @@ class ServerAPIBase(object):
     def delete(self, entrypoint, **kwargs):
         return self.raw_delete(entrypoint, params=kwargs)
 
+    def trigger_server_restart(self):
+        result = self.post("system/restart")
+        if result.status_code != 204:
+            # TODO add better exception
+            raise ValueError("Failed to restart server")
+
     def query_graphql(self, query, variables=None):
         data = {"query": query, "variables": variables or {}}
         response = self._do_rest_request(
