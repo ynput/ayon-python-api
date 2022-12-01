@@ -1,5 +1,4 @@
 import copy
-import json
 import collections
 import uuid
 import datetime
@@ -9,7 +8,7 @@ import six
 
 from .server_api import get_server_api_connection
 from .utils import create_entity_id, REMOVED_VALUE
-from .exceptions import FailedOperations
+
 
 def _create_or_convert_to_id(entity_id=None):
     if entity_id is None:
