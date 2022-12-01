@@ -160,14 +160,19 @@ class GraphQlResponse:
 
 
 def fill_own_attribs(entity):
-    attrib = entity.get("attrib")
-    if attrib is None:
+    if not entity or not entity.get("attrib"):
         return
 
     attributes = set(entity["ownAttrib"])
-    for key in tuple(entity["attrib"].keys()):
+
+    own_attrib = {}
+    entity["ownAttrib"] = own_attrib
+
+    for key, value in entity["attrib"].items():
         if key not in attributes:
-            attrib[key] = None
+            own_attrib[key] = None
+        else:
+            own_attrib[key] = copy.deepcopy(value)
 
 
 class ServerAPIBase(object):
