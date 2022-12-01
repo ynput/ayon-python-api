@@ -372,6 +372,7 @@ class ServerAPIBase(object):
 
         try:
             response = function(url, **kwargs)
+
         except ConnectionRefusedError:
             new_response = RestApiResponse(
                 500,
@@ -546,6 +547,52 @@ class ServerAPIBase(object):
     def reset_attributes_schema(self):
         self._attributes_schema = None
         self._entity_type_attributes_cache = {}
+
+    def set_attribute_config(
+        self, attribute_name, data, scope, position=None, builtin=False
+    ):
+        if position is None:
+            attributes = self.get("attributes").data["attributes"]
+            origin_attr = next(
+                (
+                    attr for attr in attributes
+                    if attr["name"] == attribute_name
+                ),
+                None
+            )
+            if origin_attr:
+                position = origin_attr["position"]
+            else:
+                position = len(attributes)
+
+        response = self.put(
+            "attributes/{}".format(attribute_name),
+            data=data,
+            scope=scope,
+            position=position,
+            builtin=builtin
+        )
+        if response.status_code != 204:
+            # TODO raise different exception
+            raise ValueError(
+                "Attribute \"{}\" was not created/updated. {}".format(
+                    attribute_name, response.detail
+                )
+            )
+
+        self.reset_attributes_schema()
+
+    def remove_attribute_config(self, attribute_name):
+        response = self.delete("attributes/{}".format(attribute_name))
+        if response.status_code != 204:
+            # TODO raise different exception
+            raise ValueError(
+                "Attribute \"{}\" was not created/updated. {}".format(
+                    attribute_name, response.detail
+                )
+            )
+
+        self.reset_attributes_schema()
 
     def get_attributes_for_type(self, entity_type):
         attributes = self._entity_type_attributes_cache.get(entity_type)
