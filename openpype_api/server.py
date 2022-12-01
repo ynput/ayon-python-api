@@ -123,6 +123,9 @@ class RestApiResponse(object):
     def status_code(self):
         return self.status
 
+    def __contains__(self, key):
+        return key in self.data
+
     def __repr__(self):
         return "<{}: {} ({})>".format(
             self.__class__.__name__, self.status, self.detail
