@@ -303,3 +303,8 @@ def get_workfile_thumbnail(project_name, workfile_id, thumbnail_id=None):
 def create_thumbnail(project_name, src_filepath):
     con = get_server_api_connection()
     return con.create_thumbnail(project_name, src_filepath)
+
+
+def get_default_fields_for_type(entity_type):
+    con = get_server_api_connection()
+    return con.get_default_fields_for_type(entity_type)
