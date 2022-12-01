@@ -2170,3 +2170,64 @@ class ServerAPIBase(object):
             raise ValueError(
                 "Failed to create thumbnail.{}".format(details))
         return response.data["id"]
+
+    def send_batch_operations(self, project_name, operations, can_fail=False):
+        if not operations:
+            return
+
+        body_by_id = {}
+        for operation in operations:
+            if not operation:
+                continue
+            op_id = operation.get("id")
+            if not op_id:
+                op_id = create_entity_id()
+                operation["id"] = op_id
+            body_by_id[op_id] = operation
+
+        operations_body = []
+        for operation in operations:
+            if not operation:
+                continue
+
+            try:
+                body = json.loads(
+                    json.dumps(operation, default=entity_data_json_default)
+                )
+            except:
+                raise ValueError("Couldn't json parse body: {}".format(
+                    json.dumps(
+                        operation, indent=4, default=failed_json_default
+                    )
+                ))
+
+            body_by_id[operation["id"]] = body
+            operations_body.append(body)
+
+        if not operations_body:
+            return
+
+        result = self.post(
+            "projects/{}/operations".format(project_name),
+            operations=operations_body,
+            canFail=can_fail
+        )
+
+        if result.get("success"):
+            return
+
+        if "operations" not in result:
+            raise FailedOperations(
+                "Operation failed. Content: {}".format(str(result))
+            )
+
+        for op_result in result["operations"]:
+            if not op_result["success"]:
+                operation_id = op_result["id"]
+                raise FailedOperations((
+                    "Operation \"{}\" failed with data:\n{}\nError: {}."
+                ).format(
+                    operation_id,
+                    json.dumps(body_by_id[operation_id], indent=4),
+                    op_result["error"],
+                ))

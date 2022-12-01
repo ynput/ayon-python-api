@@ -741,54 +741,16 @@ class OperationsSession(object):
         for operation in operations:
             operations_by_project[operation.project_name].append(operation)
 
-        body_by_id = {}
-        results = []
         for project_name, operations in operations_by_project.items():
             operations_body = []
             for operation in operations:
                 body = operation.to_server_operation()
                 if body is not None:
-                    try:
-                        body = json.loads(
-                            json.dumps(body, default=entity_data_json_default)
-                        )
-                    except:
-                        raise ValueError("Couldn't json parse body: {}".format(
-                            json.dumps(
-                                body, indent=4, default=failed_json_default
-                            )
-                        ))
-
-                    body_by_id[operation.id] = body
                     operations_body.append(body)
 
-            if operations_body:
-                result = self._con.post(
-                    "projects/{}/operations".format(project_name),
-                    operations=operations_body,
-                    canFail=False
-                )
-                results.append(result.data)
-
-        for result in results:
-            if result.get("success"):
-                continue
-
-            if "operations" not in result:
-                raise FailedOperations(
-                    "Operation failed. Content: {}".format(str(result))
-                )
-
-            for op_result in result["operations"]:
-                if not op_result["success"]:
-                    operation_id = op_result["id"]
-                    raise FailedOperations((
-                        "Operation \"{}\" failed with data:\n{}\nError: {}."
-                    ).format(
-                        operation_id,
-                        json.dumps(body_by_id[operation_id], indent=4),
-                        op_result["error"],
-                    ))
+            self._con.send_batch_operations(
+                project_name, operations_body, can_fail=False
+            )
 
     def create_entity(self, project_name, entity_type, data, nested_id=None):
         """Fast access to 'CreateOperation'.
