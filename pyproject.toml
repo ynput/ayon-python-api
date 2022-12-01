@@ -5,7 +5,6 @@ description = "Python api for OpenPype v4 server"
 authors = ["OpenPype Team <info@openpype.io>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
 requests = "^2.28.1"
 six = "^1.15"
 
