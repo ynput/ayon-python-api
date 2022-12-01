@@ -807,7 +807,7 @@ class ServerAPIBase(object):
             use_rest = False
             _fields = set()
             for field in fields:
-                if field.startswith("config"):
+                if field.startswith("config") or field == "data":
                     use_rest = True
                     break
                 _fields.add(field)
@@ -919,10 +919,15 @@ class ServerAPIBase(object):
         else:
             fields = self.get_default_fields_for_type("folder")
 
+        use_rest = False
+        if "data" in fields:
+            use_rest = True
+            fields = {"id"}
+
         if active is not None:
             fields.add("active")
 
-        if own_attributes:
+        if own_attributes and not use_rest:
             fields.add("ownAttrib")
 
         query = folders_graphql_query(fields)
@@ -931,10 +936,15 @@ class ServerAPIBase(object):
 
         for parsed_data in query.continuous_query(self):
             for folder in parsed_data["project"]["folders"]:
-                if active is None or active is folder["active"]:
-                    if own_attributes:
-                        fill_own_attribs(folder)
-                    yield folder
+                if active is not None and active is not folder["active"]:
+                    continue
+
+                if use_rest:
+                    folder = self.get_rest_folder(project_name, folder["id"])
+
+                if own_attributes:
+                    fill_own_attribs(folder)
+                yield folder
 
     def get_tasks(
         self,
@@ -982,6 +992,12 @@ class ServerAPIBase(object):
             fields = self.get_default_fields_for_type("task")
 
         fields = set(fields)
+
+        use_rest = False
+        if "data" in fields:
+            use_rest = True
+            fields = {"id"}
+
         if active is not None:
             fields.add("active")
 
@@ -994,10 +1010,15 @@ class ServerAPIBase(object):
 
         for parsed_data in query.continuous_query(self):
             for task in parsed_data["project"]["tasks"]:
-                if active is None or active is task["active"]:
-                    if own_attributes:
-                        fill_own_attribs(task)
-                    yield task
+                if active is not None and active is not task["active"]:
+                    continue
+
+                if use_rest:
+                    task = self.get_rest_task(project_name, task["id"])
+
+                if own_attributes:
+                    fill_own_attribs(task)
+                yield task
 
     def get_task_by_name(
         self,
@@ -1173,6 +1194,11 @@ class ServerAPIBase(object):
         else:
             fields = self.get_default_fields_for_type("subset")
 
+        use_rest = False
+        if "data" in fields:
+            use_rest = True
+            fields = {"id"}
+
         if active is not None:
             fields.add("active")
 
@@ -1207,10 +1233,15 @@ class ServerAPIBase(object):
         if active is not None or own_attributes:
             _subsets = []
             for subset in subsets:
-                if active is None or subset["active"] is active:
-                    if own_attributes:
-                        fill_own_attribs(subset)
-                    _subsets.append(subset)
+                if active is not None and subset["active"] is not active:
+                    continue
+
+                if use_rest:
+                    subset = self.get_rest_subset(project_name, subset["id"])
+
+                if own_attributes:
+                    fill_own_attribs(subset)
+                _subsets.append(subset)
             subsets = _subsets
 
         # Filter subsets by 'names_by_folder_ids'
@@ -1336,6 +1367,12 @@ class ServerAPIBase(object):
 
         # Make sure fields have minimum required fields
         fields |= {"id", "version"}
+
+        use_rest = False
+        if "data" in fields:
+            use_rest = True
+            fields = {"id"}
+
         if own_attributes:
             fields.add("ownAttrib")
 
@@ -1404,6 +1441,11 @@ class ServerAPIBase(object):
 
                     if not hero and version["version"] < 0:
                         continue
+
+                    if use_rest:
+                        version = self.get_rest_version(
+                            project_name, version["id"]
+                        )
 
                     if own_attributes:
                         fill_own_attribs(version)
@@ -1633,6 +1675,11 @@ class ServerAPIBase(object):
             fields = self.get_default_fields_for_type("representation")
         fields = set(fields)
 
+        use_rest = False
+        if "data" in fields:
+            use_rest = True
+            fields = {"id"}
+
         if active is not None:
             fields.add("active")
 
@@ -1685,17 +1732,24 @@ class ServerAPIBase(object):
 
         for parsed_data in query.continuous_query(self):
             for repre in parsed_data["project"]["representations"]:
-                if active is None or active is repre["active"]:
-                    if "context" in repre:
-                        orig_context = repre["context"]
-                        context = {}
-                        if orig_context and orig_context != "null":
-                            context = json.loads(orig_context)
-                        repre["context"] = context
+                if active is not None and active is not repre["active"]:
+                    continue
 
-                    if own_attributes:
-                        fill_own_attribs(repre)
-                    yield repre
+                if use_rest:
+                    repre = self.get_rest_representation(
+                        project_name, repre["id"]
+                    )
+
+                if "context" in repre:
+                    orig_context = repre["context"]
+                    context = {}
+                    if orig_context and orig_context != "null":
+                        context = json.loads(orig_context)
+                    repre["context"] = context
+
+                if own_attributes:
+                    fill_own_attribs(repre)
+                yield repre
 
     def get_representation_by_id(
         self,
