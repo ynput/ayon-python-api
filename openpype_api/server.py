@@ -661,6 +661,32 @@ class ServerAPIBase(object):
             if project:
                 yield project
 
+    def get_rest_entity_by_id(self, project_name, entity_type, entity_id):
+        entity_endpoint = "{}s".format(entity_type)
+        response = self.get("projects/{}/{}/{}".format(
+            project_name, entity_endpoint, entity_id
+        ))
+        if response.status == 200:
+            return response.data
+        return None
+
+    def get_rest_folder(self, project_name, folder_id):
+        return self.get_rest_entity_by_id(project_name, "folder", folder_id)
+
+    def get_rest_task(self, project_name, task_id):
+        return self.get_rest_entity_by_id(project_name, "task", task_id)
+
+    def get_rest_subset(self, project_name, subset_id):
+        return self.get_rest_entity_by_id(project_name, "subset", subset_id)
+
+    def get_rest_version(self, project_name, version_id):
+        return self.get_rest_entity_by_id(project_name, "version", version_id)
+
+    def get_rest_representation(self, project_name, representation_id):
+        return self.get_rest_entity_by_id(
+            project_name, "representation", representation_id
+        )
+
     def get_project_names(self, active=True, library=None):
         """Receive available project names.
 
