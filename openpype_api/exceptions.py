@@ -1,0 +1,2 @@
+class FailedOperations(Exception):
+    pass

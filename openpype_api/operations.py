@@ -9,7 +9,7 @@ import six
 
 from .server_api import get_server_api_connection
 from .utils import create_entity_id, REMOVED_VALUE
-
+from .exceptions import FailedOperations
 
 def _create_or_convert_to_id(entity_id=None):
     if entity_id is None:
@@ -386,10 +386,6 @@ def prepare_workfile_info_update_data(old_doc, new_doc, replace=True):
     raise NotImplementedError(
         "'prepare_folder_update_data' not yet implemented"
     )
-
-
-class FailedOperations(Exception):
-    pass
 
 
 def entity_data_json_default(value):
