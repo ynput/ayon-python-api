@@ -665,6 +665,14 @@ class ServerAPIBase(object):
         result = self.get("anatomy/presets/{}".format(preset_name))
         return result.data
 
+    def get_full_production_settings(self):
+        # TODO raise error if not status 200
+        response = self.get("settings/production")
+        return response.data
+
+    def get_production_settings(self):
+        return self.get_full_production_settings()["settings"]
+
     # Settings getters
     def get_full_project_settings(self, project_name):
         result = self.get("projects/{}/settings".format(project_name))
@@ -672,7 +680,10 @@ class ServerAPIBase(object):
             return result.data
         return None
 
-    def get_project_settings(self, project_name):
+    def get_project_settings(self, project_name=None):
+        if project_name is None:
+            return self.get_production_settings()
+
         full_settings = self.get_full_project_settings(project_name)
         if full_settings is None:
             return full_settings
