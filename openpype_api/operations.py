@@ -57,6 +57,7 @@ def new_folder_entity(
         "id": _create_or_convert_to_id(entity_id),
         "name": name,
         # This will be ignored
+        "folderType": folder_type,
         "parentId": parent_id,
         "data": data,
         "attrib": attribs,
