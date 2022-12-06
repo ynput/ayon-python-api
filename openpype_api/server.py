@@ -272,6 +272,9 @@ class ServerAPIBase(object):
         if self._session is not None:
             raise ValueError("Session is already created.")
 
+        # Validate token before session creation
+        self.validate_token()
+
         session = requests.Session()
         session.headers.update(self.get_headers())
 
