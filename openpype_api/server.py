@@ -205,6 +205,7 @@ class ServerAPIBase(object):
         self._graphl_url = "{}/graphql".format(base_url)
         self._log = None
         self._access_token = token
+        self._access_token_is_service = None
         self._token_is_valid = None
         self._server_available = None
 
@@ -294,11 +295,32 @@ class ServerAPIBase(object):
         self._session = None
         self._session_functions_mapping = {}
 
-    def get_user_info(self):
+    def _get_user_info(self):
+        if self._access_token is None:
+            return None
+
+        if self._access_token_is_service is not None:
+            response = self.get("users/me")
+            return response.data
+
+        self._access_token_is_service = False
         response = self.get("users/me")
-        if response.status != 200:
+        if response.status == 200:
+            return response.data
+
+        self._access_token_is_service = True
+        response = self.get("users/me")
+        if response.status == 200:
+            return response.data
+
+        self._access_token_is_service = None
+        return None
+
+    def get_user_info(self):
+        user_info = self._get_user_info()
+        if user_info is None:
             raise UnauthorizedError("User is not authorized.")
-        return response.data
+        return user_info
 
     @property
     def log(self):
@@ -311,7 +333,11 @@ class ServerAPIBase(object):
             content_type = "application/json"
         headers = {"Content-Type": content_type}
         if self._access_token:
-            headers["Authorization"] = "Bearer {}".format(self._access_token)
+            if self._access_token_is_service:
+                headers["X-Api-Key"] = self._access_token
+            else:
+                headers["Authorization"] = "Bearer {}".format(
+                    self._access_token)
         return headers
 
     def login(self, username, password):
