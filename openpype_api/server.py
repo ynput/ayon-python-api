@@ -288,9 +288,10 @@ class ServerAPIBase(object):
         if self._session is None:
             return
 
-        self._session.close()
+        session = self._session
         self._session = None
         self._session_functions_mapping = {}
+        session.close()
 
     def _get_user_info(self):
         if self._access_token is None:
@@ -689,9 +690,11 @@ class ServerAPIBase(object):
         return result.data
 
     def get_full_production_settings(self):
-        # TODO raise error if not status 200
+        # TODO raise error if status is not 200
         response = self.get("settings/production")
-        return response.data
+        if response.status == 200:
+            return response.data
+        return None
 
     def get_production_settings(self):
         return self.get_full_production_settings()["settings"]
@@ -2171,6 +2174,7 @@ class ServerAPIBase(object):
             anatomy=preset,
             library=library_project
         )
+
         if result.status != 201:
             details = "Unknown details ({})".format(result.status)
             if result.data:
