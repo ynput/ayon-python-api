@@ -14,6 +14,28 @@ def create_entity_id():
     return uuid.uuid1().hex
 
 
+def convert_entity_id(entity_id):
+    if not entity_id:
+        return None
+
+    if isinstance(entity_id, uuid.UUID):
+        return entity_id.hex
+
+    try:
+        return uuid.UUID(entity_id).hex
+
+    except (TypeError, ValueError, AttributeError):
+        pass
+    return None
+
+
+def convert_or_create_entity_id(entity_id=None):
+    output = convert_entity_id(entity_id)
+    if output is None:
+        output = create_entity_id()
+    return output
+
+
 def entity_data_json_default(value):
     if isinstance(value, datetime.datetime):
         return int(value.timestamp())
