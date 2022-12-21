@@ -14,6 +14,7 @@ DEFAULT_PROJECT_FIELDS = {
 DEFAULT_FOLDER_FIELDS = {
     "id",
     "name",
+    "label",
     "folderType",
     "path",
     "parentId",
@@ -25,6 +26,7 @@ DEFAULT_FOLDER_FIELDS = {
 DEFAULT_TASK_FIELDS = {
     "id",
     "name",
+    "label",
     "taskType",
     "folderId",
     "active",
