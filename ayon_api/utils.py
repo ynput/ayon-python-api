@@ -122,7 +122,7 @@ def _try_parse_url(url):
 
 def _try_connect_to_server(url):
     try:
-        # TODO add validation if the url lead to OpenPype server
+        # TODO add validation if the url lead to Ayon server
         #   - thiw won't validate if the url lead to 'google.com'
         requests.get(url)
 

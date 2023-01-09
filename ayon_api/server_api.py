@@ -10,7 +10,7 @@ class ServerAPI(ServerAPIBase):
     """Extended server api which also handles storing tokens and url.
 
     Created object expect to have set environment variables
-    'OPENPYPE_SERVER_URL'. Also is expecting filled 'OPENPYPE_TOKEN'
+    'AYON_SERVER_URL'. Also is expecting filled 'AYON_TOKEN'
     but that can be filled afterwards with calling 'login' method.
     """
 
@@ -75,8 +75,8 @@ class GlobalContext:
 def get_server_api_connection():
     """Access to global scope object of ServerAPI.
 
-    This access expect to have set environment variables 'OPENPYPE_SERVER_URL'
-    and 'OPENPYPE_TOKEN'.
+    This access expect to have set environment variables 'AYON_SERVER_URL'
+    and 'AYON_TOKEN'.
 
     Returns:
         ServerAPI: Object of connection to server.

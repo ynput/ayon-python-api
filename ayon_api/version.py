@@ -1,2 +1,2 @@
-"""Package declaring Python API for OpenPype v4 server."""
+"""Package declaring Python API for Ayon server."""
 __version__ = "0.0.1"
