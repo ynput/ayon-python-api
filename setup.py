@@ -1,17 +1,24 @@
+import os
 from setuptools import setup
 
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+README_PATH = os.path.join(REPO_ROOT, "README.md")
+VERSION_PATH = os.path.join(REPO_ROOT, "ayon_api", "version.py")
+_version_content = {}
+exec(open(VERSION_PATH).read(), _version_content)
 
 setup(
-    name="Ayon Python Api",
-    version="0.1.0",
-    description="",
+    name="ayon-python-api",
+    version=_version_content["__version__"],
     py_modules=["ayon_api"],
-    package_dir={"": "ayon_api"},
+    packages=["ayon_api"],
     author="ynput.io",
     author_email="info@ynput.io",
-    long_description=open("README.md").read(),
+    license="Apache License (2.0)",
+    description="AYON Python API",
+    long_description=open(README_PATH).read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/pypeclub/ayon-python-api",
+    url="https://github.com/ynput/ayon-python-api",
     include_package_data=True,
     # https://pypi.org/classifiers/
     classifiers=[
@@ -21,9 +28,8 @@ setup(
         "Programming Language :: Python :: 3",
     ],
     install_requires=[
-        "python = ^3.7",
-        "requests = ^2.28.1",
-        "six = ^1.15",
+        "requests >= 2.27.1",
+        "six >= 1.15",
     ],
-    keywords=["ayon", "ynput", "OpenPype", "vfx"]
+    keywords=["AYON", "ynput", "OpenPype", "vfx"]
 )
