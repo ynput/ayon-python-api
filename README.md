@@ -1,4 +1,4 @@
-# openpype4-client
+# Ayon server API
 Python client for connection server. Client must be (at least for some time) Python 2 compatible because will be used in DCC that are "older".
 
 Client should support connection to server with raw REST functions and prepared functionality for work with entities. Must not contain only functionality that can be used with core server functionality.
