@@ -2,16 +2,16 @@ from setuptools import setup
 
 
 setup(
-    name="OpenPype Python Api",
+    name="Ayon Python Api",
     version="0.1.0",
     description="",
-    py_modules=["openpype_api"],
-    package_dir={"": "openpype_api"},
-    author="OpenPype Team",
-    author_email="info@openpype.io",
+    py_modules=["ayon_api"],
+    package_dir={"": "ayon_api"},
+    author="ynput.io",
+    author_email="info@ynput.io",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/pypeclub/openpype4-python-api",
+    url="https://github.com/pypeclub/ayon-python-api",
     include_package_data=True,
     # https://pypi.org/classifiers/
     classifiers=[
@@ -25,5 +25,5 @@ setup(
         "requests = ^2.28.1",
         "six = ^1.15",
     ],
-    keywords=["OpenPype", "pype.club", "vfx"]
+    keywords=["ayon", "ynput", "OpenPype", "vfx"]
 )
