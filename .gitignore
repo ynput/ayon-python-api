@@ -100,11 +100,6 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Eggs
-ayon_python_api.egg-info/
-build/
-dist/
-
 # Environments
 .env
 .venv
