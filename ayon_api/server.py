@@ -620,6 +620,39 @@ class ServerAPIBase(object):
         self.reset_attributes_schema()
 
     def get_attributes_for_type(self, entity_type):
+        """Get attribute schemas available for an entity type.
+
+        ```
+        # Example attribute schema
+        {
+            # Common
+            "type": "integer",
+            "title": "Clip Out",
+            "description": null,
+            "example": 1,
+            "default": 1,
+            # These can be filled based on value of 'type'
+            "gt": null,
+            "ge": null,
+            "lt": null,
+            "le": null,
+            "minLength": null,
+            "maxLength": null,
+            "minItems": null,
+            "maxItems": null,
+            "regex": null,
+            "enum": null
+        }
+        ```
+
+        Args:
+            entity_type (str): Entity type for which should be attributes
+                received.
+
+        Returns:
+            Dict[str, Dict[str, Any]]: Attribute schemas that are available
+                for entered entity type.
+        """
         attributes = self._entity_type_attributes_cache.get(entity_type)
         if attributes is None:
             attributes_schema = self.get_attributes_schema()
