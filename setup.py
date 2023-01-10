@@ -31,5 +31,8 @@ setup(
         "requests >= 2.27.1",
         "six >= 1.15",
     ],
+    dependency_links=[
+        "appdirs @ git+https://github.com/ActiveState/appdirs.git@master"
+    ],
     keywords=["AYON", "ynput", "OpenPype", "vfx"]
 )
