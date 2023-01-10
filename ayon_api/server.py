@@ -4,8 +4,6 @@ import json
 import logging
 import collections
 import copy
-import datetime
-import uuid
 from http import HTTPStatus
 
 import requests

@@ -74,6 +74,8 @@ __all__ = (
 
     "get_projects",
     "get_project",
+    "create_project",
+    "delete_project",
 
     "get_folder_by_id",
     "get_folder_by_name",
@@ -102,5 +104,10 @@ __all__ = (
     "get_representations",
     "get_representations_parents",
     "get_representation_parents",
-    "get_thumbnail_id_from_source",
+
+    "create_thumbnail",
+    "get_thumbnail",
+    "get_folder_thumbnail",
+    "get_version_thumbnail",
+    "get_workfile_thumbnail",
 )
