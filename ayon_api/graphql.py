@@ -4,6 +4,8 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 
 import six
 
+from .exceptions import GraphQlQueryFailed
+
 FIELD_VALUE = object()
 
 
@@ -27,39 +29,6 @@ def fields_to_dict(fields):
         if value is not FIELD_VALUE:
             value[last] = FIELD_VALUE
     return output
-
-
-class GraphQlQueryFailed(Exception):
-    def __init__(self, errors, query, variables):
-        if variables is None:
-            variables = {}
-
-        error_messages = []
-        for error in errors:
-            msg = error["message"]
-            path = error.get("path")
-            if path:
-                msg += " on item '{}'".format("/".join(path))
-            locations = error.get("locations")
-            if locations:
-                _locations = [
-                    "Line {} Column {}".format(
-                        location["line"], location["column"]
-                    )
-                    for location in locations
-                ]
-
-                msg += " ({})".format(" and ".join(_locations))
-            error_messages.append(msg)
-
-        message = "GraphQl query Failed"
-        if error_messages:
-            message = "{}: {}".format(message, " | ".join(error_messages))
-
-        self.errors = errors
-        self.query = query
-        self.variables = copy.deepcopy(variables)
-        super(GraphQlQueryFailed, self).__init__(message)
 
 
 class QueryVariable(object):
