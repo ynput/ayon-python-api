@@ -730,13 +730,32 @@ class ServerAPIBase(object):
             return full_settings
         return full_settings["settings"]
 
-    def get_addon_settings(self, addon_name, addon_version, project_name):
+    def get_addon_studio_settings(self, addon_name, addon_version):
+        result = self.get(
+            "addons/{}/{}/settings".format(addon_name, addon_version)
+        )
+        if result.status != 200:
+            raise ServerError(result.text)
+        return result.data
+
+    def get_addon_project_settings(
+        self, addon_name, addon_version, project_name
+    ):
         result = self.get(
             "addons/{}/{}/settings/{}".format(
-                addon_name, addon_version, project_name))
-        if result.status == 200:
-            return result.data
-        return None
+                addon_name, addon_version, project_name
+            )
+        )
+        if result.status != 200:
+            raise ServerError(result.text)
+        return result.data
+
+    def get_addon_settings(self, addon_name, addon_version, project_name=None):
+        if project_name is None:
+            return self.get_addon_studio_settings(addon_name, addon_version)
+        return self.get_addon_project_settings(
+            addon_name, addon_version, project_name
+        )
 
     # Entity getters
     def get_rest_project(self, project_name):
