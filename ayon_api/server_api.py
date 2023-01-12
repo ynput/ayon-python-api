@@ -245,6 +245,11 @@ def get_representations_parents(*args, **kwargs):
     return con.get_representations_parents(*args, **kwargs)
 
 
+def get_production_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_production_settings(*args, **kwargs)
+
+
 def get_project_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_settings(*args, **kwargs)

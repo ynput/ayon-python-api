@@ -47,6 +47,7 @@ from .server_api import (
     get_representations_parents,
     get_representation_parents,
 
+    get_production_settings,
     get_project_settings,
     get_addon_settings,
 
@@ -69,6 +70,7 @@ __all__ = (
     "patch",
     "delete",
 
+    "get_production_settings",
     "get_project_settings",
     "get_addon_settings",
 
