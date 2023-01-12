@@ -110,6 +110,11 @@ def delete(*args, **kwargs):
     return con.delete(*args, **kwargs)
 
 
+def get_addons_info(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addons_info(*args, **kwargs)
+
+
 def get_project(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project(*args, **kwargs)

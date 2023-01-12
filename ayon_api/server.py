@@ -36,6 +36,7 @@ from .exceptions import (
     UnauthorizedError,
     AuthenticationError,
     ServerNotReached,
+    ServerError,
 )
 from .utils import (
     logout_from_server,
@@ -672,6 +673,22 @@ class ServerAPIBase(object):
                     for attr in attributes
                 }
             )
+
+    def get_addons_info(self, details=True):
+        """Get information about addons available on server.
+
+        Args:
+            details (bool): Detailed data with information how to get client
+                code.
+        """
+
+        endpoint = "addons"
+        if details:
+            endpoint += "?details=1"
+        response = self.get(endpoint)
+        if response.status != 200:
+            raise ServerError(response.text)
+        return response.data
 
     # Anatomy presets
     def get_project_anatomy_presets(self, add_default=True):
