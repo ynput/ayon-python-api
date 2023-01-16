@@ -259,6 +259,24 @@ class ServerAPIBase(object):
         self._session_functions_mapping = {}
         session.close()
 
+    def get_info(self):
+        """Get information about current used api key.
+
+        By default, the 'info' contains only 'uptime' and 'version'. With
+        logged user info also contains information about user and machines on
+        which was logged in.
+
+        Todos:
+            Use this method for validation of token instead of
+                '_get_user_info'.
+
+        Returns:
+            Dict[str, Any]: Information from server.
+        """
+
+        response = self.get("info")
+        return response.data
+
     def _get_user_info(self):
         if self._access_token is None:
             return None
