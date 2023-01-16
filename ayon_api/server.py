@@ -3,6 +3,7 @@ import re
 import json
 import logging
 import collections
+import platform
 import copy
 from http import HTTPStatus
 
@@ -152,10 +153,21 @@ class ServerAPIBase(object):
     Login cause that a session is used
 
     Args:
-        base_url(str): Example: http://localhost:5000
+        base_url (str): Example: http://localhost:5000
+        token (str): Access token (api key) to server.
+        machine_id (str): Unique name of machine. Should be the same when
+            connection is created from the same machine under same user.
+        client_version (str): Version of client application (used in
+            desktop client application).
     """
 
-    def __init__(self, base_url, token=None):
+    def __init__(
+        self,
+        base_url,
+        token=None,
+        machine_id=None,
+        client_version=None
+    ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
 
@@ -165,6 +177,8 @@ class ServerAPIBase(object):
         self._graphl_url = "{}/graphql".format(base_url)
         self._log = None
         self._access_token = token
+        self._machine_id = machine_id
+        self._client_version = client_version
         self._access_token_is_service = None
         self._token_is_valid = None
         self._server_available = None
@@ -189,6 +203,20 @@ class ServerAPIBase(object):
     @property
     def access_token(self):
         return self._access_token
+
+    def get_machine_id(self):
+        return self._machine_id
+
+    def set_machine_id(self, machine_id):
+        if self._machine_id == machine_id:
+            return
+        self._machine_id = machine_id
+        # Recreate session on machine id change
+        if self._session is not None:
+            self.close_session()
+            self.create_session()
+
+    machine_id = property(get_machine_id, set_machine_id)
 
     @property
     def is_server_available(self):
@@ -313,7 +341,18 @@ class ServerAPIBase(object):
     def get_headers(self, content_type=None):
         if content_type is None:
             content_type = "application/json"
-        headers = {"Content-Type": content_type}
+
+        headers = {
+            "Content-Type": content_type,
+            "x-ayon-platform": platform.system().lower(),
+            "x-ayon-hostname": platform.node(),
+        }
+        if self._machine_id is not None:
+            headers["x-ayon-machine-id"] = self._machine_id
+
+        if self._client_version is not None:
+            headers["x-ayon-machine-id"] = self._client_version
+
         if self._access_token:
             if self._access_token_is_service:
                 headers["X-Api-Key"] = self._access_token
