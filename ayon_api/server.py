@@ -1957,6 +1957,7 @@ class ServerAPIBase(object):
             version_ids=[version_id],
             active=None,
             fields=fields,
+            own_attributes=own_attributes
         )
         for representation in representations:
             return representation
@@ -2012,7 +2013,7 @@ class ServerAPIBase(object):
         fields=None,
         own_attributes=False
     ):
-        filters = {}
+        filters = {"projectName": project_name}
         if task_ids is not None:
             task_ids = set(task_ids)
             if not task_ids:
@@ -2037,7 +2038,7 @@ class ServerAPIBase(object):
         if own_attributes:
             fields.add("ownAttrib")
 
-        query = workfiles_info_graphql_query()
+        query = workfiles_info_graphql_query(fields)
 
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
