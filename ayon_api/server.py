@@ -242,7 +242,11 @@ class ServerAPIBase(object):
 
     def validate_token(self):
         try:
-            self.get_user_info()
+            # TODO add other possible validations
+            # - existence of 'user' key in info
+            # - validate that 'site_id' is in 'sites' in info
+            self.get_info()
+            self.get_user()
             self._token_is_valid = True
 
         except UnauthorizedError:
@@ -252,7 +256,7 @@ class ServerAPIBase(object):
     def set_token(self, token):
         self.reset_token()
         self._access_token = token
-        self.get_user_info()
+        self.get_user()
 
     def reset_token(self):
         self._access_token = None
@@ -295,8 +299,7 @@ class ServerAPIBase(object):
         which was logged in.
 
         Todos:
-            Use this method for validation of token instead of
-                '_get_user_info'.
+            Use this method for validation of token instead of 'get_user'.
 
         Returns:
             Dict[str, Any]: Information from server.
@@ -326,11 +329,23 @@ class ServerAPIBase(object):
         self._access_token_is_service = None
         return None
 
-    def get_user_info(self):
-        user_info = self._get_user_info()
-        if user_info is None:
+    def get_users(self):
+        # TODO how to find out if user have permission?
+        users = self.get("users")
+        return users.data
+
+    def get_user(self, username=None):
+        output = None
+        if username is None:
+            output = self._get_user_info()
+        else:
+            response = self.get("users/{}".format(username))
+            if response.status == 200:
+                output = response.data
+
+        if output is None:
             raise UnauthorizedError("User is not authorized.")
-        return user_info
+        return output
 
     @property
     def log(self):
@@ -364,7 +379,7 @@ class ServerAPIBase(object):
     def login(self, username, password):
         if self.has_valid_token:
             try:
-                user_info = self.get_user_info()
+                user_info = self.get_user()
             except UnauthorizedError:
                 user_info = {}
 
