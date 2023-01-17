@@ -155,7 +155,7 @@ class ServerAPIBase(object):
     Args:
         base_url (str): Example: http://localhost:5000
         token (str): Access token (api key) to server.
-        machine_id (str): Unique name of machine. Should be the same when
+        site_id (str): Unique name of site. Should be the same when
             connection is created from the same machine under same user.
         client_version (str): Version of client application (used in
             desktop client application).
@@ -165,7 +165,7 @@ class ServerAPIBase(object):
         self,
         base_url,
         token=None,
-        machine_id=None,
+        site_id=None,
         client_version=None
     ):
         if not base_url:
@@ -177,7 +177,7 @@ class ServerAPIBase(object):
         self._graphl_url = "{}/graphql".format(base_url)
         self._log = None
         self._access_token = token
-        self._machine_id = machine_id
+        self._site_id = site_id
         self._client_version = client_version
         self._access_token_is_service = None
         self._token_is_valid = None
@@ -204,19 +204,19 @@ class ServerAPIBase(object):
     def access_token(self):
         return self._access_token
 
-    def get_machine_id(self):
-        return self._machine_id
+    def get_site_id(self):
+        return self._site_id
 
-    def set_machine_id(self, machine_id):
-        if self._machine_id == machine_id:
+    def set_site_id(self, site_id):
+        if self._site_id == site_id:
             return
-        self._machine_id = machine_id
+        self._site_id = site_id
         # Recreate session on machine id change
         if self._session is not None:
             self.close_session()
             self.create_session()
 
-    machine_id = property(get_machine_id, set_machine_id)
+    site_id = property(get_site_id, set_site_id)
 
     @property
     def is_server_available(self):
@@ -347,8 +347,8 @@ class ServerAPIBase(object):
             "x-ayon-platform": platform.system().lower(),
             "x-ayon-hostname": platform.node(),
         }
-        if self._machine_id is not None:
-            headers["x-ayon-machine-id"] = self._machine_id
+        if self._site_id is not None:
+            headers["x-ayon-site-id"] = self._site_id
 
         if self._client_version is not None:
             headers["x-ayon-version"] = self._client_version
