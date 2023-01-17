@@ -34,5 +34,5 @@ setup(
     dependency_links=[
         "appdirs @ git+https://github.com/ActiveState/appdirs.git@master"
     ],
-    keywords=["AYON", "ynput", "OpenPype", "vfx"]
+    keywords=["AYON", "ynput", "OpenPype", "vfx"],
 )
