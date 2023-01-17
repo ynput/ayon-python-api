@@ -85,6 +85,31 @@ def get_server_api_connection():
     return GlobalContext.get_server_api_connection()
 
 
+def raw_get(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.raw_get(*args, **kwargs)
+
+
+def raw_post(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.raw_post(*args, **kwargs)
+
+
+def raw_put(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.raw_put(*args, **kwargs)
+
+
+def raw_patch(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.raw_patch(*args, **kwargs)
+
+
+def raw_delete(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.raw_delete(*args, **kwargs)
+
+
 def get(*args, **kwargs):
     con = get_server_api_connection()
     return con.get(*args, **kwargs)
@@ -110,9 +135,64 @@ def delete(*args, **kwargs):
     return con.delete(*args, **kwargs)
 
 
+def query_graphql(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.query_graphql(*args, **kwargs)
+
+
+def get_users(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_users(*args, **kwargs)
+
+
+def get_user(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_user(*args, **kwargs)
+
+
+def get_attributes_for_type(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_attributes_for_type(*args, **kwargs)
+
+
 def get_addons_info(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_addons_info(*args, **kwargs)
+
+
+def get_project_anatomy_presets(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_project_anatomy_presets(*args, **kwargs)
+
+
+def get_project_anatomy_preset(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_project_anatomy_preset(*args, **kwargs)
+
+
+def get_full_production_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_full_production_settings(*args, **kwargs)
+
+
+def get_production_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_production_settings(*args, **kwargs)
+
+
+def get_full_project_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_full_project_settings(*args, **kwargs)
+
+
+def get_project_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_project_settings(*args, **kwargs)
+
+
+def get_addon_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_settings(*args, **kwargs)
 
 
 def get_project(*args, **kwargs):
@@ -248,21 +328,6 @@ def get_representation_parents(*args, **kwargs):
 def get_representations_parents(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_representations_parents(*args, **kwargs)
-
-
-def get_production_settings(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_production_settings(*args, **kwargs)
-
-
-def get_project_settings(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_project_settings(*args, **kwargs)
-
-
-def get_addon_settings(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_addon_settings(*args, **kwargs)
 
 
 def create_project(
