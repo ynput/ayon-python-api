@@ -19,6 +19,9 @@ from .server_api import (
     patch,
     delete,
 
+    download_file,
+    upload_file,
+
     query_graphql,
 
     get_addons_info,
@@ -97,6 +100,9 @@ __all__ = (
     "put",
     "patch",
     "delete",
+
+    "download_file",
+    "upload_file",
 
     "query_graphql",
 

@@ -544,6 +544,23 @@ class ServerAPIBase(object):
     def delete(self, entrypoint, **kwargs):
         return self.raw_delete(entrypoint, params=kwargs)
 
+    def download_file(self, endpoint, filepath, chunk_size=None):
+        if not chunk_size:
+            # 1 MB chunk by default
+            chunk_size = 1024 * 1024
+        dst_directory = os.path.dirname(filepath)
+        if not os.path.exists(dst_directory):
+            os.makedirs(dst_directory)
+
+        with open(filepath, "wb") as f_stream:
+            with self.raw_get(endpoint, stream=True) as response:
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    f_stream.write(chunk)
+
+    def upload_file(self, endpoint, filepath):
+        with open(filepath, "rb") as stream:
+            self.raw_post(endpoint, data=stream)
+
     def trigger_server_restart(self):
         result = self.post("system/restart")
         if result.status_code != 204:

@@ -135,6 +135,16 @@ def delete(*args, **kwargs):
     return con.delete(*args, **kwargs)
 
 
+def download_file(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.download_file(*args, **kwargs)
+
+
+def upload_file(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.upload_file(*args, **kwargs)
+
+
 def query_graphql(*args, **kwargs):
     con = get_server_api_connection()
     return con.query_graphql(*args, **kwargs)
