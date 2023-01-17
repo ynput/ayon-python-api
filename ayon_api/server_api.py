@@ -135,6 +135,16 @@ def delete(*args, **kwargs):
     return con.delete(*args, **kwargs)
 
 
+def download_file(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.download_file(*args, **kwargs)
+
+
+def upload_file(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.upload_file(*args, **kwargs)
+
+
 def query_graphql(*args, **kwargs):
     con = get_server_api_connection()
     return con.query_graphql(*args, **kwargs)
@@ -158,6 +168,31 @@ def get_attributes_for_type(*args, **kwargs):
 def get_addons_info(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_addons_info(*args, **kwargs)
+
+
+def get_dependencies_info(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_dependencies_info(*args, **kwargs)
+
+
+def update_dependency_info(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_dependency_info(*args, **kwargs)
+
+
+def download_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.download_dependency_package(*args, **kwargs)
+
+
+def upload_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.upload_dependency_package(*args, **kwargs)
+
+
+def delete_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_dependency_package(*args, **kwargs)
 
 
 def get_project_anatomy_presets(*args, **kwargs):
