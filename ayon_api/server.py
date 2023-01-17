@@ -351,7 +351,7 @@ class ServerAPIBase(object):
             headers["x-ayon-machine-id"] = self._machine_id
 
         if self._client_version is not None:
-            headers["x-ayon-machine-id"] = self._client_version
+            headers["x-ayon-version"] = self._client_version
 
         if self._access_token:
             if self._access_token_is_service:
