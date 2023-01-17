@@ -779,6 +779,64 @@ class ServerAPIBase(object):
             raise ServerError(response.text)
         return response.data
 
+    def get_dependencies_info(self):
+        result = self.get("dependencies")
+        return result.data
+
+    def update_dependency_info(
+        self,
+        name,
+        platform_name,
+        size,
+        checksum,
+        checksum_algorithm=None,
+        supported_addons=None,
+        python_modules=None,
+        sources=None
+    ):
+        """Update or create dependency package infor by it's identifiers.
+
+        The endpoint can be used to create or update dependency package.
+
+        Args:
+            name (str): Name of dependency package.
+            platform_name (Literal["windows", "linux", "darwin"]): Platform for
+                which is dependency package targeted.
+            size (int): Size of dependency package in bytes.
+            checksum (str): Checksum of archive file where dependecies are.
+            checksum_algorithm (str): Algorithm used to calculate checksum.
+                By default, is used 'md5' (defined by server).
+            supported_addons (Dict[str, str]): Name of addons for which was the
+                package created ('{"<addon name>": "<addon version>", ...}').
+            python_modules (Dict[str, str]): Python modules in dependencies
+                package ('{"<module name>": "<module version>", ...}').
+            sources (List[Dict[str, Any]]): Information about sources where
+                dependency package is available.
+        """
+
+        kwargs = {
+            key: value
+            for key, value in (
+                ("checksumAlgorithm", checksum_algorithm),
+                ("supportedAddons", supported_addons),
+                ("pythonModules", python_modules),
+                ("sources", sources),
+            )
+            if value
+        }
+
+        response = self.put(
+            "dependencies",
+            name=name,
+            platform=platform_name,
+            size=size,
+            checksum=checksum,
+            **kwargs
+        )
+        if response.status not in (200, 201):
+            raise ServerError("Failed to create/update dependency")
+        return response.data
+
     # Anatomy presets
     def get_project_anatomy_presets(self, add_default=True):
         result = self.get("anatomy/presets")

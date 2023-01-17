@@ -25,6 +25,9 @@ from .server_api import (
     query_graphql,
 
     get_addons_info,
+
+    get_dependencies_info,
+    update_dependency_info,
     get_full_production_settings,
     get_production_settings,
     get_full_project_settings,
@@ -107,6 +110,9 @@ __all__ = (
     "query_graphql",
 
     "get_addons_info",
+
+    "get_dependencies_info",
+    "update_dependency_info",
     "get_full_production_settings",
     "get_production_settings",
     "get_full_project_settings",
