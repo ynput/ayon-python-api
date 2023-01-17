@@ -837,6 +837,44 @@ class ServerAPIBase(object):
             raise ServerError("Failed to create/update dependency")
         return response.data
 
+    def download_dependency_package(
+        self,
+        dst_directory,
+        package_name,
+        platform_name=None
+    ):
+        if platform_name is None:
+            platform_name = platform.system().lower()
+
+        package_filepath = os.path.join(dst_directory, package_name + ".zip")
+        self.download_file(
+            "dependencies/{}/{}".format(package_name, platform_name),
+            package_filepath
+        )
+        return package_filepath
+
+    def upload_dependency_package(
+        self, filepath, package_name, platform_name=None
+    ):
+        if platform_name is None:
+            platform_name = platform.system().lower()
+
+        self.upload_file(
+            "dependencies/{}/{}".format(package_name, platform_name),
+            filepath
+        )
+
+    def delete_dependency_package(self, package_name, platform_name=None):
+        if platform_name is None:
+            platform_name = platform.system().lower()
+
+        response = self.delete(
+            "dependencies/{}/{}".format(package_name, platform_name),
+        )
+        if response.status != 200:
+            raise ServerError("Failed to delete dependency file")
+        return response.data
+
     # Anatomy presets
     def get_project_anatomy_presets(self, add_default=True):
         result = self.get("anatomy/presets")

@@ -180,6 +180,21 @@ def update_dependency_info(*args, **kwargs):
     return con.update_dependency_info(*args, **kwargs)
 
 
+def download_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.download_dependency_package(*args, **kwargs)
+
+
+def upload_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.upload_dependency_package(*args, **kwargs)
+
+
+def delete_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_dependency_package(*args, **kwargs)
+
+
 def get_project_anatomy_presets(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_anatomy_presets(*args, **kwargs)

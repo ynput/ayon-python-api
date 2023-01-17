@@ -28,6 +28,11 @@ from .server_api import (
 
     get_dependencies_info,
     update_dependency_info,
+
+    download_dependency_package,
+    upload_dependency_package,
+    delete_dependency_package,
+
     get_full_production_settings,
     get_production_settings,
     get_full_project_settings,
@@ -113,6 +118,11 @@ __all__ = (
 
     "get_dependencies_info",
     "update_dependency_info",
+
+    "download_dependency_package",
+    "upload_dependency_package",
+    "delete_dependency_package",
+
     "get_full_production_settings",
     "get_production_settings",
     "get_full_project_settings",
