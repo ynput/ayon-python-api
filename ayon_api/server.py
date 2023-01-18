@@ -818,6 +818,24 @@ class ServerAPIBase(object):
         destination_filename=None,
         chunk_size=None,
     ):
+        """Download a file from addon private files.
+
+        This method requires to have authorized token available. Private files
+        are not under '/api' restpoint.
+
+        Args:
+            addon_name (str): Addon name.
+            addon_version (str): Addon version.
+            filename (str): Filename in private folder on server.
+            destination_dir (str): Where the file should be downloaded.
+            destination_filename (str): Name of destination filename. Source
+                filename is used if not passed.
+            chunk_size (int): Download chunk size.
+
+        Returns:
+            str: Filepath to downloaded file.
+        """
+
         if not destination_filename:
             destination_filename = filename
         dst_filepath = os.path.join(destination_dir, destination_filename)
@@ -901,6 +919,22 @@ class ServerAPIBase(object):
         platform_name=None,
         chunk_size=None
     ):
+        """Download dependency package from server.
+
+        This method requires to have authorized token available. The package is
+        only downloaded.
+
+        Args:
+            package_name (str): Name of package to download.
+            dst_directory (str): Where the file should be downloaded.
+            filename (str): Name of destination filename.
+            platform_name (str): Name of platform for which the dependency
+                package is targetter. Default value is current platform.
+            chunk_size (int): Download chunk size.
+
+        Returns:
+            str: Filepath to downloaded file.
+       """
         if platform_name is None:
             platform_name = platform.system().lower()
 
