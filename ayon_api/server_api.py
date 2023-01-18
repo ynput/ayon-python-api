@@ -85,6 +85,16 @@ def get_server_api_connection():
     return GlobalContext.get_server_api_connection()
 
 
+def get_base_url():
+    con = get_server_api_connection()
+    return con.get_base_url()
+
+
+def get_rest_url():
+    con = get_server_api_connection()
+    return con.get_rest_url()
+
+
 def raw_get(*args, **kwargs):
     con = get_server_api_connection()
     return con.raw_get(*args, **kwargs)

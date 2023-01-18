@@ -200,6 +200,15 @@ class ServerAPIBase(object):
 
         self._thumbnail_cache = ThumbnailCache(True)
 
+    def get_base_url(self):
+        return self._base_url
+
+    def get_rest_url(self):
+        return self._rest_url
+
+    base_url = property(get_base_url)
+    rest_url = property(get_rest_url)
+
     @property
     def access_token(self):
         return self._access_token

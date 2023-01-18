@@ -7,6 +7,9 @@ from .server_api import (
 
     get_server_api_connection,
 
+    get_base_url,
+    get_rest_url,
+
     raw_get,
     raw_post,
     raw_put,
@@ -96,6 +99,9 @@ __all__ = (
     "ServerAPI",
 
     "get_server_api_connection",
+
+    "get_base_url",
+    "get_rest_url",
 
     "raw_get",
     "raw_post",
