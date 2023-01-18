@@ -848,17 +848,20 @@ class ServerAPIBase(object):
 
     def download_dependency_package(
         self,
-        dst_directory,
         package_name,
-        platform_name=None
+        dst_directory,
+        filename,
+        platform_name=None,
+        chunk_size=None
     ):
         if platform_name is None:
             platform_name = platform.system().lower()
 
-        package_filepath = os.path.join(dst_directory, package_name + ".zip")
+        package_filepath = os.path.join(dst_directory, filename)
         self.download_file(
             "dependencies/{}/{}".format(package_name, platform_name),
-            package_filepath
+            package_filepath,
+            chunk_size=chunk_size
         )
         return package_filepath
 
