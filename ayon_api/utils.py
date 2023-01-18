@@ -265,3 +265,102 @@ def validate_url(url):
         title="Couldn't connect to server",
         hints=hints + universal_hints
     )
+
+
+class TransferProgress:
+    """Object to store progress of download/upload from/to server."""
+
+    def __init__(self):
+        self._started = False
+        self._done = False
+        self._downloaded = 0
+        self._content_size = None
+
+        self._failed = False
+        self._fail_reason = None
+
+        self._source_url = "N/A"
+        self._destination_url = "N/A"
+
+    def get_content_size(self):
+        return self._content_size
+
+    def set_content_size(self, content_size):
+        if self._content_size is not None:
+            raise ValueError("Content size was set more then once")
+        self._content_size = content_size
+
+    def get_started(self):
+        return self._started
+
+    def set_started(self):
+        if self._started:
+            raise ValueError("Progress already started")
+        self._started = True
+
+    def get_done(self):
+        return self._done
+
+    def set_done(self):
+        if self._done:
+            raise ValueError("Progress was already marked as done")
+        if not self._started:
+            raise ValueError("Progress didn't start yet")
+        self._done = True
+
+    def get_failed(self):
+        return self._failed
+
+    def get_fail_reason(self):
+        return self._fail_reason
+
+    def set_failed(self, reason):
+        self._fail_reason = reason
+        self._failed = True
+
+    def get_downloaded_size(self):
+        return self._downloaded
+
+    def set_downloaded_size(self, downloaded_size):
+        self._downloaded = downloaded_size
+
+    def add_downloaded_chunk(self, chunk_size):
+        self._downloaded += chunk_size
+
+    def get_source_url(self):
+        return self._source_url
+
+    def set_source_url(self, url):
+        self._source_url = url
+
+    def get_destination_url(self):
+        return self._destination_url
+
+    def set_destination_url(self, url):
+        self._destination_url = url
+
+    @property
+    def is_running(self):
+        if (
+            not self.started
+            or self.done
+            or self.failed
+        ):
+            return False
+        return True
+
+    @property
+    def progress(self):
+        if self._content_size is None:
+            return None
+        return (self._downloaded * 100.0) / float(self._content_size)
+
+    content_size = property(get_content_size, set_content_size)
+    started = property(get_started)
+    done = property(get_done)
+    failed = property(get_failed)
+    fail_reason = property(get_fail_reason)
+    source_url = property(get_source_url, set_source_url)
+    destination_url = property(get_destination_url, set_destination_url)
+    content_size = property(get_content_size, set_content_size)
+    downloaded_size = property(get_downloaded_size, set_downloaded_size)

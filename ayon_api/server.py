@@ -1,5 +1,6 @@
 import os
 import re
+import io
 import json
 import logging
 import collections
@@ -43,7 +44,8 @@ from .utils import (
     logout_from_server,
     create_entity_id,
     entity_data_json_default,
-    failed_json_default
+    failed_json_default,
+    TransferProgress,
 )
 
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
@@ -553,20 +555,10 @@ class ServerAPIBase(object):
     def delete(self, entrypoint, **kwargs):
         return self.raw_delete(entrypoint, params=kwargs)
 
-    def download_file(self, endpoint, filepath, chunk_size=None):
-        if not chunk_size:
-            # 1 MB chunk by default
-            chunk_size = 1024 * 1024
-
+    def _download_file(self, url, filepath, chunk_size, progress):
         dst_directory = os.path.dirname(filepath)
         if not os.path.exists(dst_directory):
             os.makedirs(dst_directory)
-
-        if endpoint.startswith(self._base_url):
-            url = endpoint
-        else:
-            endpoint = endpoint.lstrip("/").rstrip("/")
-            url = "{}/{}".format(self._rest_url, endpoint)
 
         kwargs = {"stream": True}
         if self._session is None:
@@ -578,18 +570,110 @@ class ServerAPIBase(object):
         with open(filepath, "wb") as f_stream:
             with get_func(url, **kwargs) as response:
                 response.raise_for_status()
+                progress.set_content_size(response.headers["Content-length"])
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     f_stream.write(chunk)
+                    progress.add_downloaded_chunk(len(chunk))
 
-    def upload_file(self, endpoint, filepath):
+    def download_file(self, endpoint, filepath, chunk_size=None, progress=None):
+        """Download file from AYON server.
+
+        Endpoint can be full url (must start with 'base_url' of api object).
+
+        Progress object can be used to track download. Can be used when
+        download happens in thread and other thread want to catch changes over
+        time.
+
+        Args:
+            endpoint (str): Endpoint or URL to file that should be downloaded.
+            filepath (str): Path where file will be downloaded.
+            chunk_size (int): Size of chunks that are received in single loop.
+            progress (TransferProgress): Object that gives ability to track
+                download progress.
+        """
+
+        if not chunk_size:
+            # 1 MB chunk by default
+            chunk_size = 1024 * 1024
+
         if endpoint.startswith(self._base_url):
             url = endpoint
         else:
             endpoint = endpoint.lstrip("/").rstrip("/")
             url = "{}/{}".format(self._rest_url, endpoint)
 
+        # Create dummy object so the function does not have to check
+        #   'progress' variable everywhere
+        if progress is None:
+            progress = TransferProgress()
+
+        progress.set_source_url(url)
+        progress.set_destination_url(filepath)
+        progress.set_started()
+        try:
+            self._download_file(url, filepath, chunk_size, progress)
+
+        except Exception as exc:
+            progress.set_failed(str(exc))
+            raise
+
+        finally:
+            progress.set_done()
+
+    def _upload_file(self, url, filepath, progress):
+        kwargs = {}
+        if self._session is None:
+            kwargs["headers"] = self.get_headers()
+            post_func = self._base_functions_mapping[RequestTypes.post]
+        else:
+            post_func = self._session_functions_mapping[RequestTypes.post]
+
         with open(filepath, "rb") as stream:
-            self.raw_post(url, data=stream)
+            stream.seek(0, io.SEEK_END)
+            size = stream.tell()
+            stream.seek(0)
+            progress.set_content_size(size)
+            response = post_func(url, data=stream, **kwargs)
+        response.raise_for_status()
+        progress.set_downloaded_size(size)
+
+    def upload_file(self, endpoint, filepath, progress=None):
+        """Upload file to server.
+
+        Todos:
+            Uploading with more detailed progress.
+
+        Args:
+            endpoint (str): Endpoint or url where file will be uploaded.
+            filepath (str): Source filepath.
+            progress (TransferProgress): Object that gives ability to track
+                upload progress.
+        """
+
+        if endpoint.startswith(self._base_url):
+            url = endpoint
+        else:
+            endpoint = endpoint.lstrip("/").rstrip("/")
+            url = "{}/{}".format(self._rest_url, endpoint)
+
+        # Create dummy object so the function does not have to check
+        #   'progress' variable everywhere
+        if progress is None:
+            progress = TransferProgress()
+
+        progress.set_source_url(filepath)
+        progress.set_destination_url(url)
+        progress.set_started()
+
+        try:
+            self._upload_file(url, filepath, progress)
+
+        except Exception as exc:
+            progress.set_failed(str(exc))
+            raise
+
+        finally:
+            progress.set_done()
 
     def trigger_server_restart(self):
         result = self.post("system/restart")
@@ -817,6 +901,7 @@ class ServerAPIBase(object):
         destination_dir,
         destination_filename=None,
         chunk_size=None,
+        progress=None,
     ):
         """Download a file from addon private files.
 
@@ -831,6 +916,8 @@ class ServerAPIBase(object):
             destination_filename (str): Name of destination filename. Source
                 filename is used if not passed.
             chunk_size (int): Download chunk size.
+            progress (TransferProgress): Object that gives ability to track
+                download progress.
 
         Returns:
             str: Filepath to downloaded file.
@@ -850,7 +937,9 @@ class ServerAPIBase(object):
             addon_version,
             filename
         )
-        self.download_file(url, dst_filepath, chunk_size=chunk_size)
+        self.download_file(
+            url, dst_filepath, chunk_size=chunk_size, progress=progress
+        )
         return dst_filepath
 
     def get_dependencies_info(self):
@@ -917,7 +1006,8 @@ class ServerAPIBase(object):
         dst_directory,
         filename,
         platform_name=None,
-        chunk_size=None
+        chunk_size=None,
+        progress=None,
     ):
         """Download dependency package from server.
 
@@ -931,6 +1021,8 @@ class ServerAPIBase(object):
             platform_name (str): Name of platform for which the dependency
                 package is targetter. Default value is current platform.
             chunk_size (int): Download chunk size.
+            progress (TransferProgress): Object that gives ability to track
+                download progress.
 
         Returns:
             str: Filepath to downloaded file.
@@ -942,19 +1034,21 @@ class ServerAPIBase(object):
         self.download_file(
             "dependencies/{}/{}".format(package_name, platform_name),
             package_filepath,
-            chunk_size=chunk_size
+            chunk_size=chunk_size,
+            progress=progress
         )
         return package_filepath
 
     def upload_dependency_package(
-        self, filepath, package_name, platform_name=None
+        self, filepath, package_name, platform_name=None, progress=None
     ):
         if platform_name is None:
             platform_name = platform.system().lower()
 
         self.upload_file(
             "dependencies/{}/{}".format(package_name, platform_name),
-            filepath
+            filepath,
+            progress=progress
         )
 
     def delete_dependency_package(self, package_name, platform_name=None):

@@ -1,3 +1,6 @@
+from .utils import (
+    TransferProgress,
+)
 from .server import (
     ServerAPIBase,
 )
@@ -95,6 +98,8 @@ from .server_api import (
 
 
 __all__ = (
+    "TransferProgress",
+
     "ServerAPIBase",
 
     "ServerAPI",
