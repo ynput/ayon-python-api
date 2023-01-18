@@ -568,8 +568,16 @@ class ServerAPIBase(object):
             endpoint = endpoint.lstrip("/").rstrip("/")
             url = "{}/{}".format(self._rest_url, endpoint)
 
+        kwargs = {"stream": True}
+        if self._session is None:
+            kwargs["headers"] = self.get_headers()
+            get_func = self._base_functions_mapping[RequestTypes.get]
+        else:
+            get_func = self._session_functions_mapping[RequestTypes.get]
+
         with open(filepath, "wb") as f_stream:
-            with self.raw_get(url, stream=True) as response
+            with get_func(url, **kwargs) as response:
+                response.raise_for_status()
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     f_stream.write(chunk)
 
