@@ -180,6 +180,11 @@ def get_addons_info(*args, **kwargs):
     return con.get_addons_info(*args, **kwargs)
 
 
+def download_addon_private_file(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.download_addon_private_file(*args, **kwargs)
+
+
 def get_dependencies_info(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_dependencies_info(*args, **kwargs)

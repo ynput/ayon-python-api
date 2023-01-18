@@ -809,6 +809,32 @@ class ServerAPIBase(object):
             raise ServerError(response.text)
         return response.data
 
+    def download_addon_private_file(
+        self,
+        addon_name,
+        addon_version,
+        filename,
+        destination_dir,
+        destination_filename=None,
+        chunk_size=None,
+    ):
+        if not destination_filename:
+            destination_filename = filename
+        dst_filepath = os.path.join(destination_dir, destination_filename)
+        # Filename can contain "subfolders"
+        dst_dirpath = os.path.dirname(dst_filepath)
+        if not os.path.exists(dst_dirpath):
+            os.makedirs(dst_dirpath)
+
+        url = "{}/addons/{}/{}/private/{}".format(
+            self._base_url,
+            addon_name,
+            addon_version,
+            filename
+        )
+        self.download_file(url, dst_filepath, chunk_size=chunk_size)
+        return dst_filepath
+
     def get_dependencies_info(self):
         result = self.get("dependencies")
         return result.data

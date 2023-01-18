@@ -28,6 +28,7 @@ from .server_api import (
     query_graphql,
 
     get_addons_info,
+    download_addon_private_file,
 
     get_dependencies_info,
     update_dependency_info,
@@ -121,6 +122,7 @@ __all__ = (
     "query_graphql",
 
     "get_addons_info",
+    "download_addon_private_file",
 
     "get_dependencies_info",
     "update_dependency_info",
