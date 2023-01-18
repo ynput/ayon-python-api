@@ -557,18 +557,31 @@ class ServerAPIBase(object):
         if not chunk_size:
             # 1 MB chunk by default
             chunk_size = 1024 * 1024
+
         dst_directory = os.path.dirname(filepath)
         if not os.path.exists(dst_directory):
             os.makedirs(dst_directory)
 
+        if endpoint.startswith(self._base_url):
+            url = endpoint
+        else:
+            endpoint = endpoint.lstrip("/").rstrip("/")
+            url = "{}/{}".format(self._rest_url, endpoint)
+
         with open(filepath, "wb") as f_stream:
-            with self.raw_get(endpoint, stream=True) as response:
+            with self.raw_get(url, stream=True) as response
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     f_stream.write(chunk)
 
     def upload_file(self, endpoint, filepath):
+        if endpoint.startswith(self._base_url):
+            url = endpoint
+        else:
+            endpoint = endpoint.lstrip("/").rstrip("/")
+            url = "{}/{}".format(self._rest_url, endpoint)
+
         with open(filepath, "rb") as stream:
-            self.raw_post(endpoint, data=stream)
+            self.raw_post(url, data=stream)
 
     def trigger_server_restart(self):
         result = self.post("system/restart")
