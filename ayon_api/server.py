@@ -573,7 +573,7 @@ class ServerAPIBase(object):
                 progress.set_content_size(response.headers["Content-length"])
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     f_stream.write(chunk)
-                    progress.add_downloaded_chunk(len(chunk))
+                    progress.add_transferred_chunk(len(chunk))
 
     def download_file(self, endpoint, filepath, chunk_size=None, progress=None):
         """Download file from AYON server.
@@ -618,7 +618,7 @@ class ServerAPIBase(object):
             raise
 
         finally:
-            progress.set_done()
+            progress.set_transfer_done()
 
     def _upload_file(self, url, filepath, progress):
         kwargs = {}
@@ -635,7 +635,7 @@ class ServerAPIBase(object):
             progress.set_content_size(size)
             response = post_func(url, data=stream, **kwargs)
         response.raise_for_status()
-        progress.set_downloaded_size(size)
+        progress.set_transferred_size(size)
 
     def upload_file(self, endpoint, filepath, progress=None):
         """Upload file to server.
@@ -673,7 +673,7 @@ class ServerAPIBase(object):
             raise
 
         finally:
-            progress.set_done()
+            progress.set_transfer_done()
 
     def trigger_server_restart(self):
         result = self.post("system/restart")
