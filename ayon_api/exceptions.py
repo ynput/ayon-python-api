@@ -91,3 +91,7 @@ class FolderNotFound(MissingEntityError):
 
 class FailedOperations(Exception):
     pass
+
+
+class FailedServiceInit(Exception):
+    pass
