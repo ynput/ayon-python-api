@@ -1287,7 +1287,7 @@ class ServerAPIBase(object):
                 returned if 'None' is passed.
 
         Returns:
-            List[Dict[str, Any]]: List of available projects.
+            Generator[Dict[str, Any]]: Available projects.
         """
 
         for project_name in self.get_project_names(active, library):
@@ -1375,7 +1375,7 @@ class ServerAPIBase(object):
                 on entity will have 'None' value.
 
         Returns:
-            List[Dict[str, Any]]: List of queried projects.
+            Generator[Dict[str, Any]]: Queried projects.
         """
 
         if fields is None:
@@ -1484,11 +1484,11 @@ class ServerAPIBase(object):
                 if 'None' is passed.
 
         Returns:
-            Iterable[dict[str, Any]]: Queried folder entities.
+            Generator[dict[str, Any]]: Queried folder entities.
         """
 
         if not project_name:
-            return []
+            return
 
         filters = {
             "projectName": project_name
@@ -1496,25 +1496,25 @@ class ServerAPIBase(object):
         if folder_ids is not None:
             folder_ids = set(folder_ids)
             if not folder_ids:
-                return []
+                return
             filters["folderIds"] = list(folder_ids)
 
         if folder_paths is not None:
             folder_paths = set(folder_paths)
             if not folder_paths:
-                return []
+                return
             filters["folderPaths"] = list(folder_paths)
 
         if folder_names is not None:
             folder_names = set(folder_names)
             if not folder_names:
-                return []
+                return
             filters["folderNames"] = list(folder_names)
 
         if parent_ids is not None:
             parent_ids = set(parent_ids)
             if not parent_ids:
-                return []
+                return
             if None in parent_ids:
                 # Replace 'None' with '"root"' which is used during GraphQl
                 #   query for parent ids filter for folders without folder
@@ -1575,7 +1575,7 @@ class ServerAPIBase(object):
         own_attributes=False
     ):
         if not project_name:
-            return []
+            return
 
         filters = {
             "projectName": project_name
@@ -1584,25 +1584,25 @@ class ServerAPIBase(object):
         if task_ids is not None:
             task_ids = set(task_ids)
             if not task_ids:
-                return []
+                return
             filters["taskIds"] = list(task_ids)
 
         if task_names is not None:
             task_names = set(task_names)
             if not task_names:
-                return []
+                return
             filters["taskNames"] = list(task_names)
 
         if task_types is not None:
             task_types = set(task_types)
             if not task_types:
-                return []
+                return
             filters["taskTypes"] = list(task_types)
 
         if folder_ids is not None:
             folder_ids = set(folder_ids)
             if not folder_ids:
-                return []
+                return
             filters["folderIds"] = list(folder_ids)
 
         if not fields:
@@ -1772,24 +1772,24 @@ class ServerAPIBase(object):
         own_attributes=False
     ):
         if not project_name:
-            return []
+            return
 
         if subset_ids is not None:
             subset_ids = set(subset_ids)
             if not subset_ids:
-                return []
+                return
 
         filter_subset_names = None
         if subset_names is not None:
             filter_subset_names = set(subset_names)
             if not filter_subset_names:
-                return []
+                return
 
         filter_folder_ids = None
         if folder_ids is not None:
             filter_folder_ids = set(folder_ids)
             if not filter_folder_ids:
-                return []
+                return
 
         # This will disable 'folder_ids' and 'subset_names' filters
         #   - maybe could be enhanced in future?
@@ -1803,7 +1803,7 @@ class ServerAPIBase(object):
                     filter_subset_names |= set(names)
 
             if not filter_subset_names or not filter_folder_ids:
-                return []
+                return
 
         # Convert fields and add minimum required fields
         if fields:
@@ -1972,7 +1972,7 @@ class ServerAPIBase(object):
                 if 'None' is passed.
 
         Returns:
-            List[Dict[str, Any]]: Queried version entities.
+            Generator[Dict[str, Any]]: Queried version entities.
         """
 
         if not fields:
@@ -1999,24 +1999,24 @@ class ServerAPIBase(object):
         if version_ids is not None:
             version_ids = set(version_ids)
             if not version_ids:
-                return []
+                return
             filters["versionIds"] = list(version_ids)
 
         if subset_ids is not None:
             subset_ids = set(subset_ids)
             if not subset_ids:
-                return []
+                return
             filters["subsetIds"] = list(subset_ids)
 
         # TODO versions can't be used as fitler at this moment!
         if versions is not None:
             versions = set(versions)
             if not versions:
-                return []
+                return
             filters["versions"] = list(versions)
 
         if not hero and not standard:
-            return []
+            return
 
         queries = []
         # Add filters based on 'hero' and 'standard'
@@ -2285,7 +2285,7 @@ class ServerAPIBase(object):
                 passed.
 
         Returns:
-            List[Dict[str, Any]]: Queried representation entities.
+            Generator[Dict[str, Any]]: Queried representation entities.
         """
 
         if not fields:
@@ -2310,7 +2310,7 @@ class ServerAPIBase(object):
         if representation_ids is not None:
             representation_ids = set(representation_ids)
             if not representation_ids:
-                return []
+                return
             filters["representationIds"] = list(representation_ids)
 
         version_ids_filter = None
@@ -2323,18 +2323,18 @@ class ServerAPIBase(object):
                 representaion_names_filter |= set(names)
 
             if not version_ids_filter or not representaion_names_filter:
-                return []
+                return
 
         else:
             if representation_names is not None:
                 representaion_names_filter = set(representation_names)
                 if not representaion_names_filter:
-                    return []
+                    return
 
             if version_ids is not None:
                 version_ids_filter = set(version_ids)
                 if not version_ids_filter:
-                    return []
+                    return
 
         if version_ids_filter:
             filters["versionIds"] = list(version_ids_filter)
@@ -2459,19 +2459,19 @@ class ServerAPIBase(object):
         if task_ids is not None:
             task_ids = set(task_ids)
             if not task_ids:
-                return []
+                return
             filters["taskIds"] = list(task_ids)
 
         if paths is not None:
             paths = set(paths)
             if not paths:
-                return []
+                return
             filters["paths"] = list(paths)
 
         if workfile_ids is not None:
             workfile_ids = set(workfile_ids)
             if not workfile_ids:
-                return []
+                return
             filters["workfileIds"] = list(workfile_ids)
 
         if not fields:
