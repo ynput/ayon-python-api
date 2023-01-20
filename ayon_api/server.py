@@ -75,13 +75,32 @@ class RequestTypes:
 class RestApiResponse(object):
     """API Response."""
 
-    def __init__(self, status_code, data=None, content=None, headers=None):
-        if data is None:
-            data = {}
+    def __init__(self, response, data=None):
+        if response is None:
+            status_code = 500
+        else:
+            status_code = response.status_code
+        self._response = response
         self.status = status_code
-        self.data = data
-        self.content = content
-        self.headers = headers or {}
+        self._data = data
+
+    @property
+    def orig_response(self):
+        return self._response
+
+    @property
+    def headers(self):
+        return self._response.headers
+
+    @property
+    def data(self):
+        if self._data is None:
+            self._data = self._response.json()
+        return self._data
+
+    @property
+    def content(self):
+        return self._response.content
 
     @property
     def content_type(self):
@@ -94,6 +113,12 @@ class RestApiResponse(object):
     @property
     def status_code(self):
         return self.status
+
+    def raise_for_status(self):
+        self._response.raise_for_status()
+
+    def __enter__(self, *args, **kwargs):
+        return self._response.__enter__(*args, **kwargs)
 
     def __contains__(self, key):
         return key in self.data
@@ -448,26 +473,22 @@ class ServerAPIBase(object):
 
         except ConnectionRefusedError:
             new_response = RestApiResponse(
-                500,
+                None,
                 {"detail": "Unable to connect the server. Connection refused"}
             )
         except requests.exceptions.ConnectionError:
             new_response = RestApiResponse(
-                500,
+                None,
                 {"detail": "Unable to connect the server. Connection error"}
             )
         else:
             content_type = response.headers.get("Content-Type")
             if content_type == "application/json":
                 try:
-                    new_response = RestApiResponse(
-                        response.status_code,
-                        response.json(),
-                        headers=response.headers,
-                    )
+                    new_response = RestApiResponse(response)
                 except JSONDecodeError:
                     new_response = RestApiResponse(
-                        500,
+                        None,
                         {
                             "detail": "The response is not a JSON: {}".format(
                                 response.text)
@@ -475,17 +496,10 @@ class ServerAPIBase(object):
                     )
 
             elif content_type in ("image/jpeg", "image/png"):
-                new_response = RestApiResponse(
-                    response.status_code,
-                    headers=response.headers,
-                    content=response.content
-                )
+                new_response = RestApiResponse(response)
 
             else:
-                new_response = RestApiResponse(
-                    response.status_code,
-                    headers=response.headers,
-                )
+                new_response = RestApiResponse(response)
 
         self.log.debug("Response {}".format(str(new_response)))
         return new_response
