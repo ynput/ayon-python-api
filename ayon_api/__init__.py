@@ -1,5 +1,6 @@
 from .utils import (
     TransferProgress,
+    slugify_string,
 )
 from .server import (
     ServerAPIBase,
@@ -99,6 +100,7 @@ from .server_api import (
 
 __all__ = (
     "TransferProgress",
+    "slugify_string",
 
     "ServerAPIBase",
 

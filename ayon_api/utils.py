@@ -1,15 +1,21 @@
+import re
 import datetime
 import uuid
+import string
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
 
 import requests
+import unidecode
+
 
 from .exceptions import UrlError
 
 REMOVED_VALUE = object()
+SLUGIFY_WHITELIST = string.ascii_letters + string.digits
+SLUGIFY_SEP_WHITELIST = " ,./\\;:!|*^#@~+-_="
 
 
 def create_entity_id():
@@ -45,6 +51,59 @@ def entity_data_json_default(value):
     raise TypeError(
         "Object of type {} is not JSON serializable".format(str(type(value)))
     )
+
+
+def slugify_string(
+    input_string,
+    separator="_",
+    slug_whitelist=SLUGIFY_WHITELIST,
+    split_chars=SLUGIFY_SEP_WHITELIST,
+    min_length=1,
+    lower=False,
+    make_set=False,
+):
+    """Slugify a text string.
+
+    This function removes transliterates input string to ASCII, removes
+    special characters and use join resulting elements using
+    specified separator.
+
+    Args:
+        input_string (str): Input string to slugify
+        separator (str): A string used to separate returned elements
+            (default: "_")
+        slug_whitelist (str): Characters allowed in the output
+            (default: ascii letters, digits and the separator)
+        split_chars (str): Set of characters used for word splitting
+            (there is a sane default)
+        lower (bool): Convert to lower-case (default: False)
+        make_set (bool): Return "set" object instead of string.
+        min_length (int): Minimal length of an element (word).
+
+    Returns:
+        Union[str, Set[str]]: Based on 'make_set' value returns slugified
+            string.
+    """
+
+    tmp_string = unidecode.unidecode(input_string)
+    if lower:
+        tmp_string = tmp_string.lower()
+
+    parts = [
+        # Remove all characters that are not in whitelist
+        re.sub("[^{}]".format(re.escape(slug_whitelist)), "", part)
+        # Split text into part by split characters
+        for part in re.split("[{}]".format(re.escape(split_chars)), tmp_string)
+    ]
+    # Filter text parts by length
+    filtered_parts = [
+        part
+        for part in parts
+        if len(part) >= min_length
+    ]
+    if make_set:
+        return set(filtered_parts)
+    return separator.join(filtered_parts)
 
 
 def failed_json_default(value):
