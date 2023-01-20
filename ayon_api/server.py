@@ -572,6 +572,33 @@ class ServerAPIBase(object):
         response.raise_for_status()
         return response.data
 
+    def update_event(
+        self,
+        event_id,
+        sender=None,
+        project_name=None,
+        status=None,
+        description=None,
+        summary=None,
+        payload=None
+    ):
+        kwargs = {}
+        for key, value in (
+            ("sender", sender),
+            ("projectName", project_name),
+            ("status", status),
+            ("description", description),
+            ("summary", summary),
+            ("payload", payload),
+        ):
+            if value is not None:
+                kwargs[key] = value
+        response = self.put(
+            "events/{}".format(event_id),
+            **kwargs
+        )
+        response.raise_for_status()
+
     def dispatch_event(
         self,
         topic,
