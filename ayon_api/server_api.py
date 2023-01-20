@@ -237,6 +237,26 @@ def delete(*args, **kwargs):
     return con.delete(*args, **kwargs)
 
 
+def get_event(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_event(*args, **kwargs)
+
+
+def dispatch_event(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_event(*args, **kwargs)
+
+
+def update_event(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_event(*args, **kwargs)
+
+
+def enroll_event_job(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.enroll_event_job(*args, **kwargs)
+
+
 def download_file(*args, **kwargs):
     con = get_server_api_connection()
     return con.download_file(*args, **kwargs)

@@ -28,6 +28,11 @@ from .server_api import (
     patch,
     delete,
 
+    get_event,
+    dispatch_event,
+    update_event,
+    enroll_event_job,
+
     download_file,
     upload_file,
 
@@ -125,6 +130,11 @@ __all__ = (
     "put",
     "patch",
     "delete",
+
+    "get_event",
+    "dispatch_event",
+    "update_event",
+    "enroll_event_job",
 
     "download_file",
     "upload_file",

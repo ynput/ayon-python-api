@@ -75,13 +75,32 @@ class RequestTypes:
 class RestApiResponse(object):
     """API Response."""
 
-    def __init__(self, status_code, data=None, content=None, headers=None):
-        if data is None:
-            data = {}
+    def __init__(self, response, data=None):
+        if response is None:
+            status_code = 500
+        else:
+            status_code = response.status_code
+        self._response = response
         self.status = status_code
-        self.data = data
-        self.content = content
-        self.headers = headers or {}
+        self._data = data
+
+    @property
+    def orig_response(self):
+        return self._response
+
+    @property
+    def headers(self):
+        return self._response.headers
+
+    @property
+    def data(self):
+        if self._data is None:
+            self._data = self._response.json()
+        return self._data
+
+    @property
+    def content(self):
+        return self._response.content
 
     @property
     def content_type(self):
@@ -94,6 +113,12 @@ class RestApiResponse(object):
     @property
     def status_code(self):
         return self.status
+
+    def raise_for_status(self):
+        self._response.raise_for_status()
+
+    def __enter__(self, *args, **kwargs):
+        return self._response.__enter__(*args, **kwargs)
 
     def __contains__(self, key):
         return key in self.data
@@ -448,26 +473,22 @@ class ServerAPIBase(object):
 
         except ConnectionRefusedError:
             new_response = RestApiResponse(
-                500,
+                None,
                 {"detail": "Unable to connect the server. Connection refused"}
             )
         except requests.exceptions.ConnectionError:
             new_response = RestApiResponse(
-                500,
+                None,
                 {"detail": "Unable to connect the server. Connection error"}
             )
         else:
             content_type = response.headers.get("Content-Type")
             if content_type == "application/json":
                 try:
-                    new_response = RestApiResponse(
-                        response.status_code,
-                        response.json(),
-                        headers=response.headers,
-                    )
+                    new_response = RestApiResponse(response)
                 except JSONDecodeError:
                     new_response = RestApiResponse(
-                        500,
+                        None,
                         {
                             "detail": "The response is not a JSON: {}".format(
                                 response.text)
@@ -475,17 +496,10 @@ class ServerAPIBase(object):
                     )
 
             elif content_type in ("image/jpeg", "image/png"):
-                new_response = RestApiResponse(
-                    response.status_code,
-                    headers=response.headers,
-                    content=response.content
-                )
+                new_response = RestApiResponse(response)
 
             else:
-                new_response = RestApiResponse(
-                    response.status_code,
-                    headers=response.headers,
-                )
+                new_response = RestApiResponse(response)
 
         self.log.debug("Response {}".format(str(new_response)))
         return new_response
@@ -554,6 +568,119 @@ class ServerAPIBase(object):
 
     def delete(self, entrypoint, **kwargs):
         return self.raw_delete(entrypoint, params=kwargs)
+
+    def get_event(self, event_id):
+        """Receive full event data by id.
+
+        Events received using event server do not contain full information. To
+        get the full event information is required to receive it explicitly.
+
+        Args:
+            event_id (str): Id of event.
+
+        Returns:
+            Dict[str, Any]: Full event data.
+        """
+
+        response = self.get("events/{}".format(event_id))
+        response.raise_for_status()
+        return response.data
+
+    def update_event(
+        self,
+        event_id,
+        sender=None,
+        project_name=None,
+        status=None,
+        description=None,
+        summary=None,
+        payload=None
+    ):
+        kwargs = {}
+        for key, value in (
+            ("sender", sender),
+            ("projectName", project_name),
+            ("status", status),
+            ("description", description),
+            ("summary", summary),
+            ("payload", payload),
+        ):
+            if value is not None:
+                kwargs[key] = value
+        response = self.put(
+            "events/{}".format(event_id),
+            **kwargs
+        )
+        response.raise_for_status()
+
+    def dispatch_event(
+        self,
+        topic,
+        sender=None,
+        event_hash=None,
+        project_name=None,
+        username=None,
+        dependencies=None,
+        description=None,
+        summary=None,
+        payload=None,
+        finished=True,
+        store=True,
+    ):
+        if summary is None:
+            summary = {}
+        if payload is None:
+            payload = {}
+        event_data = {
+            "topic": topic,
+            "sender": sender,
+            "hash": event_hash,
+            "project": project_name,
+            "user": username,
+            "dependencies": dependencies,
+            "description": description,
+            "summary": summary,
+            "payload": payload,
+            "finished": finished,
+            "store": store,
+        }
+        if self.post("events", **event_data):
+            self.log.debug("Dispatched event {}".format(topic))
+            return True
+        self.log.error("Unable to dispatch event {}".format(topic))
+        return False
+
+    def enroll_event_job(
+        self,
+        source_topic,
+        target_topic,
+        sender,
+        description=None,
+        sequential=None
+    ):
+        """Enroll job based on events.
+
+        Args:
+            source_topic (str): Topic
+        """
+
+        kwargs = {
+            "sourceTopic": source_topic,
+            "targetTopic": target_topic,
+            "sender": sender,
+        }
+        if sequential is not None:
+            kwargs["sequential"] = sequential
+        if description is not None:
+            kwargs["description"] = description
+        response = self.post("enroll", **kwargs)
+        if response.status_code == 204:
+            return None
+        elif response.status_code >= 400:
+            self.log.error(response.text)
+            return None
+
+        return response.data
 
     def _download_file(self, url, filepath, chunk_size, progress):
         dst_directory = os.path.dirname(filepath)
