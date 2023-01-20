@@ -1759,6 +1759,20 @@ class ServerAPIBase(object):
             for folder in folders
         }
 
+    def _filter_subset(
+        self, project_name, subset, active, own_attributes, use_rest
+    ):
+        if active is not None and subset["active"] is not active:
+            return None
+
+        if use_rest:
+            subset = self.get_rest_subset(project_name, subset["id"])
+
+        if own_attributes:
+            fill_own_attribs(subset)
+
+        return subset
+
     def get_subsets(
         self,
         project_name,
@@ -1846,35 +1860,30 @@ class ServerAPIBase(object):
         parsed_data = query.query(self)
 
         subsets = parsed_data.get("project", {}).get("subsets", [])
-        if active is not None or own_attributes:
-            _subsets = []
-            for subset in subsets:
-                if active is not None and subset["active"] is not active:
-                    continue
-
-                if use_rest:
-                    subset = self.get_rest_subset(project_name, subset["id"])
-
-                if own_attributes:
-                    fill_own_attribs(subset)
-                _subsets.append(subset)
-            subsets = _subsets
-
         # Filter subsets by 'names_by_folder_ids'
         if names_by_folder_ids:
             subsets_by_folder_id = collections.defaultdict(list)
             for subset in subsets:
-                folder_id = subset["folderId"]
-                subsets_by_folder_id[folder_id].append(subset)
+                filtered_subset = self._filter_subset(
+                    project_name, subset, active, own_attributes, use_rest
+                )
+                if filtered_subset is not None:
+                    folder_id = filtered_subset["folderId"]
+                    subsets_by_folder_id[folder_id].append(filtered_subset)
 
-            filtered_subsets = []
             for folder_id, names in names_by_folder_ids.items():
                 for folder_subset in subsets_by_folder_id[folder_id]:
                     if folder_subset["name"] in names:
-                        filtered_subsets.append(subset)
-            subsets = filtered_subsets
+                        yield folder_subset
 
-        return list(subsets)
+        else:
+            for subset in subsets:
+                filtered_subset = self._filter_subset(
+                    project_name, subset, active, own_attributes, use_rest
+                )
+                if filtered_subset is not None:
+                    yield filtered_subset
+
 
     def get_subset_by_id(
         self,
