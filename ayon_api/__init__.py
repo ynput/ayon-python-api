@@ -7,6 +7,9 @@ from .server import (
 
 from .server_api import (
     ServerAPI,
+    ServiceContext,
+
+    init_service,
 
     get_server_api_connection,
 
@@ -103,6 +106,8 @@ __all__ = (
     "ServerAPIBase",
 
     "ServerAPI",
+    "ServiceContext",
+    "init_service",
 
     "get_server_api_connection",
 
