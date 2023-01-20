@@ -555,6 +555,92 @@ class ServerAPIBase(object):
     def delete(self, entrypoint, **kwargs):
         return self.raw_delete(entrypoint, params=kwargs)
 
+    def get_event(self, event_id):
+        """Receive full event data by id.
+
+        Events received using event server do not contain full information. To
+        get the full event information is required to receive it explicitly.
+
+        Args:
+            event_id (str): Id of event.
+
+        Returns:
+            Dict[str, Any]: Full event data.
+        """
+
+        response = self.get("events/{}".format(event_id))
+        response.raise_for_status()
+        return response.data
+
+    def dispatch_event(
+        self,
+        topic,
+        sender=None,
+        event_hash=None,
+        project_name=None,
+        username=None,
+        dependencies=None,
+        description=None,
+        summary=None,
+        payload=None,
+        finished=True,
+        store=True,
+    ):
+        if summary is None:
+            summary = {}
+        if payload is None:
+            payload = {}
+        event_data = {
+            "topic": topic,
+            "sender": sender,
+            "hash": event_hash,
+            "project": project_name,
+            "user": username,
+            "dependencies": dependencies,
+            "description": description,
+            "summary": summary,
+            "payload": payload,
+            "finished": finished,
+            "store": store,
+        }
+        if self.post("events", **event_data):
+            self.log.debug("Dispatched event {}".format(topic))
+            return True
+        self.log.error("Unable to dispatch event {}".format(topic))
+        return False
+
+    def enroll_event_job(
+        self,
+        source_topic,
+        target_topic,
+        sender,
+        description=None,
+        sequential=None
+    ):
+        """Enroll job based on events.
+
+        Args:
+            source_topic (str): Topic
+        """
+
+        kwargs = {
+            "sourceTopic": source_topic,
+            "targetTopic": target_topic,
+            "sender": sender,
+        }
+        if sequential is not None:
+            kwargs["sequential"] = sequential
+        if description is not None:
+            kwargs["description"] = description
+        response = self.post("enroll", **kwargs)
+        if response.status_code == 204:
+            return None
+        elif response.status_code >= 400:
+            self.log.error(response.text)
+            return None
+
+        return response.data
+
     def _download_file(self, url, filepath, chunk_size, progress):
         dst_directory = os.path.dirname(filepath)
         if not os.path.exists(dst_directory):
