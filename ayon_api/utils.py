@@ -272,8 +272,8 @@ class TransferProgress:
 
     def __init__(self):
         self._started = False
-        self._done = False
-        self._downloaded = 0
+        self._transfer_done = False
+        self._transfered = 0
         self._content_size = None
 
         self._failed = False
@@ -298,15 +298,15 @@ class TransferProgress:
             raise ValueError("Progress already started")
         self._started = True
 
-    def get_done(self):
-        return self._done
+    def get_transfer_done(self):
+        return self._transfer_done
 
-    def set_done(self):
-        if self._done:
+    def set_transfer_done(self):
+        if self._transfer_done:
             raise ValueError("Progress was already marked as done")
         if not self._started:
             raise ValueError("Progress didn't start yet")
-        self._done = True
+        self._transfer_done = True
 
     def get_failed(self):
         return self._failed
@@ -318,14 +318,14 @@ class TransferProgress:
         self._fail_reason = reason
         self._failed = True
 
-    def get_downloaded_size(self):
-        return self._downloaded
+    def get_transferred_size(self):
+        return self._transfered
 
-    def set_downloaded_size(self, downloaded_size):
-        self._downloaded = downloaded_size
+    def set_transferred_size(self, transfered):
+        self._transfered = transfered
 
-    def add_downloaded_chunk(self, chunk_size):
-        self._downloaded += chunk_size
+    def add_transferred_chunk(self, chunk_size):
+        self._transfered += chunk_size
 
     def get_source_url(self):
         return self._source_url
@@ -350,17 +350,17 @@ class TransferProgress:
         return True
 
     @property
-    def progress(self):
+    def transfer_progress(self):
         if self._content_size is None:
             return None
-        return (self._downloaded * 100.0) / float(self._content_size)
+        return (self._transfered * 100.0) / float(self._content_size)
 
     content_size = property(get_content_size, set_content_size)
     started = property(get_started)
-    done = property(get_done)
+    transfer_done = property(get_transfer_done)
     failed = property(get_failed)
     fail_reason = property(get_fail_reason)
     source_url = property(get_source_url, set_source_url)
     destination_url = property(get_destination_url, set_destination_url)
     content_size = property(get_content_size, set_content_size)
-    downloaded_size = property(get_downloaded_size, set_downloaded_size)
+    transferred_size = property(get_transferred_size, set_transferred_size)
