@@ -1,9 +1,12 @@
 import os
+import socket
+
 from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_TOKEN_ENV_KEY,
 )
 from .server import ServerAPIBase
+from .exceptions import FailedServiceInit
 
 
 class ServerAPI(ServerAPIBase):
@@ -70,6 +73,95 @@ class GlobalContext:
         if cls._connection is None:
             cls._connection = ServerAPI()
         return cls._connection
+
+
+class ServiceContext:
+    """Helper for services running under server.
+
+    When service is running from server the process receives information about
+    connection from environment variables. This class helps to initialize the
+    values without knowing environment variables (that may change over time).
+
+    All what must be done is to call 'init_service' function/method. The
+    arguments are for cases when the service is running in specific environment
+    and their values are e.g. loaded from private file or for testing purposes.
+    """
+
+    token = None
+    server_url = None
+    addon_name = None
+    addon_version = None
+    service_name = None
+
+    @staticmethod
+    def get_value_from_envs(env_keys, value=None):
+        if value:
+            return value
+
+        for env_key in env_keys:
+            value = os.environ.get(env_key)
+            if value:
+                break
+        return value
+
+    @classmethod
+    def init_service(
+        cls,
+        token=None,
+        server_url=None,
+        addon_name=None,
+        addon_version=None,
+        service_name=None,
+        connect=True
+    ):
+        token = cls.get_value_from_envs(
+            ("AY_API_KEY", "AYON_TOKEN"),
+            token
+        )
+        server_url = cls.get_value_from_envs(
+            ("AY_SERVER_URL", "AYON_SERVER_URL"),
+            server_url
+        )
+        if not server_url:
+            raise FailedServiceInit("URL to server is not set")
+
+        if not token:
+            raise FailedServiceInit(
+                "Token to server {} is not set".format(server_url)
+            )
+
+        addon_name = cls.get_value_from_envs(
+            ("AY_ADDON_NAME", "AYON_ADDON_NAME"),
+            addon_name
+        )
+        addon_version = cls.get_value_from_envs(
+            ("AY_ADDON_VERSION", "AYON_ADDON_VERSION"),
+            addon_version
+        )
+        service_name = cls.get_value_from_envs(
+            ("AY_SERVICE_NAME", "AYON_SERVICE_NAME"),
+            service_name
+        )
+
+        cls.token = token
+        cls.server_url = server_url
+        cls.addon_name = addon_name
+        cls.addon_version = addon_version
+        cls.service_name = service_name or socket.gethostname()
+
+        # Make sure required environments for ServerAPI are set
+        os.environ["AYON_SERVER_URL"] = cls.server_url
+        os.environ["AYON_TOKEN"] = cls.token
+
+        if connect:
+            print("Connecting to server \"{}\"".format(server_url))
+            con = GlobalContext.get_server_api_connection()
+            user = con.get_user()
+            print("Logged in as user \"{}\"".format(user["name"]))
+
+
+def init_service(*args, **kwargs):
+    ServiceContext.init_service(*args, **kwargs)
 
 
 def get_server_api_connection():
