@@ -1350,8 +1350,7 @@ class ServerAPIBase(object):
             ]))
 
         response = self.get("projects{}".format(query), **query_keys)
-        # TODO check status
-        response.status
+        response.raise_for_status()
         data = response.data
         project_names = []
         if data:
