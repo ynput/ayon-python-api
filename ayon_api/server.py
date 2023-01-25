@@ -1016,8 +1016,7 @@ class ServerAPIBase(object):
         if details:
             endpoint += "?details=1"
         response = self.get(endpoint)
-        if response.status != 200:
-            raise ServerError(response.text)
+        response.raise_for_status()
         return response.data
 
     def download_addon_private_file(
@@ -1233,8 +1232,7 @@ class ServerAPIBase(object):
         result = self.get(
             "addons/{}/{}/settings".format(addon_name, addon_version)
         )
-        if result.status != 200:
-            raise ServerError(result.text)
+        result.raise_for_status()
         return result.data
 
     def get_addon_project_settings(
@@ -1245,8 +1243,7 @@ class ServerAPIBase(object):
                 addon_name, addon_version, project_name
             )
         )
-        if result.status != 200:
-            raise ServerError(result.text)
+        result.raise_for_status()
         return result.data
 
     def get_addon_settings(self, addon_name, addon_version, project_name=None):
