@@ -244,7 +244,7 @@ def get_event(*args, **kwargs):
 
 def dispatch_event(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_event(*args, **kwargs)
+    return con.dispatch_event(*args, **kwargs)
 
 
 def update_event(*args, **kwargs):
