@@ -607,7 +607,7 @@ class ServerAPIBase(object):
         ):
             if value is not None:
                 kwargs[key] = value
-        response = self.put(
+        response = self.patch(
             "events/{}".format(event_id),
             **kwargs
         )
@@ -2850,3 +2850,4 @@ class ServerAPIBase(object):
                     json.dumps(body_by_id[operation_id], indent=4),
                     op_result["error"],
                 ))
+
