@@ -31,10 +31,7 @@ setup(
         "requests >= 2.27.1",
         "six >= 1.15",
         "Unidecode >= 1.3.6",
-        "appdirs @ git+https://github.com/ActiveState/appdirs.git@master",
-    ],
-    dependency_links=[
-        "appdirs @ git+https://github.com/ActiveState/appdirs.git@master"
+        "appdirs >=1, <2",
     ],
     keywords=["AYON", "ynput", "OpenPype", "vfx"],
 )
