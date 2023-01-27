@@ -69,6 +69,27 @@ class GlobalContext:
     _connection = None
 
     @classmethod
+    def is_connection_created(cls):
+        return cls._connection is not None
+
+    @classmethod
+    def change_token(cls, url, token):
+        ServerAPI.set_environments(url, token)
+        if cls._connection is None:
+            return
+
+        if cls._connection.get_base_url() == url:
+            cls._connection.set_token(token)
+        else:
+            cls.close_connection()
+
+    @classmethod
+    def close_connection(cls):
+        if cls._connection is not None:
+            cls._connection.close_session()
+        cls._connection = None
+
+    @classmethod
     def get_server_api_connection(cls):
         if cls._connection is None:
             cls._connection = ServerAPI()
@@ -150,8 +171,7 @@ class ServiceContext:
         cls.service_name = service_name or socket.gethostname()
 
         # Make sure required environments for ServerAPI are set
-        os.environ["AYON_SERVER_URL"] = cls.server_url
-        os.environ["AYON_TOKEN"] = cls.token
+        ServerAPI.set_environments(cls.server_url, cls.token)
 
         if connect:
             print("Connecting to server \"{}\"".format(server_url))
@@ -162,6 +182,46 @@ class ServiceContext:
 
 def init_service(*args, **kwargs):
     ServiceContext.init_service(*args, **kwargs)
+
+
+def is_connection_created():
+    """Is global connection created.
+
+    Returns:
+        bool: True if connection was connected.
+    """
+
+    return GlobalContext.is_connection_created()
+
+
+def close_connection():
+    """Close global connection if is connected."""
+
+    GlobalContext.close_connection()
+
+
+def change_token(url, token):
+    """Change connection token for url.
+
+    This function can be also used to change url.
+
+    Args:
+        url (str): Server url.
+        token (str): API key token.
+    """
+
+    GlobalContext.change_token(url, token)
+
+
+def set_environments(url, token):
+    """Set global environments for global connection.
+
+    Args:
+        url (Union[str, None]): Url to server or None to unset environments.
+        token (Union[str, None]): API key token to be used for connection.
+    """
+
+    ServerAPI.set_environments(url, token)
 
 
 def get_server_api_connection():
