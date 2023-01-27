@@ -12,6 +12,10 @@ from .server_api import (
 
     init_service,
 
+    is_connection_created,
+    close_connection,
+    change_token,
+    set_environments,
     get_server_api_connection,
 
     get_base_url,
@@ -116,6 +120,10 @@ __all__ = (
     "ServiceContext",
     "init_service",
 
+    "is_connection_created",
+    "close_connection",
+    "change_token",
+    "set_environments",
     "get_server_api_connection",
 
     "get_base_url",
