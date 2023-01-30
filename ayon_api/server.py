@@ -95,7 +95,10 @@ class RestApiResponse(object):
     @property
     def data(self):
         if self._data is None:
-            self._data = self._response.json()
+            if self.status != 204:
+                self._data = self.orig_response.json()
+            else:
+                self._data = {}
         return self._data
 
     @property
