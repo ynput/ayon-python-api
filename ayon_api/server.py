@@ -6,7 +6,10 @@ import logging
 import collections
 import platform
 import copy
-from http import HTTPStatus
+try:
+    from http import HTTPStatus
+except ImportError:
+    HTTPStatus = None
 
 import requests
 
@@ -54,6 +57,12 @@ PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
 PROJECT_NAME_REGEX = re.compile(
     "^[{}]+$".format(PROJECT_NAME_ALLOWED_SYMBOLS)
 )
+
+
+def _get_description(response):
+    if HTTPStatus is None:
+        return str(response.orig_response)
+    return HTTPStatus(response.status).description
 
 
 class RequestType:
@@ -111,7 +120,7 @@ class RestApiResponse(object):
 
     @property
     def detail(self):
-        return self.get("detail", HTTPStatus(self.status).description)
+        return self.get("detail", _get_description(self))
 
     @property
     def status_code(self):
