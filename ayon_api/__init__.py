@@ -34,6 +34,7 @@ from .server_api import (
     delete,
 
     get_event,
+    get_events,
     dispatch_event,
     update_event,
     enroll_event_job,
@@ -142,6 +143,7 @@ __all__ = (
     "delete",
 
     "get_event",
+    "get_events",
     "dispatch_event",
     "update_event",
     "enroll_event_job",
