@@ -19,6 +19,7 @@ from .constants import (
     DEFAULT_REPRESENTATION_FIELDS,
     REPRESENTATION_FILES_FIELDS,
     DEFAULT_WORKFILE_INFO_FIELDS,
+    DEFAULT_EVENT_FIELDS,
 )
 from .thumbnails import ThumbnailCache
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
@@ -32,6 +33,7 @@ from .graphql_queries import (
     representations_graphql_query,
     representations_parents_qraphql_query,
     workfiles_info_graphql_query,
+    events_graphql_query,
 )
 from .exceptions import (
     FailedOperations,
@@ -588,6 +590,74 @@ class ServerAPIBase(object):
         response = self.get("events/{}".format(event_id))
         response.raise_for_status()
         return response.data
+
+    def get_events(
+        self,
+        topics=None,
+        project_names=None,
+        states=None,
+        users=None,
+        include_logs=None,
+        fields=None
+    ):
+        """Get events from server with filtering options.
+
+        Notes:
+            Not all event happen on a project.
+
+        Args:
+            topics (Iterable[str]): Name of topics.
+            project_names (Iterable[str]): Project on which event happened.
+            states (Iterable[str]): Filtering by states.
+            users (Iterable[str]): Filtering by users who created/triggered
+                an event.
+            include_logs (bool): Query also log events.
+            fields (Iterable[str]): Fields that should be received for each
+                event.
+
+        Returns:
+            Generator[Dict[str, Any]]: Available events matching filters.
+        """
+
+        filters = {}
+        if topics is not None:
+            topics = set(topics)
+            if not topics:
+                return
+            filters["eventTopics"] = list(topics)
+
+        if project_names is not None:
+            project_names = set(project_names)
+            if not project_names:
+                return
+            filters["projectName"] = list(project_names)
+
+        if states is not None:
+            states = set(states)
+            if not states:
+                return
+            filters["eventStates"] = list(states)
+
+        if users is not None:
+            users = set(users)
+            if not users:
+                return
+            filters["eventUsers"] = list(users)
+
+        if include_logs is None:
+            include_logs = False
+        filters["includeLogsFilter"] = include_logs
+
+        if not fields:
+            fields = DEFAULT_EVENT_FIELDS
+
+        query = events_graphql_query(set(fields))
+        for attr, filter_value in filters.items():
+            query.set_variable_value(attr, filter_value)
+
+        for parsed_data in query.continuous_query(self):
+            for event in parsed_data["events"]:
+                yield event
 
     def update_event(
         self,
