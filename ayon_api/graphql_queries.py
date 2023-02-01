@@ -327,3 +327,36 @@ def workfiles_info_graphql_query(fields):
         for k, v in value.items():
             query_queue.append((k, v, field))
     return query
+
+
+def events_graphql_query(fields):
+    query = GraphQlQuery("WorkfilesInfo")
+    topics_var = query.add_variable("eventTopics", "[String!]")
+    projects_var = query.add_variable("projectNames", "[String!]")
+    states_var = query.add_variable("eventStates", "[String!]")
+    users_var = query.add_variable("eventUsers", "[String!]")
+    include_logs_var = query.add_variable("includeLogsFilter", "Boolean!")
+
+    events_field = query.add_field("events", has_edges=True)
+    events_field.set_filter("topics", topics_var)
+    events_field.set_filter("projects", projects_var)
+    events_field.set_filter("states", states_var)
+    events_field.set_filter("users", users_var)
+    events_field.set_filter("includeLogs", include_logs_var)
+
+    nested_fields = fields_to_dict(set(fields))
+
+    query_queue = collections.deque()
+    for key, value in nested_fields.items():
+        query_queue.append((key, value, events_field))
+
+    while query_queue:
+        item = query_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            query_queue.append((k, v, field))
+    return query
