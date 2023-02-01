@@ -88,3 +88,18 @@ DEFAULT_WORKFILE_INFO_FIELDS = {
     "updatedAt",
     "updatedBy",
 }
+
+DEFAULT_EVENT_FIELDS = {
+    "id",
+    "hash",
+    "createdAt",
+    "dependsOn",
+    "description",
+    "project",
+    "retries",
+    "sender",
+    "status",
+    "topic",
+    "updatedAt",
+    "user",
+}
