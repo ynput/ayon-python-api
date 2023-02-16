@@ -6,10 +6,8 @@ AYON Python api should support connection to server with raw REST functions and 
 Module support singleton connection which is using `AYON_SERVER_URL` and `AYON_TOKEN` environment variables as source for connection. The singleton connection is using `ServerAPI` object. There can be created multiple connection to different server at one time, for that purpose use `ServerAPIBase` object. 
 
 ## TODOs
-- More clear what is difference in `ServerAPIBase` and `ServerAPI` (`server.py` and `server_api.py`) and better names
-    - `ServerAPI` was added primarily for desktop app which handle login and logout in a different way so the class should be maybe removed and `ServerAPIBase` should be renamed to `ServerAPI`
-    - find more suitable names of classes
-    - find more suitable name of objects (right now is used `connection` or `con`)
+- Find more suitable name for objects of `ServerAPI` (right now is used `connection` or `con`)
 - Add folder and task changes to operations
   - Entity hub should use operations to update folders and tasks 
+- Add option to use machine id in connection
   
