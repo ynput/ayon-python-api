@@ -358,9 +358,7 @@ class ServerAPIBase(object):
             return
         self._site_id = site_id
         # Recreate session on machine id change
-        if self._session is not None:
-            self.close_session()
-            self.create_session()
+        self._update_session_headers()
 
     site_id = property(get_site_id, set_site_id)
 
@@ -493,6 +491,21 @@ class ServerAPIBase(object):
         if output is None:
             raise UnauthorizedError("User is not authorized.")
         return output
+
+    def _update_session_headers(self):
+        if self._session is None:
+            return
+
+        # Header keys that may change over time
+        for key, value in (
+            ("X-as-user", self._as_user_stack.username),
+            ("x-ayon-version", self._client_version),
+            ("x-ayon-site-id", self._site_id),
+        ):
+            if value is not None:
+                self._session.headers[key] = value
+            elif key in self._session.headers:
+                self._session.headers.pop(key)
 
     def get_headers(self, content_type=None):
         if content_type is None:
