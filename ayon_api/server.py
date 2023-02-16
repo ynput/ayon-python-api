@@ -222,9 +222,6 @@ class _AsUserStack:
         self._last_user = None
         self._default_user = None
 
-    def __bool__(self):
-        return self.username is not None
-
     def clear(self):
         self._users_by_id = {}
         self._user_ids = []
