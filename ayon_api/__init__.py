@@ -6,7 +6,7 @@ from .server import (
     ServerAPI,
 )
 
-from .server_api import (
+from ._api import (
     GlobalServerAPI,
     ServiceContext,
 

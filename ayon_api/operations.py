@@ -6,7 +6,7 @@ from abc import ABCMeta, abstractproperty
 
 import six
 
-from .server_api import get_server_api_connection
+from ._api import get_server_api_connection
 from .utils import create_entity_id, REMOVED_VALUE
 
 

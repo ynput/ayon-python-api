@@ -1,3 +1,11 @@
+"""Singleton based server api for direct access.
+
+This implementation will be probably the most used part of package. Gives
+option to have singleton connection to Server URL based on environment variable
+values. All public functions and classes are imported in '__init__.py' so
+they're available directly in top module import.
+"""
+
 import os
 import socket
 
@@ -5,7 +13,7 @@ from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_TOKEN_ENV_KEY,
 )
-from .server import ServerAPI
+from .server_api import ServerAPI
 from .exceptions import FailedServiceInit
 
 
