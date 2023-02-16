@@ -362,6 +362,34 @@ class ServerAPIBase(object):
 
     site_id = property(get_site_id, set_site_id)
 
+    def get_client_version(self):
+        """Version of client used to connect to server.
+
+        Client version is AYON client build desktop application.
+
+        Returns:
+            str: Client version string used in connection.
+        """
+
+        return self._client_version
+
+    def set_client_version(self, client_version):
+        """Set version of client used to connect to server.
+
+        Client version is AYON client build desktop application.
+
+        Args:
+            client_version (Union[str, None]): Client version string.
+        """
+
+        if self._client_version == client_version:
+            return
+
+        self._client_version = client_version
+        self._update_session_headers()
+
+    client_version = property(get_client_version, set_client_version)
+
     def get_default_service_username(self):
         """Default username used for callbacks when used with service API key.
 
