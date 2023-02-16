@@ -254,6 +254,32 @@ def get_server_api_connection():
     return GlobalContext.get_server_api_connection()
 
 
+def set_site_id(site_id):
+    """Set site id of already connected client connection.
+
+    Site id is human-readable machine id used in AYON desktop application.
+
+    Args:
+        site_id (Union[str, None]): Site id used in connection.
+    """
+
+    con = get_server_api_connection()
+    con.set_site_id(site_id)
+
+
+def set_client_version(client_version):
+    """Set version of already connected client connection.
+
+    Client version is version of AYON desktop application.
+
+    Args:
+        client_version (Union[str, None]): Client version string.
+    """
+
+    con = get_server_api_connection()
+    con.set_client_version(client_version)
+
+
 def get_base_url():
     con = get_server_api_connection()
     return con.get_base_url()

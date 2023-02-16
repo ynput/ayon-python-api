@@ -18,6 +18,8 @@ from .server_api import (
     change_token,
     set_environments,
     get_server_api_connection,
+    set_site_id,
+    set_client_version,
 
     get_base_url,
     get_rest_url,
@@ -128,6 +130,8 @@ __all__ = (
     "change_token",
     "set_environments",
     "get_server_api_connection",
+    "set_site_id",
+    "set_client_version",
 
     "get_base_url",
     "get_rest_url",
