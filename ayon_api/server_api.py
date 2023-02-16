@@ -5,11 +5,11 @@ from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_TOKEN_ENV_KEY,
 )
-from .server import ServerAPIBase
+from .server import ServerAPI
 from .exceptions import FailedServiceInit
 
 
-class GlobalServerAPI(ServerAPIBase):
+class GlobalServerAPI(ServerAPI):
     """Extended server api which also handles storing tokens and url.
 
     Created object expect to have set environment variables

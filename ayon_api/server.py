@@ -186,7 +186,7 @@ def fill_own_attribs(entity):
             own_attrib[key] = copy.deepcopy(value)
 
 
-class ServerAPIBase(object):
+class ServerAPI(object):
     """Base handler of connection to server.
 
     Requires url to server which is used as base for api and graphql calls.
