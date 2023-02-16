@@ -6,6 +6,8 @@ import logging
 import collections
 import platform
 import copy
+import uuid
+from contextlib import contextmanager
 try:
     from http import HTTPStatus
 except ImportError:
@@ -184,6 +186,93 @@ def fill_own_attribs(entity):
             own_attrib[key] = None
         else:
             own_attrib[key] = copy.deepcopy(value)
+
+
+class _AsUserStack:
+    """Handle stack of users used over server api connection in service mode.
+
+    ServerAPI can behave as other users if it is using special API key.
+
+    Examples:
+        >>> stack = _AsUserStack()
+        >>> stack.set_default_username("DefaultName")
+        >>> print(stack.username)
+        DefaultName
+        >>> with stack.as_user("Other1"):
+        ...     print(stack.username)
+        ...     with stack.as_user("Other2"):
+        ...         print(stack.username)
+        ...     print(stack.username)
+        ...     stack.clear()
+        ...     print(stack.username)
+        Other1
+        Other2
+        Other1
+        None
+        >>> print(stack.username)
+        None
+        >>> stack.set_default_username("DefaultName")
+        >>> print(stack.username)
+        DefaultName
+    """
+
+    def __init__(self):
+        self._users_by_id = {}
+        self._user_ids = []
+        self._last_user = None
+        self._default_user = None
+
+    def __bool__(self):
+        return self.username is not None
+
+    def clear(self):
+        self._users_by_id = {}
+        self._user_ids = []
+        self._last_user = None
+        self._default_user = None
+
+    @property
+    def username(self):
+        # Use '_user_ids' for boolean check to have ability "unset"
+        #   default user
+        if self._user_ids:
+            return self._last_user
+        return self._default_user
+
+    def get_default_username(self):
+        return self._default_user
+
+    def set_default_username(self, username=None):
+        self._default_user = username
+
+    default_username = property(get_default_username, set_default_username)
+
+    @contextmanager
+    def as_user(self, username):
+        self._last_user = username
+        user_id = uuid.uuid4().hex
+        self._user_ids.append(user_id)
+        self._users_by_id[user_id] = username
+        try:
+            yield
+        finally:
+            self._users_by_id.pop(user_id, None)
+            if not self._user_ids:
+                return
+
+            # First check if is the user id the last one
+            was_last = self._user_ids[-1] == user_id
+            # Remove id from variables
+            if user_id in self._user_ids:
+                self._user_ids.remove(user_id)
+
+            if not was_last:
+                return
+
+            new_last_user = None
+            if self._user_ids:
+                new_last_user = self._users_by_id.get(self._user_ids[-1])
+            self._last_user = new_last_user
 
 
 class ServerAPIBase(object):
