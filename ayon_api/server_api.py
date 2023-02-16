@@ -181,7 +181,50 @@ class ServiceContext:
 
 
 def init_service(*args, **kwargs):
+    """Initialize current connection from service.
+
+    The service expect specific environment variables. The variables must all
+    be set to make the connection work as a service.
+    """
+
     ServiceContext.init_service(*args, **kwargs)
+
+
+def get_service_addon_name():
+    """Name of addon which initialized service connection.
+
+    Returns:
+        Union[str, None]: Name of addon or None.
+    """
+
+    return ServiceContext.addon_name
+
+
+def get_service_addon_version():
+    """Version of addon which initialized service connection.
+
+    Returns:
+        Union[str, None]: Version of addon or None.
+    """
+
+    return ServiceContext.addon_version
+
+
+def get_service_addon_settings():
+    """Addon settings of service which initialized service.
+
+    Returns:
+        Dict[str, Any]: Addon settings.
+
+    Raises:
+        ValueError: When service was not initialized.
+    """
+
+    addon_name = get_service_addon_name()
+    addon_version = get_service_addon_version()
+    if addon_name is None or addon_version is None:
+        raise ValueError("Service is not initialized")
+    return get_addon_settings(addon_name, addon_version)
 
 
 def is_connection_created():
