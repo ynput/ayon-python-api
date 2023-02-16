@@ -6,7 +6,7 @@ class ServerEvent(object):
         self,
         topic,
         sender=None,
-        hash=None,
+        event_hash=None,
         project_name=None,
         username=None,
         dependencies=None,
@@ -25,10 +25,11 @@ class ServerEvent(object):
 
         self.topic = topic
         self.sender = sender
-        self.hash = hash
+        self.event_hash = event_hash
         self.project_name = project_name
         self.username = username
         self.dependencies = dependencies
+        self.description = description
         self.summary = summary
         self.payload = payload
         self.finished = finished
@@ -38,10 +39,11 @@ class ServerEvent(object):
         return {
             "topic": self.topic,
             "sender": self.sender,
-            "hash": self.hash,
+            "hash": self.event_hash,
             "project": self.project_name,
             "user": self.username,
             "dependencies": copy.deepcopy(self.dependencies),
+            "description": self.description,
             "description": self.description,
             "summary": copy.deepcopy(self.summary),
             "payload": self.payload,
