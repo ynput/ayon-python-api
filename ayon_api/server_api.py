@@ -17,11 +17,11 @@ class ServerAPI(ServerAPIBase):
     but that can be filled afterwards with calling 'login' method.
     """
 
-    def __init__(self):
+    def __init__(self, site_id=None, client_version=None):
         url = self.get_url()
         token = self.get_token()
 
-        super(ServerAPI, self).__init__(url, token)
+        super(ServerAPI, self).__init__(url, token, site_id, client_version)
 
         self.validate_server_availability()
         self.create_session()
@@ -90,9 +90,15 @@ class GlobalContext:
         cls._connection = None
 
     @classmethod
+    def create_connection(cls, *args, **kwargs):
+        if cls._connection is not None:
+            cls.close_connection()
+        cls._connection = ServerAPI(*args, **kwargs)
+
+    @classmethod
     def get_server_api_connection(cls):
         if cls._connection is None:
-            cls._connection = ServerAPI()
+            cls.create_connection()
         return cls._connection
 
 
@@ -192,6 +198,17 @@ def is_connection_created():
     """
 
     return GlobalContext.is_connection_created()
+
+
+def create_connection(site_id=None, client_version=None):
+    """Create global connection.
+
+    Args:
+        site_id (str): Machine site id/name.
+        client_version (str): Desktop app version.
+    """
+
+    GlobalContext.create_connection(site_id, client_version)
 
 
 def close_connection():

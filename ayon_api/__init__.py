@@ -13,6 +13,7 @@ from .server_api import (
     init_service,
 
     is_connection_created,
+    create_connection,
     close_connection,
     change_token,
     set_environments,
@@ -122,6 +123,7 @@ __all__ = (
     "init_service",
 
     "is_connection_created",
+    "create_connection",
     "close_connection",
     "change_token",
     "set_environments",
