@@ -331,6 +331,12 @@ class ServerAPIBase(object):
         self._as_user_stack = _AsUserStack()
         self._thumbnail_cache = ThumbnailCache(True)
 
+    @property
+    def log(self):
+        if self._log is None:
+            self._log = logging.getLogger(self.__class__.__name__)
+        return self._log
+
     def get_base_url(self):
         return self._base_url
 
@@ -487,12 +493,6 @@ class ServerAPIBase(object):
         if output is None:
             raise UnauthorizedError("User is not authorized.")
         return output
-
-    @property
-    def log(self):
-        if self._log is None:
-            self._log = logging.getLogger(self.__class__.__name__)
-        return self._log
 
     def get_headers(self, content_type=None):
         if content_type is None:
