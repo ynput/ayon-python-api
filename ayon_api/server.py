@@ -362,6 +362,79 @@ class ServerAPIBase(object):
 
     site_id = property(get_site_id, set_site_id)
 
+    def get_default_service_username(self):
+        """Default username used for callbacks when used with service API key.
+
+        Returns:
+            Union[str, None]: Username if any was filled.
+        """
+
+        return self._as_user_stack.get_default_username()
+
+    def set_default_service_username(self, username=None):
+        """Service API will work as other user.
+
+        Service API keys can work as other user. It can be temporary using
+        context manager 'as_user' or it is possible to set default username if
+        'as_user' context manager is not entered.
+
+        Args:
+            username (Union[str, None]): Username to work as when service.
+
+        Raises:
+            ValueError: When connection is not yet authenticated or api key
+                is not service token.
+        """
+
+        current_username = self._as_user_stack.get_default_username()
+        if current_username == username:
+            return
+
+        if not self.has_valid_token:
+            raise ValueError(
+                "Authentication of connection did not happen yet."
+            )
+
+        if not self._access_token_is_service:
+            raise ValueError(
+                "Can't set service username. API key is not a service token."
+            )
+
+        self._as_user_stack.set_default_username(username)
+        if self._as_user_stack.username == username:
+            self._update_session_headers()
+
+    @contextmanager
+    def as_username(self, username):
+        """Service API will temporarily work as other user.
+
+        This method can be used only if service API key is logged in.
+
+        Args:
+            username (Union[str, None]): Username to work as when service.
+
+        Raises:
+            ValueError: When connection is not yet authenticated or api key
+                is not service token.
+        """
+
+        if not self.has_valid_token:
+            raise ValueError(
+                "Authentication of connection did not happen yet."
+            )
+
+        if not self._access_token_is_service:
+            raise ValueError(
+                "Can't set service username. API key is not a service token."
+            )
+
+        with self._as_user_stack.as_user(username) as o:
+            self._update_session_headers()
+            try:
+                yield o
+            finally:
+                self._update_session_headers()
+
     @property
     def is_server_available(self):
         if self._server_available is None:
