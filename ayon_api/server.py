@@ -328,6 +328,7 @@ class ServerAPIBase(object):
         self._attributes_schema = None
         self._entity_type_attributes_cache = {}
 
+        self._as_user_stack = _AsUserStack()
         self._thumbnail_cache = ThumbnailCache(True)
 
     def get_base_url(self):
@@ -406,6 +407,7 @@ class ServerAPIBase(object):
         if self._session is not None:
             raise ValueError("Session is already created.")
 
+        self._as_user_stack.clear()
         # Validate token before session creation
         self.validate_token()
 
@@ -510,6 +512,9 @@ class ServerAPIBase(object):
         if self._access_token:
             if self._access_token_is_service:
                 headers["X-Api-Key"] = self._access_token
+                username = self._as_user_stack.username
+                if username:
+                    headers["X-as-user"] = username
             else:
                 headers["Authorization"] = "Bearer {}".format(
                     self._access_token)
