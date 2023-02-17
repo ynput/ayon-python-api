@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ayon_api"
-version = "0.1.11"
+version = "0.1.12"
 description = "Python api for AYON server"
 authors = ["ynput.io <info@ynput.io>"]
 
