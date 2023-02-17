@@ -6,6 +6,8 @@ import logging
 import collections
 import platform
 import copy
+import uuid
+from contextlib import contextmanager
 try:
     from http import HTTPStatus
 except ImportError:
@@ -186,6 +188,90 @@ def fill_own_attribs(entity):
             own_attrib[key] = copy.deepcopy(value)
 
 
+class _AsUserStack:
+    """Handle stack of users used over server api connection in service mode.
+
+    ServerAPI can behave as other users if it is using special API key.
+
+    Examples:
+        >>> stack = _AsUserStack()
+        >>> stack.set_default_username("DefaultName")
+        >>> print(stack.username)
+        DefaultName
+        >>> with stack.as_user("Other1"):
+        ...     print(stack.username)
+        ...     with stack.as_user("Other2"):
+        ...         print(stack.username)
+        ...     print(stack.username)
+        ...     stack.clear()
+        ...     print(stack.username)
+        Other1
+        Other2
+        Other1
+        None
+        >>> print(stack.username)
+        None
+        >>> stack.set_default_username("DefaultName")
+        >>> print(stack.username)
+        DefaultName
+    """
+
+    def __init__(self):
+        self._users_by_id = {}
+        self._user_ids = []
+        self._last_user = None
+        self._default_user = None
+
+    def clear(self):
+        self._users_by_id = {}
+        self._user_ids = []
+        self._last_user = None
+        self._default_user = None
+
+    @property
+    def username(self):
+        # Use '_user_ids' for boolean check to have ability "unset"
+        #   default user
+        if self._user_ids:
+            return self._last_user
+        return self._default_user
+
+    def get_default_username(self):
+        return self._default_user
+
+    def set_default_username(self, username=None):
+        self._default_user = username
+
+    default_username = property(get_default_username, set_default_username)
+
+    @contextmanager
+    def as_user(self, username):
+        self._last_user = username
+        user_id = uuid.uuid4().hex
+        self._user_ids.append(user_id)
+        self._users_by_id[user_id] = username
+        try:
+            yield
+        finally:
+            self._users_by_id.pop(user_id, None)
+            if not self._user_ids:
+                return
+
+            # First check if is the user id the last one
+            was_last = self._user_ids[-1] == user_id
+            # Remove id from variables
+            if user_id in self._user_ids:
+                self._user_ids.remove(user_id)
+
+            if not was_last:
+                return
+
+            new_last_user = None
+            if self._user_ids:
+                new_last_user = self._users_by_id.get(self._user_ids[-1])
+            self._last_user = new_last_user
+
+
 class ServerAPIBase(object):
     """Base handler of connection to server.
 
@@ -239,7 +325,14 @@ class ServerAPIBase(object):
         self._attributes_schema = None
         self._entity_type_attributes_cache = {}
 
+        self._as_user_stack = _AsUserStack()
         self._thumbnail_cache = ThumbnailCache(True)
+
+    @property
+    def log(self):
+        if self._log is None:
+            self._log = logging.getLogger(self.__class__.__name__)
+        return self._log
 
     def get_base_url(self):
         return self._base_url
@@ -262,11 +355,110 @@ class ServerAPIBase(object):
             return
         self._site_id = site_id
         # Recreate session on machine id change
-        if self._session is not None:
-            self.close_session()
-            self.create_session()
+        self._update_session_headers()
 
     site_id = property(get_site_id, set_site_id)
+
+    def get_client_version(self):
+        """Version of client used to connect to server.
+
+        Client version is AYON client build desktop application.
+
+        Returns:
+            str: Client version string used in connection.
+        """
+
+        return self._client_version
+
+    def set_client_version(self, client_version):
+        """Set version of client used to connect to server.
+
+        Client version is AYON client build desktop application.
+
+        Args:
+            client_version (Union[str, None]): Client version string.
+        """
+
+        if self._client_version == client_version:
+            return
+
+        self._client_version = client_version
+        self._update_session_headers()
+
+    client_version = property(get_client_version, set_client_version)
+
+    def get_default_service_username(self):
+        """Default username used for callbacks when used with service API key.
+
+        Returns:
+            Union[str, None]: Username if any was filled.
+        """
+
+        return self._as_user_stack.get_default_username()
+
+    def set_default_service_username(self, username=None):
+        """Service API will work as other user.
+
+        Service API keys can work as other user. It can be temporary using
+        context manager 'as_user' or it is possible to set default username if
+        'as_user' context manager is not entered.
+
+        Args:
+            username (Union[str, None]): Username to work as when service.
+
+        Raises:
+            ValueError: When connection is not yet authenticated or api key
+                is not service token.
+        """
+
+        current_username = self._as_user_stack.get_default_username()
+        if current_username == username:
+            return
+
+        if not self.has_valid_token:
+            raise ValueError(
+                "Authentication of connection did not happen yet."
+            )
+
+        if not self._access_token_is_service:
+            raise ValueError(
+                "Can't set service username. API key is not a service token."
+            )
+
+        self._as_user_stack.set_default_username(username)
+        if self._as_user_stack.username == username:
+            self._update_session_headers()
+
+    @contextmanager
+    def as_username(self, username):
+        """Service API will temporarily work as other user.
+
+        This method can be used only if service API key is logged in.
+
+        Args:
+            username (Union[str, None]): Username to work as when service.
+
+        Raises:
+            ValueError: When connection is not yet authenticated or api key
+                is not service token.
+        """
+
+        if not self.has_valid_token:
+            raise ValueError(
+                "Authentication of connection did not happen yet."
+            )
+
+        if not self._access_token_is_service:
+            raise ValueError(
+                "Can't set service username. API key is not a service token."
+            )
+
+        with self._as_user_stack.as_user(username) as o:
+            self._update_session_headers()
+            try:
+                yield o
+            finally:
+                self._update_session_headers()
 
     @property
     def is_server_available(self):
@@ -317,6 +509,7 @@ class ServerAPIBase(object):
         if self._session is not None:
             raise ValueError("Session is already created.")
 
+        self._as_user_stack.clear()
         # Validate token before session creation
         self.validate_token()
 
@@ -340,6 +533,21 @@ class ServerAPIBase(object):
         self._session = None
         self._session_functions_mapping = {}
         session.close()
+
+    def _update_session_headers(self):
+        if self._session is None:
+            return
+
+        # Header keys that may change over time
+        for key, value in (
+            ("X-as-user", self._as_user_stack.username),
+            ("x-ayon-version", self._client_version),
+            ("x-ayon-site-id", self._site_id),
+        ):
+            if value is not None:
+                self._session.headers[key] = value
+            elif key in self._session.headers:
+                self._session.headers.pop(key)
 
     def get_info(self):
         """Get information about current used api key.
@@ -397,12 +605,6 @@ class ServerAPIBase(object):
             raise UnauthorizedError("User is not authorized.")
         return output
 
-    @property
-    def log(self):
-        if self._log is None:
-            self._log = logging.getLogger(self.__class__.__name__)
-        return self._log
-
     def get_headers(self, content_type=None):
         if content_type is None:
             content_type = "application/json"
@@ -421,6 +623,9 @@ class ServerAPIBase(object):
         if self._access_token:
             if self._access_token_is_service:
                 headers["X-Api-Key"] = self._access_token
+                username = self._as_user_stack.username
+                if username:
+                    headers["X-as-user"] = username
             else:
                 headers["Authorization"] = "Bearer {}".format(
                     self._access_token)
