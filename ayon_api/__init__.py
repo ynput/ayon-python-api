@@ -11,6 +11,9 @@ from .server_api import (
     ServiceContext,
 
     init_service,
+    get_service_addon_name,
+    get_service_addon_version,
+    get_service_addon_settings,
 
     is_connection_created,
     create_connection,
@@ -122,7 +125,11 @@ __all__ = (
 
     "ServerAPI",
     "ServiceContext",
+
     "init_service",
+    "get_service_addon_name",
+    "get_service_addon_version",
+    "get_service_addon_settings",
 
     "is_connection_created",
     "create_connection",
