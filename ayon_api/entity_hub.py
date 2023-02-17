@@ -3,7 +3,7 @@ import collections
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 import six
-from .server_api import get_server_api_connection
+from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id
 
 UNKNOWN_VALUE = object()
@@ -27,7 +27,7 @@ class EntityHub(object):
 
     Args:
         project_name (str): Name of project where changes will happen.
-        connection (ServerAPIBase): Connection to server with logged user.
+        connection (ServerAPI): Connection to server with logged user.
         allow_data_changes (bool): This option gives ability to change 'data'
             key on entities. This is not recommended as 'data' may be use for
             secure information and would also slow down server queries. Content

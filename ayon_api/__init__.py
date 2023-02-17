@@ -2,21 +2,27 @@ from .utils import (
     TransferProgress,
     slugify_string,
 )
-from .server import (
-    ServerAPIBase,
-)
-
 from .server_api import (
     ServerAPI,
+)
+
+from ._api import (
+    GlobalServerAPI,
     ServiceContext,
 
     init_service,
+    get_service_addon_name,
+    get_service_addon_version,
+    get_service_addon_settings,
 
     is_connection_created,
+    create_connection,
     close_connection,
     change_token,
     set_environments,
     get_server_api_connection,
+    set_site_id,
+    set_client_version,
 
     get_base_url,
     get_rest_url,
@@ -115,17 +121,24 @@ __all__ = (
     "TransferProgress",
     "slugify_string",
 
-    "ServerAPIBase",
-
     "ServerAPI",
+
+    "GlobalServerAPI",
     "ServiceContext",
+
     "init_service",
+    "get_service_addon_name",
+    "get_service_addon_version",
+    "get_service_addon_settings",
 
     "is_connection_created",
+    "create_connection",
     "close_connection",
     "change_token",
     "set_environments",
     "get_server_api_connection",
+    "set_site_id",
+    "set_client_version",
 
     "get_base_url",
     "get_rest_url",
