@@ -9,7 +9,7 @@ from .server_api import ServerAPIBase
 from .exceptions import FailedServiceInit
 
 
-class ServerAPI(ServerAPIBase):
+class GlobalServerAPI(ServerAPIBase):
     """Extended server api which also handles storing tokens and url.
 
     Created object expect to have set environment variables
@@ -21,7 +21,7 @@ class ServerAPI(ServerAPIBase):
         url = self.get_url()
         token = self.get_token()
 
-        super(ServerAPI, self).__init__(url, token, site_id, client_version)
+        super(GlobalServerAPI, self).__init__(url, token, site_id, client_version)
 
         self.validate_server_availability()
         self.create_session()
@@ -34,7 +34,7 @@ class ServerAPI(ServerAPIBase):
         """
 
         previous_token = self._access_token
-        super(ServerAPI, self).login(username, password)
+        super(GlobalServerAPI, self).login(username, password)
         if self.has_valid_token and previous_token != self._access_token:
             os.environ[SERVER_TOKEN_ENV_KEY] = self._access_token
 
@@ -74,7 +74,7 @@ class GlobalContext:
 
     @classmethod
     def change_token(cls, url, token):
-        ServerAPI.set_environments(url, token)
+        GlobalServerAPI.set_environments(url, token)
         if cls._connection is None:
             return
 
@@ -93,7 +93,7 @@ class GlobalContext:
     def create_connection(cls, *args, **kwargs):
         if cls._connection is not None:
             cls.close_connection()
-        cls._connection = ServerAPI(*args, **kwargs)
+        cls._connection = GlobalServerAPI(*args, **kwargs)
         return cls._connection
 
     @classmethod
@@ -177,8 +177,8 @@ class ServiceContext:
         cls.addon_version = addon_version
         cls.service_name = service_name or socket.gethostname()
 
-        # Make sure required environments for ServerAPI are set
-        ServerAPI.set_environments(cls.server_url, cls.token)
+        # Make sure required environments for GlobalServerAPI are set
+        GlobalServerAPI.set_environments(cls.server_url, cls.token)
 
         if connect:
             print("Connecting to server \"{}\"".format(server_url))
@@ -252,7 +252,7 @@ def create_connection(site_id=None, client_version=None):
         client_version (str): Desktop app version.
 
     Returns:
-        ServerAPI: Created connection.
+        GlobalServerAPI: Created connection.
     """
 
     return GlobalContext.create_connection(site_id, client_version)
@@ -285,17 +285,17 @@ def set_environments(url, token):
         token (Union[str, None]): API key token to be used for connection.
     """
 
-    ServerAPI.set_environments(url, token)
+    GlobalServerAPI.set_environments(url, token)
 
 
 def get_server_api_connection():
-    """Access to global scope object of ServerAPI.
+    """Access to global scope object of GlobalServerAPI.
 
     This access expect to have set environment variables 'AYON_SERVER_URL'
     and 'AYON_TOKEN'.
 
     Returns:
-        ServerAPI: Object of connection to server.
+        GlobalServerAPI: Object of connection to server.
     """
 
     return GlobalContext.get_server_api_connection()

@@ -7,7 +7,7 @@ from .server_api import (
 )
 
 from ._api import (
-    ServerAPI,
+    GlobalServerAPI,
     ServiceContext,
 
     init_service,
@@ -123,7 +123,7 @@ __all__ = (
 
     "ServerAPIBase",
 
-    "ServerAPI",
+    "GlobalServerAPI",
     "ServiceContext",
 
     "init_service",
