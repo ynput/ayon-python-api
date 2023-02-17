@@ -94,6 +94,7 @@ class GlobalContext:
         if cls._connection is not None:
             cls.close_connection()
         cls._connection = ServerAPI(*args, **kwargs)
+        return cls._connection
 
     @classmethod
     def get_server_api_connection(cls):
@@ -206,9 +207,12 @@ def create_connection(site_id=None, client_version=None):
     Args:
         site_id (str): Machine site id/name.
         client_version (str): Desktop app version.
+
+    Returns:
+        ServerAPI: Created connection.
     """
 
-    GlobalContext.create_connection(site_id, client_version)
+    return GlobalContext.create_connection(site_id, client_version)
 
 
 def close_connection():
