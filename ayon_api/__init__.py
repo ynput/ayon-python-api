@@ -6,7 +6,7 @@ from .server import (
     ServerAPIBase,
 )
 
-from .server_api import (
+from ._api import (
     ServerAPI,
     ServiceContext,
 
