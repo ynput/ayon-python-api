@@ -272,7 +272,7 @@ class _AsUserStack:
             self._last_user = new_last_user
 
 
-class ServerAPIBase(object):
+class ServerAPI(object):
     """Base handler of connection to server.
 
     Requires url to server which is used as base for api and graphql calls.
