@@ -3,11 +3,11 @@ from .utils import (
     slugify_string,
 )
 from .server_api import (
-    ServerAPIBase,
+    ServerAPI,
 )
 
 from ._api import (
-    ServerAPI,
+    GlobalServerAPI,
     ServiceContext,
 
     init_service,
@@ -121,9 +121,9 @@ __all__ = (
     "TransferProgress",
     "slugify_string",
 
-    "ServerAPIBase",
-
     "ServerAPI",
+
+    "GlobalServerAPI",
     "ServiceContext",
 
     "init_service",
