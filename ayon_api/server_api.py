@@ -914,6 +914,25 @@ class ServerAPI(object):
         finished=True,
         store=True,
     ):
+        """Dispatch event to server.
+
+        Arg:
+            topic (str): Event topic used for filtering of listeners.
+            sender (Optional[str]): Sender of event.
+            hash (Optional[str]): Event hash.
+            project_name (Optional[str]): Project name.
+            username (Optional[str]): Username which triggered event.
+            dependencies (Optional[list[str]]): List of event id deprendencies.
+            description (Optional[str]): Description of event.
+            summary (Optional[dict[str, Any]]): Summary of event that can be used
+                for simple filtering on listeners.
+            payload (Optional[dict[str, Any]]): Full payload of event data with
+                all details.
+            finished (bool): Mark event as finished on dispatch.
+            store (bool): Store event in event queue for possible future processing
+                otherwise is event send only to active listeners.
+        """
+
         if summary is None:
             summary = {}
         if payload is None:
