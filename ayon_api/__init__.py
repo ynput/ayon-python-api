@@ -13,10 +13,13 @@ from ._api import (
     init_service,
 
     is_connection_created,
+    create_connection,
     close_connection,
     change_token,
     set_environments,
     get_server_api_connection,
+    set_site_id,
+    set_client_version,
 
     get_base_url,
     get_rest_url,
@@ -122,10 +125,13 @@ __all__ = (
     "init_service",
 
     "is_connection_created",
+    "create_connection",
     "close_connection",
     "change_token",
     "set_environments",
     "get_server_api_connection",
+    "set_site_id",
+    "set_client_version",
 
     "get_base_url",
     "get_rest_url",

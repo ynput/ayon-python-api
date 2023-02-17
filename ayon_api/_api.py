@@ -25,11 +25,11 @@ class GlobalServerAPI(ServerAPI):
     but that can be filled afterwards with calling 'login' method.
     """
 
-    def __init__(self):
+    def __init__(self, site_id=None, client_version=None):
         url = self.get_url()
         token = self.get_token()
 
-        super(GlobalServerAPI, self).__init__(url, token)
+        super(GlobalServerAPI, self).__init__(url, token, site_id, client_version)
 
         self.validate_server_availability()
         self.create_session()
@@ -98,9 +98,16 @@ class GlobalContext:
         cls._connection = None
 
     @classmethod
+    def create_connection(cls, *args, **kwargs):
+        if cls._connection is not None:
+            cls.close_connection()
+        cls._connection = GlobalServerAPI(*args, **kwargs)
+        return cls._connection
+
+    @classmethod
     def get_server_api_connection(cls):
         if cls._connection is None:
-            cls._connection = GlobalServerAPI()
+            cls.create_connection()
         return cls._connection
 
 
@@ -202,6 +209,20 @@ def is_connection_created():
     return GlobalContext.is_connection_created()
 
 
+def create_connection(site_id=None, client_version=None):
+    """Create global connection.
+
+    Args:
+        site_id (str): Machine site id/name.
+        client_version (str): Desktop app version.
+
+    Returns:
+        GlobalServerAPI: Created connection.
+    """
+
+    return GlobalContext.create_connection(site_id, client_version)
+
+
 def close_connection():
     """Close global connection if is connected."""
 
@@ -243,6 +264,32 @@ def get_server_api_connection():
     """
 
     return GlobalContext.get_server_api_connection()
+
+
+def set_site_id(site_id):
+    """Set site id of already connected client connection.
+
+    Site id is human-readable machine id used in AYON desktop application.
+
+    Args:
+        site_id (Union[str, None]): Site id used in connection.
+    """
+
+    con = get_server_api_connection()
+    con.set_site_id(site_id)
+
+
+def set_client_version(client_version):
+    """Set version of already connected client connection.
+
+    Client version is version of AYON desktop application.
+
+    Args:
+        client_version (Union[str, None]): Client version string.
+    """
+
+    con = get_server_api_connection()
+    con.set_client_version(client_version)
 
 
 def get_base_url():
