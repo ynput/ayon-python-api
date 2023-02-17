@@ -5,7 +5,7 @@ from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_TOKEN_ENV_KEY,
 )
-from .server import ServerAPIBase
+from .server_api import ServerAPIBase
 from .exceptions import FailedServiceInit
 
 

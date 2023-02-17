@@ -2,7 +2,7 @@ from .utils import (
     TransferProgress,
     slugify_string,
 )
-from .server import (
+from .server_api import (
     ServerAPIBase,
 )
 
