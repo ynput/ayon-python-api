@@ -3,7 +3,7 @@ import collections
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 import six
-from .server_api import get_server_api_connection
+from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id
 
 UNKNOWN_VALUE = object()

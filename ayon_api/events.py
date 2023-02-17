@@ -1,6 +1,6 @@
 import copy
 
-from .server_api import get_server_api_connection
+from ._api import get_server_api_connection
 
 
 class ServerEvent(object):
