@@ -495,6 +495,16 @@ def get_project_anatomy_preset(*args, **kwargs):
     return con.get_project_anatomy_preset(*args, **kwargs)
 
 
+def get_project_roots_by_site(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_project_roots(*args, **kwargs)
+
+
+def get_project_roots_for_site(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_project_roots_for_site(*args, **kwargs)
+
+
 def get_full_production_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_full_production_settings(*args, **kwargs)

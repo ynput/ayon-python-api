@@ -74,6 +74,8 @@ from ._api import (
 
     get_project_anatomy_preset,
     get_project_anatomy_presets,
+    get_project_roots_by_site,
+    get_project_roots_for_site,
 
     get_projects,
     get_project,

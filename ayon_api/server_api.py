@@ -1508,6 +1508,49 @@ class ServerAPI(object):
         result = self.get("anatomy/presets/{}".format(preset_name))
         return result.data
 
+    def get_project_roots_by_site(self, project_name):
+        """Root overrides per site name.
+
+        Method is based on logged user and can't be received for any other
+        user on server.
+
+        Output will contain only roots per site id used by logged user.
+
+        Args:
+            project_name (str): Name of project.
+
+        Returns:
+             dict[str, dict[str, str]]: Root values by root name by site id.
+        """
+
+        result = self.get("projects/{}/roots".format(project_name))
+        result.raise_for_status()
+        return result.data
+
+    def get_project_roots_for_site(self, project_name, site_id=None):
+        """Root overrides for site.
+
+        If site id is not passed a site set in current api object is used
+        instead.
+
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Id of site for which want to receive
+                site overrides.
+
+        Returns:
+            dict[str, str]: Root values by root name or None if
+                site does not have overrides.
+        """
+
+        if site_id is None:
+            site_id = self.site_id
+
+        if site_id is None:
+            return {}
+        roots = self.get_project_roots(project_name)
+        return roots.get(site_id, {})
+
     def get_full_production_settings(self):
         # TODO raise error if status is not 200
         response = self.get("settings/production")
