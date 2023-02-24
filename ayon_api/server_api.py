@@ -1584,6 +1584,31 @@ class ServerAPI(object):
         roots = self.get_project_roots(project_name)
         return roots.get(site_id, {})
 
+    def get_addon_settings_schema(
+        self, addon_name, addon_version, project_name=None
+    ):
+        """Sudio/Project settings schema of an addon.
+
+        Project schema may look differently as some enums are based on project
+        values.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (Union[str, None]): Schema for specific project or
+                default studio schemas.
+
+        Returns:
+            dict[str, Any]: Schema of studio/project settings.
+        """
+
+        endpoint = "addons/{}/{}/schema".format(addon_name, addon_version)
+        if project_name:
+            endpoint += "/{}".format(project_name)
+        result = self.get(endpoint)
+        result.raise_for_status()
+        return result.data
+
     def get_addon_studio_settings(
         self,
         addon_name,
