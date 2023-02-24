@@ -48,6 +48,7 @@ from .exceptions import (
     ServerError,
 )
 from .utils import (
+    prepare_query_string,
     logout_from_server,
     create_entity_id,
     entity_data_json_default,
@@ -286,6 +287,9 @@ class ServerAPI(object):
             connection is created from the same machine under same user.
         client_version (str): Version of client application (used in
             desktop client application).
+        default_settings_variant (Union[str, None]): Settings variant used by
+            default if a method for settings won't get any (by default is
+            'production').
     """
 
     def __init__(
@@ -293,7 +297,8 @@ class ServerAPI(object):
         base_url,
         token=None,
         site_id=None,
-        client_version=None
+        client_version=None,
+        default_settings_variant=None
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -306,6 +311,7 @@ class ServerAPI(object):
         self._access_token = token
         self._site_id = site_id
         self._client_version = client_version
+        self._default_settings_variant = default_settings_variant
         self._access_token_is_service = None
         self._token_is_valid = None
         self._server_available = None
@@ -386,6 +392,33 @@ class ServerAPI(object):
         self._update_session_headers()
 
     client_version = property(get_client_version, set_client_version)
+
+    def get_default_settings_variant(self):
+        """Default variant used for settings.
+
+        Returns:
+            Union[str, None]: name of variant or None.
+        """
+
+        return self._default_settings_variant
+
+    def set_default_settings_variant(self, variant):
+        """Change default variant for addon settings.
+
+        Note:
+            It is recommended to set only 'production' or 'staging' variants
+                as default variant.
+
+        Args:
+            variant (Union[str, None]): Settings variant name.
+        """
+
+        self._default_settings_variant = variant
+
+    default_settings_variant = property(
+        get_default_settings_variant,
+        set_default_settings_variant
+    )
 
     def get_default_service_username(self):
         """Default username used for callbacks when used with service API key.
