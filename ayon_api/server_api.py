@@ -1609,6 +1609,23 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data
 
+    def get_addon_site_settings_schema(self, addon_name, addon_version):
+        """Site settings schema of an addon.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+
+        Returns:
+            dict[str, Any]: Schema of site settings.
+        """
+
+        result = self.get("addons/{}/{}/siteSettings/schema".format(
+            addon_name, addon_version
+        ))
+        result.raise_for_status()
+        return result.data
+
     def get_addon_studio_settings(
         self,
         addon_name,
@@ -1739,23 +1756,6 @@ class ServerAPI(object):
         return self.get_addon_project_settings(
             addon_name, addon_version, project_name, variant, site_id, use_site
         )
-
-    def get_addon_site_settings_schema(self, addon_name, addon_version):
-        """Site settings schema of an addon.
-
-        Args:
-            addon_name (str): Name of addon.
-            addon_version (str): Version of addon.
-
-        Returns:
-            dict[str, Any]: Schema of site sync settings.
-        """
-
-        result = self.get("addons/{}/{}/siteSettings/schema".format(
-            addon_name, addon_version
-        ))
-        result.raise_for_status()
-        return result.data
 
     def get_addon_site_settings(
         self, addon_name, addon_version, site_id=None
