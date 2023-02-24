@@ -3,10 +3,11 @@ import datetime
 import uuid
 import string
 try:
-    from urlparse import urlparse
-    from urllib.parse import urlencode
+    # Python 3
+    from urllib.parse import urlparse, urlencode
 except ImportError:
-    from urllib.parse import urlparse
+    # Python 2
+    from urlparse import urlparse
     from urllib import urlencode
 
 import requests
