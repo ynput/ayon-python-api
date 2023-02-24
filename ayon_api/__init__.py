@@ -64,12 +64,6 @@ from ._api import (
     upload_dependency_package,
     delete_dependency_package,
 
-    get_full_production_settings,
-    get_production_settings,
-    get_full_project_settings,
-    get_project_settings,
-    get_addon_settings,
-
     get_user,
     get_users,
 
@@ -80,6 +74,17 @@ from ._api import (
     get_project_anatomy_presets,
     get_project_roots_by_site,
     get_project_roots_for_site,
+
+    get_addon_site_settings_schema,
+    get_addon_settings_schema,
+
+    get_addon_studio_settings,
+    get_addon_project_settings,
+    get_addon_settings,
+    get_full_production_settings,
+    get_production_settings,
+    get_full_project_settings,
+    get_project_settings,
 
     get_projects,
     get_project,
@@ -186,12 +191,6 @@ __all__ = (
     "upload_dependency_package",
     "delete_dependency_package",
 
-    "get_full_production_settings",
-    "get_production_settings",
-    "get_full_project_settings",
-    "get_project_settings",
-    "get_addon_settings",
-
     "get_user",
     "get_users",
 
@@ -200,6 +199,18 @@ __all__ = (
 
     "get_project_anatomy_preset",
     "get_project_anatomy_presets",
+    "get_project_roots_by_site",
+    "get_project_roots_for_site",
+
+    "get_addon_site_settings_schema",
+    "get_addon_settings_schema",
+    "get_addon_studio_settings",
+    "get_addon_project_settings",
+    "get_addon_settings",
+    "get_full_production_settings",
+    "get_production_settings",
+    "get_full_project_settings",
+    "get_project_settings",
 
     "get_projects",
     "get_project",

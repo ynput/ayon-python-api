@@ -549,6 +549,36 @@ def get_project_roots_for_site(*args, **kwargs):
     return con.get_project_roots_for_site(*args, **kwargs)
 
 
+def get_addon_settings_schema(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_settings_schema(*args, **kwargs)
+
+
+def get_addon_site_settings_schema(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_site_settings_schema(*args, **kwargs)
+
+
+def get_addon_studio_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_studio_settings(*args, **kwargs)
+
+
+def get_addon_project_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_project_settings(*args, **kwargs)
+
+
+def get_addon_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_settings(*args, **kwargs)
+
+
+def get_addon_site_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_site_settings(*args, **kwargs)
+
+
 def get_full_production_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_full_production_settings(*args, **kwargs)
@@ -567,11 +597,6 @@ def get_full_project_settings(*args, **kwargs):
 def get_project_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_settings(*args, **kwargs)
-
-
-def get_addon_settings(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_addon_settings(*args, **kwargs)
 
 
 def get_project(*args, **kwargs):
