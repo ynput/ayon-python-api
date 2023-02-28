@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 from setuptools import setup
 
@@ -16,7 +18,7 @@ setup(
     author_email="info@ynput.io",
     license="Apache License (2.0)",
     description="AYON Python API",
-    long_description=open(README_PATH).read(),
+    long_description=open(README_PATH, encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/ynput/ayon-python-api",
     include_package_data=True,
