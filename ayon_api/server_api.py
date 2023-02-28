@@ -48,6 +48,7 @@ from .exceptions import (
     ServerError,
 )
 from .utils import (
+    prepare_query_string,
     logout_from_server,
     create_entity_id,
     entity_data_json_default,
@@ -151,7 +152,10 @@ class RestApiResponse(object):
         return self.data[key]
 
     def get(self, key, default=None):
-        return self.data.get(key, default)
+        data = self.data
+        if isinstance(data, dict):
+            return self.data.get(key, default)
+        return default
 
 
 class GraphQlResponse:
@@ -286,6 +290,9 @@ class ServerAPI(object):
             connection is created from the same machine under same user.
         client_version (str): Version of client application (used in
             desktop client application).
+        default_settings_variant (Union[str, None]): Settings variant used by
+            default if a method for settings won't get any (by default is
+            'production').
     """
 
     def __init__(
@@ -293,7 +300,8 @@ class ServerAPI(object):
         base_url,
         token=None,
         site_id=None,
-        client_version=None
+        client_version=None,
+        default_settings_variant=None
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -306,6 +314,7 @@ class ServerAPI(object):
         self._access_token = token
         self._site_id = site_id
         self._client_version = client_version
+        self._default_settings_variant = default_settings_variant
         self._access_token_is_service = None
         self._token_is_valid = None
         self._server_available = None
@@ -345,12 +354,36 @@ class ServerAPI(object):
 
     @property
     def access_token(self):
+        """Access token used for authorization to server.
+
+        Returns:
+            Union[str, None]: Token string or None if not authorized yet.
+        """
+
         return self._access_token
 
     def get_site_id(self):
+        """Site id used for connection.
+
+        Site id tells server from which machine/site is connection created and
+        is used for default site overrides when settings are received.
+
+        Returns:
+            Union[str, None]: Site id value or None if not filled.
+        """
+
         return self._site_id
 
     def set_site_id(self, site_id):
+        """Change site id of connection.
+
+        Behave as specific site for server. It affects default behavior of
+        settings getter methods.
+
+        Args:
+            site_id (Union[str, None]): Site id value, or 'None' to unset.
+        """
+
         if self._site_id == site_id:
             return
         self._site_id = site_id
@@ -386,6 +419,33 @@ class ServerAPI(object):
         self._update_session_headers()
 
     client_version = property(get_client_version, set_client_version)
+
+    def get_default_settings_variant(self):
+        """Default variant used for settings.
+
+        Returns:
+            Union[str, None]: name of variant or None.
+        """
+
+        return self._default_settings_variant
+
+    def set_default_settings_variant(self, variant):
+        """Change default variant for addon settings.
+
+        Note:
+            It is recommended to set only 'production' or 'staging' variants
+                as default variant.
+
+        Args:
+            variant (Union[str, None]): Settings variant name.
+        """
+
+        self._default_settings_variant = variant
+
+    default_settings_variant = property(
+        get_default_settings_variant,
+        set_default_settings_variant
+    )
 
     def get_default_service_username(self):
         """Default username used for callbacks when used with service API key.
@@ -1052,6 +1112,7 @@ class ServerAPI(object):
 
         finally:
             progress.set_transfer_done()
+        return progress
 
     def _upload_file(self, url, filepath, progress):
         kwargs = {}
@@ -1508,55 +1569,366 @@ class ServerAPI(object):
         result = self.get("anatomy/presets/{}".format(preset_name))
         return result.data
 
-    def get_full_production_settings(self):
-        # TODO raise error if status is not 200
-        response = self.get("settings/production")
-        if response.status == 200:
-            return response.data
-        return None
+    def get_project_roots_by_site(self, project_name):
+        """Root overrides per site name.
 
-    def get_production_settings(self):
-        return self.get_full_production_settings()["settings"]
+        Method is based on logged user and can't be received for any other
+        user on server.
 
-    # Settings getters
-    def get_full_project_settings(self, project_name):
-        result = self.get("projects/{}/settings".format(project_name))
-        if result.status == 200:
-            return result.data
-        return None
+        Output will contain only roots per site id used by logged user.
 
-    def get_project_settings(self, project_name=None):
-        if project_name is None:
-            return self.get_production_settings()
+        Args:
+            project_name (str): Name of project.
 
-        full_settings = self.get_full_project_settings(project_name)
-        if full_settings is None:
-            return full_settings
-        return full_settings["settings"]
+        Returns:
+             dict[str, dict[str, str]]: Root values by root name by site id.
+        """
 
-    def get_addon_studio_settings(self, addon_name, addon_version):
+        result = self.get("projects/{}/roots".format(project_name))
+        result.raise_for_status()
+        return result.data
+
+    def get_project_roots_for_site(self, project_name, site_id=None):
+        """Root overrides for site.
+
+        If site id is not passed a site set in current api object is used
+        instead.
+
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Id of site for which want to receive
+                site overrides.
+
+        Returns:
+            dict[str, str]: Root values by root name or None if
+                site does not have overrides.
+        """
+
+        if site_id is None:
+            site_id = self.site_id
+
+        if site_id is None:
+            return {}
+        roots = self.get_project_roots(project_name)
+        return roots.get(site_id, {})
+
+    def get_addon_settings_schema(
+        self, addon_name, addon_version, project_name=None
+    ):
+        """Sudio/Project settings schema of an addon.
+
+        Project schema may look differently as some enums are based on project
+        values.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (Union[str, None]): Schema for specific project or
+                default studio schemas.
+
+        Returns:
+            dict[str, Any]: Schema of studio/project settings.
+        """
+
+        endpoint = "addons/{}/{}/schema".format(addon_name, addon_version)
+        if project_name:
+            endpoint += "/{}".format(project_name)
+        result = self.get(endpoint)
+        result.raise_for_status()
+        return result.data
+
+    def get_addon_site_settings_schema(self, addon_name, addon_version):
+        """Site settings schema of an addon.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+
+        Returns:
+            dict[str, Any]: Schema of site settings.
+        """
+
+        result = self.get("addons/{}/{}/siteSettings/schema".format(
+            addon_name, addon_version
+        ))
+        result.raise_for_status()
+        return result.data
+
+    def get_addon_studio_settings(
+        self,
+        addon_name,
+        addon_version,
+        variant=None
+    ):
+        """Addon studio settings.
+
+       Receive studio settings for specific version of an addon.
+
+       Args:
+           addon_name (str): Name of addon.
+           addon_version (str): Version of addon.
+           variant (str): Name of settings variant. By default, is used
+               'default_settings_variant' passed on init.
+
+       Returns:
+           dict[str, Any]: Addon settings.
+       """
+
+        if variant is None:
+            variant = self.default_settings_variant
+
+        query_items = {}
+        if variant:
+            query_items["variant"] = variant
+        query = prepare_query_string(query_items)
+
         result = self.get(
-            "addons/{}/{}/settings".format(addon_name, addon_version)
+            "addons/{}/{}/settings{}".format(addon_name, addon_version, query)
         )
         result.raise_for_status()
         return result.data
 
     def get_addon_project_settings(
-        self, addon_name, addon_version, project_name
+        self,
+        addon_name,
+        addon_version,
+        project_name,
+        variant=None,
+        site_id=None,
+        use_site=True
     ):
+        """Addon project settings.
+
+        Receive project settings for specific version of an addon. The settings
+        may be with site overrides when enabled.
+
+        Site id is filled with current connection site id if not passed. To
+        make sure any site id is used set 'use_site' to 'False'.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Name of project for which the settings are
+                received.
+            variant (str): Name of settings variant. By default, is used
+                'production'.
+            site_id (str): Name of site which is used for site overrides. Is
+                filled with connection 'site_id' attribute if not passed.
+            use_site (bool): To force disable option of using site overrides
+                set to 'False'. In that case won't be applied any site
+                overrides.
+
+        Returns:
+            dict[str, Any]: Addon settings.
+        """
+
+        if not use_site:
+            site_id = None
+        elif not site_id:
+            site_id = self.site_id
+
+        query_items = {}
+        if site_id:
+            query_items["site"] = site_id
+
+        if variant is None:
+            variant = self.default_settings_variant
+
+        if variant:
+            query_items["variant"] = variant
+
+        query = prepare_query_string(query_items)
         result = self.get(
-            "addons/{}/{}/settings/{}".format(
-                addon_name, addon_version, project_name
+            "addons/{}/{}/settings/{}{}".format(
+                addon_name, addon_version, project_name, query
             )
         )
         result.raise_for_status()
         return result.data
 
-    def get_addon_settings(self, addon_name, addon_version, project_name=None):
+    def get_addon_settings(
+        self,
+        addon_name,
+        addon_version,
+        project_name=None,
+        variant=None,
+        site_id=None,
+        use_site=True
+    ):
+        """Receive addon settings.
+
+        Receive addon settings based on project name value. Some arguments may
+        be ignored if 'project_name' is set to 'None'.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Name of project for which the settings are
+                received. A studio settings values are received if is 'None'.
+            variant (str): Name of settings variant. By default, is used
+                'production'.
+            site_id (str): Name of site which is used for site overrides. Is
+                filled with connection 'site_id' attribute if not passed.
+            use_site (bool): To force disable option of using site overrides
+                set to 'False'. In that case won't be applied any site
+                overrides.
+
+        Returns:
+            dict[str, Any]: Addon settings.
+        """
+
         if project_name is None:
-            return self.get_addon_studio_settings(addon_name, addon_version)
+            return self.get_addon_studio_settings(
+                addon_name, addon_version, variant
+            )
         return self.get_addon_project_settings(
-            addon_name, addon_version, project_name
+            addon_name, addon_version, project_name, variant, site_id, use_site
+        )
+
+    def get_addon_site_settings(
+        self, addon_name, addon_version, site_id=None
+    ):
+        """Site settings of an addon.
+
+        If site id is not available an empty dictionary is returned.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            site_id (str): Name of site for which should be settings returned.
+                using 'site_id' attribute if not passed.
+
+        Returns:
+            dict[str, Any]: Site settings.
+        """
+
+        if site_id is None:
+            site_id = self.site_id
+
+        if not site_id:
+            return {}
+
+        query = prepare_query_string({"site": site_id})
+        result = self.get("addons/{}/{}/siteSettings{}".format(
+            addon_name, addon_version, query
+        ))
+        result.raise_for_status()
+        return result.data
+
+    def get_addons_studio_settings(self, variant=None, only_values=True):
+        """All addons settings in one bulk.
+
+        Args:
+            variant (Literal[production, staging]): Variant of settings. By
+                default, is used 'production'.
+            only_values (Optional[bool]): Output will contain only settings
+                values without metadata about addons.
+
+        Returns:
+            dict[str, Any]: Settings of all addons on server.
+        """
+
+        query_values = {}
+        if variant:
+            query_values["variant"] = variant
+        query = prepare_query_string(query_values)
+        response = self.get("settings/addons{}".format(query))
+        response.raise_for_status()
+        output = response.data
+        if only_values:
+            output = output["settings"]
+        return output
+
+    def get_addons_project_settings(
+        self,
+        project_name,
+        variant=None,
+        site_id=None,
+        use_site=True,
+        only_values=True
+    ):
+        """Project settings of all addons.
+
+        Server returns information about used addon versions, so full output
+        looks like:
+            {
+                "settings": {...},
+                "addons": {...}
+            }
+
+        The output can be limited to only values. To do so is 'only_values'
+        argument which is by default set to 'True'. In that case output
+        contains only value of 'settings' key.
+
+        Args:
+            project_name (str): Name of project for which are settings
+                received.
+            variant (Optional[Literal[production, staging]]): Variant of
+                settings. By default, is used 'production'.
+            site_id (Optional[str]): Id of site for which want to receive
+                site overrides.
+            use_site (bool): To force disable option of using site overrides
+                set to 'False'. In that case won't be applied any site
+                overrides.
+            only_values (Optional[bool]): Output will contain only settings
+                values without metadata about addons.
+
+        Returns:
+            dict[str, Any]: Settings of all addons on server for passed
+                project.
+        """
+
+        query_values = {
+            "project": project_name
+        }
+        if variant:
+            query_values["variant"] = variant
+
+        if use_site:
+            if not site_id:
+                site_id = self.default_settings_variant
+            if site_id:
+                query_values["site"] = site_id
+        query = prepare_query_string(query_values)
+        response = self.get("settings/addons{}".format(query))
+        response.raise_for_status()
+        output = response.data
+        if only_values:
+            output = output["settings"]
+        return output
+
+    def get_addons_settings(
+        self,
+        project_name=None,
+        variant=None,
+        site_id=None,
+        use_site=True,
+        only_values=True
+    ):
+        """Universal function to receive all addon settings.
+
+        Based on 'project_name' will receive studio settings or project
+        settings. In case project is not passed is 'site_id' ignored.
+
+        Args:
+            project_name (Optional[str]): Name of project for which should be
+                settings received.
+            variant (Optional[Literal[production, staging]]): Settings variant.
+                By default, is used 'production'.
+            site_id (Optional[str]): Id of site for which want to receive
+                site overrides.
+            use_site (bool): To force disable option of using site overrides
+                set to 'False'. In that case won't be applied any site
+                overrides.
+            only_values (Optional[bool]): Only settings values will be
+                returned. By default, is set to 'True'.
+        """
+
+        if project_name is None:
+            return self.get_addons_studio_settings(variant, only_values)
+
+        return self.get_addons_project_settings(
+            project_name, variant, site_id, use_site, only_values
         )
 
     # Entity getters

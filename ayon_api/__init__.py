@@ -11,6 +11,7 @@ from ._api import (
     ServiceContext,
 
     init_service,
+    get_service_name,
     get_service_addon_name,
     get_service_addon_version,
     get_service_addon_settings,
@@ -21,8 +22,12 @@ from ._api import (
     change_token,
     set_environments,
     get_server_api_connection,
+    get_site_id,
     set_site_id,
+    get_client_version,
     set_client_version,
+    get_default_settings_variant,
+    set_default_settings_variant,
 
     get_base_url,
     get_rest_url,
@@ -60,12 +65,6 @@ from ._api import (
     upload_dependency_package,
     delete_dependency_package,
 
-    get_full_production_settings,
-    get_production_settings,
-    get_full_project_settings,
-    get_project_settings,
-    get_addon_settings,
-
     get_user,
     get_users,
 
@@ -74,6 +73,18 @@ from ._api import (
 
     get_project_anatomy_preset,
     get_project_anatomy_presets,
+    get_project_roots_by_site,
+    get_project_roots_for_site,
+
+    get_addon_site_settings_schema,
+    get_addon_settings_schema,
+
+    get_addon_studio_settings,
+    get_addon_project_settings,
+    get_addon_settings,
+    get_addons_studio_settings,
+    get_addons_project_settings,
+    get_addons_settings,
 
     get_projects,
     get_project,
@@ -127,6 +138,7 @@ __all__ = (
     "ServiceContext",
 
     "init_service",
+    "get_service_name",
     "get_service_addon_name",
     "get_service_addon_version",
     "get_service_addon_settings",
@@ -137,8 +149,12 @@ __all__ = (
     "change_token",
     "set_environments",
     "get_server_api_connection",
+    "get_site_id",
     "set_site_id",
+    "get_client_version",
     "set_client_version",
+    "get_default_settings_variant",
+    "set_default_settings_variant",
 
     "get_base_url",
     "get_rest_url",
@@ -176,12 +192,6 @@ __all__ = (
     "upload_dependency_package",
     "delete_dependency_package",
 
-    "get_full_production_settings",
-    "get_production_settings",
-    "get_full_project_settings",
-    "get_project_settings",
-    "get_addon_settings",
-
     "get_user",
     "get_users",
 
@@ -190,6 +200,17 @@ __all__ = (
 
     "get_project_anatomy_preset",
     "get_project_anatomy_presets",
+    "get_project_roots_by_site",
+    "get_project_roots_for_site",
+
+    "get_addon_site_settings_schema",
+    "get_addon_settings_schema",
+    "get_addon_studio_settings",
+    "get_addon_project_settings",
+    "get_addon_settings",
+    "get_addons_studio_settings",
+    "get_addons_project_settings",
+    "get_addons_settings",
 
     "get_projects",
     "get_project",
