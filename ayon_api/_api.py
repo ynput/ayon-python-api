@@ -208,6 +208,9 @@ def init_service(*args, **kwargs):
 def get_service_addon_name():
     """Name of addon which initialized service connection.
 
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
+
     Returns:
         Union[str, None]: Name of addon or None.
     """
@@ -218,6 +221,9 @@ def get_service_addon_name():
 def get_service_addon_version():
     """Version of addon which initialized service connection.
 
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
+
     Returns:
         Union[str, None]: Version of addon or None.
     """
@@ -225,8 +231,24 @@ def get_service_addon_version():
     return ServiceContext.addon_version
 
 
+def get_service_name():
+    """Name of service.
+
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
+
+    Returns:
+        Union[str, None]: Name of service if service was registered.
+    """
+
+    return ServiceContext.service_name
+
+
 def get_service_addon_settings():
     """Addon settings of service which initialized service.
+
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
 
     Returns:
         Dict[str, Any]: Addon settings.
@@ -309,6 +331,11 @@ def get_server_api_connection():
     return GlobalContext.get_server_api_connection()
 
 
+def get_site_id():
+    con = get_server_api_connection()
+    return con.get_site_id()
+
+
 def set_site_id(site_id):
     """Set site id of already connected client connection.
 
@@ -322,6 +349,19 @@ def set_site_id(site_id):
     con.set_site_id(site_id)
 
 
+def get_client_version():
+    """Version of client used to connect to server.
+
+    Client version is AYON client build desktop application.
+
+    Returns:
+        str: Client version string used in connection.
+    """
+
+    con = get_server_api_connection()
+    return con.get_client_version()
+
+
 def set_client_version(client_version):
     """Set version of already connected client connection.
 
@@ -333,6 +373,32 @@ def set_client_version(client_version):
 
     con = get_server_api_connection()
     con.set_client_version(client_version)
+
+
+def get_default_settings_variant():
+    """Default variant used for settings.
+
+    Returns:
+        Union[str, None]: name of variant or None.
+    """
+
+    con = get_server_api_connection()
+    return con.get_client_version()
+
+
+def set_default_settings_variant(variant):
+    """Change default variant for addon settings.
+
+    Note:
+        It is recommended to set only 'production' or 'staging' variants
+            as default variant.
+
+    Args:
+        variant (Union[str, None]): Settings variant name.
+    """
+
+    con = get_server_api_connection()
+    return con.set_default_settings_variant(variant)
 
 
 def get_base_url():
@@ -495,29 +561,59 @@ def get_project_anatomy_preset(*args, **kwargs):
     return con.get_project_anatomy_preset(*args, **kwargs)
 
 
-def get_full_production_settings(*args, **kwargs):
+def get_project_roots_by_site(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_full_production_settings(*args, **kwargs)
+    return con.get_project_roots(*args, **kwargs)
 
 
-def get_production_settings(*args, **kwargs):
+def get_project_roots_for_site(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_production_settings(*args, **kwargs)
+    return con.get_project_roots_for_site(*args, **kwargs)
 
 
-def get_full_project_settings(*args, **kwargs):
+def get_addon_settings_schema(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_full_project_settings(*args, **kwargs)
+    return con.get_addon_settings_schema(*args, **kwargs)
 
 
-def get_project_settings(*args, **kwargs):
+def get_addon_site_settings_schema(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_project_settings(*args, **kwargs)
+    return con.get_addon_site_settings_schema(*args, **kwargs)
+
+
+def get_addon_studio_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_studio_settings(*args, **kwargs)
+
+
+def get_addon_project_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_project_settings(*args, **kwargs)
 
 
 def get_addon_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_addon_settings(*args, **kwargs)
+
+
+def get_addon_site_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addon_site_settings(*args, **kwargs)
+
+
+def get_addons_studio_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addons_studio_settings(*args, **kwargs)
+
+
+def get_addons_project_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addons_project_settings(*args, **kwargs)
+
+
+def get_addons_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_addons_settings(*args, **kwargs)
 
 
 def get_project(*args, **kwargs):

@@ -3,19 +3,39 @@ import datetime
 import uuid
 import string
 try:
-    from urlparse import urlparse
+    # Python 3
+    from urllib.parse import urlparse, urlencode
 except ImportError:
-    from urllib.parse import urlparse
+    # Python 2
+    from urlparse import urlparse
+    from urllib import urlencode
 
 import requests
 import unidecode
-
 
 from .exceptions import UrlError
 
 REMOVED_VALUE = object()
 SLUGIFY_WHITELIST = string.ascii_letters + string.digits
 SLUGIFY_SEP_WHITELIST = " ,./\\;:!|*^#@~+-_="
+
+
+def prepare_query_string(key_values):
+    """Prepare data to query string.
+
+    If there are any values a query starting with '?' is returned otherwise
+    an empty string.
+
+    Args:
+         dict[str, Any]: Query values.
+
+    Returns:
+        str: Query string.
+    """
+
+    if not key_values:
+        return ""
+    return "?{}".format(urlencode(key_values))
 
 
 def create_entity_id():
