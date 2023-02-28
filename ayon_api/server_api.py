@@ -1609,7 +1609,7 @@ class ServerAPI(object):
 
         if site_id is None:
             return {}
-        roots = self.get_project_roots(project_name)
+        roots = self.get_project_roots_by_site(project_name)
         return roots.get(site_id, {})
 
     def get_addon_settings_schema(
