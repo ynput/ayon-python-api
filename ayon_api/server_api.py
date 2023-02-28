@@ -1112,6 +1112,7 @@ class ServerAPI(object):
 
         finally:
             progress.set_transfer_done()
+        return progress
 
     def _upload_file(self, url, filepath, progress):
         kwargs = {}
