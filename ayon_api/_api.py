@@ -601,24 +601,19 @@ def get_addon_site_settings(*args, **kwargs):
     return con.get_addon_site_settings(*args, **kwargs)
 
 
-def get_full_production_settings(*args, **kwargs):
+def get_addons_studio_settings(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_full_production_settings(*args, **kwargs)
+    return con.get_addons_studio_settings(*args, **kwargs)
 
 
-def get_production_settings(*args, **kwargs):
+def get_addons_project_settings(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_production_settings(*args, **kwargs)
+    return con.get_addons_project_settings(*args, **kwargs)
 
 
-def get_full_project_settings(*args, **kwargs):
+def get_addons_settings(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_full_project_settings(*args, **kwargs)
-
-
-def get_project_settings(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_project_settings(*args, **kwargs)
+    return con.get_addons_settings(*args, **kwargs)
 
 
 def get_project(*args, **kwargs):

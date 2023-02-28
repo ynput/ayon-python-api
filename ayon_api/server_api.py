@@ -1811,31 +1811,121 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data
 
-    def get_full_production_settings(self):
-        # TODO raise error if status is not 200
-        response = self.get("settings/production")
-        if response.status == 200:
-            return response.data
-        return None
+    def get_addons_studio_settings(self, variant=None, only_values=True):
+        """All addons settings in one bulk.
 
-    def get_production_settings(self):
-        return self.get_full_production_settings()["settings"]
+        Args:
+            variant (Literal[production, staging]): Variant of settings. By
+                default, is used 'production'.
+            only_values (Optional[bool]): Output will contain only settings
+                values without metadata about addons.
 
-    # Settings getters
-    def get_full_project_settings(self, project_name):
-        result = self.get("projects/{}/settings".format(project_name))
-        if result.status == 200:
-            return result.data
-        return None
+        Returns:
+            dict[str, Any]: Settings of all addons on server.
+        """
 
-    def get_project_settings(self, project_name=None):
+        query_values = {}
+        if variant:
+            query_values["variant"] = variant
+        query = prepare_query_string(query_values)
+        response = self.get("settings/addons{}".format(query))
+        response.raise_for_status()
+        output = response.data
+        if only_values:
+            output = output["settings"]
+        return output
+
+    def get_addons_project_settings(
+        self,
+        project_name,
+        variant=None,
+        site_id=None,
+        use_site=True,
+        only_values=True
+    ):
+        """Project settings of all addons.
+
+        Server returns information about used addon versions, so full output
+        looks like:
+            {
+                "settings": {...},
+                "addons": {...}
+            }
+
+        The output can be limited to only values. To do so is 'only_values'
+        argument which is by default set to 'True'. In that case output
+        contains only value of 'settings' key.
+
+        Args:
+            project_name (str): Name of project for which are settings
+                received.
+            variant (Optional[Literal[production, staging]]): Variant of
+                settings. By default, is used 'production'.
+            site_id (Optional[str]): Id of site for which want to receive
+                site overrides.
+            use_site (bool): To force disable option of using site overrides
+                set to 'False'. In that case won't be applied any site
+                overrides.
+            only_values (Optional[bool]): Output will contain only settings
+                values without metadata about addons.
+
+        Returns:
+            dict[str, Any]: Settings of all addons on server for passed
+                project.
+        """
+
+        query_values = {
+            "project": project_name
+        }
+        if variant:
+            query_values["variant"] = variant
+
+        if use_site:
+            if not site_id:
+                site_id = self.default_settings_variant
+            if site_id:
+                query_values["site"] = site_id
+        query = prepare_query_string(query_values)
+        response = self.get("settings/addons{}".format(query))
+        response.raise_for_status()
+        output = response.data
+        if only_values:
+            output = output["settings"]
+        return output
+
+    def get_addons_settings(
+        self,
+        project_name=None,
+        variant=None,
+        site_id=None,
+        use_site=True,
+        only_values=True
+    ):
+        """Universal function to receive all addon settings.
+
+        Based on 'project_name' will receive studio settings or project
+        settings. In case project is not passed is 'site_id' ignored.
+
+        Args:
+            project_name (Optional[str]): Name of project for which should be
+                settings received.
+            variant (Optional[Literal[production, staging]]): Settings variant.
+                By default, is used 'production'.
+            site_id (Optional[str]): Id of site for which want to receive
+                site overrides.
+            use_site (bool): To force disable option of using site overrides
+                set to 'False'. In that case won't be applied any site
+                overrides.
+            only_values (Optional[bool]): Only settings values will be
+                returned. By default, is set to 'True'.
+        """
+
         if project_name is None:
-            return self.get_production_settings()
+            return self.get_addons_studio_settings(variant, only_values)
 
-        full_settings = self.get_full_project_settings(project_name)
-        if full_settings is None:
-            return full_settings
-        return full_settings["settings"]
+        return self.get_addons_project_settings(
+            project_name, variant, site_id, use_site, only_values
+        )
 
     # Entity getters
     def get_rest_project(self, project_name):
