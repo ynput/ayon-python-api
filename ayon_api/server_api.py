@@ -152,7 +152,10 @@ class RestApiResponse(object):
         return self.data[key]
 
     def get(self, key, default=None):
-        return self.data.get(key, default)
+        data = self.data
+        if isinstance(data, dict):
+            return self.data.get(key, default)
+        return default
 
 
 class GraphQlResponse:
