@@ -351,12 +351,36 @@ class ServerAPI(object):
 
     @property
     def access_token(self):
+        """Access token used for authorization to server.
+
+        Returns:
+            Union[str, None]: Token string or None if not authorized yet.
+        """
+
         return self._access_token
 
     def get_site_id(self):
+        """Site id used for connection.
+
+        Site id tells server from which machine/site is connection created and
+        is used for default site overrides when settings are received.
+
+        Returns:
+            Union[str, None]: Site id value or None if not filled.
+        """
+
         return self._site_id
 
     def set_site_id(self, site_id):
+        """Change site id of connection.
+
+        Behave as specific site for server. It affects default behavior of
+        settings getter methods.
+
+        Args:
+            site_id (Union[str, None]): Site id value, or 'None' to unset.
+        """
+
         if self._site_id == site_id:
             return
         self._site_id = site_id
