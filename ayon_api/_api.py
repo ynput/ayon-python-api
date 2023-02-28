@@ -208,6 +208,9 @@ def init_service(*args, **kwargs):
 def get_service_addon_name():
     """Name of addon which initialized service connection.
 
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
+
     Returns:
         Union[str, None]: Name of addon or None.
     """
@@ -218,6 +221,9 @@ def get_service_addon_name():
 def get_service_addon_version():
     """Version of addon which initialized service connection.
 
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
+
     Returns:
         Union[str, None]: Version of addon or None.
     """
@@ -225,8 +231,24 @@ def get_service_addon_version():
     return ServiceContext.addon_version
 
 
+def get_service_name():
+    """Name of service.
+
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
+
+    Returns:
+        Union[str, None]: Name of service if service was registered.
+    """
+
+    return ServiceContext.service_name
+
+
 def get_service_addon_settings():
     """Addon settings of service which initialized service.
+
+    Service context must be initialized to be able to use this function. Call
+    'init_service' on you service start to do so.
 
     Returns:
         Dict[str, Any]: Addon settings.

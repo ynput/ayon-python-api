@@ -11,6 +11,7 @@ from ._api import (
     ServiceContext,
 
     init_service,
+    get_service_name,
     get_service_addon_name,
     get_service_addon_version,
     get_service_addon_settings,
@@ -138,6 +139,7 @@ __all__ = (
     "ServiceContext",
 
     "init_service",
+    "get_service_name",
     "get_service_addon_name",
     "get_service_addon_version",
     "get_service_addon_settings",
