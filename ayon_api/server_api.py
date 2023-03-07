@@ -1182,6 +1182,7 @@ class ServerAPI(object):
             self._graphl_url,
             json=data
         )
+        response.raise_for_status()
         return GraphQlResponse(response)
 
     def get_graphql_schema(self):
