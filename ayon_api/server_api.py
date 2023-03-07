@@ -3209,7 +3209,7 @@ class ServerAPI(object):
                 "values": list(new_filters)
             })
 
-        response = self.get(
+        response = self.post(
             "projects/{}/repreContextFilter".format(project_name),
             context=body_context_filters,
             **filter_body
