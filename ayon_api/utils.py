@@ -340,7 +340,7 @@ def validate_url(url):
         )
 
     raise UrlError(
-        "Couldn't connect to server on \"{}\"".format(),
+        "Couldn't connect to server on \"{}\"".format(url),
         title="Couldn't connect to server",
         hints=hints + universal_hints
     )
