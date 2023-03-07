@@ -56,6 +56,7 @@ from .utils import (
     TransferProgress,
 )
 
+PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 # This should be collected from server schema
 PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
@@ -1182,6 +1183,7 @@ class ServerAPI(object):
             self._graphl_url,
             json=data
         )
+        response.raise_for_status()
         return GraphQlResponse(response)
 
     def get_graphql_schema(self):
@@ -3128,6 +3130,92 @@ class ServerAPI(object):
             output[repre_id] = (version, subset, folder, project)
 
         return output
+
+    def get_repre_ids_by_context_filters(
+        self,
+        project_name,
+        context_filters,
+        representation_names=None,
+        version_ids=None
+    ):
+        """Find representation ids which match passed context filters.
+
+        Each representation has context integrated on representation entity in
+        database. The context may contain project, folder, task name or subset,
+        family and many more. This implementation gives option to quickly
+        filter representation based on representation data in database.
+
+        Context filters have defined structure. To define filter of nested
+            subfield use dot '.' as delimiter (For example 'task.name').
+        Filter values can be regex filters. String or 're.Pattern' can be used.
+
+        Args:
+            project_name (str): Project where to look for representations.
+            context_filters (dict[str, list[str]]): Filters of context fields.
+            representation_names (Iterable[str]): Representation names, can be
+                used as additional filter for representations by their names.
+            version_ids (Iterable[str]): Version ids, can be used as additional
+                filter for representations by their parent ids.
+
+        Returns:
+            list[str]: Representation ids that match passed filters.
+
+        Example:
+            The function returns just representation ids so if entities are
+                required for funtionality they must be queried afterwards by
+                their ids.
+            >>> project_name = "testProject"
+            >>> filters = {
+            ...     "task.name": ["[aA]nimation"],
+            ...     "subset": [".*[Mm]ain"]
+            ... }
+            >>> repre_ids = get_repre_ids_by_context_filters(
+            ...     project_name, filters)
+            >>> repres = get_representations(project_name, repre_ids)
+        """
+
+        if not isinstance(context_filters, dict):
+            raise TypeError(
+                "Expected 'dict' got {}".format(str(type(context_filters)))
+            )
+
+        filter_body = {}
+        if representation_names is not None:
+            if not representation_names:
+                return []
+            filter_body["names"] = list(set(representation_names))
+
+        if version_ids is not None:
+            if not version_ids:
+                return []
+            filter_body["versionIds"] = list(set(version_ids))
+
+        body_context_filters = []
+        for key, filters in context_filters.items():
+            if not isinstance(filters, (set, list, tuple)):
+                raise TypeError(
+                    "Expected 'set', 'list', 'tuple' got {}".format(
+                        str(type(filters))))
+
+
+            new_filters = set()
+            for filter_value in filters:
+                if isinstance(filter_value, PatternType):
+                    filter_value = filter_value.pattern
+                new_filters.add(filter_value)
+
+            body_context_filters.append({
+                "key": key,
+                "values": list(new_filters)
+            })
+
+        response = self.post(
+            "projects/{}/repreContextFilter".format(project_name),
+            context=body_context_filters,
+            **filter_body
+        )
+        response.raise_for_status()
+        return response.data["ids"]
 
     def get_workfiles_info(
         self,

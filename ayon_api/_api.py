@@ -751,6 +751,11 @@ def get_representations_parents(*args, **kwargs):
     return con.get_representations_parents(*args, **kwargs)
 
 
+def get_repre_ids_by_context_filters(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_repre_ids_by_context_filters(*args, **kwargs)
+
+
 def create_project(
     project_name,
     project_code,
