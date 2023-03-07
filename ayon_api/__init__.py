@@ -119,6 +119,7 @@ from ._api import (
     get_representations,
     get_representations_parents,
     get_representation_parents,
+    get_repre_ids_by_context_filters,
 
     create_thumbnail,
     get_thumbnail,
@@ -245,6 +246,7 @@ __all__ = (
     "get_representations",
     "get_representations_parents",
     "get_representation_parents",
+    "get_repre_ids_by_context_filters",
 
     "create_thumbnail",
     "get_thumbnail",
