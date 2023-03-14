@@ -3460,7 +3460,7 @@ class ServerAPI(object):
             Dict[str, Any]: Created project entity.
         """
 
-        if self.get_project(project_name, fields=["name"]):
+        if self.get_project(project_name):
             raise ValueError("Project with name \"{}\" already exists".format(
                 project_name
             ))
