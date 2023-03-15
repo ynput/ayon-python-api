@@ -1976,7 +1976,7 @@ class ServerAPI(object):
                 yield project
 
     def get_rest_entity_by_id(self, project_name, entity_type, entity_id):
-        if not project_name or not entity_type or not entity_id:
+        if not all((project_name, entity_type, entity_id)):
             return None
 
         entity_endpoint = "{}s".format(entity_type)
