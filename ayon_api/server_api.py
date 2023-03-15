@@ -1947,6 +1947,9 @@ class ServerAPI(object):
                 project was not found.
         """
 
+        if not project_name:
+            return None
+
         response = self.get("projects/{}".format(project_name))
         if response.status == 200:
             return response.data
@@ -1973,6 +1976,9 @@ class ServerAPI(object):
                 yield project
 
     def get_rest_entity_by_id(self, project_name, entity_type, entity_id):
+        if not project_name or not entity_type or not entity_id:
+            return None
+
         entity_endpoint = "{}s".format(entity_type)
         response = self.get("projects/{}/{}/{}".format(
             project_name, entity_endpoint, entity_id
