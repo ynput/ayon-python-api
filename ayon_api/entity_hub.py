@@ -1351,6 +1351,13 @@ class ProjectEntity(BaseEntity):
         self._orig_folder_types = copy.deepcopy(folder_types)
         self._orig_task_types = copy.deepcopy(task_types)
 
+    def _prepare_entity_id(self, entity_id):
+        if entity_id != self.project_name:
+            raise ValueError(
+                "Unexpected entity id value \"{}\". Expected \"{}\"".format(
+                    entity_id, self.project_name))
+        return entity_id
+
     def get_parent(self, *args, **kwargs):
         return None
 
