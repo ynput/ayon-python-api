@@ -3163,15 +3163,26 @@ class ServerAPI(object):
 
         return output
 
-    def get_representation_parents(self, project_name, representation):
-        if not representation:
+    def get_representation_parents(self, project_name, representation_id):
+        """Find representation parents by representation id.
+
+        Representation parent entities up to project.
+
+        Args:
+             project_name (str): Project where to look for entities.
+             representation_id (str): Representation id.
+
+        Returns:
+            RepresentationParents: Representation parent entities.
+        """
+
+        if not representation_id:
             return None
 
-        repre_id = representation["_id"]
         parents_by_repre_id = self.get_representations_parents(
-            project_name, [representation]
+            project_name, [representation_id]
         )
-        return parents_by_repre_id[repre_id]
+        return parents_by_repre_id[representation_id]
 
     def get_repre_ids_by_context_filters(
         self,
