@@ -1559,17 +1559,47 @@ class ServerAPI(object):
         return response.data
 
     # Anatomy presets
-    def get_project_anatomy_presets(self, add_default=True):
+    def get_project_anatomy_presets(self):
+        """Anatomy presets available on server.
+
+        Content has basic information about presets. Example output:
+            [
+                {
+                    "name": "netflix_VFX",
+                    "primary": false,
+                    "version": "1.0.0"
+                },
+                {
+                    ...
+                },
+                ...
+            ]
+
+        Returns:
+            list[dict[str, str]]: Anatomy presets available on server.
+        """
+
         result = self.get("anatomy/presets")
-        presets = result.data
-        if add_default:
-            presets.append(self.get_project_anatomy_preset())
-        return presets
+        result.raise_for_status()
+        return result.data.get("presets") or []
 
     def get_project_anatomy_preset(self, preset_name=None):
+        """Anatomy preset values by name.
+
+        Get anatomy preset values by preset name. Primary preset is returned
+        if preset name is set to 'None'.
+
+        Args:
+            Union[str, None]: Preset name.
+
+        Returns:
+            dict[str, Any]: Anatomy preset values.
+        """
+
         if preset_name is None:
             preset_name = "_"
         result = self.get("anatomy/presets/{}".format(preset_name))
+        result.raise_for_status()
         return result.data
 
     def get_project_roots_by_site(self, project_name):
