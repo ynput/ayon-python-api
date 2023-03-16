@@ -1374,6 +1374,8 @@ class ServerAPI(object):
                 }
             )
 
+        raise ValueError("Unknown entity type \"{}\"".format(entity_type))
+
     def get_addons_info(self, details=True):
         """Get information about addons available on server.
 
