@@ -1437,6 +1437,10 @@ class FolderEntity(BaseEntity):
 
     def __init__(self, folder_type, *args, label=None, path=None, **kwargs):
         super(FolderEntity, self).__init__(*args, **kwargs)
+        # Autofill project as parent of folder if is not yet set
+        # - this can be guessed only if folder was just created
+        if self.created and self._parent_id is UNKNOWN_VALUE:
+            self._parent_id = self.project_name
 
         self._folder_type = folder_type
         self._label = label
