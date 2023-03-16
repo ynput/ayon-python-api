@@ -3113,7 +3113,7 @@ class ServerAPI(object):
         project = self.get_project(project_name)
         repre_ids = set(representation_ids)
         output = {
-            repre_id: (None, None, None, None)
+            repre_id: RepresentationParents(None, None, None, None)
             for repre_id in representation_ids
         }
 
@@ -3133,7 +3133,9 @@ class ServerAPI(object):
             version = repre.pop("version")
             subset = version.pop("subset")
             folder = subset.pop("folder")
-            output[repre_id] = (version, subset, folder, project)
+            output[repre_id] = RepresentationParents(
+                version, subset, folder, project
+            )
 
         return output
 

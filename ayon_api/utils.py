@@ -2,6 +2,7 @@ import re
 import datetime
 import uuid
 import string
+import collections
 try:
     # Python 3
     from urllib.parse import urlparse, urlencode
@@ -18,6 +19,11 @@ from .exceptions import UrlError
 REMOVED_VALUE = object()
 SLUGIFY_WHITELIST = string.ascii_letters + string.digits
 SLUGIFY_SEP_WHITELIST = " ,./\\;:!|*^#@~+-_="
+
+RepresentationParents = collections.namedtuple(
+    "RepresentationParents",
+    ("version", "subset", "folder", "project")
+)
 
 
 def prepare_query_string(key_values):
