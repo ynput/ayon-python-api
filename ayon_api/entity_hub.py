@@ -877,9 +877,7 @@ class BaseEntity(object):
         if created is None:
             created = entity_id is None
 
-        entity_id = convert_entity_id(entity_id)
-        if entity_id is None:
-            entity_id = create_entity_id()
+        entity_id = self._prepare_entity_id(entity_id)
 
         if data is None:
             data = {}
@@ -923,6 +921,12 @@ class BaseEntity(object):
 
     def __setitem__(self, item, value):
         return setattr(self, item, value)
+
+    def _prepare_entity_id(self, entity_id):
+        entity_id = convert_entity_id(entity_id)
+        if entity_id is None:
+            entity_id = create_entity_id()
+        return entity_id
 
     @property
     def id(self):
