@@ -48,6 +48,7 @@ from .exceptions import (
     ServerError,
 )
 from .utils import (
+    RepresentationParents,
     prepare_query_string,
     logout_from_server,
     create_entity_id,
