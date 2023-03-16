@@ -3127,16 +3127,6 @@ class ServerAPI(object):
             return representation
         return None
 
-    def get_representation_parents(self, project_name, representation):
-        if not representation:
-            return None
-
-        repre_id = representation["_id"]
-        parents_by_repre_id = self.get_representations_parents(
-            project_name, [representation]
-        )
-        return parents_by_repre_id[repre_id]
-
     def get_representations_parents(self, project_name, representation_ids):
         if not representation_ids:
             return {}
@@ -3169,6 +3159,16 @@ class ServerAPI(object):
             )
 
         return output
+
+    def get_representation_parents(self, project_name, representation):
+        if not representation:
+            return None
+
+        repre_id = representation["_id"]
+        parents_by_repre_id = self.get_representations_parents(
+            project_name, [representation]
+        )
+        return parents_by_repre_id[repre_id]
 
     def get_repre_ids_by_context_filters(
         self,
