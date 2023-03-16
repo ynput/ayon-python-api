@@ -2611,11 +2611,11 @@ class ServerAPI(object):
             subsets = self.get_subsets(
                 project_name,
                 subset_ids=subset_ids,
-                fields=["data.family"],
+                fields=["family"],
                 active=None,
             )
             return {
-                subset["data"]["family"]
+                subset["family"]
                 for subset in subsets
             }
 
