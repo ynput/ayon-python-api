@@ -3507,7 +3507,7 @@ class ServerAPI(object):
             project_name (str): Project name that will be removed.
         """
 
-        if not self.get_project(project_name, fields=["name"]):
+        if not self.get_project(project_name):
             raise ValueError("Project with name \"{}\" was not found".format(
                 project_name
             ))
