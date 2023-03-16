@@ -3131,6 +3131,19 @@ class ServerAPI(object):
         return None
 
     def get_representations_parents(self, project_name, representation_ids):
+        """Find representations parents by representation id.
+
+        Representation parent entities up to project.
+
+        Args:
+             project_name (str): Project where to look for entities.
+             representation_ids (Iterable[str]): Representation ids.
+
+        Returns:
+            dict[str, RepresentationParents]: Parent entities by
+                representation id.
+        """
+
         if not representation_ids:
             return {}
 
