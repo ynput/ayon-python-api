@@ -3104,6 +3104,7 @@ class ServerAPI(object):
             representation_ids=[representation_id],
             active=None,
             fields=fields,
+            own_attributes=own_attributes
         )
         for representation in representations:
             return representation
