@@ -1033,9 +1033,9 @@ class ServerAPI(object):
         the process creation. Sequence processing does not allow to create
         only one event of 'source_topic' at a time.
 
-        Job have 'dependsOn' key where is id of source topic.
+        Job have 'dependsOn' key with an id of source topic.
 
-        Make sure the new event has updated status to '"finished"' status
+        Make sure that the new event has updated status to '"finished"'
         when you're done with logic.
 
         Args:
@@ -1378,7 +1378,7 @@ class ServerAPI(object):
     def get_default_fields_for_type(self, entity_type):
         """Default fields for entity type.
 
-        Default fields contain most of commonly used fields from server. This
+        Returns most of commonly used fields from server.
 
         Args:
             entity_type (str): Name of entity type.
@@ -1617,7 +1617,8 @@ class ServerAPI(object):
         """Upload dependency package to server.
 
         Args:
-            filepath (str): Path to a pacakge file.
+            filepath (str): Path to a package file.
+            package_name (str): Name of package. Must be unique.
             platform_name (str): For which platform is the package targeted.
             progress (Optional[TransferProgress]): Object to keep track about
                 upload state.
