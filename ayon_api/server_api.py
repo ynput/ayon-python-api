@@ -1029,14 +1029,32 @@ class ServerAPI(object):
 
         Enroll will find first unprocessed event with 'source_topic' and will
         create new event with 'target_topic' for it and return the new event
-        data. If events must be processed in a sequence it is possible to limit
-        the process creation. Sequence processing does not allow to create
-        only one event of 'source_topic' at a time.
+        data.
 
-        Job have 'dependsOn' key with an id of source topic.
+        If events of source topic must be processed in a sequence, it is
+        possible to limit creation of target events to only one. That
+        will block creation of new target events, until there is at least one
+        unfinished event with target topic. This helps when order of events
+        matter and more than one process using the same target is running at
+        the same time.
+        - Make sure your target topic does not clash with other processes
+        - Make sure the new event has updated status to '"finished"' status
+            when you're done with logic
+        - Created target event have 'dependsOn' key where is id of source topic
 
-        Make sure that the new event has updated status to '"finished"'
-        when you're done with logic.
+        Use-case:
+            - Service 1 is creating events with topic 'my.leech'
+            - Service 2 process 'my.leech' and uses target topic 'my.process'
+                - this service can run on 1..n machines
+                - all events must be processed in a sequence by their creation
+                    time and only one event can be processed at a time
+                - in this case 'sequential' should be set to 'True' so only
+                    one machine is actually processing events, but if one goes
+                    down there are other that can take place
+            - Service 3 process 'my.leech' and uses target topic 'my.discover'
+                - this service can run on 1..n machines
+                - order of events is not important
+                - 'sequential' should be 'False'
 
         Args:
             source_topic (str): Source topic to enroll.
