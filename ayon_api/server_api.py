@@ -1031,16 +1031,17 @@ class ServerAPI(object):
         create new event with 'target_topic' for it and return the new event
         data.
 
-        If events of source topic must be processed in a sequence, it is
-        possible to limit creation of target events to only one. That
-        will block creation of new target events, until there is at least one
-        unfinished event with target topic. This helps when order of events
-        matter and more than one process using the same target is running at
-        the same time.
-        - Make sure your target topic does not clash with other processes
+        Use 'sequential' to control that only single target event is created
+        at same time. Creation of new target events is blocked while there is
+        at least one unfinished event with target topic, when set to 'True'.
+        This helps when order of events matter and more than one process using
+        the same target is running at the same time.
         - Make sure the new event has updated status to '"finished"' status
             when you're done with logic
-        - Created target event have 'dependsOn' key where is id of source topic
+
+        Target topic should not clash with other processes/services.
+
+        Created target event have 'dependsOn' key where is id of source topic.
 
         Use-case:
             - Service 1 is creating events with topic 'my.leech'
