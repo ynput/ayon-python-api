@@ -850,7 +850,7 @@ class ServerAPI(object):
         return self.raw_delete(entrypoint, params=kwargs)
 
     def get_event(self, event_id):
-        """Receive full event data by id.
+        """Query full event data by id.
 
         Events received using event server do not contain full information. To
         get the full event information is required to receive it explicitly.
@@ -887,8 +887,8 @@ class ServerAPI(object):
             users (Iterable[str]): Filtering by users who created/triggered
                 an event.
             include_logs (bool): Query also log events.
-            fields (Iterable[str]): Fields that should be received for each
-                event.
+            fields (Union[Iterable[str], None]): Fields that should be received
+                for each event.
 
         Returns:
             Generator[Dict[str, Any]]: Available events matching filters.
@@ -1027,8 +1027,46 @@ class ServerAPI(object):
     ):
         """Enroll job based on events.
 
+        Enroll will find first unprocessed event with 'source_topic' and will
+        create new event with 'target_topic' for it and return the new event
+        data.
+
+        Use 'sequential' to control that only single target event is created
+        at same time. Creation of new target events is blocked while there is
+        at least one unfinished event with target topic, when set to 'True'.
+        This helps when order of events matter and more than one process using
+        the same target is running at the same time.
+        - Make sure the new event has updated status to '"finished"' status
+            when you're done with logic
+
+        Target topic should not clash with other processes/services.
+
+        Created target event have 'dependsOn' key where is id of source topic.
+
+        Use-case:
+            - Service 1 is creating events with topic 'my.leech'
+            - Service 2 process 'my.leech' and uses target topic 'my.process'
+                - this service can run on 1..n machines
+                - all events must be processed in a sequence by their creation
+                    time and only one event can be processed at a time
+                - in this case 'sequential' should be set to 'True' so only
+                    one machine is actually processing events, but if one goes
+                    down there are other that can take place
+            - Service 3 process 'my.leech' and uses target topic 'my.discover'
+                - this service can run on 1..n machines
+                - order of events is not important
+                - 'sequential' should be 'False'
+
         Args:
-            source_topic (str): Topic
+            source_topic (str): Source topic to enroll.
+            target_topic (str): Topic of dependent event.
+            sender (str): Identifier of sender (e.g. service name or username).
+            description (str): Human readable text shown in target event.
+            sequential (bool): The source topic must be processed in sequence.
+
+        Returns:
+            Union[None, dict[str, Any]]: None if there is no event matching
+                filters. Created event with 'target_topic'.
         """
 
         kwargs = {
@@ -1171,12 +1209,29 @@ class ServerAPI(object):
             progress.set_transfer_done()
 
     def trigger_server_restart(self):
+        """Trigger server restart.
+
+        Restart may be required when a change of specific value happened on
+            server.
+        """
+
         result = self.post("system/restart")
         if result.status_code != 204:
             # TODO add better exception
             raise ValueError("Failed to restart server")
 
     def query_graphql(self, query, variables=None):
+        """Execute GraphQl query.
+
+        Args:
+            query (str): GraphQl query string.
+            variables (Union[None, dict[str, Any]): Variables that can be
+                used in query.
+
+        Returns:
+            GraphQlResponse: Response from server.
+        """
+
         data = {"query": query, "variables": variables or {}}
         response = self._do_rest_request(
             RequestTypes.post,
@@ -1192,7 +1247,7 @@ class ServerAPI(object):
     def get_server_schema(self):
         """Get server schema with info, url paths, components etc.
 
-        Todo:
+        Todos:
             Cache schema - How to find out it is outdated?
 
         Returns:
@@ -1272,6 +1327,14 @@ class ServerAPI(object):
         self.reset_attributes_schema()
 
     def remove_attribute_config(self, attribute_name):
+        """Remove attribute from server.
+
+        This can't be un-done, please use carefully.
+
+        Args:
+            attribute_name (str): Name of attribute to remove.
+        """
+
         response = self.delete("attributes/{}".format(attribute_name))
         if response.status_code != 204:
             # TODO raise different exception
@@ -1332,6 +1395,17 @@ class ServerAPI(object):
         return copy.deepcopy(attributes)
 
     def get_default_fields_for_type(self, entity_type):
+        """Default fields for entity type.
+
+        Returns most of commonly used fields from server.
+
+        Args:
+            entity_type (str): Name of entity type.
+
+        Returns:
+            set[str]: Fields that should be queried from server.
+        """
+
         attributes = self.get_attributes_for_type(entity_type)
         if entity_type == "project":
             return DEFAULT_PROJECT_FIELDS | {
@@ -1438,6 +1512,28 @@ class ServerAPI(object):
         return dst_filepath
 
     def get_dependencies_info(self):
+        """Information about dependency packages on server.
+
+        Example data structure:
+            {
+                "packages": [
+                    {
+                        "name": str,
+                        "platform": str,
+                        "checksum": str,
+                        "sources": list[dict[str, Any]],
+                        "supportedAddons": dict[str, str],
+                        "pythonModules": dict[str, str]
+                    }
+                ],
+                "productionPackage": str
+            }
+
+        Returns:
+            dict[str, Any]: Information about dependency packages known for
+                server.
+        """
+
         result = self.get("dependencies")
         return result.data
 
@@ -1537,6 +1633,16 @@ class ServerAPI(object):
     def upload_dependency_package(
         self, filepath, package_name, platform_name=None, progress=None
     ):
+        """Upload dependency package to server.
+
+        Args:
+            filepath (str): Path to a package file.
+            package_name (str): Name of package. Must be unique.
+            platform_name (str): For which platform is the package targeted.
+            progress (Optional[TransferProgress]): Object to keep track about
+                upload state.
+        """
+
         if platform_name is None:
             platform_name = platform.system().lower()
 
@@ -1547,6 +1653,14 @@ class ServerAPI(object):
         )
 
     def delete_dependency_package(self, package_name, platform_name=None):
+        """Remove dependency package for specific platform.
+
+        Args:
+            package_name (str): Name of package to remove.
+            platform_name (Optional[str]): Which platform of the package should
+                be removed. Current platform is used if not passed.
+        """
+
         if platform_name is None:
             platform_name = platform.system().lower()
 
@@ -1935,7 +2049,7 @@ class ServerAPI(object):
 
     # Entity getters
     def get_rest_project(self, project_name):
-        """Receive project by name.
+        """Query project by name.
 
         This call returns project with anatomy data.
 
@@ -1956,13 +2070,13 @@ class ServerAPI(object):
         return None
 
     def get_rest_projects(self, active=True, library=None):
-        """Receive available project entity data.
+        """Query available project entities.
 
         User must be logged in.
 
         Args:
-            active (bool): Filter active/inactive projects. Both are returned
-                if 'None' is passed.
+            active (Union[bool, None]): Filter active/inactive projects. Both
+                are returned if 'None' is passed.
             library (bool): Filter standard/library projects. Both are
                 returned if 'None' is passed.
 
@@ -1976,6 +2090,18 @@ class ServerAPI(object):
                 yield project
 
     def get_rest_entity_by_id(self, project_name, entity_type, entity_id):
+        """Get entity using REST on a project by its id.
+
+        Args:
+            project_name (str): Name of project where entity is.
+            entity_type (Literal["folder", "task", "subset", "version"]): The
+                entity type which should be received.
+            entity_id (str): Id of entity.
+
+        Returns:
+            dict[str, Any]: Received entity data.
+        """
+
         if not all((project_name, entity_type, entity_id)):
             return None
 
@@ -2010,8 +2136,8 @@ class ServerAPI(object):
         User must be logged in.
 
         Args:
-            active (bool): Filter active/inactive projects. Both are returned
-                if 'None' is passed.
+            active (Union[bool, None[): Filter active/inactive projects. Both
+                are returned if 'None' is passed.
             library (bool): Filter standard/library projects. Both are
                 returned if 'None' is passed.
 
@@ -2154,6 +2280,7 @@ class ServerAPI(object):
             Filter 'active' don't have direct filter in GraphQl.
 
         Args:
+            project_name (str): Name of project.
             folder_ids (Iterable[str]): Folder ids to filter.
             folder_paths (Iterable[str]): Folder paths used for filtering.
             folder_names (Iterable[str]): Folder names used for filtering.
@@ -2164,6 +2291,8 @@ class ServerAPI(object):
             fields (Union[Iterable[str], None]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
 
         Returns:
             Generator[dict[str, Any]]: Queried folder entities.
@@ -2256,6 +2385,27 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query task entities from server.
+
+        Args:
+            project_name (str): Name of project.
+            task_ids (Iterable[str]): Task ids to filter.
+            task_names (Iterable[str]): Task names used for filtering.
+            task_types (Itartable[str]): Task types used for filtering.
+            folder_ids (Iterable[str]): Ids of task parents. Use 'None'
+                if folder is direct child of project.
+            active (Union[bool, None]): Filter active/inactive tasks.
+                Both are returned if is set to None.
+            fields (Union[Iterable[str], None]): Fields to be queried for
+                folder. All possible folder fields are returned
+                if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Generator[dict[str, Any]]: Queried task entities.
+        """
+
         if not project_name:
             return
 
@@ -2327,6 +2477,22 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query task entity by name and folder id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            folder_id (str): Folder id.
+            task_name (str): Task name
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Task entity data or None if was not found.
+        """
+
         for task in self.get_tasks(
             project_name,
             folder_ids=[folder_id],
@@ -2345,6 +2511,21 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query task entity by id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            task_id (str): Task id.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Task entity data or None if was not found.
+        """
+
         for task in self.get_tasks(
             project_name,
             task_ids=[task_id],
@@ -2363,14 +2544,16 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
-        """Receive folder data by it's id.
+        """Query folder entity by id.
 
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            folder_id (str): Folder's id.
-            fields (Iterable[str]): Fields that should be returned. All fields
-                are returned if 'None' is passed.
+            folder_id (str): Folder id.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Folder entity data or None if was not found.
@@ -2394,6 +2577,23 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query folder entity by path.
+
+        Folder path is a path to folder with all parent names joined by slash.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            folder_path (str): Folder path.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Folder entity data or None if was not found.
+        """
+
         folders = self.get_folders(
             project_name,
             folder_paths=[folder_path],
@@ -2412,6 +2612,25 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query folder entity by path.
+
+        Warnings:
+            Folder name is not a unique identifier of a folder. Function is
+                kept for OpenPype 3 compatibility.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            folder_name (str): Folder name.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Folder entity data or None if was not found.
+        """
+
         folders = self.get_folders(
             project_name,
             folder_names=[folder_name],
@@ -2424,6 +2643,22 @@ class ServerAPI(object):
         return None
 
     def get_folder_ids_with_subsets(self, project_name, folder_ids=None):
+        """Find folders which have at least one subset.
+
+        Folders that have at least one subset should be immutable, so they
+        should not change path -> change of name or name of any parent
+        is not possible.
+
+        Args:
+            project_name (str): Name of project.
+            folder_ids (Union[Iterable[str], None]): Limit folder ids filtering
+                to a set of folders. If set to None all folders on project are
+                checked.
+
+        Returns:
+            set[str]: Folder ids that have at least one subset.
+        """
+
         if folder_ids is not None:
             folder_ids = set(folder_ids)
             if not folder_ids:
@@ -2467,6 +2702,32 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query subsets from server.
+
+        Todos:
+            Separate 'name_by_folder_ids' filtering to separated method. It
+                cannot be combined with some other filters.
+
+        Args:
+            project_name (str): Name of project.
+            subset_ids (Iterable[str]): Task ids to filter.
+            subset_names (Iterable[str]): Task names used for filtering.
+            folder_ids (Iterable[str]): Ids of task parents. Use 'None'
+                if folder is direct child of project.
+            names_by_folder_ids (dict[str, Iterable[str]]): Subset name
+                filtering by folder id.
+            active (Union[bool, None]): Filter active/inactive subsets.
+                Both are returned if is set to None.
+            fields (Union[Iterable[str], None]): Fields to be queried for
+                folder. All possible folder fields are returned
+                if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Generator[dict[str, Any]]: Queried subset entities.
+        """
+
         if not project_name:
             return
 
@@ -2575,6 +2836,21 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query subset entity by id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            subset_id (str): Subset id.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Subset entity data or None if was not found.
+        """
+
         subsets = self.get_subsets(
             project_name,
             subset_ids=[subset_id],
@@ -2594,6 +2870,22 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query subset entity by name and folder id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            subset_name (str): Subset name.
+            folder_id (str): Folder id (Folder is a parent of subsets).
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Subset entity data or None if was not found.
+        """
+
         subsets = self.get_subsets(
             project_name,
             subset_names=[subset_name],
@@ -2607,6 +2899,18 @@ class ServerAPI(object):
         return None
 
     def get_subset_families(self, project_name, subset_ids=None):
+        """Families of subsets from a project.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            subset_ids (Union[None, Iterable[str]]): Limit filtering to set
+                of subset ids.
+
+        Returns:
+            set[str]: Families found on subsets.
+        """
+
         if subset_ids is not None:
             subsets = self.get_subsets(
                 project_name,
@@ -2658,9 +2962,13 @@ class ServerAPI(object):
             latest (bool): Return only latest version of standard versions.
                 This can be combined only with 'standard' attribute
                 set to True.
+            active (Union[bool, None]): Receive active/inactive entities.
+                Both are returned when 'None' is passed.
             fields (Union[Iterable[str], None]): Fields to be queried
                 for version. All possible folder fields are returned
                 if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
 
         Returns:
             Generator[Dict[str, Any]]: Queried version entities.
@@ -2767,6 +3075,21 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query version entity by id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            version_id (str): Version id.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Version entity data or None if was not found.
+       """
+
         versions = self.get_versions(
             project_name,
             version_ids=[version_id],
@@ -2787,6 +3110,22 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query version entity by version and subset id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            version (int): Version of version entity.
+            subset_id (str): Subset id. Subset is a parent of version.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Version entity data or None if was not found.
+       """
+
         versions = self.get_versions(
             project_name,
             subset_ids=[subset_id],
@@ -2806,6 +3145,21 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query hero version entity by id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            version_id (int): Hero version id.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Version entity data or None if was not found.
+       """
+
         versions = self.get_hero_versions(
             project_name,
             version_ids=[version_id],
@@ -2823,6 +3177,23 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query hero version entity by subset id.
+
+        Only one hero version is available on a subset.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            subset_id (int): Subset id.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Version entity data or None if was not found.
+       """
+
         versions = self.get_hero_versions(
             project_name,
             subset_ids=[subset_id],
@@ -2842,6 +3213,26 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query hero versions by multiple filters.
+
+        Only one hero version is available on a subset.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            subset_ids (int): Subset ids.
+            version_ids (int): Version ids.
+            active (Union[bool, None]): Receive active/inactive entities.
+                Both are returned when 'None' is passed.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Version entity data or None if was not found.
+       """
+
         return self.get_versions(
             project_name,
             version_ids=version_ids,
@@ -2861,6 +3252,22 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query last version entities by subset ids.
+
+        Args:
+            project_name (str): Project where to look for representation.
+            subset_ids (Iterable[str]): Subset ids.
+            active (Union[bool, None]): Receive active/inactive entities.
+                Both are returned when 'None' is passed.
+            fields (Union[Iterable[str], None]): fields to be queried
+                for representations.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            dict[str, dict[str, Any]]: Last versions by subset id.
+        """
+
         versions = self.get_versions(
             project_name,
             subset_ids=subset_ids,
@@ -2882,6 +3289,22 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query last version entity by subset id.
+
+        Args:
+            project_name (str): Project where to look for representation.
+            subset_id (str): Subset id.
+            active (Union[bool, None]): Receive active/inactive entities.
+                Both are returned when 'None' is passed.
+            fields (Union[Iterable[str], None]): fields to be queried
+                for representations.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Queried version entity or None.
+        """
+
         versions = self.get_versions(
             project_name,
             subset_ids=[subset_id],
@@ -2903,6 +3326,23 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query last version entity by subset name and folder id.
+
+        Args:
+            project_name (str): Project where to look for representation.
+            subset_name (str): Subset name.
+            folder_id (str): Folder id.
+            active (Union[bool, None]): Receive active/inactive entities.
+                Both are returned when 'None' is passed.
+            fields (Union[Iterable[str], None]): fields to be queried
+                for representations.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Queried version entity or None.
+        """
+
         if not folder_id:
             return None
 
@@ -2920,6 +3360,16 @@ class ServerAPI(object):
         )
 
     def version_is_latest(self, project_name, version_id):
+        """Is version latest from a subset.
+
+        Args:
+            project_name (str): Project where to look for representation.
+            version_id (str): Version id.
+
+        Returns:
+            bool: Version is latest or not.
+        """
+
         query = GraphQlQuery("VersionIsLatest")
         project_name_var = query.add_variable(
             "projectName", "String!", project_name
@@ -2952,15 +3402,15 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
-        """Get version entities based on passed filters from server.
+        """Get representation entities based on passed filters from server.
 
-        Todo:
+        Todos:
             Add separated function for 'names_by_version_ids' filtering.
                 Because can't be combined with others.
 
         Args:
             project_name (str): Name of project where to look for versions.
-            representation_ids (Iterable[str]): Representaion ids used for
+            representation_ids (Iterable[str]): Representation ids used for
                 representation filtering.
             representation_names (Iterable[str]): Representation names used for
                 representation filtering.
@@ -2969,11 +3419,13 @@ class ServerAPI(object):
                     representations.
             names_by_version_ids (bool): Find representations by names and
                 version ids. This filter discard all other filters.
-            active (bool): Receive active/inactive representaions. All are
-                returned when 'None' is passed.
+            active (Union[bool, None]): Receive active/inactive entities.
+                Both are returned when 'None' is passed.
             fields (Union[Iterable[str], None]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
 
         Returns:
             Generator[Dict[str, Any]]: Queried representation entities.
@@ -3066,6 +3518,20 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query representation entity from server based on id filter.
+
+        Args:
+            project_name (str): Project where to look for representation.
+            representation_id (str): Id of representation.
+            fields (Union[Iterable[str], None]): fields to be queried
+                for representations.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Queried representation entity or None.
+        """
+
         representations = self.get_representations(
             project_name,
             representation_ids=[representation_id],
@@ -3084,6 +3550,21 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Query representation entity by name and version id.
+
+        Args:
+            project_name (str): Project where to look for representation.
+            representation_name (str): Representation name.
+            version_id (str): Version id.
+            fields (Union[Iterable[str], None]): fields to be queried
+                for representations.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Queried representation entity or None.
+        """
+
         representations = self.get_representations(
             project_name,
             representation_names=[representation_name],
@@ -3232,6 +3713,23 @@ class ServerAPI(object):
         fields=None,
         own_attributes=False
     ):
+        """Workfile info entities by passed filters.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            workfile_ids (Optional[Iterable[str]]): Workfile ids.
+            task_ids (Optional[Iterable[str]]): Task ids.
+            paths (Optional[Iterable[str]]): Rootless workfiles paths.
+            fields (Union[Iterable[str], None]): Fields to be queried for
+                representation. All possible fields are returned if 'None' is
+                passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Generator[dict[str, Any]]: Queried workfile info entites.
+        """
+
         filters = {"projectName": project_name}
         if task_ids is not None:
             task_ids = set(task_ids)
@@ -3271,6 +3769,22 @@ class ServerAPI(object):
     def get_workfile_info(
         self, project_name, task_id, path, fields=None, own_attributes=False
     ):
+        """Workfile info entity by task id and workfile path.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            task_id (str): Task id.
+            path (str): Rootless workfile path.
+            fields (Union[Iterable[str], None]): Fields to be queried for
+                representation. All possible fields are returned if 'None' is
+                passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Workfile info entity or None.
+        """
+
         if not task_id or not path:
             return None
 
@@ -3287,6 +3801,21 @@ class ServerAPI(object):
     def get_workfile_info_by_id(
         self, project_name, workfile_id, fields=None, own_attributes=False
     ):
+        """Workfile info entity by id.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            workfile_id (str): Workfile info id.
+            fields (Union[Iterable[str], None]): Fields to be queried for
+                representation. All possible fields are returned if 'None' is
+                passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Workfile info entity or None.
+        """
+
         if not workfile_id:
             return None
 
@@ -3305,7 +3834,7 @@ class ServerAPI(object):
         """Get thumbnail from server.
 
         Permissions of thumbnails are related to entities so thumbnails must be
-        queried per entity. Thus an entity type and entity type is required to
+        queried per entity. So an entity type and entity type is required to
         be passed.
 
         If thumbnail id is passed logic can look into locally cached thumbnails
@@ -3568,6 +4097,23 @@ class ServerAPI(object):
         return response.data["id"]
 
     def send_batch_operations(self, project_name, operations, can_fail=False):
+        """Post multiple CRUD operations to server.
+
+        When multiple changes should be made on server side this is the best
+        way to go. It is possible to pass multiple operations to process on a
+        server side and do the changes in a transaction.
+
+        Args:
+            project_name (str): On which project should be operations
+                processed.
+            operations (list[dict[str, Any]]): Operations to be processed.
+            can_fail (bool): Server will try to process all operations even if
+                one of them fails.
+
+        Raises:
+            FailedOperations: When one or more operations fail.
+        """
+
         if not operations:
             return
 
