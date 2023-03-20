@@ -48,6 +48,7 @@ from .exceptions import (
     ServerError,
 )
 from .utils import (
+    RepresentationParents,
     prepare_query_string,
     logout_from_server,
     create_entity_id,
@@ -1447,6 +1448,8 @@ class ServerAPI(object):
                 }
             )
 
+        raise ValueError("Unknown entity type \"{}\"".format(entity_type))
+
     def get_addons_info(self, details=True):
         """Get information about addons available on server.
 
@@ -1672,17 +1675,47 @@ class ServerAPI(object):
         return response.data
 
     # Anatomy presets
-    def get_project_anatomy_presets(self, add_default=True):
+    def get_project_anatomy_presets(self):
+        """Anatomy presets available on server.
+
+        Content has basic information about presets. Example output:
+            [
+                {
+                    "name": "netflix_VFX",
+                    "primary": false,
+                    "version": "1.0.0"
+                },
+                {
+                    ...
+                },
+                ...
+            ]
+
+        Returns:
+            list[dict[str, str]]: Anatomy presets available on server.
+        """
+
         result = self.get("anatomy/presets")
-        presets = result.data
-        if add_default:
-            presets.append(self.get_project_anatomy_preset())
-        return presets
+        result.raise_for_status()
+        return result.data.get("presets") or []
 
     def get_project_anatomy_preset(self, preset_name=None):
+        """Anatomy preset values by name.
+
+        Get anatomy preset values by preset name. Primary preset is returned
+        if preset name is set to 'None'.
+
+        Args:
+            Union[str, None]: Preset name.
+
+        Returns:
+            dict[str, Any]: Anatomy preset values.
+        """
+
         if preset_name is None:
             preset_name = "_"
         result = self.get("anatomy/presets/{}".format(preset_name))
+        result.raise_for_status()
         return result.data
 
     def get_project_roots_by_site(self, project_name):
@@ -2915,11 +2948,11 @@ class ServerAPI(object):
             subsets = self.get_subsets(
                 project_name,
                 subset_ids=subset_ids,
-                fields=["data.family"],
+                fields=["family"],
                 active=None,
             )
             return {
-                subset["data"]["family"]
+                subset["family"]
                 for subset in subsets
             }
 
@@ -3537,6 +3570,7 @@ class ServerAPI(object):
             representation_ids=[representation_id],
             active=None,
             fields=fields,
+            own_attributes=own_attributes
         )
         for representation in representations:
             return representation
@@ -3577,24 +3611,27 @@ class ServerAPI(object):
             return representation
         return None
 
-    def get_representation_parents(self, project_name, representation):
-        if not representation:
-            return None
-
-        repre_id = representation["_id"]
-        parents_by_repre_id = self.get_representations_parents(
-            project_name, [representation]
-        )
-        return parents_by_repre_id[repre_id]
-
     def get_representations_parents(self, project_name, representation_ids):
+        """Find representations parents by representation id.
+
+        Representation parent entities up to project.
+
+        Args:
+             project_name (str): Project where to look for entities.
+             representation_ids (Iterable[str]): Representation ids.
+
+        Returns:
+            dict[str, RepresentationParents]: Parent entities by
+                representation id.
+        """
+
         if not representation_ids:
             return {}
 
         project = self.get_project(project_name)
         repre_ids = set(representation_ids)
         output = {
-            repre_id: (None, None, None, None)
+            repre_id: RepresentationParents(None, None, None, None)
             for repre_id in representation_ids
         }
 
@@ -3614,9 +3651,32 @@ class ServerAPI(object):
             version = repre.pop("version")
             subset = version.pop("subset")
             folder = subset.pop("folder")
-            output[repre_id] = (version, subset, folder, project)
+            output[repre_id] = RepresentationParents(
+                version, subset, folder, project
+            )
 
         return output
+
+    def get_representation_parents(self, project_name, representation_id):
+        """Find representation parents by representation id.
+
+        Representation parent entities up to project.
+
+        Args:
+             project_name (str): Project where to look for entities.
+             representation_id (str): Representation id.
+
+        Returns:
+            RepresentationParents: Representation parent entities.
+        """
+
+        if not representation_id:
+            return None
+
+        parents_by_repre_id = self.get_representations_parents(
+            project_name, [representation_id]
+        )
+        return parents_by_repre_id[representation_id]
 
     def get_repre_ids_by_context_filters(
         self,
@@ -4034,7 +4094,7 @@ class ServerAPI(object):
             project_name (str): Project name that will be removed.
         """
 
-        if not self.get_project(project_name, fields=["name"]):
+        if not self.get_project(project_name):
             raise ValueError("Project with name \"{}\" was not found".format(
                 project_name
             ))
@@ -4173,4 +4233,3 @@ class ServerAPI(object):
                     json.dumps(body_by_id[operation_id], indent=4),
                     op_result["error"],
                 ))
-
