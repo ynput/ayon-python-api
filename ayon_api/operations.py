@@ -1,7 +1,6 @@
 import copy
 import collections
 import uuid
-import datetime
 from abc import ABCMeta, abstractproperty
 
 import six
@@ -137,13 +136,20 @@ def new_version_entity(
     if data is None:
         data = {}
 
-    return {
+    output = {
         "id": _create_or_convert_to_id(entity_id),
         "version": int(version),
         "subsetId": _create_or_convert_to_id(subset_id),
         "attrib": attribs,
         "data": data
     }
+    if task_id:
+        output["taskId"] = task_id
+    if thumbnail_id:
+        output["thumbnailId"] = thumbnail_id
+    if author:
+        output["author"] = author
+    return output
 
 
 def new_hero_version_entity(
@@ -180,13 +186,20 @@ def new_hero_version_entity(
     if data is None:
         data = {}
 
-    return {
+    output = {
         "id": _create_or_convert_to_id(entity_id),
         "version": -abs(int(version)),
         "subsetId": subset_id,
         "attrib": attribs,
         "data": data
     }
+    if task_id:
+        output["taskId"] = task_id
+    if thumbnail_id:
+        output["thumbnailId"] = thumbnail_id
+    if author:
+        output["author"] = author
+    return output
 
 
 def new_representation_entity(
@@ -198,7 +211,6 @@ def new_representation_entity(
         name (str): Representation name considered as unique identifier
             of representation under version.
         version_id (str): Id of parent version.
-        context (Dict[str, Any]): Representation context used to fill template.
         attribs (Dict[str, Any]): Explicitly set attributes of representation.
         data (Dict[str, Any]): Representation entity data.
         entity_id (str): Predefined id of entity. New id is created
@@ -236,6 +248,8 @@ def new_workfile_info_doc(
         task_name (str): Task under which was workfile created.
         files (List[str]): List of rootless filepaths related to workfile.
         data (Dict[str, Any]): Additional metadata.
+        entity_id (str): Predefined id of entity. New id is created
+            if not passed.
 
     Returns:
         Dict[str, Any]: Skeleton of workfile info entity.
@@ -252,153 +266,6 @@ def new_workfile_info_doc(
         "data": data,
         "files": files
     }
-
-
-def _prepare_update_data(old_doc, new_doc, replace):
-    changes = {}
-    for key, value in new_doc.items():
-        if key not in old_doc or value != old_doc[key]:
-            changes[key] = value
-
-    if replace:
-        for key in old_doc.keys():
-            if key not in new_doc:
-                changes[key] = REMOVED_VALUE
-    return changes
-
-
-def prepare_folder_update_data(old_doc, new_doc, replace=True):
-    """Compare two folder entities and prepare update data.
-
-    Based on compared values will create update data for
-    'UpdateOperation'.
-
-    Empty output means that entities data are identical.
-
-    Returns:
-        Dict[str, Any]: Changes between old and new entity.
-    """
-
-    # changes = {}
-    # for key, value in new_doc.items():
-    #     if key in ("data", ):
-    #         continue
-    #
-    #     if key not in old_doc or value != old_doc[key]:
-    #         changes[key] = value
-    #
-    # return _prepare_update_data(old_doc, new_doc, replace)
-
-    raise NotImplementedError(
-        "'prepare_folder_update_data' not yet implemented"
-    )
-
-
-def prepare_subset_update_data(old_doc, new_doc, replace=True):
-    """Compare two subset entities and prepare update data.
-
-    Based on compared values will create update data for
-    'UpdateOperation'.
-
-    Empty output means that entities are identical.
-
-    Returns:
-        Dict[str, Any]: Changes between old and new entity.
-    """
-
-    # return _prepare_update_data(old_doc, new_doc, replace)
-
-    raise NotImplementedError(
-        "'prepare_folder_update_data' not yet implemented"
-    )
-
-
-def prepare_version_update_data(old_doc, new_doc, replace=True):
-    """Compare two version entities and prepare update data.
-
-    Based on compared values will create update data for
-    'UpdateOperation'.
-
-    Empty output means that entities are identical.
-
-    Returns:
-        Dict[str, Any]: Changes between old and new entity.
-    """
-
-    # return _prepare_update_data(old_doc, new_doc, replace)
-
-    raise NotImplementedError(
-        "'prepare_folder_update_data' not yet implemented"
-    )
-
-
-def prepare_hero_version_update_data(old_doc, new_doc, replace=True):
-    """Compare two hero version entities and prepare update data.
-
-    Based on compared values will create update data for 'UpdateOperation'.
-
-    Empty output means that entities are identical.
-
-    Returns:
-        Dict[str, Any]: Changes between old and new entity.
-    """
-
-    # return _prepare_update_data(old_doc, new_doc, replace)
-
-    raise NotImplementedError(
-        "'prepare_folder_update_data' not yet implemented"
-    )
-
-
-def prepare_representation_update_data(old_doc, new_doc, replace=True):
-    """Compare two representation entities and prepare update data.
-
-    Based on compared values will create update data for
-    'UpdateOperation'.
-
-    Empty output means that entities are identical.
-
-    Returns:
-        Dict[str, Any]: Changes between old and new entity.
-    """
-
-    # return _prepare_update_data(old_doc, new_doc, replace)
-
-    raise NotImplementedError(
-        "'prepare_folder_update_data' not yet implemented"
-    )
-
-
-def prepare_workfile_info_update_data(old_doc, new_doc, replace=True):
-    """Compare two workfile info entities and prepare update data.
-
-    Based on compared values will create update data for
-    'UpdateOperation'.
-
-    Empty output means that entities are identical.
-
-    Returns:
-        Dict[str, Any]: Changes between old and new entity.
-    """
-
-    # return _prepare_update_data(old_doc, new_doc, replace)
-
-    raise NotImplementedError(
-        "'prepare_folder_update_data' not yet implemented"
-    )
-
-
-def entity_data_json_default(value):
-    if isinstance(value, datetime.datetime):
-        return int(value.timestamp())
-
-    raise TypeError(
-        "Object of type {} is not JSON serializable".format(str(type(value)))
-    )
-
-
-def failed_json_default(value):
-    return "< Failed value {} > {}".format(type(value), str(value))
 
 
 @six.add_metaclass(ABCMeta)

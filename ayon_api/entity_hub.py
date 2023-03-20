@@ -877,9 +877,7 @@ class BaseEntity(object):
         if created is None:
             created = entity_id is None
 
-        entity_id = convert_entity_id(entity_id)
-        if entity_id is None:
-            entity_id = create_entity_id()
+        entity_id = self._prepare_entity_id(entity_id)
 
         if data is None:
             data = {}
@@ -923,6 +921,12 @@ class BaseEntity(object):
 
     def __setitem__(self, item, value):
         return setattr(self, item, value)
+
+    def _prepare_entity_id(self, entity_id):
+        entity_id = convert_entity_id(entity_id)
+        if entity_id is None:
+            entity_id = create_entity_id()
+        return entity_id
 
     @property
     def id(self):
@@ -1347,6 +1351,13 @@ class ProjectEntity(BaseEntity):
         self._orig_folder_types = copy.deepcopy(folder_types)
         self._orig_task_types = copy.deepcopy(task_types)
 
+    def _prepare_entity_id(self, entity_id):
+        if entity_id != self.project_name:
+            raise ValueError(
+                "Unexpected entity id value \"{}\". Expected \"{}\"".format(
+                    entity_id, self.project_name))
+        return entity_id
+
     def get_parent(self, *args, **kwargs):
         return None
 
@@ -1426,6 +1437,10 @@ class FolderEntity(BaseEntity):
 
     def __init__(self, folder_type, *args, label=None, path=None, **kwargs):
         super(FolderEntity, self).__init__(*args, **kwargs)
+        # Autofill project as parent of folder if is not yet set
+        # - this can be guessed only if folder was just created
+        if self.created and self._parent_id is UNKNOWN_VALUE:
+            self._parent_id = self.project_name
 
         self._folder_type = folder_type
         self._label = label
