@@ -4156,7 +4156,13 @@ class ServerAPI(object):
                 "Failed to create thumbnail.{}".format(details))
         return response.data["id"]
 
-    def send_batch_operations(self, project_name, operations, can_fail=False):
+    def send_batch_operations(
+        self,
+        project_name,
+        operations,
+        can_fail=False,
+        raise_on_fail=True
+    ):
         """Post multiple CRUD operations to server.
 
         When multiple changes should be made on server side this is the best
@@ -4169,28 +4175,32 @@ class ServerAPI(object):
             operations (list[dict[str, Any]]): Operations to be processed.
             can_fail (bool): Server will try to process all operations even if
                 one of them fails.
+            raise_on_fail (bool): Raise exception if an operation fails.
+                You can handle failed operations on your own when set to
+                'False'.
 
         Raises:
-            FailedOperations: When one or more operations fail.
+            ValueError: Operations can't be converted to json string.
+            FailedOperations: When output does not contain server operations
+                or 'raise_on_fail' is enabled and any operation fails.
+
+        Returns:
+            list[dict[str, Any]]: Operations result with process details.
         """
 
         if not operations:
-            return
+            return []
 
         body_by_id = {}
-        for operation in operations:
-            if not operation:
-                continue
-            op_id = operation.get("id")
-            if not op_id:
-                op_id = create_entity_id()
-                operation["id"] = op_id
-            body_by_id[op_id] = operation
-
         operations_body = []
         for operation in operations:
             if not operation:
                 continue
+
+            op_id = operation.get("id")
+            if not op_id:
+                op_id = create_entity_id()
+                operation["id"] = op_id
 
             try:
                 body = json.loads(
@@ -4203,11 +4213,11 @@ class ServerAPI(object):
                     )
                 ))
 
-            body_by_id[operation["id"]] = body
+            body_by_id[op_id] = body
             operations_body.append(body)
 
         if not operations_body:
-            return
+            return []
 
         result = self.post(
             "projects/{}/operations".format(project_name),
@@ -4215,21 +4225,23 @@ class ServerAPI(object):
             canFail=can_fail
         )
 
-        if result.get("success"):
-            return
-
-        if "operations" not in result:
+        op_results = result.get("operations")
+        if op_results is None:
             raise FailedOperations(
                 "Operation failed. Content: {}".format(str(result))
             )
 
-        for op_result in result["operations"]:
+        if result.get("success") or not raise_on_fail:
+            return op_results
+
+        for op_result in op_results:
             if not op_result["success"]:
                 operation_id = op_result["id"]
                 raise FailedOperations((
-                    "Operation \"{}\" failed with data:\n{}\nError: {}."
+                    "Operation \"{}\" failed with data:\n{}\nDetail: {}."
                 ).format(
                     operation_id,
                     json.dumps(body_by_id[operation_id], indent=4),
-                    op_result["error"],
+                    op_result["detail"],
                 ))
+        return op_results
