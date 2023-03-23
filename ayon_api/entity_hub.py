@@ -673,6 +673,7 @@ class EntityHub(object):
             if entity_id in processed_ids:
                 continue
             entity = self._entities_by_id[entity_id]
+            processed_ids.add(entity_id)
             operations_body.append(self._get_create_body(entity))
 
         for entity_id in reversed(removed_entity_ids):
