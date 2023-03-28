@@ -1532,10 +1532,10 @@ class ServerAPI(object):
         if not os.path.exists(dst_dirpath):
             os.makedirs(dst_dirpath)
 
-        url = "{}/addons/{}/{}/private/{}".format(
-            self._base_url,
+        url = self.get_addon_url(
             addon_name,
             addon_version,
+            "private",
             filename
         )
         self.download_file(
@@ -1808,9 +1808,13 @@ class ServerAPI(object):
             dict[str, Any]: Schema of studio/project settings.
         """
 
-        endpoint = "addons/{}/{}/schema".format(addon_name, addon_version)
+        args = tuple()
         if project_name:
-            endpoint += "/{}".format(project_name)
+            args = (project_name, )
+
+        endpoint = self.get_addon_url(
+            addon_name, addon_version, "schema", *args
+        )
         result = self.get(endpoint)
         result.raise_for_status()
         return result.data
