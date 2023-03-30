@@ -24,9 +24,16 @@ from ayon_api import (
     get_rest_url,
     get_tasks,
     get_versions,
+    get_representation_by_id,
+    get_version_by_id,
     get_folder_by_id,
+    get_subset_by_id,
     get_folder_by_name,
-    get_folders
+    get_subset_by_name,
+    get_representation_by_name,
+    get_folders,
+    get_subsets,
+    get_versions
 )
 
 
@@ -185,7 +192,9 @@ def test_folder_duplicated_names(folder_name):
 @pytest.mark.parametrize(
     "folder_name, subset_name, version_name, representation_name",
     [
-        ("testfolder1", "modelMain", "version1", "representation1")
+        ("testFolder1", "modelMain", "version1", "representation1"),
+        ("testFolder2", "modelMain", "version2", "representation2"),
+        ("testFolder3", "modelMain", "version3", "representation3")
     ]
 )
 def test_hierarchy_folder_subset_version_repre(
@@ -207,24 +216,94 @@ def test_hierarchy_folder_subset_version_repre(
     s.commit()
 
     version = new_version_entity(1, subset_id)
-    op = s.create_entity(PROJECT_NAME, "version", version)    
+    op = s.create_entity(PROJECT_NAME, "version", version)   
     version_id = op.entity_id
     s.commit()
 
-    version = new_representation_entity("testRepresentation", version_id)
-    op = s.create_entity(PROJECT_NAME, "representation", version)    
-    representation_id = op.entity_id
+    res = get_subsets(PROJECT_NAME, folder_ids=set(folder_id))
+    print(res)
+
+    s.delete_entity(PROJECT_NAME, "subset", subset_id)
     s.commit()
 
-    subset_entity = get_subset_by_id(PROJECT_NAME, subset_id)
-    delete_entity(s, PROJECT_NAME, "subset", subset_entity["id"])
-    # s.commit()
-
-    folder_entity = get_folder_by_id(PROJECT_NAME, folder_id)
-    delete_entity(s, PROJECT_NAME, "folder", folder_entity["id"])
+    s.delete_entity(PROJECT_NAME, "folder", folder_id)
     s.commit()
 
 
+
+@pytest.mark.parametrize(
+    "folder_name, subset_name, version_name, representation_name, num_of_versions",
+    [
+        # ("testFolder1", "modelMain", "version", "representation", 3),
+        # ("testFolder2", "modelMain", "version", "representation"),
+        ("testFolder4", "modelMain", "version", "representation", 2)
+    ]
+)
+def test_large_folder(
+    folder_name, 
+    subset_name, 
+    version_name, 
+    representation_name,
+    num_of_versions
+):
+    s = OperationsSession()
+
+    folder = new_folder_entity(folder_name, "Folder")
+    op = s.create_entity(PROJECT_NAME, "folder", folder)    
+    folder_id = op.entity_id
+    s.commit()
+    
+    subset = new_subset_entity(subset_name, "model", folder_id)
+    op = s.create_entity(PROJECT_NAME, "subset", subset)    
+    subset_id = op.entity_id
+    s.commit()
+
+    version_ids = []
+    for i in range(num_of_versions):
+        version = new_version_entity(i, subset_id)
+        version_id = s.create_entity(PROJECT_NAME, "version", version)["id"]   
+        s.commit()
+
+        version_ids.append(version_id)        
+
+        # test duplicate name
+        with pytest.raises(KeyError):
+            version = new_version_entity(i, subset_id)
+            op = s.create_entity(PROJECT_NAME, "version", version)   
+            s.commit()
+        
+        # TODO - try in different version
+
+    # TODO - duplicity inside one version and in different version
+    for i, version_id in enumerate(version_ids):
+        for j in range(3):
+            unique_name = str(i) + "v" + str(j)  # unique in this version
+            representation = new_representation_entity(unique_name, version_id)
+            _ = s.create_entity(PROJECT_NAME, "representation", representation)  
+            s.commit()
+
+            # not unique under this version
+            with pytest.raises(KeyError):
+                representation = new_representation_entity(unique_name, version_id)
+                _ = s.create_entity(PROJECT_NAME, "representation", representation)  
+                s.commit()
+            
+            # under different version will be created
+            if i > 0:
+                representation = new_representation_entity(unique_name, version_ids[i-1])
+                _ =  s.create_entity(PROJECT_NAME, "representation", representation)  
+                s.commit()
+
+
+    # TODO - check of everything - assert version in versions, ...
+    s.delete_entity(PROJECT_NAME, "subset", subset_id)
+    s.commit()
+
+    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.commit()
+
+
+"""
 def test_large_project_hierarchy():
     s = OperationsSession()
     folders = []
@@ -280,4 +359,21 @@ def test_delete_folder_with_subset(folder_name):
     folder_entity = get_folder_by_name(PROJECT_NAME, folder_name)
     delete_folder(s, PROJECT_NAME, folder_entity["id"])
     s.commit()
+"""
 
+@pytest.mark.parametrize(
+    "folder_name, subset_name",
+    [
+        ("testFolder4", "modelMain"),
+    ]
+)
+def test_manual_delete_hierarchy(folder_name, subset_name):
+    s = OperationsSession()
+
+    folder_id = get_folder_by_name(PROJECT_NAME, folder_name)["id"]
+    subset_id = get_subset_by_name(PROJECT_NAME, subset_name, folder_id)["id"]
+
+    s.delete_entity(PROJECT_NAME, "subset", subset_id)
+    s.commit()
+    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.commit()
