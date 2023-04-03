@@ -56,6 +56,7 @@ from ._api import (
     query_graphql,
 
     get_addons_info,
+    get_addon_url,
     download_addon_private_file,
 
     get_dependencies_info,
@@ -184,6 +185,7 @@ __all__ = (
     "query_graphql",
 
     "get_addons_info",
+    "get_addon_url",
     "download_addon_private_file",
 
     "get_dependencies_info",

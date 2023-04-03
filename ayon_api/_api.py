@@ -521,6 +521,11 @@ def get_addons_info(*args, **kwargs):
     return con.get_addons_info(*args, **kwargs)
 
 
+def get_addon_url(addon_name, addon_version, *subpaths):
+    con = get_server_api_connection()
+    return con.get_addon_url(addon_name, addon_version, *subpaths)
+
+
 def download_addon_private_file(*args, **kwargs):
     con = get_server_api_connection()
     return con.download_addon_private_file(*args, **kwargs)

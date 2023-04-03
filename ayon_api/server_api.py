@@ -1465,6 +1465,35 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
+    def get_addon_url(self, addon_name, addon_version, *subpaths):
+        """Calculate url to addon route.
+
+        Example:
+            >>> api = ServerAPI("https://your.url.com")
+            >>> api.get_addon_url(
+            ...     "example", "1.0.0", "private", "my.zip")
+            'https://your.url.com/addons/example/1.0.0/private/my.zip'
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            subpaths (tuple[str]): Any amount of subpaths that are added to
+                addon url.
+
+        Returns:
+            str: Final url.
+        """
+
+        ending = ""
+        if subpaths:
+            ending = "/{}".format("/".join(subpaths))
+        return "{}/addons/{}/{}{}".format(
+            self._base_url,
+            addon_name,
+            addon_version,
+            ending
+        )
+
     def download_addon_private_file(
         self,
         addon_name,
@@ -1503,10 +1532,10 @@ class ServerAPI(object):
         if not os.path.exists(dst_dirpath):
             os.makedirs(dst_dirpath)
 
-        url = "{}/addons/{}/{}/private/{}".format(
-            self._base_url,
+        url = self.get_addon_url(
             addon_name,
             addon_version,
+            "private",
             filename
         )
         self.download_file(
@@ -1779,9 +1808,13 @@ class ServerAPI(object):
             dict[str, Any]: Schema of studio/project settings.
         """
 
-        endpoint = "addons/{}/{}/schema".format(addon_name, addon_version)
+        args = tuple()
         if project_name:
-            endpoint += "/{}".format(project_name)
+            args = (project_name, )
+
+        endpoint = self.get_addon_url(
+            addon_name, addon_version, "schema", *args
+        )
         result = self.get(endpoint)
         result.raise_for_status()
         return result.data
