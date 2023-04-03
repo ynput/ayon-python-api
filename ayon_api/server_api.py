@@ -46,6 +46,7 @@ from .exceptions import (
     AuthenticationError,
     ServerNotReached,
     ServerError,
+    HTTPRequestError,
 )
 from .utils import (
     RepresentationParents,
@@ -134,7 +135,10 @@ class RestApiResponse(object):
         return self.status
 
     def raise_for_status(self):
-        self._response.raise_for_status()
+        try:
+            self._response.raise_for_status()
+        except requests.exceptions.HTTPError as exc:
+            raise HTTPRequestError(str(exc), exc.response)
 
     def __enter__(self, *args, **kwargs):
         return self._response.__enter__(*args, **kwargs)
@@ -143,9 +147,7 @@ class RestApiResponse(object):
         return key in self.data
 
     def __repr__(self):
-        return "<{}: {} ({})>".format(
-            self.__class__.__name__, self.status, self.detail
-        )
+        return "<{} [{}]>".format(self.__class__.__name__, self.status)
 
     def __len__(self):
         return 200 <= self.status < 400
