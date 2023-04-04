@@ -4354,6 +4354,11 @@ class ServerAPI(object):
 
         Link has a type which must already exists on a project.
 
+        Example output:
+            {
+                "id": "59a212c0d2e211eda0e20242ac120002"
+            }
+
         Args:
             project_name (str): Project where the link is created.
             link_type_name (str): Type of link.
@@ -4361,6 +4366,9 @@ class ServerAPI(object):
             input_type (str): Entity type of input entity.
             output_id (str): Id of output entity.
             output_type (str): Entity type of output entity.
+
+        Returns:
+            dict[str, str]: Information about link.
 
         Raises:
             HTTPRequestError: Server error happened.
