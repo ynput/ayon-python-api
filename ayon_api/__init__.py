@@ -135,6 +135,9 @@ from ._api import (
     delete_link_type,
     make_sure_link_type_exists,
 
+    create_link,
+    delete_link,
+
     send_batch_operations,
 )
 
@@ -271,6 +274,9 @@ __all__ = (
     "create_link_type",
     "delete_link_type",
     "make_sure_link_type_exists",
+
+    "create_link",
+    "delete_link",
 
     "send_batch_operations",
 )

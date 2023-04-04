@@ -855,6 +855,28 @@ def make_sure_link_type_exists(
     )
 
 
+def create_link(
+    project_name,
+    link_type_name,
+    input_id,
+    input_type,
+    output_id,
+    output_type
+):
+    con = get_server_api_connection()
+    return con.create_link(
+        project_name,
+        link_type_name,
+        input_id, input_type,
+        output_id, output_type
+    )
+
+
+def delete_link(project_name, link_id):
+    con = get_server_api_connection()
+    return con.delete_link(project_name, link_id)
+
+
 def send_batch_operations(
     project_name,
     operations,

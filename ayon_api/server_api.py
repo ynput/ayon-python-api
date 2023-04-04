@@ -4190,7 +4190,7 @@ class ServerAPI(object):
                 "Failed to create thumbnail.{}".format(details))
         return response.data["id"]
 
-    # --- Link Types
+    # --- Links ---
     def get_full_link_type_name(self, link_type_name, input_type, output_type):
         """Calculate full link type name used for query from server.
 
@@ -4340,6 +4340,58 @@ class ServerAPI(object):
         self.create_link_type(
             project_name, link_type_name, input_type, output_type, data
         )
+
+    def create_link(
+        self,
+        project_name,
+        link_type_name,
+        input_id,
+        input_type,
+        output_id,
+        output_type
+    ):
+        """Create link between 2 entities.
+
+        Link has a type which must already exists on a project.
+
+        Args:
+            project_name (str): Project where the link is created.
+            link_type_name (str): Type of link.
+            input_id (str): Id of input entity.
+            input_type (str): Entity type of input entity.
+            output_id (str): Id of output entity.
+            output_type (str): Entity type of output entity.
+
+        Raises:
+            HTTPRequestError: Server error happened.
+        """
+
+        full_link_type_name = self.get_full_link_type_name(
+            link_type_name, input_type, output_type)
+        response = self.post(
+            "projects/{}/links".format(project_name),
+            link=full_link_type_name,
+            input=input_id,
+            output=output_id
+        )
+        response.raise_for_status()
+        return response.data
+
+    def delete_link(self, project_name, link_id):
+        """Remove link by id.
+
+        Args:
+            project_name (str): Project where link exists.
+            link_id (str): Id of link.
+
+        Raises:
+            HTTPRequestError: Server error happened.
+        """
+
+        response = self.delete(
+            "projects/{}/links/{}".format(project_name, link_id)
+        )
+        response.raise_for_status()
 
     # --- Batch operations processing ---
     def send_batch_operations(
