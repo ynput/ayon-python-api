@@ -428,7 +428,7 @@ class EntityHub(object):
         if parent_id is None:
             return
 
-        parent = self._entities_by_parent_id.get(parent_id)
+        parent = self._entities_by_id.get(parent_id)
         if parent is not None:
             parent.remove_child(entity.id)
 
