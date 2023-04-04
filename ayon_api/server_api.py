@@ -4081,7 +4081,6 @@ class ServerAPI(object):
             library_project (bool): Project is library project.
             preset_name (str): Name of anatomy preset. Default is used if not
                 passed.
-            con (ServerAPI): Connection to server with logged user.
 
         Raises:
             ValueError: When project name already exists.
@@ -4191,6 +4190,158 @@ class ServerAPI(object):
                 "Failed to create thumbnail.{}".format(details))
         return response.data["id"]
 
+    # --- Link Types
+    def get_full_link_type_name(self, link_type_name, input_type, output_type):
+        """Calculate full link type name used for query from server.
+
+        Args:
+            link_type_name (str): Type of link.
+            input_type (str): Input entity type of link.
+            output_type (str): Output entity type of link.
+
+        Returns:
+            str: Full name of link type used for query from server.
+        """
+
+        return "|".join([link_type_name, input_type, output_type])
+
+    def get_link_types(self, project_name):
+        """All link types available on a project.
+
+        Example output:
+            [
+                {
+                    "name": "reference|folder|folder",
+                    "link_type": "reference",
+                    "input_type": "folder",
+                    "output_type": "folder",
+                    "data": {}
+                }
+            ]
+
+        Args:
+            project_name (str): Name of project where to look for link types.
+
+        Returns:
+            list[dict[str, Any]]: Link types available on project.
+        """
+
+        response = self.get("projects/{}/links/types".format(project_name))
+        response.raise_for_status()
+        return response.data["types"]
+
+    def get_link_type(
+        self, project_name, link_type_name, input_type, output_type
+    ):
+        """Get link type data.
+
+        There is not dedicated REST endpoint to get single link type,
+        so method 'get_link_types' is used.
+
+        Example output:
+            {
+                "name": "reference|folder|folder",
+                "link_type": "reference",
+                "input_type": "folder",
+                "output_type": "folder",
+                "data": {}
+            }
+
+        Args:
+            project_name (str): Project where link type is available.
+            link_type_name (str): Name of link type.
+            input_type (str): Input entity type of link.
+            output_type (str): Output entity type of link.
+
+        Returns:
+            Union[None, dict[str, Any]]: Link type information.
+        """
+
+        full_type_name = self.get_full_link_type_name(
+            link_type_name, input_type, output_type
+        )
+        for link_type in self.get_link_types(project_name):
+            if link_type["name"] == full_type_name:
+                return link_type
+        return None
+
+    def create_link_type(
+        self, project_name, link_type_name, input_type, output_type, data=None
+    ):
+        """Create or update link type on server.
+
+        Warning:
+            Because PUT is used for creation it is also used for update.
+
+        Args:
+            project_name (str): Project where link type is created.
+            link_type_name (str): Name of link type.
+            input_type (str): Input entity type of link.
+            output_type (str): Output entity type of link.
+            data (Optional[dict[str, Any]]): Additional data related to link.
+
+        Raises:
+            HTTPRequestError: Server error happened.
+        """
+
+        if data is None:
+            data = {}
+        full_type_name = self.get_full_link_type_name(
+            link_type_name, input_type, output_type
+        )
+        response = self.put(
+            "projects/{}/links/types/{}".format(project_name, full_type_name),
+            **data
+        )
+        response.raise_for_status()
+
+    def delete_link_type(
+        self, project_name, link_type_name, input_type, output_type
+    ):
+        """Remove link type from project.
+
+        Args:
+            project_name (str): Project where link type is created.
+            link_type_name (str): Name of link type.
+            input_type (str): Input entity type of link.
+            output_type (str): Output entity type of link.
+
+        Raises:
+            HTTPRequestError: Server error happened.
+        """
+
+        full_type_name = self.get_full_link_type_name(
+            link_type_name, input_type, output_type
+        )
+        response = self.delete(
+            "projects/{}/links/types/{}".format(project_name, full_type_name))
+        response.raise_for_status()
+
+    def make_sure_link_type_exists(
+        self, project_name, link_type_name, input_type, output_type, data=None
+    ):
+        """Make sure link type exists on a project.
+
+        Args:
+            project_name (str): Name of project.
+            link_type_name (str): Name of link type.
+            input_type (str): Input entity type of link.
+            output_type (str): Output entity type of link.
+            data (Optional[dict[str, Any]]): Link type related data.
+        """
+
+        link_type = self.get_link_type(
+            project_name, link_type_name, input_type, output_type)
+        if (
+            link_type
+            and (data is None or data == link_type["data"])
+        ):
+            return
+        self.create_link_type(
+            project_name, link_type_name, input_type, output_type, data
+        )
+
+    # --- Batch operations processing ---
     def send_batch_operations(
         self,
         project_name,

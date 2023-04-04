@@ -814,3 +814,57 @@ def create_thumbnail(project_name, src_filepath):
 def get_default_fields_for_type(entity_type):
     con = get_server_api_connection()
     return con.get_default_fields_for_type(entity_type)
+
+
+def get_full_link_type_name(link_type_name, input_type, output_type):
+    con = get_server_api_connection()
+    return con.get_full_link_type_name(
+        link_type_name, input_type, output_type)
+
+
+def get_link_types(project_name):
+    con = get_server_api_connection()
+    return con.get_link_types(project_name)
+
+
+def get_link_type(project_name, link_type_name, input_type, output_type):
+    con = get_server_api_connection()
+    return con.get_link_type(
+        project_name, link_type_name, input_type, output_type)
+
+
+def create_link_type(
+    project_name, link_type_name, input_type, output_type, data=None):
+    con = get_server_api_connection()
+    return con.create_link_type(
+        project_name, link_type_name, input_type, output_type, data=data)
+
+
+def delete_link_type(project_name, link_type_name, input_type, output_type):
+    con = get_server_api_connection()
+    return con.delete_link_type(
+        project_name, link_type_name, input_type, output_type)
+
+
+def make_sure_link_type_exists(
+    project_name, link_type_name, input_type, output_type, data=None
+):
+    con = get_server_api_connection()
+    return con.make_sure_link_type_exists(
+        project_name, link_type_name, input_type, output_type, data=data
+    )
+
+
+def send_batch_operations(
+    project_name,
+    operations,
+    can_fail=False,
+    raise_on_fail=True
+):
+    con = get_server_api_connection()
+    return con.send_batch_operations(
+        project_name,
+        operations,
+        can_fail=can_fail,
+        raise_on_fail=raise_on_fail
+    )

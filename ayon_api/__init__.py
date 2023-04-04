@@ -127,6 +127,15 @@ from ._api import (
     get_folder_thumbnail,
     get_version_thumbnail,
     get_workfile_thumbnail,
+
+    get_full_link_type_name,
+    get_link_types,
+    get_link_type,
+    create_link_type,
+    delete_link_type,
+    make_sure_link_type_exists,
+
+    send_batch_operations,
 )
 
 
@@ -255,4 +264,13 @@ __all__ = (
     "get_folder_thumbnail",
     "get_version_thumbnail",
     "get_workfile_thumbnail",
+
+    "get_full_link_type_name",
+    "get_link_types",
+    "get_link_type",
+    "create_link_type",
+    "delete_link_type",
+    "make_sure_link_type_exists",
+
+    "send_batch_operations",
 )
