@@ -1,6 +1,6 @@
 import copy
 import numbers
-from abc import ABCMeta, abstractproperty, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 import six
 
@@ -451,7 +451,8 @@ class BaseGraphQlQueryField(object):
     def indent(self):
         return self._parent.child_indent + self.offset
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def child_indent(self):
         pass
 
@@ -459,7 +460,8 @@ class BaseGraphQlQueryField(object):
     def query_item(self):
         return self._query_item
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def has_edges(self):
         pass
 

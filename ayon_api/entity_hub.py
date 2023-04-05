@@ -1,6 +1,6 @@
 import copy
 import collections
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 
 import six
 from ._api import get_server_api_connection
@@ -981,7 +981,8 @@ class BaseEntity(object):
 
         return self._entity_hub.project_name
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def entity_type(self):
         """Entity type coresponding to server.
 
@@ -991,7 +992,8 @@ class BaseEntity(object):
 
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def parent_entity_types(self):
         """Entity type coresponding to server.
 
@@ -1001,7 +1003,8 @@ class BaseEntity(object):
 
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def changes(self):
         """Receive entity changes.
 
