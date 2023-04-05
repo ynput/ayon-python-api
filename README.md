@@ -52,5 +52,9 @@ If pip complain that `ayon-python-api` is already installed just uninstall exist
   - Entity hub should use operations session to do changes
   - Entity hub could also handle 'subset', 'version' and 'representation' entities
   - Missing docstrings in EntityHub -> especially entity arguments are missing
+  - Missing 'statuses' on project
+  - Missing 'status' on folders
+  - Missing assignees on tasks
 - Pass docstrings and arguments definitions from `ServerAPI` methods to global functions
+- Split `ServerAPI` into smaller chunks (somehow), the class has 4k+ lines of code
 - Missing websockets connection
