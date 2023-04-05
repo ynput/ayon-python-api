@@ -25,6 +25,58 @@ def fields_to_dict(fields):
     return output
 
 
+def add_links_fields(entity_field, nested_fields):
+    if "links" not in nested_fields:
+        return
+    links_fields = nested_fields.pop("links")
+
+    link_edge_fields = {
+        "id",
+        "linkType",
+        "projectName",
+        "entityType",
+        "entityId",
+        "direction",
+        "description",
+        "author",
+    }
+    if isinstance(links_fields, dict):
+        simple_fields = set(links_fields)
+        simple_variant = len(simple_fields - link_edge_fields) == 0
+    else:
+        simple_variant = True
+        simple_fields = link_edge_fields
+
+    link_field = entity_field.add_field_with_edges("links")
+
+    link_type_var = link_field.add_variable("linkTypes", "[String!]")
+    link_dir_var = link_field.add_variable("linkDirection", "String!")
+    link_field.set_filter("linkTypes", link_type_var)
+    link_field.set_filter("direction", link_dir_var)
+
+    if simple_variant:
+        for key in simple_fields:
+            link_field.add_edge_field(key)
+        return
+
+    query_queue = collections.deque()
+    for key, value in links_fields.items():
+        if key in link_edge_fields:
+            link_field.add_edge_field(key)
+            continue
+        query_queue.append((key, value, link_field))
+
+    while query_queue:
+        item = query_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            query_queue.append((k, v, field))
+
+
 def project_graphql_query(fields):
     query = GraphQlQuery("ProjectQuery")
     project_name_var = query.add_variable("projectName", "String!")
@@ -91,6 +143,7 @@ def folders_graphql_query(fields):
     folders_field.set_filter("hasSubsets", has_subsets_var)
 
     nested_fields = fields_to_dict(fields)
+    add_links_fields(folders_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -127,6 +180,7 @@ def tasks_graphql_query(fields):
     tasks_field.set_filter("folderIds", folder_ids_var)
 
     nested_fields = fields_to_dict(fields)
+    add_links_fields(tasks_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -161,6 +215,7 @@ def subsets_graphql_query(fields):
     subsets_field.set_filter("folderIds", folder_ids_var)
 
     nested_fields = fields_to_dict(set(fields))
+    add_links_fields(subsets_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -203,6 +258,7 @@ def versions_graphql_query(fields):
     subsets_field.set_filter("heroOrLatestOnly", hero_or_latest_only_var)
 
     nested_fields = fields_to_dict(set(fields))
+    add_links_fields(subsets_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -237,6 +293,7 @@ def representations_graphql_query(fields):
     repres_field.set_filter("names", repre_names_var)
 
     nested_fields = fields_to_dict(set(fields))
+    add_links_fields(repres_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -312,6 +369,7 @@ def workfiles_info_graphql_query(fields):
     workfiles_field.set_filter("paths", paths_var)
 
     nested_fields = fields_to_dict(set(fields))
+    add_links_fields(workfiles_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():

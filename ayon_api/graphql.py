@@ -746,6 +746,18 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
 
         super(GraphQlQueryEdgeField, self).add_obj_field(field)
 
+    def add_obj_edge_field(self, field):
+        if field in self._edge_children or field in self._children:
+            return
+
+        self._edge_children.append(field)
+        field.set_parent(self)
+
+    def add_edge_field(self, name):
+        item = GraphQlQueryField(name, self)
+        self.add_obj_edge_field(item)
+        return item
+
     def reset_cursor(self):
         # Reset cursor only for edges
         self._cursor = None
