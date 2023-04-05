@@ -21,7 +21,7 @@ class GlobalServerAPI(ServerAPI):
     """Extended server api which also handles storing tokens and url.
 
     Created object expect to have set environment variables
-    'AYON_SERVER_URL'. Also is expecting filled 'AYON_TOKEN'
+    'AYON_SERVER_URL'. Also is expecting filled 'AYON_API_KEY'
     but that can be filled afterwards with calling 'login' method.
     """
 
@@ -151,7 +151,7 @@ class ServiceContext:
         connect=True
     ):
         token = cls.get_value_from_envs(
-            ("AY_API_KEY", "AYON_TOKEN"),
+            ("AY_API_KEY", "AYON_API_KEY"),
             token
         )
         server_url = cls.get_value_from_envs(
@@ -322,7 +322,7 @@ def get_server_api_connection():
     """Access to global scope object of GlobalServerAPI.
 
     This access expect to have set environment variables 'AYON_SERVER_URL'
-    and 'AYON_TOKEN'.
+    and 'AYON_API_KEY'.
 
     Returns:
         GlobalServerAPI: Object of connection to server.
