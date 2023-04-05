@@ -4400,6 +4400,323 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
+    def _prepare_link_filters(self, filters, link_types, link_direction):
+        """Add links filters for GraphQl queries.
+
+        Args:
+            filters (dict[str, Any]): Object where filters will be added.
+            link_types (Union[Iterable[str], None]): Link types filters.
+            link_direction (Union[Literal["in", "out"], None]): Direction of
+                link "in", "out" or 'None' for both.
+
+        Returns:
+            bool: Links are valid, and query from server can happen.
+        """
+
+        if link_types is not None:
+            link_types = set(link_types)
+            if not link_types:
+                return False
+            filters["linkTypes"] = list(link_types)
+
+        if link_direction is not None:
+            if link_direction not in ("in", "out"):
+                return False
+            filters["linkDirection"] = link_direction
+        return True
+
+    def get_entities_links(
+        self,
+        project_name,
+        entity_type,
+        entity_ids=None,
+        link_types=None,
+        link_direction=None
+    ):
+        """Helper method to get links from server for entity types.
+
+        Args:
+            project_name (str): Project where links are.
+            entity_type (Literal["folder", "task", "subset",
+                "version", "representations"]): Entity type.
+            entity_ids (Union[Iterable[str], None]): Ids of entities for which
+                links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            dict[str, list[dict[str, Any]]]: Link info by entity ids.
+        """
+
+        mapping = {
+            "folder": ("folderIds", "folders"),
+            "task": ("taskIds", "tasks"),
+            "subset": ("subsetIds", "subsets"),
+            "version": ("versionIds", "versions"),
+            "representation": ("representationIds", "representations"),
+        }
+        mapped_type = mapping.get(entity_type)
+        if not mapped_type:
+            raise ValueError("Unknown type \"{}\". Expected {}".format(
+                entity_type, ", ".join(mapping.keys())
+            ))
+
+        id_filter_key, project_sub_key = mapped_type
+        output = collections.defaultdict(list)
+        filters = {
+            "projectName": project_name
+        }
+        if entity_ids is not None:
+            entity_ids = set(entity_ids)
+            if not entity_ids:
+                return output
+            filters[id_filter_key] = list(entity_ids)
+
+        if not self._prepare_link_filters(filters, link_types, link_direction):
+            return output
+
+        query = folders_graphql_query({"id", "links"})
+        for attr, filter_value in filters.items():
+            query.set_variable_value(attr, filter_value)
+
+        for parsed_data in query.continuous_query(self):
+            for entity in parsed_data["project"][project_sub_key]:
+                entity_id = entity["id"]
+                output[entity_id] = entity["links"]
+        return output
+
+    def get_folders_links(
+        self,
+        project_name,
+        folder_ids=None,
+        link_types=None,
+        link_direction=None
+    ):
+        """Query folders links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            folder_ids (Union[Iterable[str], None]): Ids of folders for which
+                links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            dict[str, list[dict[str, Any]]]: Link info by folder ids.
+        """
+
+        return self.get_entities_links(
+            project_name, "folder", folder_ids, link_types, link_direction
+        )
+
+    def get_folder_links(
+        self, project_name, folder_id, link_types=None, link_direction=None
+    ):
+        """Query folder links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            folder_id (str): Id of folder for which links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            list[dict[str, Any]]: Link info of folder.
+        """
+
+        return self.get_folders_links(
+            project_name, [folder_id], link_types, link_direction
+        )[folder_id]
+
+    def get_tasks_links(
+        self,
+        project_name, task_ids=None, link_types=None, link_direction=None
+    ):
+        """Query tasks links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            task_ids (Union[Iterable[str], None]): Ids of tasks for which
+                links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            dict[str, list[dict[str, Any]]]: Link info by task ids.
+        """
+
+        return self.get_entities_links(
+            project_name, "task", task_ids, link_types, link_direction
+        )
+
+    def get_task_links(
+        self, project_name, task_id, link_types=None, link_direction=None
+    ):
+        """Query task links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            task_id (str): Id of task for which links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            list[dict[str, Any]]: Link info of task.
+        """
+
+        return self.get_tasks_links(
+            project_name, [task_id], link_types, link_direction
+        )[task_id]
+
+    def get_subsets_links(
+        self,
+        project_name,
+        subset_ids=None,
+        link_types=None,
+        link_direction=None
+    ):
+        """Query subsets links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            subset_ids (Union[Iterable[str], None]): Ids of subsets for which
+                links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            dict[str, list[dict[str, Any]]]: Link info by subset ids.
+        """
+
+        return self.get_entities_links(
+            project_name, "subset", subset_ids, link_types, link_direction
+        )
+
+    def get_subset_links(
+        self, project_name, subset_id, link_types=None, link_direction=None
+    ):
+        """Query subset links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            subset_id (str): Id of subset for which links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            list[dict[str, Any]]: Link info of subset.
+        """
+
+        return self.get_subsets_links(
+            project_name, [subset_id], link_types, link_direction
+        )[subset_id]
+
+    def get_versions_links(
+        self,
+        project_name,
+        version_ids=None,
+        link_types=None,
+        link_direction=None
+    ):
+        """Query versions links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            version_ids (Union[Iterable[str], None]): Ids of versions for which
+                links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            dict[str, list[dict[str, Any]]]: Link info by version ids.
+        """
+
+        return self.get_entities_links(
+            project_name, "version", version_ids, link_types, link_direction
+        )
+
+    def get_version_links(
+        self, project_name, version_id, link_types=None, link_direction=None
+    ):
+        """Query version links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            version_id (str): Id of version for which links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            list[dict[str, Any]]: Link info of version.
+        """
+
+        return self.get_versions_links(
+            project_name, [version_id], link_types, link_direction
+        )[version_id]
+
+    def get_representations_links(
+        self,
+        project_name,
+        representation_ids=None,
+        link_types=None,
+        link_direction=None
+    ):
+        """Query representations links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            representation_ids (Union[Iterable[str], None]): Ids of
+                representations for which links should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            dict[str, list[dict[str, Any]]]: Link info by representation ids.
+        """
+
+        return self.get_entities_links(
+            project_name,
+            "representation",
+            representation_ids,
+            link_types,
+            link_direction
+        )
+
+    def get_representation_links(
+        self,
+        project_name,
+        representation_id,
+        link_types=None,
+        link_direction=None
+    ):
+        """Query representation links from server.
+
+        Args:
+            project_name (str): Project where links are.
+            representation_id (str): Id of representation for which links
+                should be received.
+            link_types (Union[Iterable[str], None]): Link type filters.
+            link_direction (Union[Literal["in", "out"], None]): Link direction
+                filter.
+
+        Returns:
+            list[dict[str, Any]]: Link info of representation.
+        """
+
+        return self.get_representations_links(
+            project_name, [representation_id], link_types, link_direction
+        )[representation_id]
+
     # --- Batch operations processing ---
     def send_batch_operations(
         self,
