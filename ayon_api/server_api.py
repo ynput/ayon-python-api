@@ -4512,7 +4512,11 @@ class ServerAPI(object):
         )
 
     def get_folder_links(
-        self, project_name, folder_id, link_types=None, link_direction=None
+        self,
+        project_name,
+        folder_id,
+        link_types=None,
+        link_direction=None
     ):
         """Query folder links from server.
 
@@ -4533,7 +4537,10 @@ class ServerAPI(object):
 
     def get_tasks_links(
         self,
-        project_name, task_ids=None, link_types=None, link_direction=None
+        project_name,
+        task_ids=None,
+        link_types=None,
+        link_direction=None
     ):
         """Query tasks links from server.
 
@@ -4554,7 +4561,11 @@ class ServerAPI(object):
         )
 
     def get_task_links(
-        self, project_name, task_id, link_types=None, link_direction=None
+        self,
+        project_name,
+        task_id,
+        link_types=None,
+        link_direction=None
     ):
         """Query task links from server.
 
@@ -4599,7 +4610,11 @@ class ServerAPI(object):
         )
 
     def get_subset_links(
-        self, project_name, subset_id, link_types=None, link_direction=None
+        self,
+        project_name,
+        subset_id,
+        link_types=None,
+        link_direction=None
     ):
         """Query subset links from server.
 
@@ -4644,7 +4659,11 @@ class ServerAPI(object):
         )
 
     def get_version_links(
-        self, project_name, version_id, link_types=None, link_direction=None
+        self,
+        project_name,
+        version_id,
+        link_types=None,
+        link_direction=None
     ):
         """Query version links from server.
 
