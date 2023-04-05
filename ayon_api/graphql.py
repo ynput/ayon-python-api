@@ -232,21 +232,31 @@ class GraphQlQuery:
         self._children.append(field)
         field.set_parent(self)
 
-    def add_field(self, name, has_edges=None):
+    def add_field_with_edges(self, name):
+        """Add field with edges to query.
+
+        Args:
+            name (str): Field name e.g. 'tasks'.
+
+        Returns:
+            GraphQlQueryEdgeField: Created field object.
+        """
+
+        item = GraphQlQueryEdgeField(name, self)
+        self.add_obj_field(item)
+        return item
+
+    def add_field(self, name):
         """Add field to query.
 
         Args:
             name (str): Field name e.g. 'id'.
-            has_edges (bool): Field has edges so it need paging.
 
         Returns:
-            BaseGraphQlQueryField: Created field object.
+            GraphQlQueryField: Created field object.
         """
 
-        if has_edges:
-            item = GraphQlQueryEdgeField(name, self)
-        else:
-            item = GraphQlQueryField(name, self)
+        item = GraphQlQueryField(name, self)
         self.add_obj_field(item)
         return item
 
@@ -559,11 +569,13 @@ class BaseGraphQlQueryField(object):
         self._children.append(field)
         field.set_parent(self)
 
-    def add_field(self, name, has_edges=None):
-        if has_edges:
-            item = GraphQlQueryEdgeField(name, self)
-        else:
-            item = GraphQlQueryField(name, self)
+    def add_field_with_edges(self, name):
+        item = GraphQlQueryEdgeField(name, self)
+        self.add_obj_field(item)
+        return item
+
+    def add_field(self, name):
+        item = GraphQlQueryField(name, self)
         self.add_obj_field(item)
         return item
 

@@ -51,7 +51,7 @@ def project_graphql_query(fields):
 
 def projects_graphql_query(fields):
     query = GraphQlQuery("ProjectsQuery")
-    projects_field = query.add_field("projects", has_edges=True)
+    projects_field = query.add_field_with_edges("projects")
 
     nested_fields = fields_to_dict(fields)
 
@@ -83,7 +83,7 @@ def folders_graphql_query(fields):
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    folders_field = project_field.add_field("folders", has_edges=True)
+    folders_field = project_field.add_field_with_edges("folders")
     folders_field.set_filter("ids", folder_ids_var)
     folders_field.set_filter("parentIds", parent_folder_ids_var)
     folders_field.set_filter("names", folder_names_var)
@@ -119,7 +119,7 @@ def tasks_graphql_query(fields):
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    tasks_field = project_field.add_field("tasks", has_edges=True)
+    tasks_field = project_field.add_field_with_edges("tasks")
     tasks_field.set_filter("ids", task_ids_var)
     # WARNING: At moment when this been created 'names' filter is not supported
     tasks_field.set_filter("names", task_names_var)
@@ -155,7 +155,7 @@ def subsets_graphql_query(fields):
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    subsets_field = project_field.add_field("subsets", has_edges=True)
+    subsets_field = project_field.add_field_with_edges("subsets")
     subsets_field.set_filter("ids", subset_ids_var)
     subsets_field.set_filter("names", subset_names_var)
     subsets_field.set_filter("folderIds", folder_ids_var)
@@ -194,7 +194,7 @@ def versions_graphql_query(fields):
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    subsets_field = project_field.add_field("versions", has_edges=True)
+    subsets_field = project_field.add_field_with_edges("versions")
     subsets_field.set_filter("ids", version_ids_var)
     subsets_field.set_filter("subsetIds", subset_ids_var)
     subsets_field.set_filter("versions", versions_var)
@@ -231,7 +231,7 @@ def representations_graphql_query(fields):
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    repres_field = project_field.add_field("representations", has_edges=True)
+    repres_field = project_field.add_field_with_edges("representations")
     repres_field.set_filter("ids", repre_ids_var)
     repres_field.set_filter("versionIds", version_ids_var)
     repres_field.set_filter("names", repre_names_var)
@@ -266,7 +266,7 @@ def representations_parents_qraphql_query(
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    repres_field = project_field.add_field("representations", has_edges=True)
+    repres_field = project_field.add_field_with_edges("representations")
     repres_field.add_field("id")
     repres_field.set_filter("ids", repre_ids_var)
     version_field = repres_field.add_field("version")
@@ -306,7 +306,7 @@ def workfiles_info_graphql_query(fields):
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    workfiles_field = project_field.add_field("workfiles", has_edges=True)
+    workfiles_field = project_field.add_field_with_edges("workfiles")
     workfiles_field.set_filter("ids", workfiles_info_ids)
     workfiles_field.set_filter("taskIds", task_ids_var)
     workfiles_field.set_filter("paths", paths_var)
@@ -337,7 +337,7 @@ def events_graphql_query(fields):
     users_var = query.add_variable("eventUsers", "[String!]")
     include_logs_var = query.add_variable("includeLogsFilter", "Boolean!")
 
-    events_field = query.add_field("events", has_edges=True)
+    events_field = query.add_field_with_edges("events")
     events_field.set_filter("topics", topics_var)
     events_field.set_filter("projects", projects_var)
     events_field.set_filter("states", states_var)
