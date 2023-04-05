@@ -726,11 +726,25 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
     def __init__(self, *args, **kwargs):
         super(GraphQlQueryEdgeField, self).__init__(*args, **kwargs)
         self._cursor = None
+        self._edge_children = []
 
     @property
     def child_indent(self):
         offset = self.offset * 2
         return self.indent + offset
+
+    def _children_iter(self):
+        for child in super(GraphQlQueryEdgeField, self)._children_iter():
+            yield child
+
+        for child in self._edge_children:
+            yield child
+
+    def add_obj_field(self, field):
+        if field in self._edge_children:
+            return
+
+        super(GraphQlQueryEdgeField, self).add_obj_field(field)
 
     def reset_cursor(self):
         # Reset cursor only for edges
@@ -786,6 +800,9 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
                     nodes_by_cursor[edge_cursor] = edge_value
                     node_values.append(edge_value)
 
+            for child in self._edge_children:
+                child.parse_result(edge, edge_value, progress_data)
+
             for child in self._children:
                 child.parse_result(edge["node"], edge_value, progress_data)
 
@@ -814,7 +831,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         return filters
 
     def calculate_query(self):
-        if not self._children:
+        if not self._children and not self._edge_children:
             raise ValueError("Missing child definitions for edges {}".format(
                 self.path
             ))
@@ -832,16 +849,21 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         edges_offset = offset + self.offset * " "
         node_offset = edges_offset + self.offset * " "
         output.append(edges_offset + "edges {")
-        output.append(node_offset + "node {")
+        for field in self._edge_children:
+            output.append(field.calculate_query())
 
-        for field in self._children:
-            output.append(
-                field.calculate_query()
-            )
+        if self._children:
+            output.append(node_offset + "node {")
 
-        output.append(node_offset + "}")
-        if self.child_has_edges:
-            output.append(node_offset + "cursor")
+            for field in self._children:
+                output.append(
+                    field.calculate_query()
+                )
+
+            output.append(node_offset + "}")
+            if self.child_has_edges:
+                output.append(node_offset + "cursor")
+
         output.append(edges_offset + "}")
 
         # Add page information
