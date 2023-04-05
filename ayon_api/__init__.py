@@ -137,6 +137,17 @@ from ._api import (
 
     create_link,
     delete_link,
+    get_entities_links,
+    get_folder_links,
+    get_folders_links,
+    get_task_links,
+    get_tasks_links,
+    get_subset_links,
+    get_subsets_links,
+    get_version_links,
+    get_versions_links,
+    get_representations_links,
+    get_representation_links,
 
     send_batch_operations,
 )
@@ -277,6 +288,17 @@ __all__ = (
 
     "create_link",
     "delete_link",
+    "get_entities_links",
+    "get_folder_links",
+    "get_folders_links",
+    "get_task_links",
+    "get_tasks_links",
+    "get_subset_links",
+    "get_subsets_links",
+    "get_version_links",
+    "get_versions_links",
+    "get_representations_links",
+    "get_representation_links",
 
     "send_batch_operations",
 )

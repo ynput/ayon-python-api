@@ -877,6 +877,173 @@ def delete_link(project_name, link_id):
     return con.delete_link(project_name, link_id)
 
 
+def get_entities_links(
+    project_name,
+    entity_type,
+    entity_ids=None,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_entities_links(
+        project_name,
+        entity_type,
+        entity_ids,
+        link_types,
+        link_direction
+    )
+
+
+def get_folders_links(
+    project_name,
+    folder_ids=None,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_folders_links(
+        project_name,
+        folder_ids,
+        link_types,
+        link_direction
+    )
+
+
+def get_folder_links(
+    project_name,
+    folder_id,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_folder_links(
+        project_name,
+        folder_id,
+        link_types,
+        link_direction
+    )
+
+
+def get_tasks_links(
+    project_name,
+    task_ids=None,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_tasks_links(
+        project_name,
+        task_ids,
+        link_types,
+        link_direction
+    )
+
+
+def get_task_links(
+    project_name,
+    task_id,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_task_links(
+        project_name,
+        task_id,
+        link_types,
+        link_direction
+    )
+
+
+def get_subsets_links(
+    project_name,
+    subset_ids=None,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_subsets_links(
+        project_name,
+        subset_ids,
+        link_types,
+        link_direction
+    )
+
+
+def get_subset_links(
+    project_name,
+    subset_id,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_subset_links(
+        project_name,
+        subset_id,
+        link_types,
+        link_direction
+    )
+
+
+def get_versions_links(
+    project_name,
+    version_ids=None,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_versions_links(
+        project_name,
+        version_ids,
+        link_types,
+        link_direction
+    )
+
+
+def get_version_links(
+    project_name,
+    version_id,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_version_links(
+        project_name,
+        version_id,
+        link_types,
+        link_direction
+    )
+
+
+def get_representations_links(
+    project_name,
+    representation_ids=None,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_representations_links(
+        project_name,
+        representation_ids,
+        link_types,
+        link_direction
+    )
+
+
+def get_representation_links(
+    project_name,
+    representation_id,
+    link_types=None,
+    link_direction=None
+):
+    con = get_server_api_connection()
+    return con.get_representation_links(
+        project_name,
+        representation_id,
+        link_types,
+        link_direction
+    )
+
+
 def send_batch_operations(
     project_name,
     operations,
