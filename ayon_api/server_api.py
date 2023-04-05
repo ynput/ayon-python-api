@@ -299,6 +299,14 @@ class ServerAPI(object):
             'production').
     """
 
+    _entity_types_link_mapping = {
+        "folder": ("folderIds", "folders"),
+        "task": ("taskIds", "tasks"),
+        "subset": ("subsetIds", "subsets"),
+        "version": ("versionIds", "versions"),
+        "representation": ("representationIds", "representations"),
+    }
+
     def __init__(
         self,
         base_url,
@@ -4449,17 +4457,10 @@ class ServerAPI(object):
             dict[str, list[dict[str, Any]]]: Link info by entity ids.
         """
 
-        mapping = {
-            "folder": ("folderIds", "folders"),
-            "task": ("taskIds", "tasks"),
-            "subset": ("subsetIds", "subsets"),
-            "version": ("versionIds", "versions"),
-            "representation": ("representationIds", "representations"),
-        }
-        mapped_type = mapping.get(entity_type)
+        mapped_type = self._entity_types_link_mapping.get(entity_type)
         if not mapped_type:
             raise ValueError("Unknown type \"{}\". Expected {}".format(
-                entity_type, ", ".join(mapping.keys())
+                entity_type, ", ".join(self._entity_types_link_mapping.keys())
             ))
 
         id_filter_key, project_sub_key = mapped_type
@@ -4483,7 +4484,7 @@ class ServerAPI(object):
         for parsed_data in query.continuous_query(self):
             for entity in parsed_data["project"][project_sub_key]:
                 entity_id = entity["id"]
-                output[entity_id] = entity["links"]
+                output[entity_id].extend(entity["links"])
         return output
 
     def get_folders_links(
