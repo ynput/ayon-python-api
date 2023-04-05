@@ -52,17 +52,35 @@ class EntityHub(object):
 
     @property
     def allow_data_changes(self):
-        """Entity hub allows changes of 'data' key on entities."""
+        """Entity hub allows changes of 'data' key on entities.
+
+        Data are private and not all users may have access to them. Also to get
+        'data' for entity is required to use REST api calls, which means to
+        query each entity on-by-one from server.
+
+        Returns:
+            bool: Data changes are allowed.
+        """
 
         return self._allow_data_changes
 
     @property
     def project_name(self):
+        """Project name which is maintained by hub.
+
+        Returns:
+            str: Name of project.
+        """
+
         return self._project_name
 
     @property
     def project_entity(self):
-        """Project entity."""
+        """Project entity.
+
+        Returns:
+            ProjectEntity: Project entity.
+        """
 
         if self._project_entity is UNKNOWN_VALUE:
             self.fill_project_from_server()
@@ -187,6 +205,12 @@ class EntityHub(object):
 
     @property
     def entities(self):
+        """Iterator over available entities.
+
+        Returns:
+            Iterator[BaseEntity]: All queried/created entities cached in hub.
+        """
+
         for entity in self._entities_by_id.values():
             yield entity
 
@@ -194,8 +218,21 @@ class EntityHub(object):
         """Create folder object and add it to entity hub.
 
         Args:
-            parent (Union[ProjectEntity, FolderEntity]): Parent of added
-                folder.
+            folder_type (str): Type of folder. Folder type must be available in
+                config of project folder types.
+            entity_id (Union[str, None]): Id of the entity. New id is created if
+                not passed.
+            parent_id (Union[str, None]): Id of parent entity.
+            name (str): Name of entity.
+            label (Optional[str]): Folder label.
+            path (Optional[str]): Folder path. Path consist of all parent names
+                with slash('/') used as separator.
+            attribs (Dict[str, Any]): Attribute values.
+            data (Dict[str, Any]): Entity data (custom data).
+            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+            active (bool): Is entity active.
+            created (Optional[bool]): Entity is new. When 'None' is passed the
+                value is defined based on value of 'entity_id'.
 
         Returns:
             FolderEntity: Added folder entity.
@@ -208,6 +245,27 @@ class EntityHub(object):
         return folder_entity
 
     def add_new_task(self, *args, created=True, **kwargs):
+        """Create folder object and add it to entity hub.
+
+        Args:
+            task_type (str): Type of task. Task type must be available in
+                config of project folder types.
+            entity_id (Union[str, None]): Id of the entity. New id is created if
+                not passed.
+            parent_id (Union[str, None]): Id of parent entity.
+            name (str): Name of entity.
+            label (Optional[str]): Folder label.
+            attribs (Dict[str, Any]): Attribute values.
+            data (Dict[str, Any]): Entity data (custom data).
+            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+            active (bool): Is entity active.
+            created (Optional[bool]): Entity is new. When 'None' is passed the
+                value is defined based on value of 'entity_id'.
+
+        Returns:
+            TaskEntity: Added task entity.
+        """
+
         task_entity = TaskEntity(
             *args, **kwargs, created=created, entity_hub=self
         )
@@ -459,10 +517,12 @@ class EntityHub(object):
                     reset_queue.append(child.id)
 
     def fill_project_from_server(self):
-        """Query project from server and create it's entity.
+        """Query project data from server and create project entity.
+
+        This method will invalidate previous object of Project entity.
 
         Returns:
-            ProjectEntity: Entity that was created based on queried data.
+            ProjectEntity: Entity that was updated with server data.
 
         Raises:
             ValueError: When project was not found on server.
@@ -844,17 +904,17 @@ class BaseEntity(object):
     entity are set as "current data" on server.
 
     Args:
+        entity_id (Union[str, None]): Id of the entity. New id is created if
+            not passed.
+        parent_id (Union[str, None]): Id of parent entity.
         name (str): Name of entity.
         attribs (Dict[str, Any]): Attribute values.
         data (Dict[str, Any]): Entity data (custom data).
-        parent_id (Union[str, None]): Id of parent entity.
-        entity_id (Union[str, None]): Id of the entity. New id is created if
-            not passed.
         thumbnail_id (Union[str, None]): Id of entity's thumbnail.
         active (bool): Is entity active.
         entity_hub (EntityHub): Object of entity hub which created object of
             the entity.
-        created (Union[bool, None]): Entity is new. When 'None' is passed the
+        created (Optional[bool]): Entity is new. When 'None' is passed the
             value is defined based on value of 'entity_id'.
     """
 
@@ -1334,6 +1394,27 @@ class BaseEntity(object):
 
 
 class ProjectEntity(BaseEntity):
+    """Entity representing project on AYON server.
+
+    Args:
+        project_code (str): Project code.
+        library (bool): Is project library project.
+        folder_types (list[dict[str, Any]]): Folder types definition.
+        task_types (list[dict[str, Any]]): Task types definition.
+        entity_id (Optional[str]): Id of the entity. New id is created if
+            not passed.
+        parent_id (Union[str, None]): Id of parent entity.
+        name (str): Name of entity.
+        attribs (Dict[str, Any]): Attribute values.
+        data (Dict[str, Any]): Entity data (custom data).
+        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+        active (bool): Is entity active.
+        entity_hub (EntityHub): Object of entity hub which created object of
+            the entity.
+        created (Optional[bool]): Entity is new. When 'None' is passed the
+            value is defined based on value of 'entity_id'.
+    """
+
     entity_type = "project"
     parent_entity_types = []
     # TODO These are hardcoded but maybe should be used from server???
@@ -1436,6 +1517,28 @@ class ProjectEntity(BaseEntity):
 
 
 class FolderEntity(BaseEntity):
+    """Entity representing a folder on AYON server.
+
+    Args:
+        folder_type (str): Type of folder. Folder type must be available in
+            config of project folder types.
+        entity_id (Union[str, None]): Id of the entity. New id is created if
+            not passed.
+        parent_id (Union[str, None]): Id of parent entity.
+        name (str): Name of entity.
+        attribs (Dict[str, Any]): Attribute values.
+        data (Dict[str, Any]): Entity data (custom data).
+        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+        active (bool): Is entity active.
+        label (Optional[str]): Folder label.
+        path (Optional[str]): Folder path. Path consist of all parent names
+            with slash('/') used as separator.
+        entity_hub (EntityHub): Object of entity hub which created object of
+            the entity.
+        created (Optional[bool]): Entity is new. When 'None' is passed the
+            value is defined based on value of 'entity_id'.
+    """
+
     entity_type = "folder"
     parent_entity_types = ["folder", "project"]
 
@@ -1590,6 +1693,26 @@ class FolderEntity(BaseEntity):
 
 
 class TaskEntity(BaseEntity):
+    """Entity representing a task on AYON server.
+
+    Args:
+        task_type (str): Type of task. Task type must be available in config
+            of project task types.
+        entity_id (Union[str, None]): Id of the entity. New id is created if
+            not passed.
+        parent_id (Union[str, None]): Id of parent entity.
+        name (str): Name of entity.
+        label (Optional[str]): Task label.
+        attribs (Dict[str, Any]): Attribute values.
+        data (Dict[str, Any]): Entity data (custom data).
+        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+        active (bool): Is entity active.
+        entity_hub (EntityHub): Object of entity hub which created object of
+            the entity.
+        created (Optional[bool]): Entity is new. When 'None' is passed the
+            value is defined based on value of 'entity_id'.
+    """
+
     entity_type = "task"
     parent_entity_types = ["folder"]
 
