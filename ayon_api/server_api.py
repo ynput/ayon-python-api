@@ -2442,6 +2442,146 @@ class ServerAPI(object):
                     fill_own_attribs(folder)
                 yield folder
 
+    def get_folder_by_id(
+        self,
+        project_name,
+        folder_id,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query folder entity by id.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            folder_id (str): Folder id.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Folder entity data or None if was not found.
+        """
+
+        folders = self.get_folders(
+            project_name,
+            folder_ids=[folder_id],
+            active=None,
+            fields=fields,
+            own_attributes=own_attributes
+        )
+        for folder in folders:
+            return folder
+        return None
+
+    def get_folder_by_path(
+        self,
+        project_name,
+        folder_path,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query folder entity by path.
+
+        Folder path is a path to folder with all parent names joined by slash.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            folder_path (str): Folder path.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Folder entity data or None if was not found.
+        """
+
+        folders = self.get_folders(
+            project_name,
+            folder_paths=[folder_path],
+            active=None,
+            fields=fields,
+            own_attributes=own_attributes
+        )
+        for folder in folders:
+            return folder
+        return None
+
+    def get_folder_by_name(
+        self,
+        project_name,
+        folder_name,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query folder entity by path.
+
+        Warnings:
+            Folder name is not a unique identifier of a folder. Function is
+                kept for OpenPype 3 compatibility.
+
+        Args:
+            project_name (str): Name of project where to look for queried
+                entities.
+            folder_name (str): Folder name.
+            fields (Union[Iterable[str], None]): Fields that should be returned.
+                All fields are returned if 'None' is passed.
+            own_attributes (bool): Attribute values that are not explicitly set
+                on entity will have 'None' value.
+
+        Returns:
+            Union[dict, None]: Folder entity data or None if was not found.
+        """
+
+        folders = self.get_folders(
+            project_name,
+            folder_names=[folder_name],
+            active=None,
+            fields=fields,
+            own_attributes=own_attributes
+        )
+        for folder in folders:
+            return folder
+        return None
+
+    def get_folder_ids_with_subsets(self, project_name, folder_ids=None):
+        """Find folders which have at least one subset.
+
+        Folders that have at least one subset should be immutable, so they
+        should not change path -> change of name or name of any parent
+        is not possible.
+
+        Args:
+            project_name (str): Name of project.
+            folder_ids (Union[Iterable[str], None]): Limit folder ids filtering
+                to a set of folders. If set to None all folders on project are
+                checked.
+
+        Returns:
+            set[str]: Folder ids that have at least one subset.
+        """
+
+        if folder_ids is not None:
+            folder_ids = set(folder_ids)
+            if not folder_ids:
+                return set()
+
+        query = folders_graphql_query({"id"})
+        query.set_variable_value("projectName", project_name)
+        query.set_variable_value("folderHasSubsets", True)
+        if folder_ids:
+            query.set_variable_value("folderIds", list(folder_ids))
+
+        parsed_data = query.query(self)
+        folders = parsed_data["project"]["folders"]
+        return {
+            folder["id"]
+            for folder in folders
+        }
+
     def get_tasks(
         self,
         project_name,
@@ -2603,147 +2743,6 @@ class ServerAPI(object):
         ):
             return task
         return None
-
-
-    def get_folder_by_id(
-        self,
-        project_name,
-        folder_id,
-        fields=None,
-        own_attributes=False
-    ):
-        """Query folder entity by id.
-
-        Args:
-            project_name (str): Name of project where to look for queried
-                entities.
-            folder_id (str): Folder id.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
-                All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
-
-        Returns:
-            Union[dict, None]: Folder entity data or None if was not found.
-        """
-
-        folders = self.get_folders(
-            project_name,
-            folder_ids=[folder_id],
-            active=None,
-            fields=fields,
-            own_attributes=own_attributes
-        )
-        for folder in folders:
-            return folder
-        return None
-
-    def get_folder_by_path(
-        self,
-        project_name,
-        folder_path,
-        fields=None,
-        own_attributes=False
-    ):
-        """Query folder entity by path.
-
-        Folder path is a path to folder with all parent names joined by slash.
-
-        Args:
-            project_name (str): Name of project where to look for queried
-                entities.
-            folder_path (str): Folder path.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
-                All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
-
-        Returns:
-            Union[dict, None]: Folder entity data or None if was not found.
-        """
-
-        folders = self.get_folders(
-            project_name,
-            folder_paths=[folder_path],
-            active=None,
-            fields=fields,
-            own_attributes=own_attributes
-        )
-        for folder in folders:
-            return folder
-        return None
-
-    def get_folder_by_name(
-        self,
-        project_name,
-        folder_name,
-        fields=None,
-        own_attributes=False
-    ):
-        """Query folder entity by path.
-
-        Warnings:
-            Folder name is not a unique identifier of a folder. Function is
-                kept for OpenPype 3 compatibility.
-
-        Args:
-            project_name (str): Name of project where to look for queried
-                entities.
-            folder_name (str): Folder name.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
-                All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
-
-        Returns:
-            Union[dict, None]: Folder entity data or None if was not found.
-        """
-
-        folders = self.get_folders(
-            project_name,
-            folder_names=[folder_name],
-            active=None,
-            fields=fields,
-            own_attributes=own_attributes
-        )
-        for folder in folders:
-            return folder
-        return None
-
-    def get_folder_ids_with_subsets(self, project_name, folder_ids=None):
-        """Find folders which have at least one subset.
-
-        Folders that have at least one subset should be immutable, so they
-        should not change path -> change of name or name of any parent
-        is not possible.
-
-        Args:
-            project_name (str): Name of project.
-            folder_ids (Union[Iterable[str], None]): Limit folder ids filtering
-                to a set of folders. If set to None all folders on project are
-                checked.
-
-        Returns:
-            set[str]: Folder ids that have at least one subset.
-        """
-
-        if folder_ids is not None:
-            folder_ids = set(folder_ids)
-            if not folder_ids:
-                return set()
-
-        query = folders_graphql_query({"id"})
-        query.set_variable_value("projectName", project_name)
-        query.set_variable_value("folderHasSubsets", True)
-        if folder_ids:
-            query.set_variable_value("folderIds", list(folder_ids))
-
-        parsed_data = query.query(self)
-        folders = parsed_data["project"]["folders"]
-        return {
-            folder["id"]
-            for folder in folders
-        }
 
     def _filter_subset(
         self, project_name, subset, active, own_attributes, use_rest
