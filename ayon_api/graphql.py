@@ -376,7 +376,6 @@ class BaseGraphQlQueryField(object):
         name (str): Name of field.
         parent (Union[BaseGraphQlQueryField, GraphQlQuery]): Parent object of a
             field.
-        has_edges (bool): Field has edges and should handle paging.
     """
 
     def __init__(self, name, parent):
@@ -444,10 +443,20 @@ class BaseGraphQlQueryField(object):
         if self._need_query:
             return True
 
-        for child in self._children:
+        for child in self._children_iter():
             if child.need_query:
                 return True
         return False
+
+    def _children_iter(self):
+        """Iterate over all children fields of object.
+
+        Returns:
+            Iterator[BaseGraphQlQueryField]: Children fields.
+        """
+
+        for child in self._children:
+            yield child
 
     def sum_edge_fields(self, max_limit=None):
         """Check how many edge fields query has.
@@ -467,7 +476,7 @@ class BaseGraphQlQueryField(object):
         if isinstance(self, GraphQlQueryEdgeField):
             counter = 1
 
-        for child in self._children:
+        for child in self._children_iter():
             counter += child.sum_edge_fields(max_limit)
             if max_limit is not None and counter >= max_limit:
                 break
@@ -497,7 +506,7 @@ class BaseGraphQlQueryField(object):
 
     @property
     def child_has_edges(self):
-        for child in self._children:
+        for child in self._children_iter():
             if child.has_edges or child.child_has_edges:
                 return True
         return False
@@ -519,7 +528,7 @@ class BaseGraphQlQueryField(object):
         return self._path
 
     def reset_cursor(self):
-        for child in self._children:
+        for child in self._children_iter():
             child.reset_cursor()
 
     def get_variable_value(self, *args, **kwargs):
@@ -612,7 +621,7 @@ class BaseGraphQlQueryField(object):
     def _fake_children_parse(self):
         """Mark children as they don't need query."""
 
-        for child in self._children:
+        for child in self._children_iter():
             child.parse_result({}, {}, {})
 
     @abstractmethod
@@ -772,12 +781,12 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             return
 
         change_cursor = True
-        for child in self._children:
+        for child in self._children_iter():
             if child.need_query:
                 change_cursor = False
 
         if change_cursor:
-            for child in self._children:
+            for child in self._children_iter():
                 child.reset_cursor()
             self._cursor = new_cursor
 
