@@ -127,6 +127,29 @@ from ._api import (
     get_folder_thumbnail,
     get_version_thumbnail,
     get_workfile_thumbnail,
+
+    get_full_link_type_name,
+    get_link_types,
+    get_link_type,
+    create_link_type,
+    delete_link_type,
+    make_sure_link_type_exists,
+
+    create_link,
+    delete_link,
+    get_entities_links,
+    get_folder_links,
+    get_folders_links,
+    get_task_links,
+    get_tasks_links,
+    get_subset_links,
+    get_subsets_links,
+    get_version_links,
+    get_versions_links,
+    get_representations_links,
+    get_representation_links,
+
+    send_batch_operations,
 )
 
 
@@ -255,4 +278,27 @@ __all__ = (
     "get_folder_thumbnail",
     "get_version_thumbnail",
     "get_workfile_thumbnail",
+
+    "get_full_link_type_name",
+    "get_link_types",
+    "get_link_type",
+    "create_link_type",
+    "delete_link_type",
+    "make_sure_link_type_exists",
+
+    "create_link",
+    "delete_link",
+    "get_entities_links",
+    "get_folder_links",
+    "get_folders_links",
+    "get_task_links",
+    "get_tasks_links",
+    "get_subset_links",
+    "get_subsets_links",
+    "get_version_links",
+    "get_versions_links",
+    "get_representations_links",
+    "get_representation_links",
+
+    "send_batch_operations",
 )
