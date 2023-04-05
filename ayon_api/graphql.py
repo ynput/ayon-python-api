@@ -401,6 +401,36 @@ class BaseGraphQlQueryField(object):
     def __repr__(self):
         return "<{} {}>".format(self.__class__.__name__, self.path)
 
+    def add_variable(self, key, value_type, value=None):
+        """Add variable to query.
+
+        Args:
+            key (str): Variable name.
+            value_type (str): Type of expected value in variables. This is
+                graphql type e.g. "[String!]", "Int", "Boolean", etc.
+            value (Any): Default value for variable. Can be changed later.
+
+        Returns:
+            QueryVariable: Created variable object.
+
+        Raises:
+            KeyError: If variable was already added before.
+        """
+
+        return self._parent.add_variable(key, value_type, value)
+
+    def get_variable(self, key):
+        """Variable object.
+
+        Args:
+            key (str): Variable name added to headers.
+
+        Returns:
+            QueryVariable: Variable object used in query string.
+        """
+
+        return self._parent.get_variable(key)
+
     @property
     def need_query(self):
         """Still need query from server.
