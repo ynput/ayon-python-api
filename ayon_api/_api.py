@@ -11,7 +11,7 @@ import socket
 
 from .constants import (
     SERVER_URL_ENV_KEY,
-    SERVER_TOKEN_ENV_KEY,
+    SERVER_API_ENV_KEY,
 )
 from .server_api import ServerAPI
 from .exceptions import FailedServiceInit
@@ -44,7 +44,7 @@ class GlobalServerAPI(ServerAPI):
         previous_token = self._access_token
         super(GlobalServerAPI, self).login(username, password)
         if self.has_valid_token and previous_token != self._access_token:
-            os.environ[SERVER_TOKEN_ENV_KEY] = self._access_token
+            os.environ[SERVER_API_ENV_KEY] = self._access_token
 
     @staticmethod
     def get_url():
@@ -52,7 +52,7 @@ class GlobalServerAPI(ServerAPI):
 
     @staticmethod
     def get_token():
-        return os.environ.get(SERVER_TOKEN_ENV_KEY)
+        return os.environ.get(SERVER_API_ENV_KEY)
 
     @staticmethod
     def set_environments(url, token):
@@ -64,7 +64,7 @@ class GlobalServerAPI(ServerAPI):
         """
 
         os.environ[SERVER_URL_ENV_KEY] = url or ""
-        os.environ[SERVER_TOKEN_ENV_KEY] = token or ""
+        os.environ[SERVER_API_ENV_KEY] = token or ""
 
 
 class GlobalContext:
