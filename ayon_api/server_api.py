@@ -4063,6 +4063,97 @@ class ServerAPI(object):
             project_name, "workfile", workfile_id, thumbnail_id
         )
 
+    def _get_thumbnail_mime_type(self, thumbnail_path):
+        """Get thumbnail mime type on thumbnail creation based on source path.
+
+        Args:
+            thumbnail_path (str): Path to thumbnail source fie.
+
+        Returns:
+            str: Mime type used for thumbnail creation.
+
+        Raises:
+            ValueError: Mime type cannot be determined.
+        """
+
+        ext = os.path.splitext(thumbnail_path)[-1].lower()
+        if ext == ".png":
+            return "image/png"
+
+        elif ext in (".jpeg", ".jpg"):
+            return "image/jpeg"
+
+        raise ValueError(
+            "Thumbnail source file has unknown extensions {}".format(ext))
+
+    def create_thumbnail(self, project_name, src_filepath, thumbnail_id=None):
+        """Create new thumbnail on server from passed path.
+
+        Args:
+            project_name (str): Project where the thumbnail will be created
+                and can be used.
+            src_filepath (str): Filepath to thumbnail which should be uploaded.
+            thumbnail_id (str): Prepared if of thumbnail.
+
+        Returns:
+            str: Created thumbnail id.
+
+        Raises:
+            ValueError: When thumbnail source cannot be processed.
+        """
+
+        if not os.path.exists(src_filepath):
+            raise ValueError("Entered filepath does not exist.")
+
+        if thumbnail_id:
+            self.update_thumbnail(
+                project_name,
+                thumbnail_id,
+                src_filepath
+            )
+            return thumbnail_id
+
+        mime_type = self._get_thumbnail_mime_type(src_filepath)
+        with open(src_filepath, "rb") as stream:
+            content = stream.read()
+
+        response = self.raw_post(
+            "projects/{}/thumbnails".format(project_name),
+            headers={"Content-Type": mime_type},
+            data=content
+        )
+        response.raise_for_status()
+        return response.data["id"]
+
+    def update_thumbnail(self, project_name, thumbnail_id, src_filepath):
+        """Change thumbnail content by id.
+
+        Update can be also used to create new thumbnail.
+
+        Args:
+            project_name (str): Project where the thumbnail will be created
+                and can be used.
+            thumbnail_id (str): Thumbnail id to update.
+            src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+        Raises:
+            ValueError: When thumbnail source cannot be processed.
+        """
+
+        if not os.path.exists(src_filepath):
+            raise ValueError("Entered filepath does not exist.")
+
+        mime_type = self._get_thumbnail_mime_type(src_filepath)
+        with open(src_filepath, "rb") as stream:
+            content = stream.read()
+
+        response = self.raw_put(
+            "projects/{}/thumbnails/{}".format(project_name, thumbnail_id),
+            headers={"Content-Type": mime_type},
+            data=content
+        )
+        response.raise_for_status()
+
     def create_project(
         self,
         project_name,
@@ -4147,55 +4238,6 @@ class ServerAPI(object):
                     project_name, result.data["detail"]
                 )
             )
-
-    def create_thumbnail(self, project_name, src_filepath):
-        """Create new thumbnail on server from passed path.
-
-        Args:
-            project_name (str): Project where the thumbnail will be created
-                and can be used.
-            src_filepath (str): Filepath to thumbnail which should be uploaded.
-
-        Returns:
-            str: Created thumbnail id.
-
-        Todos:
-            Define more specific exceptions for thumbnail creation.
-
-        Raises:
-            ValueError: When thumbnail creation fails (due to many reasons).
-        """
-
-        if not os.path.exists(src_filepath):
-            raise ValueError("Entered filepath does not exist.")
-
-        ext = os.path.splitext(src_filepath)[-1].lower()
-        if ext == ".png":
-            mime_type = "image/png"
-
-        elif ext in (".jpeg", ".jpg"):
-            mime_type = "image/jpeg"
-
-        else:
-            raise ValueError(
-                "Thumbnail source file has unknown extensions {}".format(ext))
-
-        with open(src_filepath, "rb") as stream:
-            content = stream.read()
-
-        response = self.raw_post(
-            "projects/{}/thumbnails".format(project_name),
-            headers={"Content-Type": mime_type},
-            data=content
-        )
-        if response.status_code != 200:
-            _detail = response.data.get("detail")
-            details = ""
-            if _detail:
-                details = " {}".format(_detail)
-            raise ValueError(
-                "Failed to create thumbnail.{}".format(details))
-        return response.data["id"]
 
     # --- Links ---
     def get_full_link_type_name(self, link_type_name, input_type, output_type):
