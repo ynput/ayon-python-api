@@ -781,11 +781,6 @@ def delete_project(project_name):
     return con.delete_project(project_name)
 
 
-def create_thumbnail(project_name, src_filepath):
-    con = get_server_api_connection()
-    return con.create_thumbnail(project_name, src_filepath)
-
-
 def get_thumbnail(project_name, entity_type, entity_id, thumbnail_id=None):
     con = get_server_api_connection()
     con.get_thumbnail(project_name, entity_type, entity_id, thumbnail_id)
@@ -806,9 +801,14 @@ def get_workfile_thumbnail(project_name, workfile_id, thumbnail_id=None):
     return con.get_workfile_thumbnail(project_name, workfile_id, thumbnail_id)
 
 
-def create_thumbnail(project_name, src_filepath):
+def create_thumbnail(project_name, src_filepath, thumbnail_id=None):
     con = get_server_api_connection()
-    return con.create_thumbnail(project_name, src_filepath)
+    return con.create_thumbnail(project_name, src_filepath, thumbnail_id)
+
+
+def update_thumbnail(project_name, thumbnail_id, src_filepath):
+    con = get_server_api_connection()
+    return con.update_thumbnail(project_name, thumbnail_id, src_filepath)
 
 
 def get_default_fields_for_type(entity_type):

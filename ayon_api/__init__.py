@@ -122,11 +122,12 @@ from ._api import (
     get_representation_parents,
     get_repre_ids_by_context_filters,
 
-    create_thumbnail,
     get_thumbnail,
     get_folder_thumbnail,
     get_version_thumbnail,
     get_workfile_thumbnail,
+    create_thumbnail,
+    update_thumbnail,
 
     get_full_link_type_name,
     get_link_types,
@@ -273,11 +274,12 @@ __all__ = (
     "get_representation_parents",
     "get_repre_ids_by_context_filters",
 
-    "create_thumbnail",
     "get_thumbnail",
     "get_folder_thumbnail",
     "get_version_thumbnail",
     "get_workfile_thumbnail",
+    "create_thumbnail",
+    "update_thumbnail",
 
     "get_full_link_type_name",
     "get_link_types",
