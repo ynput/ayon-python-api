@@ -3,7 +3,7 @@ Python client for connection server. Client must be (at least for some time) Pyt
 
 AYON Python api should support connection to server with raw REST functions and prepared functionality for work with entities. Must not contain only functionality that can be used with core server functionality.
 
-Module support singleton connection which is using `AYON_SERVER_URL` and `AYON_TOKEN` environment variables as source for connection. The singleton connection is using `ServerAPI` object. There can be created multiple connection to different server at one time, for that purpose use `ServerAPIBase` object.
+Module support singleton connection which is using `AYON_SERVER_URL` and `AYON_API_KEY` environment variables as source for connection. The singleton connection is using `ServerAPI` object. There can be created multiple connection to different server at one time, for that purpose use `ServerAPIBase` object.
 
 ## Install
 AYON python api is available on PyPi:
@@ -49,8 +49,16 @@ If pip complain that `ayon-python-api` is already installed just uninstall exist
 - Add all available CRUD operation on entities using REST
 - Add folder and task changes to operations
 - Enhance entity hub
+  - Missing docstrings in EntityHub -> especially entity arguments are missing
+  - Better order of arguments for entity classes
+    - Move entity hub to first place
+    - Skip those which are invalid for the entity and fake it for base or remove it from base
   - Entity hub should use operations session to do changes
   - Entity hub could also handle 'subset', 'version' and 'representation' entities
-  - Missing docstrings in EntityHub -> especially entity arguments are missing
-- Pass docstrings and arguments definitions from `ServerAPI` methods to global functions
+  - Missing 'statuses' on project
+  - Missing 'status' on folders
+  - Missing assignees on tasks
+  - Pass docstrings and arguments definitions from `ServerAPI` methods to global functions
+- Split `ServerAPI` into smaller chunks (somehow), the class has 4k+ lines of code
+- Add .pyi stub for ServerAPI 
 - Missing websockets connection
