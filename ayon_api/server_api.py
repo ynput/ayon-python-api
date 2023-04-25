@@ -908,7 +908,7 @@ class ServerAPI(object):
             project_names = set(project_names)
             if not project_names:
                 return
-            filters["projectName"] = list(project_names)
+            filters["projectNames"] = list(project_names)
 
         if states is not None:
             states = set(states)
