@@ -1,6 +1,7 @@
 """Functions that are often used in tests."""
 
 import pytest
+import os
 from ayon_api._api import (
     get_folders,
     get_subsets,
@@ -13,7 +14,7 @@ from ayon_api.operations import (
 )
 
 
-PROJECT_NAME = "demo_Commercial"
+PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
 
 
 def my_get_folder_ids(parent = None):
@@ -40,8 +41,8 @@ def my_get_subset_ids(folder_ids):
     return [subset["id"] for subset in subsets]
 
 
-def my_get_version_ids(subset_id):
-    if not isinstance(subset_id, list):
+def my_get_version_ids(subset_ids):
+    if not isinstance(subset_ids, list):
         subset_ids = [subset_ids]
 
     versions = list(
@@ -72,6 +73,23 @@ def my_delete_folder(s, name, id):
     s.commit()
 
 
+def recursive_delete_hierarchy(folder_id, s):
+    # recursively delete all subfolders
+    subfolder_ids = my_get_folder_ids(folder_id)
+    for subfolder_id in subfolder_ids:
+        recursive_delete_hierarchy(subfolder_id, s)
+
+    # delete subsets
+    subset_ids = my_get_subset_ids([folder_id])
+    for subset_id in subset_ids:
+        s.delete_entity(PROJECT_NAME, "subset", subset_id)
+    s.commit()
+
+    # delete folder
+    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.commit()
+
+
 def manual_delete_hierarchy(folder_name, s=None):
     if not s:
         s = OperationsSession()
@@ -83,11 +101,4 @@ def manual_delete_hierarchy(folder_name, s=None):
     except TypeError as exc:
         print(exc)
     else:
-        subset_ids = my_get_subset_ids([folder_id])
-
-        for subset_id in subset_ids:
-            s.delete_entity(PROJECT_NAME, "subset", subset_id)
-            s.commit()
-
-        s.delete_entity(PROJECT_NAME, "folder", folder_id)
-        s.commit()
+        recursive_delete_hierarchy(folder_id, s)
