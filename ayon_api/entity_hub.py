@@ -1198,6 +1198,7 @@ class BaseEntity(object):
         self._attribs.lock()
 
         self._immutable_for_hierarchy_cache = None
+        self._created = False
 
     def _get_entity_by_id(self, entity_id):
         return self._entity_hub.get_entity_by_id(entity_id)
