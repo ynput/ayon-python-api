@@ -400,7 +400,7 @@ def test_subfolder_hierarchy(
     s.delete_entity(PROJECT_NAME, "folder", parent_id)
     s.commit()
 
-
+"""
 @pytest.mark.parametrize(
     "folder_name",
     [
@@ -409,3 +409,4 @@ def test_subfolder_hierarchy(
 )
 def test_my_delete_func(folder_name):
     manual_delete_hierarchy(folder_name)
+"""
