@@ -28,9 +28,7 @@ from ayon_api.exceptions import (
 )
 
 
-AYON_BASE_URL = "https://ayon.dev"
-AYON_REST_URL = "https://ayon.dev/api"
-PROJECT_NAME = "demo_Commercial"
+PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
 
 
 @pytest.mark.parametrize(
@@ -128,7 +126,8 @@ def test_folder_duplicated_names(folder_name):
 )
 def test_subset_duplicated_names(
     folder_name,
-    subset_names):
+    subset_names
+    ):
     """Tries to create subsets with duplicated 
     names and checks if exception was raised.
     Checks if the subset was really created after commit.
@@ -236,12 +235,12 @@ def test_whole_hierarchy(
 
             assert representation_id in my_get_representation_ids([version_id])
             
-            # ? not fixed on server yet
+            # doesn't raise an exception
             """
             # not unique under this version
             with pytest.raises(FailedOperations):
                 representation = new_representation_entity(unique_name, version_id)
-                _ = s.create_entity(PROJECT_NAME, "representation", representation)  
+                tmp_id = s.create_entity(PROJECT_NAME, "representation", representation)["id"] 
                 s.commit()
                 assert tmp_id not in my_get_representation_ids(version_id)
             """
@@ -253,7 +252,7 @@ def test_whole_hierarchy(
                 s.commit()
 
                 assert representation_id in my_get_representation_ids(my_version_ids)
-    
+
     s.delete_entity(PROJECT_NAME, "subset", subset_id)
     s.commit()
 
@@ -269,7 +268,8 @@ def test_whole_hierarchy(
 )
 def test_delete_folder_with_subset(
     folder_name,
-    subset_name):
+    subset_name
+    ):
     """Creates subset in folder and tries to delete the folder.
     Checks if exception was raised.
     """
@@ -312,7 +312,7 @@ def test_delete_folder_with_subset(
         ("folder_with_subfolders2", "subfolder", "shot", 2, 3),
     ]
 )
-def test_folder_with_subfolders(
+def test_subfolder_hierarchy(
     folder_name,
     subfolder_name1, 
     subfolder_name2, 
@@ -353,16 +353,6 @@ def test_folder_with_subfolders(
             s.commit()
             assert tmp_id not in my_get_folder_ids(parent_id)
 
-        # subset with same name
-        # ??? doesn't raise exception but doesn't show in browser
-        """
-        with pytest.raises(FailedOperations):
-            subset = new_subset_entity(f"{subfolder_name1}{i:03}", "model", parent_id)
-            tmp_id = s.create_entity(PROJECT_NAME, "subset", subset)    
-            s.commit()
-            assert tmp_id not in my_get_subset_ids(parent_id)
-        """
-
         for j in range(count_level2):
             folder = new_folder_entity(f"{subfolder_name2}{j:03}", "Shot", parent_id=folder_id)
             subfolder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
@@ -376,19 +366,7 @@ def test_folder_with_subfolders(
                 folder = new_folder_entity(f"{subfolder_name2}{j:03}", "Shot", parent_id=folder_id)
                 tmp_id = s.create_entity(PROJECT_NAME, "folder", folder)
                 s.commit()
-                print("BEFORE ASSERT")
                 assert tmp_id not in my_get_folder_ids(folder_id)
-
-            
-            # subset with same name as subfolder
-            # ??? doesn't raise exception but doesn't show in browser
-            """
-            with pytest.raises(FailedOperations):
-                subset = new_subset_entity(f"{subfolder_name2}{j:03}", "model", folder_id)
-                tmp_id = s.create_entity(PROJECT_NAME, "subset", subset)["id"]  
-                s.commit()
-                assert tmp_id not in my_get_folder_ids(folder_id)
-            """
 
             # subsets in subfolder
             subset = new_subset_entity("modelMain", "model", subfolder_id)
@@ -422,8 +400,12 @@ def test_folder_with_subfolders(
     s.delete_entity(PROJECT_NAME, "folder", parent_id)
     s.commit()
 
-"""
-def test_manual_delete():
-    for name in ["subfolder001", "folder_with_subfolders2"]:
-        manual_delete_hierarchy(name)
-"""
+
+@pytest.mark.parametrize(
+    "folder_name",
+    [
+        ("folder_with_subfolders2"),
+    ]
+)
+def test_my_delete_func(folder_name):
+    manual_delete_hierarchy(folder_name)
