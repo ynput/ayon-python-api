@@ -19,7 +19,11 @@ def test_order_of_operations(folder_name):
     folder1 = e.add_new_folder("Folder", name=folder_name)
     e.commit_changes()
 
-    print("\n#", folder1.parent_id, "#")
-
+    # create new with same name and delete the old one
+    folder2 = e.add_new_folder("Folder", name=folder_name)
     e.delete_entity(folder1)
     e.commit_changes()
+
+    e.delete_entity(folder2)
+    e.commit_changes()
+
