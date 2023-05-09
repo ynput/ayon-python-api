@@ -41,28 +41,19 @@ def test_simple_output(project_query):
 def make_project_query(keys, values, types):
     query = project_graphql_query(["name"])
 
-    # by default from project_graphql_query(["name"])
+    # Function 'project_graphql_query' always adds 'projectName' variable
     inserted = {"projectName"}
+    for key, value_type, value in zip(keys, types, values):
+        if key not in inserted:
+            inserted.add(key)
+            query.add_variable(key, value_type)
+        query.set_variable_value(key, value)
 
-    for i in range(len(keys)):
-        try:
-            query.add_variable(keys[i], types[i], values[i])
-        except KeyError:
-            if keys[i] not in inserted:
-                return None
-            else:
-                query.set_variable_value(keys[i], values[i])
-
-        inserted.add(keys[i])
-    
     return query
 
 
 def make_expected_get_variables_values(keys, values):
-    expected = {}
-    for i in range(len(keys)):
-        expected[keys[i]] = values[i]
-    return expected
+    return dict(zip(keys, values))
 
 
 @pytest.mark.parametrize(
