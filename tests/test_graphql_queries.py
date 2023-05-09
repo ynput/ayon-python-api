@@ -21,8 +21,8 @@ def folder_query():
 
 
 def test_simple_duplicate_add_variable_exception(empty_query):
-    key, value_type, value = "projectName", "[String!]", "kuba_v4_sync"
-    empty_query.add_variable(key, value_type, value)
+    key, value_type = "someVariable", "String"
+    empty_query.add_variable(key, value_type)
     with pytest.raises(KeyError):
         empty_query.add_variable(key, value_type)
 
