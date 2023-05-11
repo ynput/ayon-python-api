@@ -1,10 +1,11 @@
 import pytest
 import os
 from dotenv import load_dotenv
-from tests.my_helper_functions import (
-    my_get_folder_ids
-)
 from ayon_api.entity_hub import EntityHub
+from ayon_api._api import (
+    get_folder_by_id,
+    get_folders
+)
 
 
 PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
@@ -22,27 +23,42 @@ DEBUG_PRINT = True
 def test_order_of_simple_operations(folder_name):
     e = EntityHub(PROJECT_NAME)
 
-    folder1 = e.add_new_folder("Folder", name=folder_name)
+    parent_folder_id = e.add_new_folder("Folder", name=folder_name)["id"]
     e.commit_changes()
+
+    folders = []
+    subfolders = []
+    for i in range(2):
+        folder = e.add_new_folder("Folder", name="test"+str(i), parent_id=parent_folder_id)
+        folders.append(folder)
+        subfolder = e.add_new_folder("Folder", name="duplicated", parent_id=folder["id"])
+        subfolders.append(subfolder)
+    e.commit_changes()
+
 
     # raises an exception (duplicated names)
-    # works if the second folder is deleted (<= never created)
     """
-    # create new with same name and delete the old one
-    folder2 = e.add_new_folder("Folder", name=folder_name)
-    e.delete_entity(folder1)
+    # switch the parent folders - duplicated names exception shouldn't be raised
+    e.set_entity_parent(subfolders[0]["id"], folders[1]["id"])
+    e.set_entity_parent(subfolders[1]["id"], folders[0]["id"])
 
     e.commit_changes()
 
-    assert folder1["id"] not in my_get_folder_ids()
-    assert folder2["id"] in my_get_folder_ids()
+    # check if parent ids are switched
+    assert subfolders[1]["parent_id"] == folders[0]["id"]
+    assert subfolders[0]["parent_id"] == folders[1]["id"]
 
-    # delete created folder
-    e.delete_entity(folder2)
+    # move and delete -> duplicated names exception shouldn't be raised
+    e.set_entity_parent(subfolders[0]["id"], folders[0]["id"])
+    e.delete_entity(subfolders[1])
+
     e.commit_changes()
+
+    # check if parent id is switched and the second folder is deleted
+    assert subfolders[0]["parent_id"] == folders[0]["id"]
+    assert get_folder_by_id(PROJECT_NAME, subfolders[1]["id"]) is None
     """
-    # ------------------------------
-    # clean up after ^^^
+
     e.delete_entity(folder1)
     e.commit_changes()
 
@@ -58,6 +74,8 @@ def test_operations_with_subfolders(
     subfolder_name,
     num_of_subfolders
     ):
+    """
+    """
     e = EntityHub(PROJECT_NAME)
     
     folder1 = e.add_new_folder("Folder", name=folder_name)
@@ -81,11 +99,13 @@ def test_operations_with_subfolders(
 
     e.commit_changes()
 
-    assert folder1["id"] in my_get_folder_ids()
+    assert get_folder_by_id(PROJECT_NAME, folder1["id"]) is not None
 
-    server_subfolder_ids = my_get_folder_ids(folder1["id"])
     for subfolder_id in subfolder_ids:
-        assert subfolder_id in server_subfolder_ids
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=subfolder_id, 
+            parent_ids=folder1["id"]) is not None
 
     # clean up
     e.delete_entity(folder1)
@@ -158,8 +178,17 @@ def test_move_folders(
 
     # test if moved correctly
     for i, subfolder_id in enumerate(subfolder_ids):
-        assert subfolder_id not in my_get_folder_ids(folder_ids[i // num_of_subfolders])
-        assert subfolder_id in my_get_folder_ids(folder_ids[(i // num_of_subfolders + 1) % num_of_folders])
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=subfolder_id, 
+            parent_ids=folder_ids[i // num_of_subfolders]) is None
+
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=subfolder_id, 
+            parent_ids=folder_ids[(i // num_of_subfolders + 1) % num_of_folders]) is not None
+        # assert subfolder_id not in my_get_folder_ids(folder_ids[i // num_of_subfolders])
+        # assert subfolder_id in my_get_folder_ids(folder_ids[(i // num_of_subfolders + 1) % num_of_folders])
     """
 
     e.delete_entity(parent_folder)
