@@ -14,6 +14,7 @@ except ImportError:
     HTTPStatus = None
 
 import requests
+from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
     DEFAULT_PROJECT_FIELDS,
@@ -112,9 +113,9 @@ class RestApiResponse(object):
     @property
     def data(self):
         if self._data is None:
-            if self.status != 204:
+            try:
                 self._data = self.orig_response.json()
-            else:
+            except RequestsJSONDecodeError:
                 self._data = {}
         return self._data
 
@@ -128,7 +129,10 @@ class RestApiResponse(object):
 
     @property
     def detail(self):
-        return self.get("detail", _get_description(self))
+        detail = self.get("detail")
+        if detail:
+            return detail
+        return _get_description(self)
 
     @property
     def status_code(self):
@@ -298,14 +302,6 @@ class ServerAPI(object):
             default if a method for settings won't get any (by default is
             'production').
     """
-
-    _entity_types_link_mapping = {
-        "folder": ("folderIds", "folders"),
-        "task": ("taskIds", "tasks"),
-        "subset": ("subsetIds", "subsets"),
-        "version": ("versionIds", "versions"),
-        "representation": ("representationIds", "representations"),
-    }
 
     def __init__(
         self,
@@ -916,7 +912,7 @@ class ServerAPI(object):
             project_names = set(project_names)
             if not project_names:
                 return
-            filters["projectName"] = list(project_names)
+            filters["projectNames"] = list(project_names)
 
         if states is not None:
             states = set(states)
@@ -4514,13 +4510,34 @@ class ServerAPI(object):
             dict[str, list[dict[str, Any]]]: Link info by entity ids.
         """
 
-        mapped_type = self._entity_types_link_mapping.get(entity_type)
-        if not mapped_type:
+        if entity_type == "folder":
+            query_func = folders_graphql_query
+            id_filter_key = "folderIds"
+            project_sub_key = "folders"
+        elif entity_type == "task":
+            query_func = tasks_graphql_query
+            id_filter_key = "taskIds"
+            project_sub_key = "tasks"
+        elif entity_type == "subset":
+            query_func = subsets_graphql_query
+            id_filter_key = "subsetIds"
+            project_sub_key = "subsets"
+        elif entity_type == "version":
+            query_func = versions_graphql_query
+            id_filter_key = "versionIds"
+            project_sub_key = "versions"
+        elif entity_type == "representation":
+            query_func = representations_graphql_query
+            id_filter_key = "representationIds"
+            project_sub_key = "representations"
+        else:
             raise ValueError("Unknown type \"{}\". Expected {}".format(
-                entity_type, ", ".join(self._entity_types_link_mapping.keys())
+                entity_type,
+                ", ".join(
+                    ("folder", "task", "subset", "version", "representation")
+                )
             ))
 
-        id_filter_key, project_sub_key = mapped_type
         output = collections.defaultdict(list)
         filters = {
             "projectName": project_name
@@ -4534,7 +4551,7 @@ class ServerAPI(object):
         if not self._prepare_link_filters(filters, link_types, link_direction):
             return output
 
-        query = folders_graphql_query({"id", "links"})
+        query = query_func({"id", "links"})
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
