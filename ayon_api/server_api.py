@@ -129,9 +129,7 @@ class RestApiResponse(object):
 
     @property
     def detail(self):
-        # Failsafe access to data to use 'detail' from response
-        #   - this should not crash if response is not json serializable
-        detail = self.data.get("detail")
+        detail = self.get("detail")
         if detail:
             return detail
         return _get_description(self)
