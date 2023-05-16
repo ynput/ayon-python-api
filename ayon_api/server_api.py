@@ -14,6 +14,7 @@ except ImportError:
     HTTPStatus = None
 
 import requests
+from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
     DEFAULT_PROJECT_FIELDS,
@@ -112,9 +113,9 @@ class RestApiResponse(object):
     @property
     def data(self):
         if self._data is None:
-            if self.status != 204:
+            try:
                 self._data = self.orig_response.json()
-            else:
+            except RequestsJSONDecodeError:
                 self._data = {}
         return self._data
 
@@ -128,7 +129,12 @@ class RestApiResponse(object):
 
     @property
     def detail(self):
-        return self.get("detail", _get_description(self))
+        # Failsafe access to data to use 'detail' from response
+        #   - this should not crash if response is not json serializable
+        detail = self.data.get("detail")
+        if detail:
+            return detail
+        return _get_description(self)
 
     @property
     def status_code(self):
