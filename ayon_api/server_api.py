@@ -20,7 +20,7 @@ from .constants import (
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
     DEFAULT_TASK_FIELDS,
-    DEFAULT_SUBSET_FIELDS,
+    DEFAULT_PRODUCT_FIELDS,
     DEFAULT_VERSION_FIELDS,
     DEFAULT_REPRESENTATION_FIELDS,
     REPRESENTATION_FILES_FIELDS,
@@ -34,7 +34,7 @@ from .graphql_queries import (
     projects_graphql_query,
     folders_graphql_query,
     tasks_graphql_query,
-    subsets_graphql_query,
+    products_graphql_query,
     versions_graphql_query,
     representations_graphql_query,
     representations_parents_qraphql_query,
@@ -293,12 +293,12 @@ class ServerAPI(object):
 
     Args:
         base_url (str): Example: http://localhost:5000
-        token (str): Access token (api key) to server.
-        site_id (str): Unique name of site. Should be the same when
+        token (Optional[str]): Access token (api key) to server.
+        site_id (Optional[str]): Unique name of site. Should be the same when
             connection is created from the same machine under same user.
-        client_version (str): Version of client application (used in
+        client_version (Optional[str]): Version of client application (used in
             desktop client application).
-        default_settings_variant (Union[str, None]): Settings variant used by
+        default_settings_variant (Optional[str]): Settings variant used by
             default if a method for settings won't get any (by default is
             'production').
     """
@@ -472,7 +472,7 @@ class ServerAPI(object):
         'as_user' context manager is not entered.
 
         Args:
-            username (Union[str, None]): Username to work as when service.
+            username (Optional[str]): Username to work as when service.
 
         Raises:
             ValueError: When connection is not yet authenticated or api key
@@ -888,13 +888,14 @@ class ServerAPI(object):
             Not all event happen on a project.
 
         Args:
-            topics (Iterable[str]): Name of topics.
-            project_names (Iterable[str]): Project on which event happened.
-            states (Iterable[str]): Filtering by states.
-            users (Iterable[str]): Filtering by users who created/triggered
-                an event.
-            include_logs (bool): Query also log events.
-            fields (Union[Iterable[str], None]): Fields that should be received
+            topics (Optional[Iterable[str]]): Name of topics.
+            project_names (Optional[Iterable[str]]): Project on which
+                event happened.
+            states (Optional[Iterable[str]]): Filtering by states.
+            users (Optional[Iterable[str]]): Filtering by users
+                who created/triggered an event.
+            include_logs (Optional[bool]): Query also log events.
+            fields (Optional[Iterable[str]]): Fields that should be received
                 for each event.
 
         Returns:
@@ -996,9 +997,10 @@ class ServerAPI(object):
                 for simple filtering on listeners.
             payload (Optional[dict[str, Any]]): Full payload of event data with
                 all details.
-            finished (bool): Mark event as finished on dispatch.
-            store (bool): Store event in event queue for possible future processing
-                otherwise is event send only to active listeners.
+            finished (Optional[bool]): Mark event as finished on dispatch.
+            store (Optional[bool]): Store event in event queue for possible
+                future processing otherwise is event send only
+                to active listeners.
         """
 
         if summary is None:
@@ -1068,8 +1070,10 @@ class ServerAPI(object):
             source_topic (str): Source topic to enroll.
             target_topic (str): Topic of dependent event.
             sender (str): Identifier of sender (e.g. service name or username).
-            description (str): Human readable text shown in target event.
-            sequential (bool): The source topic must be processed in sequence.
+            description (Optional[str]): Human readable text shown
+                in target event.
+            sequential (Optional[bool]): The source topic must be processed
+                in sequence.
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1114,7 +1118,9 @@ class ServerAPI(object):
                     f_stream.write(chunk)
                     progress.add_transferred_chunk(len(chunk))
 
-    def download_file(self, endpoint, filepath, chunk_size=None, progress=None):
+    def download_file(
+        self, endpoint, filepath, chunk_size=None, progress=None
+    ):
         """Download file from AYON server.
 
         Endpoint can be full url (must start with 'base_url' of api object).
@@ -1126,9 +1132,10 @@ class ServerAPI(object):
         Args:
             endpoint (str): Endpoint or URL to file that should be downloaded.
             filepath (str): Path where file will be downloaded.
-            chunk_size (int): Size of chunks that are received in single loop.
-            progress (TransferProgress): Object that gives ability to track
-                download progress.
+            chunk_size (Optional[int]): Size of chunks that are received
+                in single loop.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
         """
 
         if not chunk_size:
@@ -1186,8 +1193,8 @@ class ServerAPI(object):
         Args:
             endpoint (str): Endpoint or url where file will be uploaded.
             filepath (str): Source filepath.
-            progress (TransferProgress): Object that gives ability to track
-                upload progress.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track upload progress.
         """
 
         if endpoint.startswith(self._base_url):
@@ -1232,7 +1239,7 @@ class ServerAPI(object):
 
         Args:
             query (str): GraphQl query string.
-            variables (Union[None, dict[str, Any]): Variables that can be
+            variables (Optional[dict[str, Any]): Variables that can be
                 used in query.
 
         Returns:
@@ -1432,8 +1439,8 @@ class ServerAPI(object):
                 for attr in attributes
             }
 
-        if entity_type == "subset":
-            return DEFAULT_SUBSET_FIELDS | {
+        if entity_type == "product":
+            return DEFAULT_PRODUCT_FIELDS | {
                 "attrib.{}".format(attr)
                 for attr in attributes
             }
@@ -1460,8 +1467,8 @@ class ServerAPI(object):
         """Get information about addons available on server.
 
         Args:
-            details (bool): Detailed data with information how to get client
-                code.
+            details (Optional[bool]): Detailed data with information how
+                to get client code.
         """
 
         endpoint = "addons"
@@ -1520,11 +1527,11 @@ class ServerAPI(object):
             addon_version (str): Addon version.
             filename (str): Filename in private folder on server.
             destination_dir (str): Where the file should be downloaded.
-            destination_filename (str): Name of destination filename. Source
-                filename is used if not passed.
-            chunk_size (int): Download chunk size.
-            progress (TransferProgress): Object that gives ability to track
-                download progress.
+            destination_filename (Optional[str]): Name of destination
+                filename. Source filename is used if not passed.
+            chunk_size (Optional[int]): Download chunk size.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
 
         Returns:
             str: Filepath to downloaded file.
@@ -1596,14 +1603,16 @@ class ServerAPI(object):
                 which is dependency package targeted.
             size (int): Size of dependency package in bytes.
             checksum (str): Checksum of archive file where dependecies are.
-            checksum_algorithm (str): Algorithm used to calculate checksum.
-                By default, is used 'md5' (defined by server).
-            supported_addons (Dict[str, str]): Name of addons for which was the
-                package created ('{"<addon name>": "<addon version>", ...}').
-            python_modules (Dict[str, str]): Python modules in dependencies
-                package ('{"<module name>": "<module version>", ...}').
-            sources (List[Dict[str, Any]]): Information about sources where
-                dependency package is available.
+            checksum_algorithm (Optional[str]): Algorithm used to calculate
+                checksum. By default, is used 'md5' (defined by server).
+            supported_addons (Optional[Dict[str, str]]): Name of addons for
+                which was the package created.
+                '{"<addon name>": "<addon version>", ...}'
+            python_modules (Optional[Dict[str, str]]): Python modules in
+                dependencies package.
+                '{"<module name>": "<module version>", ...}'
+            sources (Optional[List[Dict[str, Any]]]): Information about
+                sources where dependency package is available.
         """
 
         kwargs = {
@@ -1647,11 +1656,12 @@ class ServerAPI(object):
             package_name (str): Name of package to download.
             dst_directory (str): Where the file should be downloaded.
             filename (str): Name of destination filename.
-            platform_name (str): Name of platform for which the dependency
-                package is targetter. Default value is current platform.
-            chunk_size (int): Download chunk size.
-            progress (TransferProgress): Object that gives ability to track
-                download progress.
+            platform_name (Optional[str]): Name of platform for which the
+                dependency package is targeted. Default value is
+                current platform.
+            chunk_size (Optional[int]): Download chunk size.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
 
         Returns:
             str: Filepath to downloaded file.
@@ -1676,7 +1686,8 @@ class ServerAPI(object):
         Args:
             filepath (str): Path to a package file.
             package_name (str): Name of package. Must be unique.
-            platform_name (str): For which platform is the package targeted.
+            platform_name (Optional[str]): For which platform is the
+                package targeted.
             progress (Optional[TransferProgress]): Object to keep track about
                 upload state.
         """
@@ -1695,8 +1706,8 @@ class ServerAPI(object):
 
         Args:
             package_name (str): Name of package to remove.
-            platform_name (Optional[str]): Which platform of the package should
-                be removed. Current platform is used if not passed.
+            platform_name (Optional[str]): Which platform of the package
+                should be removed. Current platform is used if not passed.
         """
 
         if platform_name is None:
@@ -1741,7 +1752,7 @@ class ServerAPI(object):
         if preset name is set to 'None'.
 
         Args:
-            Union[str, None]: Preset name.
+            preset_name (Optional[str]): Preset name.
 
         Returns:
             dict[str, Any]: Anatomy preset values.
@@ -1807,7 +1818,7 @@ class ServerAPI(object):
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            project_name (Union[str, None]): Schema for specific project or
+            project_name (Optional[str]): Schema for specific project or
                 default studio schemas.
 
         Returns:
@@ -1855,8 +1866,8 @@ class ServerAPI(object):
        Args:
            addon_name (str): Name of addon.
            addon_version (str): Version of addon.
-           variant (str): Name of settings variant. By default, is used
-               'default_settings_variant' passed on init.
+           variant (Optional[str]): Name of settings variant. By default,
+                is used 'default_settings_variant' passed on init.
 
        Returns:
            dict[str, Any]: Addon settings.
@@ -1898,13 +1909,14 @@ class ServerAPI(object):
             addon_version (str): Version of addon.
             project_name (str): Name of project for which the settings are
                 received.
-            variant (str): Name of settings variant. By default, is used
-                'production'.
-            site_id (str): Name of site which is used for site overrides. Is
-                filled with connection 'site_id' attribute if not passed.
-            use_site (bool): To force disable option of using site overrides
-                set to 'False'. In that case won't be applied any site
-                overrides.
+            variant (Optional[str]): Name of settings variant. By default,
+                is used 'production'.
+            site_id (Optional[str]): Name of site which is used for site
+                overrides. Is filled with connection 'site_id' attribute
+                if not passed.
+            use_site (Optional[bool]): To force disable option of using site
+                overrides set to 'False'. In that case won't be applied
+                any site overrides.
 
         Returns:
             dict[str, Any]: Addon settings.
@@ -1951,15 +1963,17 @@ class ServerAPI(object):
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            project_name (str): Name of project for which the settings are
-                received. A studio settings values are received if is 'None'.
-            variant (str): Name of settings variant. By default, is used
-                'production'.
-            site_id (str): Name of site which is used for site overrides. Is
-                filled with connection 'site_id' attribute if not passed.
-            use_site (bool): To force disable option of using site overrides
-                set to 'False'. In that case won't be applied any site
-                overrides.
+            project_name (Optional[str]): Name of project for which the
+                settings are received. A studio settings values are received
+                if is 'None'.
+            variant (Optional[str]): Name of settings variant. By default,
+                is used 'production'.
+            site_id (Optional[str]): Name of site which is used for site
+                overrides. Is filled with connection 'site_id' attribute
+                if not passed.
+            use_site (Optional[bool]): To force disable option of using
+                site overrides set to 'False'. In that case won't be applied
+                any site overrides.
 
         Returns:
             dict[str, Any]: Addon settings.
@@ -1983,8 +1997,8 @@ class ServerAPI(object):
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            site_id (str): Name of site for which should be settings returned.
-                using 'site_id' attribute if not passed.
+            site_id (Optional[str]): Name of site for which should be settings
+                returned. using 'site_id' attribute if not passed.
 
         Returns:
             dict[str, Any]: Site settings.
@@ -2007,8 +2021,8 @@ class ServerAPI(object):
         """All addons settings in one bulk.
 
         Args:
-            variant (Literal[production, staging]): Variant of settings. By
-                default, is used 'production'.
+            variant (Optional[Literal[production, staging]]): Variant of
+                settings. By default, is used 'production'.
             only_values (Optional[bool]): Output will contain only settings
                 values without metadata about addons.
 
@@ -2105,9 +2119,9 @@ class ServerAPI(object):
                 By default, is used 'production'.
             site_id (Optional[str]): Id of site for which want to receive
                 site overrides.
-            use_site (bool): To force disable option of using site overrides
-                set to 'False'. In that case won't be applied any site
-                overrides.
+            use_site (Optional[bool]): To force disable option of using site
+                overrides set to 'False'. In that case won't be applied
+                any site overrides.
             only_values (Optional[bool]): Only settings values will be
                 returned. By default, is set to 'True'.
         """
@@ -2147,10 +2161,10 @@ class ServerAPI(object):
         User must be logged in.
 
         Args:
-            active (Union[bool, None]): Filter active/inactive projects. Both
+            active (Optional[bool]): Filter active/inactive projects. Both
                 are returned if 'None' is passed.
-            library (bool): Filter standard/library projects. Both are
-                returned if 'None' is passed.
+            library (Optional[bool]): Filter standard/library projects. Both
+                are returned if 'None' is passed.
 
         Returns:
             Generator[Dict[str, Any]]: Available projects.
@@ -2166,7 +2180,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project where entity is.
-            entity_type (Literal["folder", "task", "subset", "version"]): The
+            entity_type (Literal["folder", "task", "product", "version"]): The
                 entity type which should be received.
             entity_id (str): Id of entity.
 
@@ -2191,8 +2205,8 @@ class ServerAPI(object):
     def get_rest_task(self, project_name, task_id):
         return self.get_rest_entity_by_id(project_name, "task", task_id)
 
-    def get_rest_subset(self, project_name, subset_id):
-        return self.get_rest_entity_by_id(project_name, "subset", subset_id)
+    def get_rest_product(self, project_name, product_id):
+        return self.get_rest_entity_by_id(project_name, "product", product_id)
 
     def get_rest_version(self, project_name, version_id):
         return self.get_rest_entity_by_id(project_name, "version", version_id)
@@ -2208,10 +2222,10 @@ class ServerAPI(object):
         User must be logged in.
 
         Args:
-            active (Union[bool, None[): Filter active/inactive projects. Both
+            active (Optional[bool]): Filter active/inactive projects. Both
                 are returned if 'None' is passed.
-            library (bool): Filter standard/library projects. Both are
-                returned if 'None' is passed.
+            library (Optional[bool]): Filter standard/library projects. Both
+                are returned if 'None' is passed.
 
         Returns:
             List[str]: List of available project names.
@@ -2245,14 +2259,14 @@ class ServerAPI(object):
         """Get projects.
 
         Args:
-            active (Union[bool, None]): Filter active or inactive projects.
+            active (Optional[bool]): Filter active or inactive projects.
                 Filter is disabled when 'None' is passed.
-            library (Union[bool, None]): Filter library projects. Filter is
+            library (Optional[bool]): Filter library projects. Filter is
                 disabled when 'None' is passed.
-            fields (Union[Iterable[str], None]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for project.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Generator[Dict[str, Any]]: Queried projects.
@@ -2289,10 +2303,10 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project.
-            fields (Union[Iterable[str], None]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for project.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[Dict[str, Any], None]: Project entity data or None
@@ -2353,18 +2367,20 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project.
-            folder_ids (Iterable[str]): Folder ids to filter.
-            folder_paths (Iterable[str]): Folder paths used for filtering.
-            folder_names (Iterable[str]): Folder names used for filtering.
-            parent_ids (Iterable[str]): Ids of folder parents. Use 'None'
-                if folder is direct child of project.
-            active (Union[bool, None]): Filter active/inactive folders.
+            folder_ids (Optional[Iterable[str]]): Folder ids to filter.
+            folder_paths (Optional[Iterable[str]]): Folder paths used
+                for filtering.
+            folder_names (Optional[Iterable[str]]): Folder names used
+                for filtering.
+            parent_ids (Optional[Iterable[str]]): Ids of folder parents.
+                Use 'None' if folder is direct child of project.
+            active (Optional[bool]): Filter active/inactive folders.
                 Both are returned if is set to None.
-            fields (Union[Iterable[str], None]): Fields to be queried for
+            fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Generator[dict[str, Any]]: Queried folder entities.
@@ -2459,10 +2475,10 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             folder_id (str): Folder id.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Folder entity data or None if was not found.
@@ -2494,10 +2510,10 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             folder_path (str): Folder path.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Folder entity data or None if was not found.
@@ -2531,10 +2547,10 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             folder_name (str): Folder name.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Folder entity data or None if was not found.
@@ -2551,21 +2567,21 @@ class ServerAPI(object):
             return folder
         return None
 
-    def get_folder_ids_with_subsets(self, project_name, folder_ids=None):
-        """Find folders which have at least one subset.
+    def get_folder_ids_with_products(self, project_name, folder_ids=None):
+        """Find folders which have at least one product.
 
-        Folders that have at least one subset should be immutable, so they
+        Folders that have at least one product should be immutable, so they
         should not change path -> change of name or name of any parent
         is not possible.
 
         Args:
             project_name (str): Name of project.
-            folder_ids (Union[Iterable[str], None]): Limit folder ids filtering
+            folder_ids (Optional[Iterable[str]]): Limit folder ids filtering
                 to a set of folders. If set to None all folders on project are
                 checked.
 
         Returns:
-            set[str]: Folder ids that have at least one subset.
+            set[str]: Folder ids that have at least one product.
         """
 
         if folder_ids is not None:
@@ -2575,7 +2591,7 @@ class ServerAPI(object):
 
         query = folders_graphql_query({"id"})
         query.set_variable_value("projectName", project_name)
-        query.set_variable_value("folderHasSubsets", True)
+        query.set_variable_value("folderHasProducts", True)
         if folder_ids:
             query.set_variable_value("folderIds", list(folder_ids))
 
@@ -2606,13 +2622,13 @@ class ServerAPI(object):
             task_types (Itartable[str]): Task types used for filtering.
             folder_ids (Iterable[str]): Ids of task parents. Use 'None'
                 if folder is direct child of project.
-            active (Union[bool, None]): Filter active/inactive tasks.
+            active (Optional[bool]): Filter active/inactive tasks.
                 Both are returned if is set to None.
-            fields (Union[Iterable[str], None]): Fields to be queried for
+            fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Generator[dict[str, Any]]: Queried task entities.
@@ -2696,10 +2712,10 @@ class ServerAPI(object):
                 entities.
             folder_id (str): Folder id.
             task_name (str): Task name
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Task entity data or None if was not found.
@@ -2729,10 +2745,10 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             task_id (str): Task id.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Task entity data or None if was not found.
@@ -2748,32 +2764,32 @@ class ServerAPI(object):
             return task
         return None
 
-    def _filter_subset(
-        self, project_name, subset, active, own_attributes, use_rest
+    def _filter_product(
+        self, project_name, product, active, own_attributes, use_rest
     ):
-        if active is not None and subset["active"] is not active:
+        if active is not None and product["active"] is not active:
             return None
 
         if use_rest:
-            subset = self.get_rest_subset(project_name, subset["id"])
+            product = self.get_rest_product(project_name, product["id"])
 
         if own_attributes:
-            fill_own_attribs(subset)
+            fill_own_attribs(product)
 
-        return subset
+        return product
 
-    def get_subsets(
+    def get_products(
         self,
         project_name,
-        subset_ids=None,
-        subset_names=None,
+        product_ids=None,
+        product_names=None,
         folder_ids=None,
         names_by_folder_ids=None,
         active=True,
         fields=None,
         own_attributes=False
     ):
-        """Query subsets from server.
+        """Query products from server.
 
         Todos:
             Separate 'name_by_folder_ids' filtering to separated method. It
@@ -2781,36 +2797,37 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project.
-            subset_ids (Iterable[str]): Task ids to filter.
-            subset_names (Iterable[str]): Task names used for filtering.
-            folder_ids (Iterable[str]): Ids of task parents. Use 'None'
-                if folder is direct child of project.
-            names_by_folder_ids (dict[str, Iterable[str]]): Subset name
-                filtering by folder id.
-            active (Union[bool, None]): Filter active/inactive subsets.
+            product_ids (Optional[Iterable[str]]): Task ids to filter.
+            product_names (Optional[Iterable[str]]): Task names used for
+                filtering.
+            folder_ids (Optional[Iterable[str]]): Ids of task parents.
+                Use 'None' if folder is direct child of project.
+            names_by_folder_ids (Optional[dict[str, Iterable[str]]]): Product
+                name filtering by folder id.
+            active (Optional[bool]): Filter active/inactive products.
                 Both are returned if is set to None.
-            fields (Union[Iterable[str], None]): Fields to be queried for
+            fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[dict[str, Any]]: Queried subset entities.
+            Generator[dict[str, Any]]: Queried product entities.
         """
 
         if not project_name:
             return
 
-        if subset_ids is not None:
-            subset_ids = set(subset_ids)
-            if not subset_ids:
+        if product_ids is not None:
+            product_ids = set(product_ids)
+            if not product_ids:
                 return
 
-        filter_subset_names = None
-        if subset_names is not None:
-            filter_subset_names = set(subset_names)
-            if not filter_subset_names:
+        filter_product_names = None
+        if product_names is not None:
+            filter_product_names = set(product_names)
+            if not filter_product_names:
                 return
 
         filter_folder_ids = None
@@ -2819,25 +2836,25 @@ class ServerAPI(object):
             if not filter_folder_ids:
                 return
 
-        # This will disable 'folder_ids' and 'subset_names' filters
+        # This will disable 'folder_ids' and 'product_names' filters
         #   - maybe could be enhanced in future?
         if names_by_folder_ids is not None:
-            filter_subset_names = set()
+            filter_product_names = set()
             filter_folder_ids = set()
 
             for folder_id, names in names_by_folder_ids.items():
                 if folder_id and names:
                     filter_folder_ids.add(folder_id)
-                    filter_subset_names |= set(names)
+                    filter_product_names |= set(names)
 
-            if not filter_subset_names or not filter_folder_ids:
+            if not filter_product_names or not filter_folder_ids:
                 return
 
         # Convert fields and add minimum required fields
         if fields:
             fields = set(fields) | {"id"}
         else:
-            fields = self.get_default_fields_for_type("subset")
+            fields = self.get_default_fields_for_type("product")
 
         use_rest = False
         if "data" in fields:
@@ -2862,155 +2879,155 @@ class ServerAPI(object):
         if filter_folder_ids:
             filters["folderIds"] = list(filter_folder_ids)
 
-        if subset_ids:
-            filters["subsetIds"] = list(subset_ids)
+        if product_ids:
+            filters["productIds"] = list(product_ids)
 
-        if filter_subset_names:
-            filters["subsetNames"] = list(filter_subset_names)
+        if filter_product_names:
+            filters["productNames"] = list(filter_product_names)
 
-        query = subsets_graphql_query(fields)
+        query = products_graphql_query(fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
         parsed_data = query.query(self)
 
-        subsets = parsed_data.get("project", {}).get("subsets", [])
-        # Filter subsets by 'names_by_folder_ids'
+        products = parsed_data.get("project", {}).get("products", [])
+        # Filter products by 'names_by_folder_ids'
         if names_by_folder_ids:
-            subsets_by_folder_id = collections.defaultdict(list)
-            for subset in subsets:
-                filtered_subset = self._filter_subset(
-                    project_name, subset, active, own_attributes, use_rest
+            products_by_folder_id = collections.defaultdict(list)
+            for product in products:
+                filtered_product = self._filter_product(
+                    project_name, product, active, own_attributes, use_rest
                 )
-                if filtered_subset is not None:
-                    folder_id = filtered_subset["folderId"]
-                    subsets_by_folder_id[folder_id].append(filtered_subset)
+                if filtered_product is not None:
+                    folder_id = filtered_product["folderId"]
+                    products_by_folder_id[folder_id].append(filtered_product)
 
             for folder_id, names in names_by_folder_ids.items():
-                for folder_subset in subsets_by_folder_id[folder_id]:
-                    if folder_subset["name"] in names:
-                        yield folder_subset
+                for folder_product in products_by_folder_id[folder_id]:
+                    if folder_product["name"] in names:
+                        yield folder_product
 
         else:
-            for subset in subsets:
-                filtered_subset = self._filter_subset(
-                    project_name, subset, active, own_attributes, use_rest
+            for product in products:
+                filtered_product = self._filter_product(
+                    project_name, product, active, own_attributes, use_rest
                 )
-                if filtered_subset is not None:
-                    yield filtered_subset
+                if filtered_product is not None:
+                    yield filtered_product
 
 
-    def get_subset_by_id(
+    def get_product_by_id(
         self,
         project_name,
-        subset_id,
+        product_id,
         fields=None,
         own_attributes=False
     ):
-        """Query subset entity by id.
+        """Query product entity by id.
 
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            subset_id (str): Subset id.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            product_id (str): Product id.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict, None]: Subset entity data or None if was not found.
+            Union[dict, None]: Product entity data or None if was not found.
         """
 
-        subsets = self.get_subsets(
+        products = self.get_products(
             project_name,
-            subset_ids=[subset_id],
+            product_ids=[product_id],
             active=None,
             fields=fields,
             own_attributes=own_attributes
         )
-        for subset in subsets:
-            return subset
+        for product in products:
+            return product
         return None
 
-    def get_subset_by_name(
+    def get_product_by_name(
         self,
         project_name,
-        subset_name,
+        product_name,
         folder_id,
         fields=None,
         own_attributes=False
     ):
-        """Query subset entity by name and folder id.
+        """Query product entity by name and folder id.
 
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            subset_name (str): Subset name.
-            folder_id (str): Folder id (Folder is a parent of subsets).
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            product_name (str): Product name.
+            folder_id (str): Folder id (Folder is a parent of products).
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict, None]: Subset entity data or None if was not found.
+            Union[dict, None]: Product entity data or None if was not found.
         """
 
-        subsets = self.get_subsets(
+        products = self.get_products(
             project_name,
-            subset_names=[subset_name],
+            product_names=[product_name],
             folder_ids=[folder_id],
             active=None,
             fields=fields,
             own_attributes=own_attributes
         )
-        for subset in subsets:
-            return subset
+        for product in products:
+            return product
         return None
 
-    def get_subset_families(self, project_name, subset_ids=None):
-        """Families of subsets from a project.
+    def get_products_types(self, project_name, product_ids=None):
+        """Types of products from a project.
 
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            subset_ids (Union[None, Iterable[str]]): Limit filtering to set
-                of subset ids.
+            product_ids (Optional[Iterable[str]]): Limit filtering to set
+                of product ids.
 
         Returns:
-            set[str]: Families found on subsets.
+            set[str]: Product types found on product entities.
         """
 
-        if subset_ids is not None:
-            subsets = self.get_subsets(
+        if product_ids is not None:
+            products = self.get_products(
                 project_name,
-                subset_ids=subset_ids,
-                fields=["family"],
+                product_ids=product_ids,
+                fields=["productType"],
                 active=None,
             )
             return {
-                subset["family"]
-                for subset in subsets
+                product["productType"]
+                for product in products
             }
 
-        query = GraphQlQuery("SubsetFamilies")
+        query = GraphQlQuery("ProductTypes")
         project_name_var = query.add_variable(
             "projectName", "String!", project_name
         )
         project_query = query.add_field("project")
         project_query.set_filter("name", project_name_var)
-        project_query.add_field("subsetFamilies")
+        project_query.add_field("productTypes")
 
         parsed_data = query.query(self)
 
-        return set(parsed_data.get("project", {}).get("subsetFamilies", []))
+        return set(parsed_data.get("project", {}).get("productTypes", []))
 
     def get_versions(
         self,
         project_name,
         version_ids=None,
-        subset_ids=None,
+        product_ids=None,
         versions=None,
         hero=True,
         standard=True,
@@ -3023,23 +3040,24 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project where to look for versions.
-            version_ids (Iterable[str]): Version ids used for version
-                filtering.
-            subset_ids (Iterable[str]): Subset ids used for version filtering.
-            versions (Iterable[int]): Versions we're interested in.
-            hero (bool): Receive also hero versions when set to true.
-            standard (bool): Receive versions which are not hero when
+            version_ids (Optional[Iterable[str]]): Version ids used for
+                version filtering.
+            product_ids (Optional[Iterable[str]]): Product ids used for
+                version filtering.
+            versions (Optional[Iterable[int]]): Versions we're interested in.
+            hero (Optional[bool]): Receive also hero versions when set to true.
+            standard (Optional[bool]): Receive versions which are not hero when
                 set to true.
-            latest (bool): Return only latest version of standard versions.
-                This can be combined only with 'standard' attribute
+            latest (Optional[bool]): Return only latest version of standard
+                versions. This can be combined only with 'standard' attribute
                 set to True.
-            active (Union[bool, None]): Receive active/inactive entities.
+            active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Union[Iterable[str], None]): Fields to be queried
+            fields (Optional[Iterable[str]]): Fields to be queried
                 for version. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Generator[Dict[str, Any]]: Queried version entities.
@@ -3072,11 +3090,11 @@ class ServerAPI(object):
                 return
             filters["versionIds"] = list(version_ids)
 
-        if subset_ids is not None:
-            subset_ids = set(subset_ids)
-            if not subset_ids:
+        if product_ids is not None:
+            product_ids = set(product_ids)
+            if not product_ids:
                 return
-            filters["subsetIds"] = list(subset_ids)
+            filters["productIds"] = list(product_ids)
 
         # TODO versions can't be used as fitler at this moment!
         if versions is not None:
@@ -3152,10 +3170,10 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             version_id (str): Version id.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -3177,21 +3195,21 @@ class ServerAPI(object):
         self,
         project_name,
         version,
-        subset_id,
+        product_id,
         fields=None,
         own_attributes=False
     ):
-        """Query version entity by version and subset id.
+        """Query version entity by version and product id.
 
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
             version (int): Version of version entity.
-            subset_id (str): Subset id. Subset is a parent of version.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            product_id (str): Product id. Product is a parent of version.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -3199,7 +3217,7 @@ class ServerAPI(object):
 
         versions = self.get_versions(
             project_name,
-            subset_ids=[subset_id],
+            product_ids=[product_id],
             versions=[version],
             active=None,
             fields=fields,
@@ -3222,10 +3240,10 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             version_id (int): Hero version id.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -3241,25 +3259,25 @@ class ServerAPI(object):
             return version
         return None
 
-    def get_hero_version_by_subset_id(
+    def get_hero_version_by_product_id(
         self,
         project_name,
-        subset_id,
+        product_id,
         fields=None,
         own_attributes=False
     ):
-        """Query hero version entity by subset id.
+        """Query hero version entity by product id.
 
-        Only one hero version is available on a subset.
+        Only one hero version is available on a product.
 
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            subset_id (int): Subset id.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            product_id (int): Product id.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -3267,7 +3285,7 @@ class ServerAPI(object):
 
         versions = self.get_hero_versions(
             project_name,
-            subset_ids=[subset_id],
+            product_ids=[product_id],
             fields=fields,
             own_attributes=own_attributes
         )
@@ -3278,7 +3296,7 @@ class ServerAPI(object):
     def get_hero_versions(
         self,
         project_name,
-        subset_ids=None,
+        product_ids=None,
         version_ids=None,
         active=True,
         fields=None,
@@ -3286,19 +3304,19 @@ class ServerAPI(object):
     ):
         """Query hero versions by multiple filters.
 
-        Only one hero version is available on a subset.
+        Only one hero version is available on a product.
 
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            subset_ids (int): Subset ids.
+            product_ids (int): Product ids.
             version_ids (int): Version ids.
-            active (Union[bool, None]): Receive active/inactive entities.
+            active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Union[Iterable[str], None]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -3307,7 +3325,7 @@ class ServerAPI(object):
         return self.get_versions(
             project_name,
             version_ids=version_ids,
-            subset_ids=subset_ids,
+            product_ids=product_ids,
             hero=True,
             standard=False,
             active=active,
@@ -3318,30 +3336,30 @@ class ServerAPI(object):
     def get_last_versions(
         self,
         project_name,
-        subset_ids,
+        product_ids,
         active=True,
         fields=None,
         own_attributes=False
     ):
-        """Query last version entities by subset ids.
+        """Query last version entities by product ids.
 
         Args:
             project_name (str): Project where to look for representation.
-            subset_ids (Iterable[str]): Subset ids.
-            active (Union[bool, None]): Receive active/inactive entities.
+            product_ids (Iterable[str]): Product ids.
+            active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Union[Iterable[str], None]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
-            dict[str, dict[str, Any]]: Last versions by subset id.
+            dict[str, dict[str, Any]]: Last versions by product id.
         """
 
         versions = self.get_versions(
             project_name,
-            subset_ids=subset_ids,
+            product_ids=product_ids,
             latest=True,
             active=active,
             fields=fields,
@@ -3352,25 +3370,25 @@ class ServerAPI(object):
             for version in versions
         }
 
-    def get_last_version_by_subset_id(
+    def get_last_version_by_product_id(
         self,
         project_name,
-        subset_id,
+        product_id,
         active=True,
         fields=None,
         own_attributes=False
     ):
-        """Query last version entity by subset id.
+        """Query last version entity by product id.
 
         Args:
             project_name (str): Project where to look for representation.
-            subset_id (str): Subset id.
-            active (Union[bool, None]): Receive active/inactive entities.
+            product_id (str): Product id.
+            active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Union[Iterable[str], None]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict[str, Any], None]: Queried version entity or None.
@@ -3378,7 +3396,7 @@ class ServerAPI(object):
 
         versions = self.get_versions(
             project_name,
-            subset_ids=[subset_id],
+            product_ids=[product_id],
             latest=True,
             active=active,
             fields=fields,
@@ -3388,27 +3406,27 @@ class ServerAPI(object):
             return version
         return None
 
-    def get_last_version_by_subset_name(
+    def get_last_version_by_product_name(
         self,
         project_name,
-        subset_name,
+        product_name,
         folder_id,
         active=True,
         fields=None,
         own_attributes=False
     ):
-        """Query last version entity by subset name and folder id.
+        """Query last version entity by product name and folder id.
 
         Args:
             project_name (str): Project where to look for representation.
-            subset_name (str): Subset name.
+            product_name (str): Product name.
             folder_id (str): Folder id.
-            active (Union[bool, None]): Receive active/inactive entities.
+            active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Union[Iterable[str], None]): fields to be queried
+            fields (Optional[Iterable[str]): fields to be queried
                 for representations.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict[str, Any], None]: Queried version entity or None.
@@ -3417,21 +3435,21 @@ class ServerAPI(object):
         if not folder_id:
             return None
 
-        subset = self.get_subset_by_name(
-            project_name, subset_name, folder_id, fields=["_id"]
+        product = self.get_product_by_name(
+            project_name, product_name, folder_id, fields=["_id"]
         )
-        if not subset:
+        if not product:
             return None
-        return self.get_last_version_by_subset_id(
+        return self.get_last_version_by_product_id(
             project_name,
-            subset["id"],
+            product["id"],
             active=active,
             fields=fields,
             own_attributes=own_attributes
         )
 
     def version_is_latest(self, project_name, version_id):
-        """Is version latest from a subset.
+        """Is version latest from a product.
 
         Args:
             project_name (str): Project where to look for representation.
@@ -3452,13 +3470,13 @@ class ServerAPI(object):
         project_query.set_filter("name", project_name_var)
         version_query = project_query.add_field("version")
         version_query.set_filter("id", version_id_var)
-        subset_query = version_query.add_field("subset")
-        latest_version_query = subset_query.add_field("latestVersion")
+        product_query = version_query.add_field("product")
+        latest_version_query = product_query.add_field("latestVersion")
         latest_version_query.add_field("id")
 
         parsed_data = query.query(self)
         latest_version = (
-            parsed_data["project"]["version"]["subset"]["latestVersion"]
+            parsed_data["project"]["version"]["product"]["latestVersion"]
         )
         return latest_version["id"] == version_id
 
@@ -3481,22 +3499,23 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project where to look for versions.
-            representation_ids (Iterable[str]): Representation ids used for
-                representation filtering.
-            representation_names (Iterable[str]): Representation names used for
-                representation filtering.
-            version_ids (Iterable[str]): Version ids used for
+            representation_ids (Optional[Iterable[str]]): Representation ids
+                used for representation filtering.
+            representation_names (Optional[Iterable[str]]): Representation
+                names used for representation filtering.
+            version_ids (Optional[Iterable[str]]): Version ids used for
                 representation filtering. Versions are parents of
                     representations.
-            names_by_version_ids (bool): Find representations by names and
-                version ids. This filter discard all other filters.
-            active (Union[bool, None]): Receive active/inactive entities.
+            names_by_version_ids (Optional[bool]): Find representations
+                by names and version ids. This filter discard all
+                other filters.
+            active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Union[Iterable[str], None]): Fields to be queried for
+            fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Generator[Dict[str, Any]]: Queried representation entities.
@@ -3594,10 +3613,10 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where to look for representation.
             representation_id (str): Id of representation.
-            fields (Union[Iterable[str], None]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict[str, Any], None]: Queried representation entity or None.
@@ -3628,10 +3647,10 @@ class ServerAPI(object):
             project_name (str): Project where to look for representation.
             representation_name (str): Representation name.
             version_id (str): Version id.
-            fields (Union[Iterable[str], None]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict[str, Any], None]: Queried representation entity or None.
@@ -3674,11 +3693,11 @@ class ServerAPI(object):
         }
 
         version_fields = self.get_default_fields_for_type("version")
-        subset_fields = self.get_default_fields_for_type("subset")
+        product_fields = self.get_default_fields_for_type("product")
         folder_fields = self.get_default_fields_for_type("folder")
 
         query = representations_parents_qraphql_query(
-            version_fields, subset_fields, folder_fields
+            version_fields, product_fields, folder_fields
         )
         query.set_variable_value("projectName", project_name)
         query.set_variable_value("representationIds", list(repre_ids))
@@ -3687,10 +3706,10 @@ class ServerAPI(object):
         for repre in parsed_data["project"]["representations"]:
             repre_id = repre["id"]
             version = repre.pop("version")
-            subset = version.pop("subset")
-            folder = subset.pop("folder")
+            product = version.pop("product")
+            folder = product.pop("folder")
             output[repre_id] = RepresentationParents(
-                version, subset, folder, project
+                version, product, folder, project
             )
 
         return output
@@ -3726,9 +3745,10 @@ class ServerAPI(object):
         """Find representation ids which match passed context filters.
 
         Each representation has context integrated on representation entity in
-        database. The context may contain project, folder, task name or subset,
-        family and many more. This implementation gives option to quickly
-        filter representation based on representation data in database.
+        database. The context may contain project, folder, task name or
+        product name, product type and many more. This implementation gives
+        option to quickly filter representation based on representation data
+        in database.
 
         Context filters have defined structure. To define filter of nested
             subfield use dot '.' as delimiter (For example 'task.name').
@@ -3737,10 +3757,11 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where to look for representations.
             context_filters (dict[str, list[str]]): Filters of context fields.
-            representation_names (Iterable[str]): Representation names, can be
-                used as additional filter for representations by their names.
-            version_ids (Iterable[str]): Version ids, can be used as additional
-                filter for representations by their parent ids.
+            representation_names (Optional[Iterable[str]]): Representation
+                names, can be used as additional filter for representations
+                by their names.
+            version_ids (Optional[Iterable[str]]): Version ids, can be used
+                as additional filter for representations by their parent ids.
 
         Returns:
             list[str]: Representation ids that match passed filters.
@@ -3752,7 +3773,7 @@ class ServerAPI(object):
             >>> project_name = "testProject"
             >>> filters = {
             ...     "task.name": ["[aA]nimation"],
-            ...     "subset": [".*[Mm]ain"]
+            ...     "product": [".*[Mm]ain"]
             ... }
             >>> repre_ids = get_repre_ids_by_context_filters(
             ...     project_name, filters)
@@ -3818,11 +3839,11 @@ class ServerAPI(object):
             workfile_ids (Optional[Iterable[str]]): Workfile ids.
             task_ids (Optional[Iterable[str]]): Task ids.
             paths (Optional[Iterable[str]]): Rootless workfiles paths.
-            fields (Union[Iterable[str], None]): Fields to be queried for
+            fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Generator[dict[str, Any]]: Queried workfile info entites.
@@ -3873,11 +3894,11 @@ class ServerAPI(object):
             project_name (str): Project under which the entity is located.
             task_id (str): Task id.
             path (str): Rootless workfile path.
-            fields (Union[Iterable[str], None]): Fields to be queried for
+            fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict[str, Any], None]: Workfile info entity or None.
@@ -3904,11 +3925,11 @@ class ServerAPI(object):
         Args:
             project_name (str): Project under which the entity is located.
             workfile_id (str): Workfile info id.
-            fields (Union[Iterable[str], None]): Fields to be queried for
+            fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (bool): Attribute values that are not explicitly set
-                on entity will have 'None' value.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
 
         Returns:
             Union[dict[str, Any], None]: Workfile info entity or None.
@@ -3951,8 +3972,8 @@ class ServerAPI(object):
             project_name (str): Project under which the entity is located.
             entity_type (str): Entity type which passed entity id represents.
             entity_id (str): Entity id for which thumbnail should be returned.
-            thumbnail_id (str): Prepared thumbnail id from entity. Used only
-                to check if thumbnail was already cached.
+            thumbnail_id (Optional[str]): Prepared thumbnail id from entity.
+                Used only to check if thumbnail was already cached.
 
         Returns:
             Union[str, None]: Path to downlaoded thumbnail or none if entity
@@ -4005,8 +4026,8 @@ class ServerAPI(object):
         Args:
             project_name (str): Project under which the entity is located.
             folder_id (str): Folder id for which thumbnail should be returned.
-            thumbnail_id (str): Prepared thumbnail id from entity. Used only
-                to check if thumbnail was already cached.
+            thumbnail_id (Optional[str]): Prepared thumbnail id from entity.
+                Used only to check if thumbnail was already cached.
 
         Returns:
             Union[str, None]: Path to downlaoded thumbnail or none if entity
@@ -4026,8 +4047,8 @@ class ServerAPI(object):
             project_name (str): Project under which the entity is located.
             version_id (str): Version id for which thumbnail should be
                 returned.
-            thumbnail_id (str): Prepared thumbnail id from entity. Used only
-                to check if thumbnail was already cached.
+            thumbnail_id (Optional[str]): Prepared thumbnail id from entity.
+                Used only to check if thumbnail was already cached.
 
         Returns:
             Union[str, None]: Path to downlaoded thumbnail or none if entity
@@ -4047,8 +4068,8 @@ class ServerAPI(object):
             project_name (str): Project under which the entity is located.
             workfile_id (str): Worfile id for which thumbnail should be
                 returned.
-            thumbnail_id (str): Prepared thumbnail id from entity. Used only
-                to check if thumbnail was already cached.
+            thumbnail_id (Optional[str]): Prepared thumbnail id from entity.
+                Used only to check if thumbnail was already cached.
 
         Returns:
             Union[str, None]: Path to downlaoded thumbnail or none if entity
@@ -4089,7 +4110,7 @@ class ServerAPI(object):
             project_name (str): Project where the thumbnail will be created
                 and can be used.
             src_filepath (str): Filepath to thumbnail which should be uploaded.
-            thumbnail_id (str): Prepared if of thumbnail.
+            thumbnail_id (Optional[str]): Prepared if of thumbnail.
 
         Returns:
             str: Created thumbnail id.
@@ -4172,9 +4193,9 @@ class ServerAPI(object):
         Args:
             project_name (str): New project name. Should be unique.
             project_code (str): Project's code should be unique too.
-            library_project (bool): Project is library project.
-            preset_name (str): Name of anatomy preset. Default is used if not
-                passed.
+            library_project (Optional[bool]): Project is library project.
+            preset_name (Optional[str]): Name of anatomy preset. Default is
+                used if not passed.
 
         Raises:
             ValueError: When project name already exists.
@@ -4498,12 +4519,12 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            entity_type (Literal["folder", "task", "subset",
+            entity_type (Literal["folder", "task", "product",
                 "version", "representations"]): Entity type.
-            entity_ids (Union[Iterable[str], None]): Ids of entities for which
+            entity_ids (Optional[Iterable[str]]): Ids of entities for which
                 links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4518,10 +4539,10 @@ class ServerAPI(object):
             query_func = tasks_graphql_query
             id_filter_key = "taskIds"
             project_sub_key = "tasks"
-        elif entity_type == "subset":
-            query_func = subsets_graphql_query
-            id_filter_key = "subsetIds"
-            project_sub_key = "subsets"
+        elif entity_type == "product":
+            query_func = products_graphql_query
+            id_filter_key = "productIds"
+            project_sub_key = "products"
         elif entity_type == "version":
             query_func = versions_graphql_query
             id_filter_key = "versionIds"
@@ -4534,7 +4555,7 @@ class ServerAPI(object):
             raise ValueError("Unknown type \"{}\". Expected {}".format(
                 entity_type,
                 ", ".join(
-                    ("folder", "task", "subset", "version", "representation")
+                    ("folder", "task", "product", "version", "representation")
                 )
             ))
 
@@ -4572,10 +4593,10 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            folder_ids (Union[Iterable[str], None]): Ids of folders for which
+            folder_ids (Optional[Iterable[str]]): Ids of folders for which
                 links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4598,8 +4619,8 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where links are.
             folder_id (str): Id of folder for which links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4621,10 +4642,10 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            task_ids (Union[Iterable[str], None]): Ids of tasks for which
+            task_ids (Optional[Iterable[str]]): Ids of tasks for which
                 links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4647,8 +4668,8 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where links are.
             task_id (str): Id of task for which links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4659,54 +4680,54 @@ class ServerAPI(object):
             project_name, [task_id], link_types, link_direction
         )[task_id]
 
-    def get_subsets_links(
+    def get_products_links(
         self,
         project_name,
-        subset_ids=None,
+        product_ids=None,
         link_types=None,
         link_direction=None
     ):
-        """Query subsets links from server.
+        """Query products links from server.
 
         Args:
             project_name (str): Project where links are.
-            subset_ids (Union[Iterable[str], None]): Ids of subsets for which
+            product_ids (Optional[Iterable[str]]): Ids of products for which
                 links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
-            dict[str, list[dict[str, Any]]]: Link info by subset ids.
+            dict[str, list[dict[str, Any]]]: Link info by product ids.
         """
 
         return self.get_entities_links(
-            project_name, "subset", subset_ids, link_types, link_direction
+            project_name, "product", product_ids, link_types, link_direction
         )
 
-    def get_subset_links(
+    def get_product_links(
         self,
         project_name,
-        subset_id,
+        product_id,
         link_types=None,
         link_direction=None
     ):
-        """Query subset links from server.
+        """Query product links from server.
 
         Args:
             project_name (str): Project where links are.
-            subset_id (str): Id of subset for which links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            product_id (str): Id of product for which links should be received.
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
-            list[dict[str, Any]]: Link info of subset.
+            list[dict[str, Any]]: Link info of product.
         """
 
-        return self.get_subsets_links(
-            project_name, [subset_id], link_types, link_direction
-        )[subset_id]
+        return self.get_products_links(
+            project_name, [product_id], link_types, link_direction
+        )[product_id]
 
     def get_versions_links(
         self,
@@ -4719,10 +4740,10 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            version_ids (Union[Iterable[str], None]): Ids of versions for which
+            version_ids (Optional[Iterable[str]]): Ids of versions for which
                 links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4745,8 +4766,8 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where links are.
             version_id (str): Id of version for which links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4768,10 +4789,10 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            representation_ids (Union[Iterable[str], None]): Ids of
+            representation_ids (Optional[Iterable[str]]): Ids of
                 representations for which links should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4799,8 +4820,8 @@ class ServerAPI(object):
             project_name (str): Project where links are.
             representation_id (str): Id of representation for which links
                 should be received.
-            link_types (Union[Iterable[str], None]): Link type filters.
-            link_direction (Union[Literal["in", "out"], None]): Link direction
+            link_types (Optional[Iterable[str]]): Link type filters.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
 
         Returns:
@@ -4829,11 +4850,11 @@ class ServerAPI(object):
             project_name (str): On which project should be operations
                 processed.
             operations (list[dict[str, Any]]): Operations to be processed.
-            can_fail (bool): Server will try to process all operations even if
-                one of them fails.
-            raise_on_fail (bool): Raise exception if an operation fails.
-                You can handle failed operations on your own when set to
-                'False'.
+            can_fail (Optional[bool]): Server will try to process all
+                operations even if one of them fails.
+            raise_on_fail (Optional[bool]): Raise exception if an operation
+                fails. You can handle failed operations on your own
+                when set to 'False'.
 
         Raises:
             ValueError: Operations can't be converted to json string.

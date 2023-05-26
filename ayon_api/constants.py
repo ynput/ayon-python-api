@@ -36,13 +36,13 @@ DEFAULT_TASK_FIELDS = {
     "assignees",
 }
 
-# --- Subsets ---
-DEFAULT_SUBSET_FIELDS = {
+# --- Products ---
+DEFAULT_PRODUCT_FIELDS = {
     "id",
     "name",
     "folderId",
     "active",
-    "family",
+    "productType",
 }
 
 # --- Versions ---
@@ -50,7 +50,7 @@ DEFAULT_VERSION_FIELDS = {
     "id",
     "name",
     "version",
-    "subsetId",
+    "productId",
     "taskId",
     "active",
     "author",
