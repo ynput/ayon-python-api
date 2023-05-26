@@ -2986,8 +2986,12 @@ class ServerAPI(object):
             return product
         return None
 
-    def get_products_types(self, project_name, product_ids=None):
-        """Types of products from a project.
+    def get_project_product_type_names(self, project_name, product_ids=None):
+        """Types of products available on project.
+
+        Warnings:
+            This function will be probably removed or replaced. There will
+                be product types available for whole server.
 
         Args:
             project_name (str): Name of project where to look for queried

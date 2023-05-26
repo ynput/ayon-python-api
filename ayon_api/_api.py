@@ -676,9 +676,9 @@ def get_product_by_name(*args, **kwargs):
     return con.get_product_by_name(*args, **kwargs)
 
 
-def get_products_types(*args, **kwargs):
+def get_project_product_type_names(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_products_types(*args, **kwargs)
+    return con.get_project_product_type_names(*args, **kwargs)
 
 
 def get_versions(*args, **kwargs):
