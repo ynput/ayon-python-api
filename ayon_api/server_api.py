@@ -17,6 +17,7 @@ import requests
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
+    DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
     DEFAULT_TASK_FIELDS,
@@ -32,6 +33,8 @@ from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
     project_graphql_query,
     projects_graphql_query,
+    project_product_types_query,
+    product_types_query,
     folders_graphql_query,
     tasks_graphql_query,
     products_graphql_query,
@@ -1461,6 +1464,9 @@ class ServerAPI(object):
                     for attr in attributes
                 }
             )
+
+        if entity_type == "productType":
+            return DEFAULT_PRODUCT_TYPE_FIELDS
 
         raise ValueError("Unknown entity type \"{}\"".format(entity_type))
 
@@ -2987,24 +2993,70 @@ class ServerAPI(object):
             return product
         return None
 
-    def get_project_product_type_names(self, project_name, product_ids=None):
-        """Types of products available on project.
+    def get_product_types(self, fields=None):
+        """Types of products.
 
-        Warnings:
-            This function will be probably removed or replaced. There will
-                be product types available for whole server.
+        This is server wide information. Product types have 'name', 'icon' and
+            'color'.
 
         Args:
-            project_name (str): Name of project where to look for queried
-                entities.
-            product_ids (Optional[Iterable[str]]): Limit filtering to set
-                of product ids.
+            fields (Optional[Iterable[str]]): Product types fields to query.
 
         Returns:
-            set[str]: Product types found on product entities.
+            list[dict[str, Any]]: Product types information.
         """
 
-        if product_ids is not None:
+        if not fields:
+            fields = self.get_default_fields_for_type("productType")
+
+        query = product_types_query(fields)
+
+        parsed_data = query.query(self)
+
+        return parsed_data.get("productTypes", [])
+
+    def get_project_product_types(self, project_name, fields=None):
+        """Types of products available on a project.
+
+        Filter only product types available on project.
+
+        Args:
+            project_name (str): Name of project where to look for
+                product types.
+            fields (Optional[Iterable[str]]): Product types fields to query.
+
+        Returns:
+            list[dict[str, Any]]: Product types information.
+        """
+
+        if not fields:
+            fields = self.get_default_fields_for_type("productType")
+
+        query = project_product_types_query(fields)
+        query.set_variable_value("projectName", project_name)
+
+        parsed_data = query.query(self)
+
+        return parsed_data.get("project", {}).get("productTypes", [])
+
+    def get_product_type_names(self, project_name=None, product_ids=None):
+        """Product type names.
+
+        Warnings:
+            This function will be probably removed. Matters if 'products_id'
+                filter has real use-case.
+
+        Args:
+            project_name (Optional[str]): Name of project where to look for
+                queried entities.
+            product_ids (Optional[Iterable[str]]): Product ids filter. Can be
+                used only with project name.
+
+        Returns:
+            set[str]: Product type names.
+        """
+
+        if project_name and product_ids:
             products = self.get_products(
                 project_name,
                 product_ids=product_ids,
@@ -3016,17 +3068,12 @@ class ServerAPI(object):
                 for product in products
             }
 
-        query = GraphQlQuery("ProductTypes")
-        project_name_var = query.add_variable(
-            "projectName", "String!", project_name
-        )
-        project_query = query.add_field("project")
-        project_query.set_filter("name", project_name_var)
-        project_query.add_field("productTypes")
-
-        parsed_data = query.query(self)
-
-        return set(parsed_data.get("project", {}).get("productTypes", []))
+        return {
+            product_info["name"]
+            for product_info in self.get_product_types(
+                project_name, fields=["name"]
+            )
+        }
 
     def get_versions(
         self,

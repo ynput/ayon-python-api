@@ -103,7 +103,9 @@ from ._api import (
     get_product_by_id,
     get_product_by_name,
     get_products,
-    get_project_product_type_names,
+    get_product_types,
+    get_project_product_types,
+    get_product_type_names,
 
     get_version_by_id,
     get_version_by_name,
@@ -255,7 +257,9 @@ __all__ = (
     "get_product_by_id",
     "get_product_by_name",
     "get_products",
-    "get_project_product_type_names",
+    "get_product_types",
+    "get_project_product_types",
+    "get_product_type_names",
 
     "get_version_by_id",
     "get_version_by_name",

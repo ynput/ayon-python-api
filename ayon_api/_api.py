@@ -661,6 +661,21 @@ def get_folder_ids_with_products(*args, **kwargs):
     return con.get_folder_ids_with_products(*args, **kwargs)
 
 
+def get_product_types(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_product_types(*args, **kwargs)
+
+
+def get_project_product_types(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_project_product_types(*args, **kwargs)
+
+
+def get_product_type_names(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_product_type_names(*args, **kwargs)
+
+
 def get_products(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_products(*args, **kwargs)
@@ -674,11 +689,6 @@ def get_product_by_id(*args, **kwargs):
 def get_product_by_name(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_product_by_name(*args, **kwargs)
-
-
-def get_project_product_type_names(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_project_product_type_names(*args, **kwargs)
 
 
 def get_versions(*args, **kwargs):

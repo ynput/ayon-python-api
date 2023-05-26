@@ -4,6 +4,13 @@ SERVER_API_ENV_KEY = "AYON_API_KEY"
 # Backwards compatibility
 SERVER_TOKEN_ENV_KEY = SERVER_API_ENV_KEY
 
+# --- Product types ---
+DEFAULT_PRODUCT_TYPE_FIELDS{
+    "name",
+    "icon",
+    "color",
+}
+
 # --- Project ---
 DEFAULT_PROJECT_FIELDS = {
     "active",

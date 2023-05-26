@@ -123,6 +123,51 @@ def projects_graphql_query(fields):
     return query
 
 
+def product_types_query(fields):
+    query = GraphQlQuery("ProductTypes")
+    product_types_field = query.add_field("productTypes")
+
+    nested_fields = fields_to_dict(fields)
+
+    query_queue = collections.deque()
+    for key, value in nested_fields.items():
+        query_queue.append((key, value, product_types_field))
+
+    while query_queue:
+        item = query_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            query_queue.append((k, v, field))
+    return query
+
+def project_product_types_query(fields):
+    query = GraphQlQuery("ProjectProductTypes")
+    project_query = query.add_field("project")
+    project_name_var = query.add_variable("projectName", "String!")
+    project_query.set_filter("name", project_name_var)
+    product_types_field = project_query.add_field("productTypes")
+    nested_fields = fields_to_dict(fields)
+
+    query_queue = collections.deque()
+    for key, value in nested_fields.items():
+        query_queue.append((key, value, product_types_field))
+
+    while query_queue:
+        item = query_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            query_queue.append((k, v, field))
+    return query
+
+
 def folders_graphql_query(fields):
     query = GraphQlQuery("FoldersQuery")
     project_name_var = query.add_variable("projectName", "String!")
