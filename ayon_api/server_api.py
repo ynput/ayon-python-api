@@ -2237,7 +2237,7 @@ class ServerAPI(object):
             query_keys["active"] = "true" if active else "false"
 
         if library is not None:
-            query_keys["library"] = "true" if active else "false"
+            query_keys["library"] = "true" if library else "false"
         query = ""
         if query_keys:
             query = "?{}".format(",".join([
