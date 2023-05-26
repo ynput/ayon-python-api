@@ -952,17 +952,18 @@ class ServerAPI(object):
         summary=None,
         payload=None
     ):
-        kwargs = {}
-        for key, value in (
-            ("sender", sender),
-            ("projectName", project_name),
-            ("status", status),
-            ("description", description),
-            ("summary", summary),
-            ("payload", payload),
-        ):
-            if value is not None:
-                kwargs[key] = value
+        kwargs = {
+            key: value
+            for key, value in (
+                ("sender", sender),
+                ("projectName", project_name),
+                ("status", status),
+                ("description", description),
+                ("summary", summary),
+                ("payload", payload),
+            )
+            if value is not None
+        }
         response = self.patch(
             "events/{}".format(event_id),
             **kwargs
