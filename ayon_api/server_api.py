@@ -1625,7 +1625,7 @@ class ServerAPI(object):
             checksum=checksum,
             **kwargs
         )
-        if response.status not in (200, 201):
+        if response.status not in (200, 201, 204):
             raise ServerError("Failed to create/update dependency")
         return response.data
 
