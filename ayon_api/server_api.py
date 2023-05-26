@@ -317,7 +317,7 @@ class ServerAPI(object):
         base_url = base_url.rstrip("/")
         self._base_url = base_url
         self._rest_url = "{}/api".format(base_url)
-        self._graphl_url = "{}/graphql".format(base_url)
+        self._graphql_url = "{}/graphql".format(base_url)
         self._log = None
         self._access_token = token
         self._site_id = site_id
@@ -991,7 +991,7 @@ class ServerAPI(object):
             hash (Optional[str]): Event hash.
             project_name (Optional[str]): Project name.
             username (Optional[str]): Username which triggered event.
-            dependencies (Optional[list[str]]): List of event id deprendencies.
+            dependencies (Optional[list[str]]): List of event id dependencies.
             description (Optional[str]): Description of event.
             summary (Optional[dict[str, Any]]): Summary of event that can be used
                 for simple filtering on listeners.
@@ -1055,14 +1055,14 @@ class ServerAPI(object):
         Use-case:
             - Service 1 is creating events with topic 'my.leech'
             - Service 2 process 'my.leech' and uses target topic 'my.process'
-                - this service can run on 1..n machines
+                - this service can run on 1-n machines
                 - all events must be processed in a sequence by their creation
                     time and only one event can be processed at a time
                 - in this case 'sequential' should be set to 'True' so only
                     one machine is actually processing events, but if one goes
                     down there are other that can take place
             - Service 3 process 'my.leech' and uses target topic 'my.discover'
-                - this service can run on 1..n machines
+                - this service can run on 1-n machines
                 - order of events is not important
                 - 'sequential' should be 'False'
 
@@ -1249,7 +1249,7 @@ class ServerAPI(object):
         data = {"query": query, "variables": variables or {}}
         response = self._do_rest_request(
             RequestTypes.post,
-            self._graphl_url,
+            self._graphql_url,
             json=data
         )
         response.raise_for_status()
@@ -1278,7 +1278,7 @@ class ServerAPI(object):
         """Get components schema.
 
         Name of components does not match entity type names e.g. 'project' is
-        under 'ProjectModel'. We should find out some mapping. Also there
+        under 'ProjectModel'. We should find out some mapping. Also, there
         are properties which don't have information about reference to object
         e.g. 'config' has just object definition without reference schema.
 
@@ -1593,7 +1593,7 @@ class ServerAPI(object):
         python_modules=None,
         sources=None
     ):
-        """Update or create dependency package infor by it's identifiers.
+        """Update or create dependency package for identifiers.
 
         The endpoint can be used to create or update dependency package.
 
@@ -1602,7 +1602,7 @@ class ServerAPI(object):
             platform_name (Literal["windows", "linux", "darwin"]): Platform for
                 which is dependency package targeted.
             size (int): Size of dependency package in bytes.
-            checksum (str): Checksum of archive file where dependecies are.
+            checksum (str): Checksum of archive file where dependencies are.
             checksum_algorithm (Optional[str]): Algorithm used to calculate
                 checksum. By default, is used 'md5' (defined by server).
             supported_addons (Optional[Dict[str, str]]): Name of addons for
@@ -2359,7 +2359,7 @@ class ServerAPI(object):
         """Query folders from server.
 
         Todos:
-            Folder name won't be unique identifier so we should add folder path
+            Folder name won't be unique identifier, so we should add folder path
                 filtering.
 
         Notes:
@@ -2619,7 +2619,7 @@ class ServerAPI(object):
             project_name (str): Name of project.
             task_ids (Iterable[str]): Task ids to filter.
             task_names (Iterable[str]): Task names used for filtering.
-            task_types (Itartable[str]): Task types used for filtering.
+            task_types (Iterable[str]): Task types used for filtering.
             folder_ids (Iterable[str]): Ids of task parents. Use 'None'
                 if folder is direct child of project.
             active (Optional[bool]): Filter active/inactive tasks.
@@ -3100,7 +3100,7 @@ class ServerAPI(object):
                 return
             filters["productIds"] = list(product_ids)
 
-        # TODO versions can't be used as fitler at this moment!
+        # TODO versions can't be used as filter at this moment!
         if versions is not None:
             versions = set(versions)
             if not versions:
@@ -3313,8 +3313,8 @@ class ServerAPI(object):
         Args:
             project_name (str): Name of project where to look for queried
                 entities.
-            product_ids (int): Product ids.
-            version_ids (int): Version ids.
+            product_ids (Optional[Iterable[str]]): Product ids.
+            version_ids (Optional[Iterable[str]]): Version ids.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): Fields that should be returned.
@@ -3969,8 +3969,8 @@ class ServerAPI(object):
                 methods 'get_folder_thumbnail', 'get_version_thumbnail' or
                 'get_workfile_thumbnail'.
             We do recommend pass thumbnail id if you have access to it. Each
-                entity that allows thumbnails has 'thumbnailId' field so it can
-                be queried.
+                entity that allows thumbnails has 'thumbnailId' field, so it
+                can be queried.
 
         Args:
             project_name (str): Project under which the entity is located.
@@ -3980,7 +3980,7 @@ class ServerAPI(object):
                 Used only to check if thumbnail was already cached.
 
         Returns:
-            Union[str, None]: Path to downlaoded thumbnail or none if entity
+            Union[str, None]: Path to downloaded thumbnail or none if entity
                 does not have any (or if user does not have permissions).
         """
 
@@ -4014,7 +4014,7 @@ class ServerAPI(object):
         if thumbnail_id is None:
             return None
 
-        # Cache thumbnail and return it's path
+        # Cache thumbnail and return path
         return self._thumbnail_cache.store_thumbnail(
             project_name,
             thumbnail_id,
@@ -4034,7 +4034,7 @@ class ServerAPI(object):
                 Used only to check if thumbnail was already cached.
 
         Returns:
-            Union[str, None]: Path to downlaoded thumbnail or none if entity
+            Union[str, None]: Path to downloaded thumbnail or none if entity
                 does not have any (or if user does not have permissions).
         """
 
@@ -4055,7 +4055,7 @@ class ServerAPI(object):
                 Used only to check if thumbnail was already cached.
 
         Returns:
-            Union[str, None]: Path to downlaoded thumbnail or none if entity
+            Union[str, None]: Path to downloaded thumbnail or none if entity
                 does not have any (or if user does not have permissions).
         """
 
@@ -4076,7 +4076,7 @@ class ServerAPI(object):
                 Used only to check if thumbnail was already cached.
 
         Returns:
-            Union[str, None]: Path to downlaoded thumbnail or none if entity
+            Union[str, None]: Path to downloaded thumbnail or none if entity
                 does not have any (or if user does not have permissions).
         """
 
@@ -4186,7 +4186,7 @@ class ServerAPI(object):
 
         This project creation function is not validating project entity on
         creation. It is because project entity is created blindly with only
-        minimum required information about project which is it's name, code.
+        minimum required information about project which is name and code.
 
         Entered project name must be unique and project must not exist yet.
 
@@ -4622,7 +4622,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            folder_id (str): Id of folder for which links should be received.
+            folder_id (str): Folder id for which links should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
             link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
@@ -4671,7 +4671,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            task_id (str): Id of task for which links should be received.
+            task_id (str): Task id for which links should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
             link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
@@ -4720,7 +4720,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            product_id (str): Id of product for which links should be received.
+            product_id (str): Product id for which links should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
             link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
@@ -4769,7 +4769,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            version_id (str): Id of version for which links should be received.
+            version_id (str): Version id for which links should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
             link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
@@ -4822,7 +4822,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            representation_id (str): Id of representation for which links
+            representation_id (str): Representation id for which links
                 should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
             link_direction (Optional[Literal["in", "out"]]): Link direction
