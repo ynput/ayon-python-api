@@ -959,7 +959,7 @@ class ServerAPI(object):
             key: value
             for key, value in (
                 ("sender", sender),
-                ("projectName", project_name),
+                ("project", project_name),
                 ("status", status),
                 ("description", description),
                 ("summary", summary),
