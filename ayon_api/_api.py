@@ -801,6 +801,11 @@ def create_project(
     )
 
 
+def update_project(project_name, *args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_project(project_name, *args, **kwargs)
+
+
 def delete_project(project_name):
     con = get_server_api_connection()
     return con.delete_project(project_name)

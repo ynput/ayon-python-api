@@ -90,6 +90,7 @@ from ._api import (
     get_projects,
     get_project,
     create_project,
+    update_project,
     delete_project,
 
     get_folder_by_id,
@@ -248,6 +249,7 @@ __all__ = (
     "get_projects",
     "get_project",
     "create_project",
+    "update_project",
     "delete_project",
 
     "get_folder_by_id",
