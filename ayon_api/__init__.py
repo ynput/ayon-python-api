@@ -87,6 +87,7 @@ from ._api import (
     get_addons_project_settings,
     get_addons_settings,
 
+    get_project_names,
     get_projects,
     get_project,
     create_project,
@@ -245,6 +246,7 @@ __all__ = (
     "get_addons_project_settings",
     "get_addons_settings",
 
+    "get_project_names",
     "get_projects",
     "get_project",
     "create_project",
