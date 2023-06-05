@@ -4344,7 +4344,7 @@ class ServerAPI(object):
             )
             if value is not None
         })
-        response = self._connection.patch(
+        response = self.patch(
             "projects/{}".format(project_name),
             **changes
         )
