@@ -4286,6 +4286,70 @@ class ServerAPI(object):
 
         return self.get_project(project_name)
 
+    def update_project(
+        self,
+        project_name,
+        library=None,
+        folder_types=None,
+        task_types=None,
+        link_types=None,
+        statuses=None,
+        tags=None,
+        config=None,
+        attrib=None,
+        data=None,
+        active=None,
+        project_code=None,
+        **changes
+    ):
+        """Update project entity on server.
+
+        Args:
+            project_name (str): Name of project.
+            library (Optional[bool]): Change library state.
+            folder_types (Optional[list[dict[str, Any]]]): Folder type
+                definitions.
+            task_types (Optional[list[dict[str, Any]]]): Task type
+                definitions.
+            link_types (Optional[list[dict[str, Any]]]): Link type
+                definitions.
+            statuses (Optional[list[dict[str, Any]]]): Status definitions.
+            tags (Optional[list[dict[str, Any]]]): List of tags available to
+                set on entities.
+            config (Optional[dict[dict[str, Any]]]): Project anatomy config
+                with templates and roots.
+            attrib (Optional[dict[str, Any]]): Project attributes to change.
+            data (Optional[dict[str, Any]]): Custom data of a project. This
+                value will 100% override project data.
+            active (Optional[bool]): Change active state of a project.
+            project_code (Optional[str]): Change project code. Not recommended
+                during production.
+            **changes: Other changed keys based on Rest API documentation.
+        """
+
+        changes.update({
+            key: value
+            for key, value in (
+                ("library", library),
+                ("folderTypes", folder_types),
+                ("taskTypes", task_types),
+                ("linkTypes", link_types),
+                ("statuses", statuses),
+                ("tags", tags),
+                ("config", config),
+                ("attrib", attrib),
+                ("data", data),
+                ("active", active),
+                ("code", project_code),
+            )
+            if value is not None
+        })
+        response = self.patch(
+            "projects/{}".format(project_name),
+            **changes
+        )
+        response.raise_for_status()
+
     def delete_project(self, project_name):
         """Delete project from server.
 
