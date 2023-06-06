@@ -686,6 +686,21 @@ class EntityHub(object):
     def _pre_commit_types_changes(
         self, project_changes, orig_types, changes_key, post_changes
     ):
+        """Compare changes of types on a project.
+
+        Compare old and new types. Change project changes content if some old
+        types were removed. In that case the  final change of types will
+        happen when all other entities have changed.
+
+        Args:
+            project_changes (dict[str, Any]): Project changes.
+            orig_types (list[dict[str, Any]]): Original types.
+            changes_key (Literal[folderTypes, taskTypes]): Key of type changes
+                in project changes.
+            post_changes (dict[str, Any]): An object where post changes will
+                be stored.
+        """
+
         if changes_key not in project_changes:
             return
 
