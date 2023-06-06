@@ -710,13 +710,6 @@ class EntityHub(object):
         for type_name in diff_names:
             new_types.append(orig_types_by_name[type_name])
 
-    def update_project(self, project_name, changes):
-        response = self._connection.patch(
-            "projects/{}".format(project_name),
-            **changes
-        )
-        response.raise_for_status()
-
     def _pre_commit_project(self):
         """Some project changes cannot be committed before hierarchy changes.
 
