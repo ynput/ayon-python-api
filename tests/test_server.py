@@ -21,12 +21,12 @@ from ayon_api import (
     get_representation_by_id,
     get_version_by_id,
     get_folder_by_id,
-    get_subset_by_id,
+    get_product_by_id,
     get_folder_by_name,
-    get_subset_by_name,
+    get_product_by_name,
     get_representation_by_name,
     get_folders,
-    get_subsets,
+    get_products,
     get_versions,
     get_representations
 )
