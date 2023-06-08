@@ -84,7 +84,9 @@ def test_folder_name_invalid_characters(folder_name):
         folder = new_folder_entity(folder_name, "Folder")
         tmp_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
         s.commit()
-        assert tmp_id not in my_get_folder_ids()
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=folder["id"]) is None
 
 
 @pytest.mark.parametrize(
@@ -105,13 +107,17 @@ def test_folder_duplicated_names(folder_name):
     folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
     s.commit()
 
-    assert folder_id in my_get_folder_ids()
+    assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=folder_id) is not None
 
     with pytest.raises(FailedOperations):
         folder = new_folder_entity(folder_name, "Folder")
         tmp_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
         s.commit()
-        assert tmp_id not in my_get_folder_ids()
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=tmp_id) is None
 
     s.delete_entity(PROJECT_NAME, "folder", folder_id)
     s.commit()
@@ -145,7 +151,11 @@ def test_subset_duplicated_names(
         subset_id = s.create_entity(PROJECT_NAME, "subset", subset)["id"]   
         s.commit()
 
-        assert subset_id in my_get_subset_ids([folder_id])
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=subset_id,
+            parent_ids=folder_id) is not None
+
         subset_ids.append(subset_id)
 
     for name in subset_names:
@@ -153,8 +163,10 @@ def test_subset_duplicated_names(
             subset = new_subset_entity(name, "model", folder_id)
             tmp_id = s.create_entity(PROJECT_NAME, "subset", subset)    
             s.commit()
-            assert tmp_id not in my_get_subset_ids([folder_id])
-
+            assert get_folders(
+                PROJECT_NAME, 
+                folder_ids=tmp_id,
+                parent_ids=folder_id) is not None
 
     for subset_id in subset_ids:
         s.delete_entity(PROJECT_NAME, "subset", subset_id)
@@ -189,19 +201,22 @@ def test_whole_hierarchy(
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
-    op = s.create_entity(PROJECT_NAME, "folder", folder)    
-    folder_id = op.entity_id
+    folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]   
     s.commit()
 
-    assert folder_id in my_get_folder_ids()
+    assert get_folders(
+        PROJECT_NAME, 
+        folder_ids=folder_id) is not None
 
     # create subset
     subset = new_subset_entity(subset_name, "model", folder_id)
-    op = s.create_entity(PROJECT_NAME, "subset", subset)    
-    subset_id = op.entity_id
+    subset_id = s.create_entity(PROJECT_NAME, "subset", subset)["id"]   
     s.commit()
 
-    assert subset_id in my_get_subset_ids(folder_id)
+    assert get_subsets(
+        PROJECT_NAME, 
+        subset_ids=subset_id,
+        folder_ids=folder_id) is not None
 
     # create versions
     my_version_ids = []
@@ -210,20 +225,22 @@ def test_whole_hierarchy(
         version_id = s.create_entity(PROJECT_NAME, "version", version)["id"]   
         s.commit()
 
+        assert get_versions(
+                PROJECT_NAME, 
+                version_ids=version_id,
+                subset_ids=subset_id) is not None
+
         my_version_ids.append(version_id)        
 
         # test duplicate name
         with pytest.raises(FailedOperations):
             version = new_version_entity(i, subset_id)
-            op = s.create_entity(PROJECT_NAME, "version", version)   
+            tmp_id = s.create_entity(PROJECT_NAME, "version", version)["id"]  
             s.commit()
-            assert tmp_id not in my_get_version_ids(subset_id)
-
-        
-        # check if everything is created
-        s_version_ids = my_get_version_ids(subset_id)
-        assert len(my_version_ids) == len(s_version_ids)
-        assert version_id in s_version_ids
+            assert get_versions(
+                PROJECT_NAME, 
+                version_ids=tmp_id,
+                subset_ids=subset_id) is None
 
     # create representations
     for i, version_id in enumerate(my_version_ids):
@@ -233,8 +250,11 @@ def test_whole_hierarchy(
             representation_id = s.create_entity(PROJECT_NAME, "representation", representation)["id"]
             s.commit()
 
-            assert representation_id in my_get_representation_ids([version_id])
-            
+            assert get_representations(
+                PROJECT_NAME, 
+                representation_ids=representation_id,
+                version_ids=version_id) is not None
+
             # doesn't raise an exception
             """
             # not unique under this version
@@ -251,7 +271,10 @@ def test_whole_hierarchy(
                 representation_id = s.create_entity(PROJECT_NAME, "representation", representation)["id"]
                 s.commit()
 
-                assert representation_id in my_get_representation_ids(my_version_ids)
+                assert get_representations(
+                    PROJECT_NAME, 
+                    representation_ids=representation_id,
+                    version_ids=my_version_ids) is not None
 
     s.delete_entity(PROJECT_NAME, "subset", subset_id)
     s.commit()
@@ -280,29 +303,40 @@ def test_delete_folder_with_subset(
     folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]   
     s.commit()
 
-    assert folder_id in my_get_folder_ids()
+    assert get_folders(
+        PROJECT_NAME, 
+        folder_ids=folder_id) is not None
 
     subset = new_subset_entity(subset_name, "model", folder_id)
     subset_id = s.create_entity(PROJECT_NAME, "subset", subset)["id"]  
     s.commit()
 
-    assert subset_id in my_get_subset_ids([folder_id])
+    assert get_subsets(
+        PROJECT_NAME,
+        subset_ids=subset_id,
+        folder_ids=folder_id) is not None
 
     with pytest.raises(FailedOperations):
         s.delete_entity(PROJECT_NAME, "folder", folder_id)
         s.commit()
-        assert folder_id in my_get_folder_ids()
-
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=folder_id) is not None
     
     s.delete_entity(PROJECT_NAME, "subset", subset_id)
     s.commit()
 
-    assert subset_id not in my_get_subset_ids([folder_id])
+    assert get_subsets(
+        PROJECT_NAME,
+        subset_ids=subset_id,
+        folder_ids=folder_id) is None
 
     s.delete_entity(PROJECT_NAME, "folder", folder_id)
     s.commit()
 
-    assert folder_id not in my_get_folder_ids()
+    assert get_folders(
+        PROJECT_NAME, 
+        folder_ids=folder_id) is None
 
 
 @pytest.mark.parametrize(
@@ -337,21 +371,30 @@ def test_subfolder_hierarchy(
         folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
         s.commit()
 
-        assert folder_id in my_get_folder_ids(parent_id)
+        assert get_folders(
+            PROJECT_NAME, 
+            folder_ids=folder_id,
+            parent_ids=parent_id) is not None
 
         # subfolder with same name
         with pytest.raises(FailedOperations):
             folder = new_folder_entity(f"{subfolder_name1}{i:03}", "Folder", parent_id=parent_id)
             tmp_id = s.create_entity(PROJECT_NAME, "folder", folder)
             s.commit()
-            assert tmp_id not in my_get_folder_ids(parent_id)
+            assert get_folders(
+                PROJECT_NAME, 
+                folder_ids=folder_id,
+                parent_ids=parent_id) is None
         
         # subfolder with same name but different type
         with pytest.raises(FailedOperations):
             folder = new_folder_entity(f"{subfolder_name1}{i:03}", "Shot", parent_id=parent_id)
             tmp_id = s.create_entity(PROJECT_NAME, "folder", folder)
             s.commit()
-            assert tmp_id not in my_get_folder_ids(parent_id)
+            assert get_folders(
+                PROJECT_NAME, 
+                folder_ids=folder_id,
+                parent_ids=parent_id) is None
 
         for j in range(count_level2):
             folder = new_folder_entity(f"{subfolder_name2}{j:03}", "Shot", parent_id=folder_id)
@@ -359,32 +402,45 @@ def test_subfolder_hierarchy(
             s.commit()
             folder_with_subset.append(f"{subfolder_name2}{j:03}")
 
-            assert subfolder_id in my_get_folder_ids(folder_id)
+            assert get_folders(
+                PROJECT_NAME, 
+                folder_ids=subfolder_id,
+                parent_ids=folder_id) is not None
 
             # subfolder with same name
             with pytest.raises(FailedOperations):
                 folder = new_folder_entity(f"{subfolder_name2}{j:03}", "Shot", parent_id=folder_id)
                 tmp_id = s.create_entity(PROJECT_NAME, "folder", folder)
                 s.commit()
-                assert tmp_id not in my_get_folder_ids(folder_id)
+                assert get_folders(
+                    PROJECT_NAME, 
+                    folder_ids=tmp_id,
+                    parent_ids=folder_id) is None
 
             # subsets in subfolder
             subset = new_subset_entity("modelMain", "model", subfolder_id)
             subset_id = s.create_entity(PROJECT_NAME, "subset", subset)["id"]   
             s.commit()
 
-            assert subset_id in my_get_subset_ids([subfolder_id])
+            assert get_subsets(
+                    PROJECT_NAME, 
+                    subset_ids=subset_id,
+                    folder_ids=subfolder_id) is not None
 
             subset = new_subset_entity("modelProxy", "model", subfolder_id)
             subset_id = s.create_entity(PROJECT_NAME, "subset", subset)["id"]   
             s.commit()
 
-            assert subset_id in my_get_subset_ids([subfolder_id])
+            assert get_subsets(
+                    PROJECT_NAME, 
+                    subset_ids=subset_id,
+                    folder_ids=subfolder_id) is not None
 
             # delete folders with subsets
             with pytest.raises(FailedOperations):
                 s.delete_entity(PROJECT_NAME, "folder", parent_id)
                 s.commit()
+
                 assert parent_id in my_get_folder_ids()
 
             for f_id in folder_with_subset:
