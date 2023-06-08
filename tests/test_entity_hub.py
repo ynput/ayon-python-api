@@ -23,14 +23,16 @@ DEBUG_PRINT = True
 def test_order_of_simple_operations(folder_name):
     e = EntityHub(PROJECT_NAME)
 
-    parent_folder_id = e.add_new_folder("Folder", name=folder_name)["id"]
+    parent_folder = e.add_new_folder("Folder", name=folder_name)
     e.commit_changes()
 
+    
     folders = []
     subfolders = []
     for i in range(2):
-        folder = e.add_new_folder("Folder", name="test"+str(i), parent_id=parent_folder_id)
+        folder = e.add_new_folder("Folder", name="test"+str(i), parent_id=parent_folder["id"])
         folders.append(folder)
+
         subfolder = e.add_new_folder("Folder", name="duplicated", parent_id=folder["id"])
         subfolders.append(subfolder)
     e.commit_changes()
@@ -59,7 +61,8 @@ def test_order_of_simple_operations(folder_name):
     assert get_folder_by_id(PROJECT_NAME, subfolders[1]["id"]) is None
     """
 
-    e.delete_entity(folder1)
+    # ------------------------------
+    e.delete_entity(parent_folder)
     e.commit_changes()
 
 
@@ -74,8 +77,6 @@ def test_operations_with_subfolders(
     subfolder_name,
     num_of_subfolders
     ):
-    """
-    """
     e = EntityHub(PROJECT_NAME)
     
     folder1 = e.add_new_folder("Folder", name=folder_name)
@@ -141,7 +142,7 @@ def test_move_folders(
         )
         folder_ids.append(folder["id"])
 
-    e.commit_changes()
+    # e.commit_changes()
 
     subfolder_ids = [] # [folder_id, list()]
     for folder_id in folder_ids:
@@ -156,7 +157,7 @@ def test_move_folders(
     e.commit_changes()
 
     # raises exception - duplicated name under parent_id
-    """
+    
     if DEBUG_PRINT:
         print()
     # move all subfolders from one folder to the next one
@@ -178,6 +179,11 @@ def test_move_folders(
 
     # test if moved correctly
     for i, subfolder_id in enumerate(subfolder_ids):
+        print("GET_FOLDERS =", get_folders(
+            PROJECT_NAME, 
+            folder_ids=subfolder_id,
+            parent_ids=folder_ids[i // num_of_subfolders]))
+
         assert get_folders(
             PROJECT_NAME, 
             folder_ids=subfolder_id, 
@@ -189,7 +195,7 @@ def test_move_folders(
             parent_ids=folder_ids[(i // num_of_subfolders + 1) % num_of_folders]) is not None
         # assert subfolder_id not in my_get_folder_ids(folder_ids[i // num_of_subfolders])
         # assert subfolder_id in my_get_folder_ids(folder_ids[(i // num_of_subfolders + 1) % num_of_folders])
-    """
+
 
     e.delete_entity(parent_folder)
     e.commit_changes()
