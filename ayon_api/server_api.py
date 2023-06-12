@@ -1563,6 +1563,148 @@ class ServerAPI(object):
         )
         return dst_filepath
 
+    def get_installers(self, version=None, platform_name=None):
+        """Information about desktop application installers on server.
+
+        Desktop application installers are helpers to download/update AYON
+        desktop application for artists.
+
+        Args:
+            version (Optional[str]): Filter installers by version.
+            platform_name (Optional[str]): Filter installers by platform name.
+
+        Returns:
+            list[dict[str, Any]]:
+        """
+
+        query_fields = [
+            "{}={}".format(key, value)
+            for key, value in (
+                ("version", version),
+                ("platform", platform_name),
+            )
+            if value
+        ]
+        query = ""
+        if query_fields:
+            query = "?{}".format(",".join(query_fields))
+
+        response = self.get("desktop/installers{}".format(query))
+        response.raise_for_status()
+        return response.data["installers"]
+
+    def create_installer(
+        self,
+        filename,
+        version,
+        python_version,
+        platform_name,
+        python_modules,
+        checksum,
+        checksum_type,
+        file_size,
+        sources=None,
+    ):
+        """Create new installer information on server.
+
+        This step will create only metadata. Make sure to upload installer
+            to the server using 'upload_installer' method.
+
+        Args:
+            filename (str): Installer filename.
+            version (str): Version of installer.
+            python_version (str): Version of Python.
+            platform_name (str): Name of platform.
+            python_modules (dict[str, str]): Python modules that are available
+                in installer.
+            checksum (str): Installer file checksum.
+            checksum_type (str): Type of checksum used to create checksum.
+            file_size (int): File size.
+            sources (Optional[list[dict[str, Any]]]): List of sources that
+                can be used to download file.
+        """
+
+        body = {
+            "filename": filename,
+            "version": version,
+            "pythonVersion": python_version,
+            "platform": platform_name,
+            "pythonModules": python_modules,
+            "checksum": checksum,
+            "checksumType": checksum_type,
+            "size": file_size,
+        }
+        if sources:
+            body["sources"] = sources
+
+        response = self.post("desktop/installers", **body)
+        response.raise_for_status()
+
+    def update_installer(self, filename, sources):
+        """Update installer information on server.
+
+        Args:
+            filename (str): Installer filename.
+            sources (list[dict[str, Any]]): List of sources that
+                can be used to download file. Fully replaces existing sources.
+        """
+
+        response = self.post(
+            "desktop/installers/{}".format(filename),
+            sources=sources
+        )
+        response.raise_for_status()
+
+    def delete_installer(self, filename):
+        """Delete installer from server.
+
+        Args:
+            filename (str): Installer filename.
+        """
+
+        response = self.delete("dekstop/installers/{}".format(filename))
+        response.raise_for_status()
+
+    def download_installer(
+        self,
+        filename,
+        dst_filepath,
+        chunk_size=None,
+        progress=None
+    ):
+        """Download installer file from server.
+
+        Args:
+            filename (str): Installer filename.
+            dst_filepath (str): Destination filepath.
+            chunk_size (Optional[int]): Download chunk size.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
+        """
+
+        self.download_file(
+            "desktop/installers/{}".format(filename),
+            dst_filepath,
+            chunk_size=chunk_size,
+            progress=progress
+        )
+
+    def upload_installer(self, src_filepath, dst_filename, progress=None):
+        """Upload installer file to server.
+
+        Args:
+            src_filepath (str): Source filepath.
+            dst_filename (str): Destination filename.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
+        """
+
+        self.upload_file(
+            "desktop/installers/{}".format(dst_filename),
+            src_filepath,
+            progress=progress
+        )
+
     def get_dependencies_info(self):
         """Information about dependency packages on server.
 

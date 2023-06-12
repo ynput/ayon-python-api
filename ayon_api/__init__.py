@@ -59,6 +59,13 @@ from ._api import (
     get_addon_url,
     download_addon_private_file,
 
+    get_installers,
+    create_installer,
+    update_installer,
+    delete_installer,
+    download_installer,
+    upload_installer,
+
     get_dependencies_info,
     update_dependency_info,
 
@@ -220,6 +227,12 @@ __all__ = (
     "get_addon_url",
     "download_addon_private_file",
 
+    "get_installers",
+    "create_installer",
+    "update_installer",
+    "delete_installer",
+    "download_installer",
+    "upload_installer",
     "get_dependencies_info",
     "update_dependency_info",
 

@@ -531,6 +531,38 @@ def download_addon_private_file(*args, **kwargs):
     return con.download_addon_private_file(*args, **kwargs)
 
 
+# Installers
+def get_installers(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_installers(*args, **kwargs)
+
+
+def create_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_installer(*args, **kwargs)
+
+
+def update_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_installer(*args, **kwargs)
+
+
+def delete_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_installer(*args, **kwargs)
+
+
+def download_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    con.download_installer(*args, **kwargs)
+
+
+def upload_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    con.upload_installer(*args, **kwargs)
+
+
+# Dependency packages
 def get_dependencies_info(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_dependencies_info(*args, **kwargs)
