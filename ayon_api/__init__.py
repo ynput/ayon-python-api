@@ -76,6 +76,11 @@ from ._api import (
     download_dependency_package,
     upload_dependency_package,
 
+    get_bundles,
+    create_bundle,
+    update_bundle,
+    delete_bundle,
+
     get_info,
     get_server_version,
     get_server_version_tuple,
@@ -249,6 +254,11 @@ __all__ = (
 
     "download_dependency_package",
     "upload_dependency_package",
+
+    "get_bundles",
+    "create_bundle",
+    "update_bundle",
+    "delete_bundle",
 
     "get_info",
     "get_server_version",

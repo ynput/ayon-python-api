@@ -623,6 +623,26 @@ def get_project_anatomy_presets(*args, **kwargs):
     return con.get_project_anatomy_presets(*args, **kwargs)
 
 
+def get_bundles(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_bundles(*args, **kwargs)
+
+
+def create_bundle(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_bundle(*args, **kwargs)
+
+
+def update_bundle(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_bundle(*args, **kwargs)
+
+
+def delete_bundle(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_bundle(*args, **kwargs)
+
+
 def get_project_anatomy_preset(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_anatomy_preset(*args, **kwargs)

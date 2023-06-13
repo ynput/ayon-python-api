@@ -2067,6 +2067,128 @@ class ServerAPI(object):
         time_stamp = now_date.strftime("%y%m%d%H%M")
         return "ayon_{}_{}".format(time_stamp, platform_name)
 
+    def get_bundles(self):
+        """Server bundles with basic information.
+
+        Example output:
+            {
+                "bundles": [
+                    {
+                        "name": "my_bundle",
+                        "createdAt": "2023-06-12T15:37:02.420260",
+                        "installerVersion": "1.0.0",
+                        "addons": {
+                            "core": "1.2.3"
+                        },
+                        "dependencyPackages": {
+                            "windows": "a_windows_package123.zip",
+                            "linux": "a_linux_package123.zip",
+                            "darwin": "a_mac_package123.zip"
+                        },
+                        "isProduction": False,
+                        "isStaging": False
+                    }
+                ],
+                "productionBundle": "my_bundle",
+                "stagingBundle": "test_bundle"
+            }
+
+        Returns:
+            dict[str, Any]: Server bundles with basic information.
+        """
+
+        response = self.get("desktop/bundles")
+        response.raise_for_status()
+        return response.data
+
+    def create_bundle(
+        self,
+        name,
+        addon_versions,
+        installer_version,
+        dependency_packages=None,
+        is_production=None,
+        is_staging=None
+    ):
+        """Create bundle on server.
+
+        Bundle cannot be changed once is created. Only isProduction, isStaging
+        and dependency packages can change after creation.
+
+        Args:
+            name (str): Name of bundle.
+            addon_versions (dict[str, str]): Addon versions.
+            installer_version (Union[str, None]): Installer version.
+            dependency_packages (Optional[dict[str, str]]): Dependency
+                package names. Keys are platform names and values are name of
+                packages.
+            is_production (Optional[bool]): Bundle will be marked as
+                production.
+            is_staging (Optional[bool]): Bundle will be marked as staging.
+        """
+
+        body = {
+            "name": name,
+            "installerVersion": installer_version,
+            "addons": addon_versions,
+        }
+        for key, value in (
+            ("dependencyPackages", dependency_packages),
+            ("isProduction", is_production),
+            ("isStaging", is_staging),
+        ):
+            if value is not None:
+                body[key] = value
+
+        response = self.post("desktop/bundles", **body)
+        response.raise_for_status()
+
+    def update_bundle(
+        self,
+        bundle_name,
+        dependency_packages=None,
+        is_production=None,
+        is_staging=None
+    ):
+        """Update bundle on server.
+
+        Dependency packages can be update only for single platform. Others
+        will be left untouched. Use 'None' value to unset dependency package
+        from bundle.
+
+        Args:
+            bundle_name (str): Name of bundle.
+            dependency_packages (Optional[dict[str, str]]): Dependency pacakge
+                names that should be used with the bundle.
+            is_production (Optional[bool]): Bundle will be marked as
+                production.
+            is_staging (Optional[bool]): Bundle will be marked as staging.
+        """
+
+        body = {
+            key: value
+            for key, value in (
+                ("dependencyPackages", dependency_packages),
+                ("isProduction", is_production),
+                ("isStaging", is_staging),
+            )
+            if value is not None
+        }
+        response = self.patch(
+            "desktop/bundles/{}".format(bundle_name), **body
+        )
+        response.raise_for_status()
+
+    def delete_bundle(self, bundle_name):
+        """Delete bundle from server.
+
+        Args:
+            bundle_name (str): Name of bundle to delete.
+        """
+
+        response = self.delete("desktop/bundles/{}".format(bundle_name))
+        response.raise_for_status()
+
     # Anatomy presets
     def get_project_anatomy_presets(self):
         """Anatomy presets available on server.
