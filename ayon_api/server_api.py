@@ -4,6 +4,7 @@ import io
 import json
 import logging
 import collections
+import datetime
 import platform
 import copy
 import uuid
@@ -1773,13 +1774,23 @@ class ServerAPI(object):
                 "productionPackage": str
             }
 
+        Deprecated:
+            Deprecated since server version 0.2.1. Use
+                'get_dependency_packages' instead.
+
         Returns:
             dict[str, Any]: Information about dependency packages known for
                 server.
         """
 
-        result = self.get("dependencies")
-        return result.data
+        major, minor, patch = self.server_version_tuple
+        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+            result = self.get("dependencies")
+            return result.data
+        return {
+            "packages": self.get_dependency_packages(),
+            "productionPackage": None
+        }
 
     def update_dependency_info(
         self,
@@ -1796,21 +1807,26 @@ class ServerAPI(object):
 
         The endpoint can be used to create or update dependency package.
 
+
+        Deprecated:
+            Deprecated for server version 0.2.1. Use
+                'create_dependency_pacakge' instead.
+
         Args:
             name (str): Name of dependency package.
-            platform_name (Literal["windows", "linux", "darwin"]): Platform for
-                which is dependency package targeted.
+            platform_name (Literal["windows", "linux", "darwin"]): Platform
+                for which is dependency package targeted.
             size (int): Size of dependency package in bytes.
             checksum (str): Checksum of archive file where dependencies are.
             checksum_algorithm (Optional[str]): Algorithm used to calculate
                 checksum. By default, is used 'md5' (defined by server).
-            supported_addons (Optional[Dict[str, str]]): Name of addons for
+            supported_addons (Optional[dict[str, str]]): Name of addons for
                 which was the package created.
                 '{"<addon name>": "<addon version>", ...}'
-            python_modules (Optional[Dict[str, str]]): Python modules in
+            python_modules (Optional[dict[str, str]]): Python modules in
                 dependencies package.
                 '{"<module name>": "<module version>", ...}'
-            sources (Optional[List[Dict[str, Any]]]): Information about
+            sources (Optional[list[dict[str, Any]]]): Information about
                 sources where dependency package is available.
         """
 
@@ -1837,27 +1853,152 @@ class ServerAPI(object):
             raise ServerError("Failed to create/update dependency")
         return response.data
 
+    def get_dependency_packages(self):
+        """Information about dependency packages on server.
+
+        To download dependency package, use 'download_dependency_package'
+        method and pass in 'filename'.
+
+        Example data structure:
+            {
+                "packages": [
+                    {
+                        "filename": str,
+                        "platform": str,
+                        "checksum": str,
+                        "checksumAlgorithm": str,
+                        "size": int,
+                        "sources": list[dict[str, Any]],
+                        "supportedAddons": dict[str, str],
+                        "pythonModules": dict[str, str]
+                    }
+                ]
+            }
+
+        Returns:
+            dict[str, Any]: Information about dependency packages known for
+                server.
+        """
+
+        result = self.get("desktop/dependency_packages")
+        return result.data["packages"]
+
+    def create_dependency_package(
+        self,
+        filename,
+        python_modules,
+        source_addons,
+        installer_version,
+        checksum,
+        checksum_algorithm,
+        file_size,
+        sources=None,
+        platform_name=None,
+    ):
+        """Create dependency package on server.
+
+        The package will be created on a server, it is also required to upload
+        the package archive file (using 'upload_dependency_package').
+
+        Args:
+            filename (str): Filename of dependency package.
+            python_modules (dict[str, str]): Python modules in dependency
+                package.
+                '{"<module name>": "<module version>", ...}'
+            source_addons (dict[str, str]): Name of addons for which is
+                dependency package created.
+                '{"<addon name>": "<addon version>", ...}'
+            installer_version (str): Version of installer for which was
+                package created.
+            checksum (str): Checksum of archive file where dependencies are.
+            checksum_algorithm (str): Algorithm used to calculate checksum.
+            file_size (Optional[int]): Size of file.
+            sources (Optional[list[dict[str, Any]]]): Information about
+                sources from where it is possible to get file.
+            platform_name (Optional[str]): Name of platform for which is
+                dependency package targeted. Default value is
+                current platform.
+        """
+
+        post_body = {
+            "filename": filename,
+            "pythonModules": python_modules,
+            "sourceAddons": source_addons,
+            "installerVersion": installer_version,
+            "checksum": checksum,
+            "checksumAlgorithm": checksum_algorithm,
+            "size": file_size,
+            "platform": platform_name or platform.system().lower(),
+        }
+        if sources:
+            post_body["sources"] = sources
+
+        response = self.post("desktop/dependency_packages", **post_body)
+        response.raise_for_status()
+
+    def update_dependency_package(self, filename, sources):
+        """Update dependency package metadata on server.
+
+        Args:
+            filename (str): Filename of dependency package.
+            sources (list[dict[str, Any]]): Information about
+                sources from where it is possible to get file. Fully replaces
+                existing sources.
+        """
+
+        response = self.patch(
+            "desktop/dependency_packages/{}".format(filename),
+            sources=sources
+        )
+        response.raise_for_status()
+
+    def delete_dependency_package(self, filename, platform_name=None):
+        """Remove dependency package for specific platform.
+
+        Args:
+            filename (str): Filename of dependency package. Or name of package
+                for server version 0.2.0 or lower.
+            platform_name (Optional[str]): Which platform of the package
+                should be removed. Current platform is used if not passed.
+                Deprecated since version 0.2.1
+        """
+
+        major, minor, patch = self.server_version_tuple
+        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+            if platform_name is None:
+                platform_name = platform.system().lower()
+            url = "dependencies/{}/{}".format(filename, platform_name)
+        else:
+            url = "desktop/dependency_packages/{}".format(filename)
+
+        response = self.delete(url)
+        if response.status != 200:
+            raise ServerError("Failed to delete dependency file")
+        return response.data
+
     def download_dependency_package(
         self,
-        package_name,
+        src_filename,
         dst_directory,
-        filename,
+        dst_filename,
         platform_name=None,
         chunk_size=None,
         progress=None,
     ):
         """Download dependency package from server.
 
-        This method requires to have authorized token available. The package is
-        only downloaded.
+        This method requires to have authorized token available. The package
+        is only downloaded.
 
         Args:
-            package_name (str): Name of package to download.
+            src_filename (str): Filename of dependency pacakge.
+                For server version 0.2.0 and lower it is name of package
+                to download.
             dst_directory (str): Where the file should be downloaded.
-            filename (str): Name of destination filename.
+            dst_filename (str): Name of destination filename.
             platform_name (Optional[str]): Name of platform for which the
                 dependency package is targeted. Default value is
-                current platform.
+                current platform. Deprecated since server version 0.2.1.
             chunk_size (Optional[int]): Download chunk size.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track download progress.
@@ -1865,12 +2006,18 @@ class ServerAPI(object):
         Returns:
             str: Filepath to downloaded file.
        """
-        if platform_name is None:
-            platform_name = platform.system().lower()
 
-        package_filepath = os.path.join(dst_directory, filename)
+        major, minor, patch = self.server_version_tuple
+        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+            if platform_name is None:
+                platform_name = platform.system().lower()
+            url = "dependencies/{}/{}".format(src_filename, platform_name)
+        else:
+            url = "desktop/dependency_packages/{}".format(src_filename)
+
+        package_filepath = os.path.join(dst_directory, dst_filename)
         self.download_file(
-            "dependencies/{}/{}".format(package_name, platform_name),
+            url,
             package_filepath,
             chunk_size=chunk_size,
             progress=progress
@@ -1878,46 +2025,47 @@ class ServerAPI(object):
         return package_filepath
 
     def upload_dependency_package(
-        self, filepath, package_name, platform_name=None, progress=None
+        self, src_filepath, dst_filename, platform_name=None, progress=None
     ):
         """Upload dependency package to server.
 
         Args:
-            filepath (str): Path to a package file.
-            package_name (str): Name of package. Must be unique.
+            src_filepath (str): Path to a package file.
+            dst_filename (str): Dependency package filename or name of package
+                for server version 0.2.0 or lower. Must be unique.
             platform_name (Optional[str]): For which platform is the
-                package targeted.
+                package targeted. Deprecated since server version 0.2.1.
             progress (Optional[TransferProgress]): Object to keep track about
                 upload state.
         """
 
-        if platform_name is None:
-            platform_name = platform.system().lower()
+        major, minor, patch = self.server_version_tuple
+        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+            if platform_name is None:
+                platform_name = platform.system().lower()
+            url = "dependencies/{}/{}".format(dst_filename, platform_name)
+        else:
+            url = "desktop/dependency_packages/{}".format(dst_filename)
 
-        self.upload_file(
-            "dependencies/{}/{}".format(package_name, platform_name),
-            filepath,
-            progress=progress
-        )
+        self.upload_file(url, src_filepath, progress=progress)
 
-    def delete_dependency_package(self, package_name, platform_name=None):
-        """Remove dependency package for specific platform.
+    def create_dependency_package_basename(self, platform_name=None):
+        """Create basename for dependency package file.
 
         Args:
-            package_name (str): Name of package to remove.
-            platform_name (Optional[str]): Which platform of the package
-                should be removed. Current platform is used if not passed.
+            platform_name (Optional[str]): Name of platform for which the
+                bundle is targeted. Default value is current platform.
+
+        Returns:
+            str: Dependency package name with timestamp and platform.
         """
 
         if platform_name is None:
             platform_name = platform.system().lower()
 
-        response = self.delete(
-            "dependencies/{}/{}".format(package_name, platform_name),
-        )
-        if response.status != 200:
-            raise ServerError("Failed to delete dependency file")
-        return response.data
+        now_date = datetime.datetime.now()
+        time_stamp = now_date.strftime("%y%m%d%H%M")
+        return "ayon_{}_{}".format(time_stamp, platform_name)
 
     # Anatomy presets
     def get_project_anatomy_presets(self):

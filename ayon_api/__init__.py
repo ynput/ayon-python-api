@@ -68,10 +68,13 @@ from ._api import (
 
     get_dependencies_info,
     update_dependency_info,
+    get_dependency_packages,
+    create_dependency_package,
+    update_dependency_package,
+    delete_dependency_package,
 
     download_dependency_package,
     upload_dependency_package,
-    delete_dependency_package,
 
     get_info,
     get_server_version,
@@ -236,12 +239,16 @@ __all__ = (
     "delete_installer",
     "download_installer",
     "upload_installer",
+
     "get_dependencies_info",
     "update_dependency_info",
+    "get_dependency_packages",
+    "create_dependency_package",
+    "update_dependency_package",
+    "delete_dependency_package",
 
     "download_dependency_package",
     "upload_dependency_package",
-    "delete_dependency_package",
 
     "get_info",
     "get_server_version",

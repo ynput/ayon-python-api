@@ -598,6 +598,21 @@ def upload_dependency_package(*args, **kwargs):
     return con.upload_dependency_package(*args, **kwargs)
 
 
+def get_dependency_packages(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_dependency_packages(*args, **kwargs)
+
+
+def create_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_dependency_package(*args, **kwargs)
+
+
+def update_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_dependency_package(*args, **kwargs)
+
+
 def delete_dependency_package(*args, **kwargs):
     con = get_server_api_connection()
     return con.delete_dependency_package(*args, **kwargs)
