@@ -642,7 +642,7 @@ class ServerAPI(object):
             Use this method for validation of token instead of 'get_user'.
 
         Returns:
-            Dict[str, Any]: Information from server.
+            dict[str, Any]: Information from server.
         """
 
         response = self.get("info")
@@ -920,7 +920,7 @@ class ServerAPI(object):
             event_id (str): Id of event.
 
         Returns:
-            Dict[str, Any]: Full event data.
+            dict[str, Any]: Full event data.
         """
 
         response = self.get("events/{}".format(event_id))
@@ -953,7 +953,7 @@ class ServerAPI(object):
                 for each event.
 
         Returns:
-            Generator[Dict[str, Any]]: Available events matching filters.
+            Generator[dict[str, Any]]: Available events matching filters.
         """
 
         filters = {}
@@ -1320,7 +1320,7 @@ class ServerAPI(object):
             Cache schema - How to find out it is outdated?
 
         Returns:
-            Dict[str, Any]: Full server schema.
+            dict[str, Any]: Full server schema.
         """
 
         url = "{}/openapi.json".format(self._base_url)
@@ -1338,7 +1338,7 @@ class ServerAPI(object):
         e.g. 'config' has just object definition without reference schema.
 
         Returns:
-            Dict[str, Any]: Component schemas.
+            dict[str, Any]: Component schemas.
         """
 
         server_schema = self.get_server_schema()
@@ -1446,7 +1446,7 @@ class ServerAPI(object):
                 received.
 
         Returns:
-            Dict[str, Dict[str, Any]]: Attribute schemas that are available
+            dict[str, dict[str, Any]]: Attribute schemas that are available
                 for entered entity type.
         """
         attributes = self._entity_type_attributes_cache.get(entity_type)
@@ -2612,7 +2612,7 @@ class ServerAPI(object):
             project_name (str): Name of project.
 
         Returns:
-            Union[Dict[str, Any], None]: Project entity data or 'None' if
+            Union[dict[str, Any], None]: Project entity data or 'None' if
                 project was not found.
         """
 
@@ -2636,7 +2636,7 @@ class ServerAPI(object):
                 are returned if 'None' is passed.
 
         Returns:
-            Generator[Dict[str, Any]]: Available projects.
+            Generator[dict[str, Any]]: Available projects.
         """
 
         for project_name in self.get_project_names(active, library):
@@ -2697,7 +2697,7 @@ class ServerAPI(object):
                 are returned if 'None' is passed.
 
         Returns:
-            List[str]: List of available project names.
+            list[str]: List of available project names.
         """
 
         query_keys = {}
@@ -2738,7 +2738,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[Dict[str, Any]]: Queried projects.
+            Generator[dict[str, Any]]: Queried projects.
         """
 
         if fields is None:
@@ -2778,7 +2778,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[Dict[str, Any], None]: Project entity data or None
+            Union[dict[str, Any], None]: Project entity data or None
                 if project was not found.
         """
 
@@ -3574,7 +3574,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[Dict[str, Any]]: Queried version entities.
+            Generator[dict[str, Any]]: Queried version entities.
         """
 
         if not fields:
@@ -4032,7 +4032,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[Dict[str, Any]]: Queried representation entities.
+            Generator[dict[str, Any]]: Queried representation entities.
         """
 
         if not fields:
@@ -4715,7 +4715,7 @@ class ServerAPI(object):
             ValueError: When project name already exists.
 
         Returns:
-            Dict[str, Any]: Created project entity.
+            dict[str, Any]: Created project entity.
         """
 
         if self.get_project(project_name):
