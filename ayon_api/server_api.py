@@ -1642,7 +1642,7 @@ class ServerAPI(object):
 
         response = self.get("desktop/installers{}".format(query))
         response.raise_for_status()
-        return response.data["installers"]
+        return response.data
 
     def create_installer(
         self,
