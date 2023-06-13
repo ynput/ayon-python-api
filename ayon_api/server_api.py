@@ -674,7 +674,7 @@ class ServerAPI(object):
         """
 
         if self._server_version_tuple is None:
-            re_match = VERSION_REGEX.full_match(
+            re_match = VERSION_REGEX.fullmatch(
                 self.get_server_version())
             self._server_version_tuple = (
                 int(re_match.group("major")),
@@ -1783,14 +1783,13 @@ class ServerAPI(object):
                 server.
         """
 
-        major, minor, patch = self.server_version_tuple
+        major, minor, patch, _, _ = self.server_version_tuple
         if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
             result = self.get("dependencies")
             return result.data
-        return {
-            "packages": self.get_dependency_packages(),
-            "productionPackage": None
-        }
+        packages = self.get_dependency_packages()
+        packages["productionPackage"] = None
+        return packages
 
     def update_dependency_info(
         self,
@@ -1881,7 +1880,8 @@ class ServerAPI(object):
         """
 
         result = self.get("desktop/dependency_packages")
-        return result.data["packages"]
+        result.raise_for_status()
+        return result.data
 
     def create_dependency_package(
         self,
@@ -1963,7 +1963,7 @@ class ServerAPI(object):
                 Deprecated since version 0.2.1
         """
 
-        major, minor, patch = self.server_version_tuple
+        major, minor, patch, _, _ = self.server_version_tuple
         if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
             if platform_name is None:
                 platform_name = platform.system().lower()
@@ -2007,7 +2007,7 @@ class ServerAPI(object):
             str: Filepath to downloaded file.
        """
 
-        major, minor, patch = self.server_version_tuple
+        major, minor, patch, _, _ = self.server_version_tuple
         if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
             if platform_name is None:
                 platform_name = platform.system().lower()
@@ -2039,7 +2039,7 @@ class ServerAPI(object):
                 upload state.
         """
 
-        major, minor, patch = self.server_version_tuple
+        major, minor, patch, _, _ = self.server_version_tuple
         if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
             if platform_name is None:
                 platform_name = platform.system().lower()
