@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ayon_api"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python api for AYON server"
 authors = ["ynput.io <info@ynput.io>"]
 
@@ -8,7 +8,7 @@ authors = ["ynput.io <info@ynput.io>"]
 python = ">=2.7,>=3.6.5"
 requests = "^2.28.1"
 six = "^1.15"
-Unidecode = "^1.2"
+Unidecode = "1.2.0" # Python 2 support
 appdirs = "^1.4"
 
 [tool.poetry.dev-dependencies]
