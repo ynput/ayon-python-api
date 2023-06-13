@@ -73,6 +73,9 @@ from ._api import (
     upload_dependency_package,
     delete_dependency_package,
 
+    get_info,
+    get_server_version,
+    get_server_version_tuple,
     get_user,
     get_users,
 
@@ -240,6 +243,9 @@ __all__ = (
     "upload_dependency_package",
     "delete_dependency_package",
 
+    "get_info",
+    "get_server_version",
+    "get_server_version_tuple",
     "get_user",
     "get_users",
 

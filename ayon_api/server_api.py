@@ -70,6 +70,14 @@ PROJECT_NAME_REGEX = re.compile(
     "^[{}]+$".format(PROJECT_NAME_ALLOWED_SYMBOLS)
 )
 
+VERSION_REGEX = re.compile(
+    r"(?P<major>0|[1-9]\d*)"
+    r"\.(?P<minor>0|[1-9]\d*)"
+    r"\.(?P<patch>0|[1-9]\d*)"
+    r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
+    r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
+)
+
 
 def _get_description(response):
     if HTTPStatus is None:
@@ -329,6 +337,8 @@ class ServerAPI(object):
         self._access_token_is_service = None
         self._token_is_valid = None
         self._server_available = None
+        self._server_version = None
+        self._server_version_tuple = None
 
         self._session = None
 
@@ -636,6 +646,46 @@ class ServerAPI(object):
 
         response = self.get("info")
         return response.data
+
+    def get_server_version(self):
+        """Get server version.
+
+        Version should match semantic version (https://semver.org/).
+
+        Returns:
+            str: Server version.
+        """
+
+        if self._server_version is None:
+            self._server_version = self.get_info()["version"]
+        return self._server_version
+
+    def get_server_version_tuple(self):
+        """Get server version as tuple.
+
+        Version should match semantic version (https://semver.org/).
+
+        This function only returns first three numbers of version.
+
+        Returns:
+            Tuple[int, int, int, Union[str, None], Union[str, None]]: Server
+                version.
+        """
+
+        if self._server_version_tuple is None:
+            re_match = VERSION_REGEX.full_match(
+                self.get_server_version())
+            self._server_version_tuple = (
+                int(re_match.group("major")),
+                int(re_match.group("minor")),
+                int(re_match.group("patch")),
+                re_match.group("prerelease"),
+                re_match.group("buildmetadata")
+            )
+        return self._server_version_tuple
+
+    server_version = property(get_server_version)
+    server_version_tuple = property(get_server_version_tuple)
 
     def _get_user_info(self):
         if self._access_token is None:

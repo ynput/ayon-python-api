@@ -531,6 +531,21 @@ def download_addon_private_file(*args, **kwargs):
     return con.download_addon_private_file(*args, **kwargs)
 
 
+def get_info(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_info(*args, **kwargs)
+
+
+def get_server_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_server_version(*args, **kwargs)
+
+
+def get_server_version_tuple(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_server_version_tuple(*args, **kwargs)
+
+
 # Installers
 def get_installers(*args, **kwargs):
     con = get_server_api_connection()
