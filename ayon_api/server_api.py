@@ -315,9 +315,10 @@ class ServerAPI(object):
             default if a method for settings won't get any (by default is
             'production').
         ssl_verify (Union[bool, str, None]): Verify SSL certificate
-            (default is None).
+            Looks for env variable value 'AYON_CA_FILE' by default. If not
+            available then 'True' is used.
         cert (Optional[str]): Path to certificate file. Looks for env
-            variable values 'AYON_CERT_FILE' or 'SSL_CERT_FILE'.
+            variable value 'AYON_CERT_FILE' by default.
     """
 
     def __init__(
@@ -351,6 +352,9 @@ class ServerAPI(object):
             #   with 'certifi'
             if not ssl_verify:
                 ssl_verify = True
+
+        if cert is None:
+            cert = os.environ.get("AYON_CERT_FILE")
 
         self._ssl_verify = ssl_verify
         self._cert = cert
