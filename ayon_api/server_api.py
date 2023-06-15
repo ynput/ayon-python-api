@@ -344,13 +344,10 @@ class ServerAPI(object):
         self._default_settings_variant = default_settings_variant
 
         if ssl_verify is None:
-            # Custom AYON env variable for CA file
-            ssl_verify = os.environ.get("AYON_CA_FILE")
-            # Use 'True' by default
+            # Custom AYON env variable for CA file or 'True'
             # - that should cover most default behaviors in 'requests'
             #   with 'certifi'
-            if not ssl_verify:
-                ssl_verify = True
+            ssl_verify = os.environ.get("AYON_CA_FILE") or True
 
         if cert is None:
             cert = os.environ.get("AYON_CERT_FILE")
