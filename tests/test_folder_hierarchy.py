@@ -2,6 +2,7 @@ import pytest
 import os
 from dotenv import load_dotenv
 
+"""
 from tests.my_helper_functions import (
     my_get_folder_ids,
     my_get_product_ids,
@@ -11,7 +12,6 @@ from tests.my_helper_functions import (
     
     manual_delete_hierarchy
 )
-"""
 from tests.my_helper_functions import (
     manual_delete_hierarchy
 )
@@ -38,6 +38,41 @@ from ayon_api.exceptions import (
 
 
 PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
+
+
+# ---------------------------------------------------
+
+def recursive_delete_hierarchy(folder_id, s):
+    # recursively delete all subfolders
+    subfolder_ids = my_get_folder_ids(folder_id)
+    for subfolder_id in subfolder_ids:
+        recursive_delete_hierarchy(subfolder_id, s)
+
+    # delete subsets
+    subset_ids = my_get_subset_ids([folder_id])
+    for subset_id in subset_ids:
+        s.delete_entity(PROJECT_NAME, "subset", subset_id)
+    s.commit()
+
+    # delete folder
+    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.commit()
+
+
+def manual_delete_hierarchy(folder_name, s=None):
+    if s is None:
+        s = OperationsSession()
+
+    folder_id = str()
+    subset_ids = []
+    try:
+        folder_id = get_folder_by_name(PROJECT_NAME, folder_name)["id"]
+    except TypeError as exc:
+        print(exc)
+    else:
+        recursive_delete_hierarchy(folder_id, s)
+
+# ---------------------------------------------------
 
 
 @pytest.mark.parametrize(
