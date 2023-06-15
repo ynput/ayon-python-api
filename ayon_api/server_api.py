@@ -313,6 +313,9 @@ class ServerAPI(object):
         default_settings_variant (Optional[str]): Settings variant used by
             default if a method for settings won't get any (by default is
             'production').
+        ssl_verify (Optional[bool]): Verify SSL certificate (default is True).
+        cert (Optional[str]): Path to certificate file. Looks for env
+            variable values 'AYON_CERT_FILE' or 'SSL_CERT_FILE'.
     """
 
     def __init__(
@@ -321,7 +324,9 @@ class ServerAPI(object):
         token=None,
         site_id=None,
         client_version=None,
-        default_settings_variant=None
+        default_settings_variant=None,
+        ssl_verify=True,
+        cert=None,
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -335,6 +340,12 @@ class ServerAPI(object):
         self._site_id = site_id
         self._client_version = client_version
         self._default_settings_variant = default_settings_variant
+
+        if not cert:
+            cert = os.getenv("AYON_CERT_FILE") or os.getenv("SSL_CERT_FILE")
+        self._ssl_verify = ssl_verify
+        self._cert = cert
+
         self._access_token_is_service = None
         self._token_is_valid = None
         self._server_available = None
@@ -373,6 +384,53 @@ class ServerAPI(object):
 
     base_url = property(get_base_url)
     rest_url = property(get_rest_url)
+
+    def get_ssl_verify(self):
+        """Enable ssl verification.
+
+        Returns:
+            bool: Current state of ssl verification.
+        """
+
+        return self._ssl_verify
+
+    def set_ssl_verify(self, ssl_verify):
+        """Change ssl verification state.
+
+        Args:
+            ssl_verify (bool): Enabled or disable ssl verification.
+        """
+
+        if self._ssl_verify == ssl_verify:
+            return
+        self._ssl_verify = ssl_verify
+        if self._session is not None:
+            self._session.verify = ssl_verify
+
+    def get_cert(self):
+        """Current cert file used for connection to server.
+
+        Returns:
+            Union[str, None]: Path to cert file.
+        """
+
+        return self._cert
+
+    def set_cert(self, cert):
+        """Change cert file used for connection to server.
+
+        Args:
+            cert (Union[str, None]): Path to cert file.
+        """
+
+        if cert == self._cert:
+            return
+        self._cert = cert
+        if self._session is not None:
+            self._session.cert = cert
+
+    ssl_verify = property(get_ssl_verify, set_ssl_verify)
+    cert = property(get_cert, set_cert)
 
     @property
     def access_token(self):
@@ -545,7 +603,11 @@ class ServerAPI(object):
     @property
     def is_server_available(self):
         if self._server_available is None:
-            response = requests.get(self._base_url)
+            response = requests.get(
+                self._base_url,
+                cert=self.cert,
+                verify=self.ssl_verify
+            )
             self._server_available = response.status_code == 200
         return self._server_available
 
@@ -596,6 +658,8 @@ class ServerAPI(object):
         self.validate_token()
 
         session = requests.Session()
+        session.cert = self.cert
+        session.verify = self.ssl_verify
         session.headers.update(self.get_headers())
 
         self._session_functions_mapping = {
