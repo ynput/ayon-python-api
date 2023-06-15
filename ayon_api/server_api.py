@@ -14,6 +14,7 @@ try:
 except ImportError:
     HTTPStatus = None
 
+import certifi
 import requests
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
@@ -313,7 +314,8 @@ class ServerAPI(object):
         default_settings_variant (Optional[str]): Settings variant used by
             default if a method for settings won't get any (by default is
             'production').
-        ssl_verify (Optional[bool]): Verify SSL certificate (default is True).
+        ssl_verify (Union[bool, str, None]): Verify SSL certificate
+            (default is None).
         cert (Optional[str]): Path to certificate file. Looks for env
             variable values 'AYON_CERT_FILE' or 'SSL_CERT_FILE'.
     """
@@ -325,7 +327,7 @@ class ServerAPI(object):
         site_id=None,
         client_version=None,
         default_settings_variant=None,
-        ssl_verify=True,
+        ssl_verify=None,
         cert=None,
     ):
         if not base_url:
@@ -341,8 +343,15 @@ class ServerAPI(object):
         self._client_version = client_version
         self._default_settings_variant = default_settings_variant
 
-        if not cert:
-            cert = os.getenv("AYON_CERT_FILE") or os.getenv("SSL_CERT_FILE")
+        if ssl_verify is None:
+            # Custom AYON env variable for CA file
+            ssl_verify = os.environ.get("AYON_CA_FILE")
+            # Use 'True' by default
+            # - that should cover most default behaviors in 'requests'
+            #   with 'certifi'
+            if not ssl_verify:
+                ssl_verify = True
+
         self._ssl_verify = ssl_verify
         self._cert = cert
 
@@ -398,7 +407,8 @@ class ServerAPI(object):
         """Change ssl verification state.
 
         Args:
-            ssl_verify (bool): Enabled or disable ssl verification.
+            ssl_verify (Union[bool, str, None]): Enabled/disable
+                ssl verification, can be a path to file.
         """
 
         if self._ssl_verify == ssl_verify:
@@ -605,8 +615,8 @@ class ServerAPI(object):
         if self._server_available is None:
             response = requests.get(
                 self._base_url,
-                cert=self.cert,
-                verify=self.ssl_verify
+                cert=self._cert,
+                verify=self._ssl_verify
             )
             self._server_available = response.status_code == 200
         return self._server_available
@@ -658,8 +668,8 @@ class ServerAPI(object):
         self.validate_token()
 
         session = requests.Session()
-        session.cert = self.cert
-        session.verify = self.ssl_verify
+        session.cert = self._cert
+        session.verify = self._ssl_verify
         session.headers.update(self.get_headers())
 
         self._session_functions_mapping = {
