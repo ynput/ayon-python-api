@@ -34,7 +34,7 @@ PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
     ]
 )
 def test_operations_with_folder(folder_name):
-    """Updates folder entity.
+    """Test of attributes updates of the folder entity.
     """
 
     s = OperationsSession()
@@ -94,7 +94,6 @@ def test_folder_name_invalid_characters(folder_name):
 def test_folder_duplicated_names(folder_name):
     """Tries to create folders with duplicated 
     names and checks if exception was raised.
-    Checks if the folder was really created after commit.
     """
 
     s = OperationsSession()
@@ -131,7 +130,6 @@ def test_product_duplicated_names(
     ):
     """Tries to create products with duplicated 
     names and checks if exception was raised.
-    Checks if the product was really created after commit.
     """
 
     s = OperationsSession()
