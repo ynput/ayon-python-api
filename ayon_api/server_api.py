@@ -14,7 +14,6 @@ try:
 except ImportError:
     HTTPStatus = None
 
-import certifi
 import requests
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
