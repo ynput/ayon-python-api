@@ -116,6 +116,7 @@ from ._api import (
     get_folder_by_name,
     get_folder_by_path,
     get_folders,
+    get_folders_hierarchy,
 
     get_tasks,
 
