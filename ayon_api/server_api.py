@@ -530,9 +530,13 @@ class ServerAPI(object):
                 as default variant.
 
         Args:
-            variant (Union[str, None]): Settings variant name.
+            variant (Literal['production', 'staging']): Settings variant name.
         """
 
+        if variant not in ("production", "staging"):
+            raise ValueError((
+                "Invalid variant name {}. Expected 'production' or 'staging'"
+            ).format(variant))
         self._default_settings_variant = variant
 
     default_settings_variant = property(
