@@ -310,9 +310,9 @@ class ServerAPI(object):
             connection is created from the same machine under same user.
         client_version (Optional[str]): Version of client application (used in
             desktop client application).
-        default_settings_variant (Optional[str]): Settings variant used by
-            default if a method for settings won't get any (by default is
-            'production').
+        default_settings_variant (Optional[Literal["production", "staging"]]):
+            Settings variant used by default if a method for settings won't
+            get any (by default is 'production').
         ssl_verify (Union[bool, str, None]): Verify SSL certificate
             Looks for env variable value 'AYON_CA_FILE' by default. If not
             available then 'True' is used.
@@ -341,7 +341,10 @@ class ServerAPI(object):
         self._access_token = token
         self._site_id = site_id
         self._client_version = client_version
-        self._default_settings_variant = default_settings_variant
+        self._default_settings_variant = (
+            default_settings_variant
+            or "production"
+        )
 
         if ssl_verify is None:
             # Custom AYON env variable for CA file or 'True'
