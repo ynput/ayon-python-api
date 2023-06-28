@@ -723,6 +723,11 @@ def get_folders(*args, **kwargs):
     return con.get_folders(*args, **kwargs)
 
 
+def get_folders_hierarchy(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_folders_hierarchy(*args, **kwargs)
+
+
 def get_tasks(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_tasks(*args, **kwargs)
