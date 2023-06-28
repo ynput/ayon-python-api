@@ -2041,12 +2041,13 @@ class ServerAPI(object):
         """
 
         major, minor, patch, _, _ = self.server_version_tuple
-        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+        if major == 0 and (minor > 2 or (minor == 2 and patch >= 1)):
+            url = "desktop/dependency_packages/{}".format(filename)
+        else:
+            # Backwards compatibility for AYON server 0.2.0 and lower
             if platform_name is None:
                 platform_name = platform.system().lower()
             url = "dependencies/{}/{}".format(filename, platform_name)
-        else:
-            url = "desktop/dependency_packages/{}".format(filename)
 
         response = self.delete(url)
         if response.status != 200:
@@ -2085,12 +2086,13 @@ class ServerAPI(object):
        """
 
         major, minor, patch, _, _ = self.server_version_tuple
-        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+        if major == 0 and (minor > 2 or (minor == 2 and patch >= 1)):
+            url = "desktop/dependency_packages/{}".format(src_filename)
+        else:
+            # Backwards compatibility for AYON server 0.2.0 and lower
             if platform_name is None:
                 platform_name = platform.system().lower()
             url = "dependencies/{}/{}".format(src_filename, platform_name)
-        else:
-            url = "desktop/dependency_packages/{}".format(src_filename)
 
         package_filepath = os.path.join(dst_directory, dst_filename)
         self.download_file(
@@ -2117,12 +2119,13 @@ class ServerAPI(object):
         """
 
         major, minor, patch, _, _ = self.server_version_tuple
-        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+        if major == 0 and (minor > 2 or (minor == 2 and patch >= 1)):
+            url = "desktop/dependency_packages/{}".format(dst_filename)
+        else:
+            # Backwards compatibility for AYON server 0.2.0 and lower
             if platform_name is None:
                 platform_name = platform.system().lower()
             url = "dependencies/{}/{}".format(dst_filename, platform_name)
-        else:
-            url = "desktop/dependency_packages/{}".format(dst_filename)
 
         self.upload_file(url, src_filepath, progress=progress)
 
