@@ -1,8 +1,12 @@
-[tool.poetry]
+[project]
 name = "ayon_api"
-version = "0.2.2"
+version = "0.3.0"
 description = "Python api for AYON server"
 authors = ["ynput.io <info@ynput.io>"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=2.7,>=3.6.5"
@@ -13,7 +17,3 @@ appdirs = "^1.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
