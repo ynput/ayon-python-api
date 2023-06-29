@@ -2151,6 +2151,15 @@ class ServerAPI(object):
         time_stamp = now_date.strftime("%y%m%d%H%M")
         return "ayon_{}_{}".format(time_stamp, platform_name)
 
+    def _get_bundles_route(self):
+        major, minor, patch, _, _ = self.server_version_tuple
+        url = "bundles"
+        # Backwards compatibility for AYON server 0.3.0
+        # - first version where bundles were available
+        if major == 0 and minor == 3 and patch == 0:
+            url = "desktop/bundles"
+        return url
+
     def get_bundles(self):
         """Server bundles with basic information.
 
@@ -2181,7 +2190,7 @@ class ServerAPI(object):
             dict[str, Any]: Server bundles with basic information.
         """
 
-        response = self.get("desktop/bundles")
+        response = self.get(self._get_bundles_route())
         response.raise_for_status()
         return response.data
 
@@ -2224,7 +2233,7 @@ class ServerAPI(object):
             if value is not None:
                 body[key] = value
 
-        response = self.post("desktop/bundles", **body)
+        response = self.post(self._get_bundles_route(), **body)
         response.raise_for_status()
 
     def update_bundle(
@@ -2259,7 +2268,8 @@ class ServerAPI(object):
             if value is not None
         }
         response = self.patch(
-            "desktop/bundles/{}".format(bundle_name), **body
+            "{}/{}".format(self._get_bundles_route(), bundle_name),
+            **body
         )
         response.raise_for_status()
 
@@ -2270,7 +2280,9 @@ class ServerAPI(object):
             bundle_name (str): Name of bundle to delete.
         """
 
-        response = self.delete("desktop/bundles/{}".format(bundle_name))
+        response = self.delete(
+            "{}/{}".format(self._get_bundles_route(), bundle_name)
+        )
         response.raise_for_status()
 
     # Anatomy presets
