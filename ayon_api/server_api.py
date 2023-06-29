@@ -2148,12 +2148,11 @@ class ServerAPI(object):
 
     def _get_bundles_route(self):
         major, minor, patch, _, _ = self.server_version_tuple
-        url = "bundles"
         # Backwards compatibility for AYON server 0.3.0
         # - first version where bundles were available
         if major == 0 and minor == 3 and patch == 0:
-            url = "desktop/bundles"
-        return url
+            return "desktop/bundles"
+        return "bundles"
 
     def get_bundles(self):
         """Server bundles with basic information.
