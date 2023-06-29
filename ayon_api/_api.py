@@ -688,6 +688,11 @@ def get_addon_site_settings(*args, **kwargs):
     return con.get_addon_site_settings(*args, **kwargs)
 
 
+def get_bundle_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_bundle_settings(*args, **kwargs)
+
+
 def get_addons_studio_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_addons_studio_settings(*args, **kwargs)
