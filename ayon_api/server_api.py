@@ -1763,7 +1763,7 @@ class ServerAPI(object):
             "platform": platform_name,
             "pythonModules": python_modules,
             "checksum": checksum,
-            "checksumType": checksum_type,
+            "checksumAlgorithm": checksum_type,
             "size": file_size,
         }
         if sources:
