@@ -151,11 +151,13 @@ class RestApiResponse(object):
     def status_code(self):
         return self.status
 
-    def raise_for_status(self):
+    def raise_for_status(self, message=None):
         try:
             self._response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            raise HTTPRequestError(str(exc), exc.response)
+            if message is None:
+                message = str(exc)
+            raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
         return self._response.__enter__(*args, **kwargs)
