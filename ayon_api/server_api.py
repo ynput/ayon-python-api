@@ -61,6 +61,7 @@ from .utils import (
     entity_data_json_default,
     failed_json_default,
     TransferProgress,
+    create_dependency_package_basename,
 )
 
 PatternType = type(re.compile(""))
@@ -1734,7 +1735,7 @@ class ServerAPI(object):
         python_modules,
         runtime_python_modules,
         checksum,
-        checksum_type,
+        checksum_algorithm,
         file_size,
         sources=None,
     ):
@@ -1757,7 +1758,7 @@ class ServerAPI(object):
             runtime_python_modules (dict[str, str]): Runtime python modules
                 that are available in installer.
             checksum (str): Installer file checksum.
-            checksum_type (str): Type of checksum used to create checksum.
+            checksum_algorithm (str): Type of checksum used to create checksum.
             file_size (int): File size.
             sources (Optional[list[dict[str, Any]]]): List of sources that
                 can be used to download file.
@@ -1771,7 +1772,7 @@ class ServerAPI(object):
             "pythonModules": python_modules,
             "runtimePythonModules": runtime_python_modules,
             "checksum": checksum,
-            "checksumAlgorithm": checksum_type,
+            "checksumAlgorithm": checksum_algorithm,
             "size": file_size,
         }
         if sources:
@@ -2139,6 +2140,10 @@ class ServerAPI(object):
     def create_dependency_package_basename(self, platform_name=None):
         """Create basename for dependency package file.
 
+        Deprecated:
+            Use 'create_dependency_package_basename' from `ayon_api` or
+                `ayon_api.utils` instead.
+
         Args:
             platform_name (Optional[str]): Name of platform for which the
                 bundle is targeted. Default value is current platform.
@@ -2147,12 +2152,7 @@ class ServerAPI(object):
             str: Dependency package name with timestamp and platform.
         """
 
-        if platform_name is None:
-            platform_name = platform.system().lower()
-
-        now_date = datetime.datetime.now()
-        time_stamp = now_date.strftime("%y%m%d%H%M")
-        return "ayon_{}_{}".format(time_stamp, platform_name)
+        return create_dependency_package_basename(platform_name)
 
     def _get_bundles_route(self):
         major, minor, patch, _, _ = self.server_version_tuple
