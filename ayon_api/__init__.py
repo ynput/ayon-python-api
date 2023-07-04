@@ -1,3 +1,4 @@
+from .version import __version__
 from .utils import (
     TransferProgress,
     slugify_string,
@@ -184,6 +185,8 @@ from ._api import (
 
 
 __all__ = (
+    "__version__",
+
     "TransferProgress",
     "slugify_string",
     "create_dependency_package_basename",
