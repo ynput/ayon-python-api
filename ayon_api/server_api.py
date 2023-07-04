@@ -1306,7 +1306,7 @@ class ServerAPI(object):
 
     def _upload_file(self, url, filepath, progress, request_type=None):
         if request_type is None:
-            request_type = RequestTypes.post
+            request_type = RequestTypes.put
         kwargs = {}
         if self._session is None:
             kwargs["headers"] = self.get_headers()
@@ -1336,7 +1336,7 @@ class ServerAPI(object):
             filepath (str): Source filepath.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track upload progress.
-            request_type (Optional[RequestTypes]): Type of request that will
+            request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
         """
 
@@ -1849,8 +1849,7 @@ class ServerAPI(object):
         self.upload_file(
             "desktop/installers/{}".format(dst_filename),
             src_filepath,
-            progress=progress,
-            request_type=RequestTypes.put
+            progress=progress
         )
 
     def get_dependencies_info(self):
