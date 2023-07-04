@@ -1794,7 +1794,7 @@ class ServerAPI(object):
             filename (str): Installer filename.
         """
 
-        response = self.delete("dekstop/installers/{}".format(filename))
+        response = self.delete("desktop/installers/{}".format(filename))
         response.raise_for_status()
 
     def download_installer(
