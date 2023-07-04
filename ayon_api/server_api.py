@@ -1304,13 +1304,15 @@ class ServerAPI(object):
             progress.set_transfer_done()
         return progress
 
-    def _upload_file(self, url, filepath, progress):
+    def _upload_file(self, url, filepath, progress, request_type=None):
+        if request_type is None:
+            request_type = RequestTypes.post
         kwargs = {}
         if self._session is None:
             kwargs["headers"] = self.get_headers()
-            post_func = self._base_functions_mapping[RequestTypes.post]
+            post_func = self._base_functions_mapping[request_type]
         else:
-            post_func = self._session_functions_mapping[RequestTypes.post]
+            post_func = self._session_functions_mapping[request_type]
 
         with open(filepath, "rb") as stream:
             stream.seek(0, io.SEEK_END)
@@ -1321,7 +1323,9 @@ class ServerAPI(object):
         response.raise_for_status()
         progress.set_transferred_size(size)
 
-    def upload_file(self, endpoint, filepath, progress=None):
+    def upload_file(
+        self, endpoint, filepath, progress=None, request_type=None
+    ):
         """Upload file to server.
 
         Todos:
@@ -1332,6 +1336,8 @@ class ServerAPI(object):
             filepath (str): Source filepath.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track upload progress.
+            request_type (Optional[RequestTypes]): Type of request that will
+                be used to upload file.
         """
 
         if endpoint.startswith(self._base_url):
@@ -1350,7 +1356,7 @@ class ServerAPI(object):
         progress.set_started()
 
         try:
-            self._upload_file(url, filepath, progress)
+            self._upload_file(url, filepath, progress, request_type)
 
         except Exception as exc:
             progress.set_failed(str(exc))
