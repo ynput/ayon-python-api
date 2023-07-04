@@ -116,6 +116,10 @@ class RestApiResponse(object):
         self._data = data
 
     @property
+    def text(self):
+        return self._response.text
+
+    @property
     def orig_response(self):
         return self._response
 
