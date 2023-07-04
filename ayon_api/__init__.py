@@ -1,6 +1,7 @@
 from .utils import (
     TransferProgress,
     slugify_string,
+    create_dependency_package_basename,
 )
 from .server_api import (
     ServerAPI,
@@ -185,6 +186,7 @@ from ._api import (
 __all__ = (
     "TransferProgress",
     "slugify_string",
+    "create_dependency_package_basename",
 
     "ServerAPI",
 

@@ -61,6 +61,7 @@ from .utils import (
     entity_data_json_default,
     failed_json_default,
     TransferProgress,
+    create_dependency_package_basename,
 )
 
 PatternType = type(re.compile(""))
@@ -2131,6 +2132,10 @@ class ServerAPI(object):
     def create_dependency_package_basename(self, platform_name=None):
         """Create basename for dependency package file.
 
+        Deprecated:
+            Use 'create_dependency_package_basename' from `ayon_api` or
+                `ayon_api.utils` instead.
+
         Args:
             platform_name (Optional[str]): Name of platform for which the
                 bundle is targeted. Default value is current platform.
@@ -2139,12 +2144,7 @@ class ServerAPI(object):
             str: Dependency package name with timestamp and platform.
         """
 
-        if platform_name is None:
-            platform_name = platform.system().lower()
-
-        now_date = datetime.datetime.now()
-        time_stamp = now_date.strftime("%y%m%d%H%M")
-        return "ayon_{}_{}".format(time_stamp, platform_name)
+        return create_dependency_package_basename(platform_name)
 
     def _get_bundles_route(self):
         major, minor, patch, _, _ = self.server_version_tuple
