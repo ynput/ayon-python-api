@@ -1495,13 +1495,11 @@ class ServerAPI(object):
         """
 
         response = self.delete("attributes/{}".format(attribute_name))
-        if response.status_code != 204:
-            # TODO raise different exception
-            raise ValueError(
-                "Attribute \"{}\" was not created/updated. {}".format(
-                    attribute_name, response.detail
-                )
+        response.raise_for_status(
+            "Attribute \"{}\" was not created/updated. {}".format(
+                attribute_name, response.detail
             )
+        )
 
         self.reset_attributes_schema()
 
@@ -1946,8 +1944,7 @@ class ServerAPI(object):
             checksum=checksum,
             **kwargs
         )
-        if response.status not in (200, 201, 204):
-            raise ServerError("Failed to create/update dependency")
+        response.raise_for_status("Failed to create/update dependency")
         return response.data
 
     def get_dependency_packages(self):
@@ -2082,8 +2079,7 @@ class ServerAPI(object):
 
         route = self._get_dependency_package_route(filename, platform_name)
         response = self.delete(route)
-        if response.status != 200:
-            raise ServerError("Failed to delete dependency file")
+        response.raise_for_status("Failed to delete dependency file")
         return response.data
 
     def download_dependency_package(
