@@ -1849,7 +1849,8 @@ class ServerAPI(object):
         self.upload_file(
             "desktop/installers/{}".format(dst_filename),
             src_filepath,
-            progress=progress
+            progress=progress,
+            request_type=RequestTypes.put
         )
 
     def get_dependencies_info(self):
