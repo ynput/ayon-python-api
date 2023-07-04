@@ -1732,6 +1732,7 @@ class ServerAPI(object):
         python_version,
         platform_name,
         python_modules,
+        runtime_python_modules,
         checksum,
         checksum_type,
         file_size,
@@ -1742,6 +1743,10 @@ class ServerAPI(object):
         This step will create only metadata. Make sure to upload installer
             to the server using 'upload_installer' method.
 
+        Runtime python modules are modules that are required to run AYON
+            desktop application, but are not added to PYTHONPATH for any
+            subprocess.
+
         Args:
             filename (str): Installer filename.
             version (str): Version of installer.
@@ -1749,6 +1754,8 @@ class ServerAPI(object):
             platform_name (str): Name of platform.
             python_modules (dict[str, str]): Python modules that are available
                 in installer.
+            runtime_python_modules (dict[str, str]): Runtime python modules
+                that are available in installer.
             checksum (str): Installer file checksum.
             checksum_type (str): Type of checksum used to create checksum.
             file_size (int): File size.
@@ -1762,6 +1769,7 @@ class ServerAPI(object):
             "pythonVersion": python_version,
             "platform": platform_name,
             "pythonModules": python_modules,
+            "runtimePythonModules": runtime_python_modules,
             "checksum": checksum,
             "checksumAlgorithm": checksum_type,
             "size": file_size,
