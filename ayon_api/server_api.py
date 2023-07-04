@@ -1733,7 +1733,7 @@ class ServerAPI(object):
         platform_name,
         python_modules,
         checksum,
-        checksum_type,
+        checksum_algorithm,
         file_size,
         sources=None,
     ):
@@ -1750,7 +1750,7 @@ class ServerAPI(object):
             python_modules (dict[str, str]): Python modules that are available
                 in installer.
             checksum (str): Installer file checksum.
-            checksum_type (str): Type of checksum used to create checksum.
+            checksum_algorithm (str): Type of checksum used to create checksum.
             file_size (int): File size.
             sources (Optional[list[dict[str, Any]]]): List of sources that
                 can be used to download file.
@@ -1763,7 +1763,7 @@ class ServerAPI(object):
             "platform": platform_name,
             "pythonModules": python_modules,
             "checksum": checksum,
-            "checksumAlgorithm": checksum_type,
+            "checksumAlgorithm": checksum_algorithm,
             "size": file_size,
         }
         if sources:
