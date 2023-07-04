@@ -1796,7 +1796,7 @@ class ServerAPI(object):
                 can be used to download file. Fully replaces existing sources.
         """
 
-        response = self.post(
+        response = self.patch(
             "desktop/installers/{}".format(filename),
             sources=sources
         )
