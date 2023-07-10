@@ -448,7 +448,6 @@ class TransferProgress:
     fail_reason = property(get_fail_reason)
     source_url = property(get_source_url, set_source_url)
     destination_url = property(get_destination_url, set_destination_url)
-    content_size = property(get_content_size, set_content_size)
     transferred_size = property(get_transferred_size, set_transferred_size)
 
 
