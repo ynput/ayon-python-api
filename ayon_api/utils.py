@@ -429,7 +429,7 @@ class TransferProgress:
     def is_running(self):
         if (
             not self.started
-            or self.done
+            or self.transfer_done
             or self.failed
         ):
             return False
