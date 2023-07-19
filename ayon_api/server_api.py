@@ -4,7 +4,6 @@ import io
 import json
 import logging
 import collections
-import datetime
 import platform
 import copy
 import uuid
