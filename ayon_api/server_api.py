@@ -4,7 +4,6 @@ import io
 import json
 import logging
 import collections
-import datetime
 import platform
 import copy
 import uuid
@@ -325,6 +324,8 @@ class ServerAPI(object):
             available then 'True' is used.
         cert (Optional[str]): Path to certificate file. Looks for env
             variable value 'AYON_CERT_FILE' by default.
+        create_session (Optional[bool]): Create session for connection if
+            token is available. Default is True.
     """
 
     def __init__(
@@ -336,6 +337,7 @@ class ServerAPI(object):
         default_settings_variant=None,
         ssl_verify=None,
         cert=None,
+        create_session=True,
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -367,6 +369,7 @@ class ServerAPI(object):
 
         self._access_token_is_service = None
         self._token_is_valid = None
+        self._token_validation_started = False
         self._server_available = None
         self._server_version = None
         self._server_version_tuple = None
@@ -388,6 +391,11 @@ class ServerAPI(object):
 
         self._as_user_stack = _AsUserStack()
         self._thumbnail_cache = ThumbnailCache(True)
+
+        # Create session
+        if self._access_token and create_session:
+            self.validate_server_availability()
+            self.create_session()
 
     @property
     def log(self):
@@ -652,6 +660,7 @@ class ServerAPI(object):
 
     def validate_token(self):
         try:
+            self._token_validation_started = True
             # TODO add other possible validations
             # - existence of 'user' key in info
             # - validate that 'site_id' is in 'sites' in info
@@ -661,6 +670,9 @@ class ServerAPI(object):
 
         except UnauthorizedError:
             self._token_is_valid = False
+
+        finally:
+            self._token_validation_started = False
         return self._token_is_valid
 
     def set_token(self, token):
@@ -673,8 +685,25 @@ class ServerAPI(object):
         self._token_is_valid = None
         self.close_session()
 
-    def create_session(self):
+    def create_session(self, ignore_existing=True, force=False):
+        """Create a connection session.
+
+        Session helps to keep connection with server without
+            need to reconnect on each call.
+
+        Args:
+            ignore_existing (bool): If session already exists,
+                ignore creation.
+            force (bool): If session already exists, close it and
+                create new.
+        """
+
+        if force and self._session is not None:
+            self.close_session()
+
         if self._session is not None:
+            if ignore_existing:
+                return
             raise ValueError("Session is already created.")
 
         self._as_user_stack.clear()
@@ -841,7 +870,19 @@ class ServerAPI(object):
                     self._access_token)
         return headers
 
-    def login(self, username, password):
+    def login(self, username, password, create_session=True):
+        """Login to server.
+
+        Args:
+            username (str): Username.
+            password (str): Password.
+            create_session (Optional[bool]): Create session after login.
+                Default: True.
+
+        Raises:
+            AuthenticationError: Login failed.
+        """
+
         if self.has_valid_token:
             try:
                 user_info = self.get_user()
@@ -851,7 +892,8 @@ class ServerAPI(object):
             current_username = user_info.get("name")
             if current_username == username:
                 self.close_session()
-                self.create_session()
+                if create_session:
+                    self.create_session()
                 return
 
         self.reset_token()
@@ -875,7 +917,9 @@ class ServerAPI(object):
 
         if not self.has_valid_token:
             raise AuthenticationError("Invalid credentials")
-        self.create_session()
+
+        if create_session:
+            self.create_session()
 
     def logout(self, soft=False):
         if self._access_token:
@@ -888,6 +932,15 @@ class ServerAPI(object):
 
     def _do_rest_request(self, function, url, **kwargs):
         if self._session is None:
+            # Validate token if was not yet validated
+            #    - ignore validation if we're in middle of
+            #       validation
+            if (
+                self._token_is_valid is None
+                and not self._token_validation_started
+            ):
+                self.validate_token()
+
             if "headers" not in kwargs:
                 kwargs["headers"] = self.get_headers()
 
@@ -1640,7 +1693,7 @@ class ServerAPI(object):
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            subpaths (tuple[str]): Any amount of subpaths that are added to
+            *subpaths (str): Any amount of subpaths that are added to
                 addon url.
 
         Returns:
