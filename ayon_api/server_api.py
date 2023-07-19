@@ -325,6 +325,8 @@ class ServerAPI(object):
             available then 'True' is used.
         cert (Optional[str]): Path to certificate file. Looks for env
             variable value 'AYON_CERT_FILE' by default.
+        create_session (Optional[bool]): Create session for connection if
+            token is available. Default is True.
     """
 
     def __init__(
@@ -336,6 +338,7 @@ class ServerAPI(object):
         default_settings_variant=None,
         ssl_verify=None,
         cert=None,
+        create_session=True,
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -388,6 +391,9 @@ class ServerAPI(object):
 
         self._as_user_stack = _AsUserStack()
         self._thumbnail_cache = ThumbnailCache(True)
+
+        if self._access_token and create_session:
+            self.create_session()
 
     @property
     def log(self):
