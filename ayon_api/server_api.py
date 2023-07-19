@@ -369,6 +369,7 @@ class ServerAPI(object):
 
         self._access_token_is_service = None
         self._token_is_valid = None
+        self._token_validation_started = False
         self._server_available = None
         self._server_version = None
         self._server_version_tuple = None
@@ -659,6 +660,7 @@ class ServerAPI(object):
 
     def validate_token(self):
         try:
+            self._token_validation_started = True
             # TODO add other possible validations
             # - existence of 'user' key in info
             # - validate that 'site_id' is in 'sites' in info
@@ -668,6 +670,9 @@ class ServerAPI(object):
 
         except UnauthorizedError:
             self._token_is_valid = False
+
+        finally:
+            self._token_validation_started = False
         return self._token_is_valid
 
     def set_token(self, token):
@@ -895,6 +900,15 @@ class ServerAPI(object):
 
     def _do_rest_request(self, function, url, **kwargs):
         if self._session is None:
+            # Validate token if was not yet validated
+            #    - ignore validation if we're in middle of
+            #       validation
+            if (
+                self._token_is_valid is None
+                and not self._token_validation_started
+            ):
+                self.validate_token()
+
             if "headers" not in kwargs:
                 kwargs["headers"] = self.get_headers()
 
