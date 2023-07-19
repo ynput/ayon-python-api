@@ -1647,7 +1647,7 @@ class ServerAPI(object):
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            subpaths (tuple[str]): Any amount of subpaths that are added to
+            *subpaths (str): Any amount of subpaths that are added to
                 addon url.
 
         Returns:
