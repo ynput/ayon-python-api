@@ -25,12 +25,29 @@ class GlobalServerAPI(ServerAPI):
     but that can be filled afterwards with calling 'login' method.
     """
 
-    def __init__(self, site_id=None, client_version=None):
+    def __init__(
+        self,
+        site_id=None,
+        client_version=None,
+        default_settings_variant=None,
+        ssl_verify=None,
+        cert=None,
+    ):
         url = self.get_url()
         token = self.get_token()
 
-        super(GlobalServerAPI, self).__init__(url, token, site_id, client_version)
-
+        super(GlobalServerAPI, self).__init__(
+            url,
+            token,
+            site_id,
+            client_version,
+            default_settings_variant,
+            ssl_verify,
+            cert,
+            # We want to make sure that server and api key validation
+            #   happens all the time in 'GlobalServerAPI'.
+            create_session=False,
+        )
         self.validate_server_availability()
         self.create_session()
 
