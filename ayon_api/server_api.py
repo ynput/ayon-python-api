@@ -685,8 +685,25 @@ class ServerAPI(object):
         self._token_is_valid = None
         self.close_session()
 
-    def create_session(self):
+    def create_session(self, ignore_existing=True, force=False):
+        """Create a connection session.
+
+        Session helps to keep connection with server without
+            need to reconnect on each call.
+
+        Args:
+            ignore_existing (bool): If session already exists,
+                ignore creation.
+            force (bool): If session already exists, close it and
+                create new.
+        """
+
+        if force and self._session is not None:
+            self.close_session()
+
         if self._session is not None:
+            if ignore_existing:
+                return
             raise ValueError("Session is already created.")
 
         self._as_user_stack.clear()
