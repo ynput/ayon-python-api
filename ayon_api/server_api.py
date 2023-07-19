@@ -3051,6 +3051,65 @@ class ServerAPI(object):
                 fill_own_attribs(project)
         return project
 
+    def get_folders_hierarchy(
+        self,
+        project_name,
+        search_string=None,
+        folder_types=None
+    ):
+        """Get project hierarchy.
+
+        All folders in project in hierarchy data structure.
+
+        Example output:
+            {
+                "hierarchy": [
+                    {
+                        "id": "...",
+                        "name": "...",
+                        "label": "...",
+                        "status": "...",
+                        "folderType": "...",
+                        "hasTasks": False,
+                        "taskNames": [],
+                        "parents": [],
+                        "parentId": None,
+                        "children": [...children folders...]
+                    },
+                    ...
+                ]
+            }
+
+        Args:
+            project_name (str): Project where to look for folders.
+            search_string (Optional[str]): Search string to filter folders.
+            folder_types (Optional[Iterable[str]]): Folder types to filter.
+
+        Returns:
+            dict[str, Any]: Response data from server.
+        """
+
+        if folder_types:
+            folder_types = ",".join(folder_types)
+
+        query_fields = [
+            "{}={}".format(key, value)
+            for key, value in (
+                ("search", search_string),
+                ("types", folder_types),
+            )
+            if value
+        ]
+        query = ""
+        if query_fields:
+            query = "?{}".format(",".join(query_fields))
+
+        response = self.get(
+            "projects/{}/hierarchy{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data
+
     def get_folders(
         self,
         project_name,
