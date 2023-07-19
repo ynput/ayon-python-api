@@ -870,7 +870,19 @@ class ServerAPI(object):
                     self._access_token)
         return headers
 
-    def login(self, username, password):
+    def login(self, username, password, create_session=True):
+        """Login to server.
+
+        Args:
+            username (str): Username.
+            password (str): Password.
+            create_session (Optional[bool]): Create session after login.
+                Default: True.
+
+        Raises:
+            AuthenticationError: Login failed.
+        """
+
         if self.has_valid_token:
             try:
                 user_info = self.get_user()
@@ -880,7 +892,8 @@ class ServerAPI(object):
             current_username = user_info.get("name")
             if current_username == username:
                 self.close_session()
-                self.create_session()
+                if create_session:
+                    self.create_session()
                 return
 
         self.reset_token()
@@ -904,7 +917,9 @@ class ServerAPI(object):
 
         if not self.has_valid_token:
             raise AuthenticationError("Invalid credentials")
-        self.create_session()
+
+        if create_session:
+            self.create_session()
 
     def logout(self, soft=False):
         if self._access_token:
