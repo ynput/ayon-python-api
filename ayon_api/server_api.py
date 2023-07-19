@@ -392,7 +392,9 @@ class ServerAPI(object):
         self._as_user_stack = _AsUserStack()
         self._thumbnail_cache = ThumbnailCache(True)
 
+        # Create session
         if self._access_token and create_session:
+            self.validate_server_availability()
             self.create_session()
 
     @property
