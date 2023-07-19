@@ -3681,7 +3681,6 @@ class ServerAPI(object):
                 if filtered_product is not None:
                     yield filtered_product
 
-
     def get_product_by_id(
         self,
         project_name,
