@@ -146,17 +146,6 @@ class ServiceContext:
     addon_version = None
     service_name = None
 
-    @staticmethod
-    def get_value_from_envs(env_keys, value=None):
-        if value:
-            return value
-
-        for env_key in env_keys:
-            value = os.environ.get(env_key)
-            if value:
-                break
-        return value
-
     @classmethod
     def init_service(
         cls,
@@ -167,14 +156,8 @@ class ServiceContext:
         service_name=None,
         connect=True
     ):
-        token = cls.get_value_from_envs(
-            ("AY_API_KEY", "AYON_API_KEY"),
-            token
-        )
-        server_url = cls.get_value_from_envs(
-            ("AY_SERVER_URL", "AYON_SERVER_URL"),
-            server_url
-        )
+        token = token or os.environ.get("AYON_API_KEY")
+        server_url = server_url or os.environ.get("AYON_SERVER_URL")
         if not server_url:
             raise FailedServiceInit("URL to server is not set")
 
@@ -183,18 +166,9 @@ class ServiceContext:
                 "Token to server {} is not set".format(server_url)
             )
 
-        addon_name = cls.get_value_from_envs(
-            ("AY_ADDON_NAME", "AYON_ADDON_NAME"),
-            addon_name
-        )
-        addon_version = cls.get_value_from_envs(
-            ("AY_ADDON_VERSION", "AYON_ADDON_VERSION"),
-            addon_version
-        )
-        service_name = cls.get_value_from_envs(
-            ("AY_SERVICE_NAME", "AYON_SERVICE_NAME"),
-            service_name
-        )
+        addon_name = addon_name or os.environ.get("AYON_ADDON_NAME")
+        addon_version = addon_version or os.environ.get("AYON_ADDON_VERSION")
+        service_name = service_name or os.environ.get("AYON_SERVICE_NAME")
 
         cls.token = token
         cls.server_url = server_url
