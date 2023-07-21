@@ -1381,6 +1381,7 @@ class ServerAPI(object):
             response = post_func(url, data=stream, **kwargs)
         response.raise_for_status()
         progress.set_transferred_size(size)
+        return response
 
     def upload_file(
         self, endpoint, filepath, progress=None, request_type=None
@@ -1397,6 +1398,9 @@ class ServerAPI(object):
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+
+        Returns:
+            requests.Response: Response object.
         """
 
         if endpoint.startswith(self._base_url):
@@ -1415,7 +1419,7 @@ class ServerAPI(object):
         progress.set_started()
 
         try:
-            self._upload_file(url, filepath, progress, request_type)
+            return self._upload_file(url, filepath, progress, request_type)
 
         except Exception as exc:
             progress.set_failed(str(exc))
@@ -1901,9 +1905,12 @@ class ServerAPI(object):
             dst_filename (str): Destination filename.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track download progress.
+
+        Returns:
+            requests.Response: Response object.
         """
 
-        self.upload_file(
+        return self.upload_file(
             "desktop/installers/{}".format(dst_filename),
             src_filepath,
             progress=progress
@@ -2214,6 +2221,33 @@ class ServerAPI(object):
         """
 
         return create_dependency_package_basename(platform_name)
+
+    def upload_addon_zip(self, src_filepath, progress=None):
+        """Upload addon zip file to server.
+
+        File is validated on server. If it is valid, it is installed. It will
+            create an event job which can be tracked (tracking part is not
+            implemented yet).
+
+        Example output:
+            {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
+
+        Args:
+            src_filepath (str): Path to a zip file.
+            progress (Optional[TransferProgress]): Object to keep track about
+                upload state.
+
+        Returns:
+            dict[str, Any]: Response data from server.
+        """
+
+        response = self.upload_file(
+            "addons/install",
+            src_filepath,
+            progress=progress,
+            request_type=RequestTypes.post,
+        )
+        return response.json()
 
     def _get_bundles_route(self):
         major, minor, patch, _, _ = self.server_version_tuple
