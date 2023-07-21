@@ -635,6 +635,11 @@ def delete_dependency_package(*args, **kwargs):
     return con.delete_dependency_package(*args, **kwargs)
 
 
+def upload_addon_zip(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.upload_addon_zip(*args, **kwargs)
+
+
 def get_project_anatomy_presets(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_anatomy_presets(*args, **kwargs)
