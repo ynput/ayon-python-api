@@ -775,8 +775,7 @@ class EntityHub(object):
                 "projects/{}".format(self.project_name),
                 **project_changes
             )
-            if response.status_code != 204:
-                raise ValueError("Failed to update project")
+            response.raise_for_status()
 
         self.project_entity.lock()
 
