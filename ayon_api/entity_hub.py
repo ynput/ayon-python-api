@@ -1513,7 +1513,14 @@ class ProjectEntity(BaseEntity):
     default_task_type_icon = "task_alt"
 
     def __init__(
-        self, project_code, library, folder_types, task_types, *args, **kwargs
+        self,
+        project_code,
+        library,
+        folder_types,
+        task_types,
+        statuses,
+        *args,
+        **kwargs
     ):
         super(ProjectEntity, self).__init__(*args, **kwargs)
 
@@ -1521,11 +1528,20 @@ class ProjectEntity(BaseEntity):
         self._library_project = library
         self._folder_types = folder_types
         self._task_types = task_types
+        self._statuses = statuses
 
         self._orig_project_code = project_code
         self._orig_library_project = library
         self._orig_folder_types = copy.deepcopy(folder_types)
         self._orig_task_types = copy.deepcopy(task_types)
+        self._orig_statuses = copy.deepcopy(statuses)
+        {
+            "name": "Not ready",
+            "icon": "fiber_new",
+            "color": "#434a56",
+            "state": "not_started",
+            "shortName": "NRD"
+        }
 
     def _prepare_entity_id(self, entity_id):
         if entity_id != self.project_name:
