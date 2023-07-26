@@ -1228,7 +1228,8 @@ class ServerAPI(object):
         target_topic,
         sender,
         description=None,
-        sequential=None
+        sequential=None,
+        filter=None,
     ):
         """Enroll job based on events.
 
@@ -1285,6 +1286,8 @@ class ServerAPI(object):
             kwargs["sequential"] = sequential
         if description is not None:
             kwargs["description"] = description
+        if filter is not None:
+            kwargs["filter"] = filter
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
             return None
