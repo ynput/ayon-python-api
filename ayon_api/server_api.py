@@ -900,18 +900,24 @@ class ServerAPI(object):
 
         self.validate_server_availability()
 
-        response = self.post(
-            "auth/login",
-            name=username,
-            password=password
-        )
-        if response.status_code != 200:
-            _detail = response.data.get("detail")
-            details = ""
-            if _detail:
-                details = " {}".format(_detail)
+        self._token_validation_started = True
 
-            raise AuthenticationError("Login failed {}".format(details))
+        try:
+            response = self.post(
+                "auth/login",
+                name=username,
+                password=password
+            )
+            if response.status_code != 200:
+                _detail = response.data.get("detail")
+                details = ""
+                if _detail:
+                    details = " {}".format(_detail)
+
+                raise AuthenticationError("Login failed {}".format(details))
+
+        finally:
+            self._token_validation_started = False
 
         self._access_token = response["token"]
 
