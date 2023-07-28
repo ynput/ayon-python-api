@@ -1872,7 +1872,7 @@ class ProjectStatus:
 
         return cls(
             data["name"],
-            data.get("shortName"),
+            data.get("shortName", data.get("short_name")),
             data.get("state"),
             data.get("icon"),
             data.get("color"),
