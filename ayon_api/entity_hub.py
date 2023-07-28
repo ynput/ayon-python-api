@@ -1902,6 +1902,9 @@ class _ProjectStatuses:
         self._orig_status_length = len(self._statuses)
         self._set_called = False
 
+    def __len__(self):
+        return len(self._statuses)
+
     def __iter__(self):
         """Iterate over statuses.
 
