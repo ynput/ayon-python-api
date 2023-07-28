@@ -1882,6 +1882,18 @@ class ProjectStatus:
 
 
 class _ProjectStatuses:
+    """Wrapper for project statuses.
+
+    Supports basic methods to add, change or remove statuses from a project.
+
+    To add new statuses use 'create' or 'add_status' methods. To change
+        statuses receive them by one of the getter methods and change their
+        values.
+
+    Todos:
+        Validate if statuses are duplicated.
+    """
+
     def __init__(self, statuses):
         self._statuses = [
             ProjectStatus.from_data(status, idx, self)
