@@ -1900,6 +1900,32 @@ class _ProjectStatuses:
         for status in self._statuses:
             yield status
 
+    def create(
+        self,
+        name,
+        short_name=None,
+        state=None,
+        icon=None,
+        color=None,
+    ):
+        """Create project status.
+
+        Args:
+            name (str): Name of the status. e.g. 'In progress'
+            short_name (Optional[str]): Short name of the status. e.g. 'IP'
+            state (Optional[Literal[not_started, in_progress, done, blocked]]): A
+                state of the status.
+            icon (Optional[str]): Icon of the status. e.g. 'play_arrow'.
+            color (Optional[str]): Color of the status. e.g. '#eeeeee'.
+
+        Returns:
+            ProjectStatus: Created project status.
+        """
+
+        status = ProjectStatus(name, short_name, state, icon, color)
+        self.append(status)
+        return status
+
     def lock(self):
         """Lock statuses.
 
