@@ -1515,6 +1515,7 @@ class ProjectStatus:
         color=None,
         index=None,
         project_statuses=None,
+        is_new=None,
     ):
         short_name = short_name or ""
         icon = icon or ""
@@ -1538,7 +1539,9 @@ class ProjectStatus:
 
         self._index = index
         self._project_statuses = project_statuses
-        self._is_new = index is None or project_statuses is None
+        if is_new is None:
+            is_new = index is None or project_statuses is None
+        self._is_new = is_new
 
     def __str__(self):
         short_name = ""
@@ -1941,7 +1944,9 @@ class _ProjectStatuses:
             ProjectStatus: Created project status.
         """
 
-        status = ProjectStatus(name, short_name, state, icon, color)
+        status = ProjectStatus(
+            name, short_name, state, icon, color, is_new=True
+        )
         self.append(status)
         return status
 
