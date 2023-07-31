@@ -14,7 +14,16 @@ except ImportError:
     HTTPStatus = None
 
 import requests
-from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+try:
+    # This should be used if 'requests' have it available
+    from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+except ImportError:
+    # Older versions of 'requests' don't have custom exception for json
+    #   decode error
+    try:
+        from simplejson import JSONDecodeError as RequestsJSONDecodeError
+    except ImportError:
+        from json import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
     DEFAULT_PRODUCT_TYPE_FIELDS,
