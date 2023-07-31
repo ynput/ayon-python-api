@@ -30,6 +30,8 @@ from ._api import (
     set_client_version,
     get_default_settings_variant,
     set_default_settings_variant,
+    get_sender,
+    set_sender,
 
     get_base_url,
     get_rest_url,
@@ -216,6 +218,8 @@ __all__ = (
     "set_client_version",
     "get_default_settings_variant",
     "set_default_settings_variant",
+    "get_sender",
+    "set_sender",
 
     "get_base_url",
     "get_rest_url",
