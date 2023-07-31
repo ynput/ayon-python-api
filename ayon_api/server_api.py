@@ -14,7 +14,16 @@ except ImportError:
     HTTPStatus = None
 
 import requests
-from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+try:
+    # This should be used if 'requests' have it available
+    from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+except ImportError:
+    # Older versions of 'requests' don't have custom exception for json
+    #   decode error
+    try:
+        from simplejson import JSONDecodeError as RequestsJSONDecodeError
+    except ImportError:
+        from json import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
     DEFAULT_PRODUCT_TYPE_FIELDS,
@@ -900,18 +909,24 @@ class ServerAPI(object):
 
         self.validate_server_availability()
 
-        response = self.post(
-            "auth/login",
-            name=username,
-            password=password
-        )
-        if response.status_code != 200:
-            _detail = response.data.get("detail")
-            details = ""
-            if _detail:
-                details = " {}".format(_detail)
+        self._token_validation_started = True
 
-            raise AuthenticationError("Login failed {}".format(details))
+        try:
+            response = self.post(
+                "auth/login",
+                name=username,
+                password=password
+            )
+            if response.status_code != 200:
+                _detail = response.data.get("detail")
+                details = ""
+                if _detail:
+                    details = " {}".format(_detail)
+
+                raise AuthenticationError("Login failed {}".format(details))
+
+        finally:
+            self._token_validation_started = False
 
         self._access_token = response["token"]
 
@@ -1228,7 +1243,8 @@ class ServerAPI(object):
         target_topic,
         sender,
         description=None,
-        sequential=None
+        sequential=None,
+        events_filter=None,
     ):
         """Enroll job based on events.
 
@@ -1270,6 +1286,8 @@ class ServerAPI(object):
                 in target event.
             sequential (Optional[bool]): The source topic must be processed
                 in sequence.
+            events_filter (Optional[ayon_server.sqlfilter.Filter]): A dict-like
+                with conditions to filter the source event.
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1285,6 +1303,8 @@ class ServerAPI(object):
             kwargs["sequential"] = sequential
         if description is not None:
             kwargs["description"] = description
+        if events_filter is not None:
+            kwargs["filter"] = events_filter
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
             return None
