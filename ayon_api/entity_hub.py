@@ -1567,7 +1567,7 @@ class ProjectStatus:
         raise KeyError(key)
 
     def lock(self):
-        """Lock statuse.
+        """Lock status.
 
         Changes were commited and current values are now the original values.
         """
@@ -1804,6 +1804,15 @@ class ProjectStatus:
     icon = property(get_icon, set_icon)
 
     def _validate_other_p_statuses(self, other):
+        """Validate if other status can be used for move.
+
+        To be able to work with other status, and position them in relation,
+        they must belong to same existing object of '_ProjectStatuses'.
+
+        Args:
+            other (ProjectStatus): Other status to validate.
+        """
+
         o_project_statuses = other.project_statuses
         m_project_statuses = self.project_statuses
         if o_project_statuses is None and m_project_statuses is None:
