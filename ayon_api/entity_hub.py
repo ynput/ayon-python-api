@@ -1855,7 +1855,11 @@ class ProjectStatus:
             "icon": self.icon,
             "color": self.color,
         }
-        if self._original_name and self.name != self._original_name:
+        if (
+            not self._is_new
+            and self._original_name
+            and self.name != self._original_name
+        ):
             output["original_name"] = self._original_name
         return output
 
