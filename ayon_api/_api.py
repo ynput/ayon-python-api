@@ -726,6 +726,26 @@ def get_addons_settings(*args, **kwargs):
     return con.get_addons_settings(*args, **kwargs)
 
 
+def get_secrets(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_secrets(*args, **kwargs)
+
+
+def get_secret(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_secret(*args, **kwargs)
+
+
+def save_secret(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_secret(*args, **kwargs)
+
+
+def delete_secret(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_secret(*args, **kwargs)
+
+
 def get_project_names(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_names(*args, **kwargs)

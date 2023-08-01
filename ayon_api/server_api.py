@@ -2977,6 +2977,79 @@ class ServerAPI(object):
             only_values=only_values
         )
 
+    def get_secrets(self):
+        """Get all secrets.
+
+        Example output:
+            [
+                {
+                    "name": "secret_1",
+                    "value": "secret_value_1",
+                },
+                {
+                    "name": "secret_2",
+                    "value": "secret_value_2",
+                }
+            ]
+
+        Returns:
+            list[dict[str, str]]: List of secret entities.
+        """
+
+        response = self.get("secrets")
+        response.raise_for_status()
+        return response.data
+
+    def get_secret(self, secret_name):
+        """Get secret by name.
+
+        Example output:
+            {
+                "name": "secret_name",
+                "value": "secret_value",
+            }
+
+        Args:
+            secret_name (str): Name of secret.
+
+        Returns:
+            dict[str, str]: Secret entity data.
+        """
+
+        response = self.get("secrets/{}".format(secret_name))
+        response.raise_for_status()
+        return response.data
+
+    def save_secret(self, secret_name, secret_value):
+        """Save secret.
+
+        This endpoint can create and update secret.
+
+        Args:
+            secret_name (str): Name of secret.
+            secret_value (str): Value of secret.
+        """
+
+        response = self.put(
+            "secrets/{}".format(secret_name),
+            name=secret_name,
+            value=secret_value,
+        )
+        response.raise_for_status()
+        return response.data
+
+
+    def delete_secret(self, secret_name):
+        """Delete secret by name.
+
+        Args:
+            secret_name (str): Name of secret to delete.
+        """
+
+        response = self.delete("secrets/{}".format(secret_name))
+        response.raise_for_status()
+        return response.data
+
     # Entity getters
     def get_rest_project(self, project_name):
         """Query project by name.
