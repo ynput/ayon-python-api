@@ -112,6 +112,11 @@ from ._api import (
     get_addons_project_settings,
     get_addons_settings,
 
+    get_secrets,
+    get_secret,
+    save_secret,
+    delete_secret,
+
     get_project_names,
     get_projects,
     get_project,
@@ -298,6 +303,11 @@ __all__ = (
     "get_addons_studio_settings",
     "get_addons_project_settings",
     "get_addons_settings",
+
+    "get_secrets",
+    "get_secret",
+    "save_secret",
+    "delete_secret",
 
     "get_project_names",
     "get_projects",
