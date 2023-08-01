@@ -392,6 +392,28 @@ def set_default_settings_variant(variant):
     return con.set_default_settings_variant(variant)
 
 
+def get_sender():
+    """Sender used to send requests.
+
+    Returns:
+        Union[str, None]: Sender name or None.
+    """
+
+    con = get_server_api_connection()
+    return con.get_sender()
+
+
+def set_sender(sender):
+    """Change sender used for requests.
+
+    Args:
+        sender (Union[str, None]): Sender name or None.
+    """
+
+    con = get_server_api_connection()
+    return con.set_sender(sender)
+
+
 def get_base_url():
     con = get_server_api_connection()
     return con.get_base_url()

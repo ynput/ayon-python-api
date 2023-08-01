@@ -328,6 +328,8 @@ class ServerAPI(object):
         default_settings_variant (Optional[Literal["production", "staging"]]):
             Settings variant used by default if a method for settings won't
             get any (by default is 'production').
+        sender (Optional[str]): Sender of requests. Used in server logs and
+            propagated into events.
         ssl_verify (Union[bool, str, None]): Verify SSL certificate
             Looks for env variable value 'AYON_CA_FILE' by default. If not
             available then 'True' is used.
@@ -344,6 +346,7 @@ class ServerAPI(object):
         site_id=None,
         client_version=None,
         default_settings_variant=None,
+        sender=None,
         ssl_verify=None,
         cert=None,
         create_session=True,
@@ -363,6 +366,7 @@ class ServerAPI(object):
             default_settings_variant
             or "production"
         )
+        self._sender = sender
 
         if ssl_verify is None:
             # Custom AYON env variable for CA file or 'True'
@@ -568,6 +572,29 @@ class ServerAPI(object):
         set_default_settings_variant
     )
 
+    def get_sender(self):
+        """Sender used to send requests.
+
+        Returns:
+            Union[str, None]: Sender name or None.
+        """
+
+        return self._sender
+
+    def set_sender(self, sender):
+        """Change sender used for requests.
+
+        Args:
+            sender (Union[str, None]): Sender name or None.
+        """
+
+        if sender == self._sender:
+            return
+        self._sender = sender
+        self._update_session_headers()
+
+    sender = property(get_sender, set_sender)
+
     def get_default_service_username(self):
         """Default username used for callbacks when used with service API key.
 
@@ -751,6 +778,7 @@ class ServerAPI(object):
             ("X-as-user", self._as_user_stack.username),
             ("x-ayon-version", self._client_version),
             ("x-ayon-site-id", self._site_id),
+            ("x-sender", self._sender),
         ):
             if value is not None:
                 self._session.headers[key] = value
@@ -867,6 +895,9 @@ class ServerAPI(object):
 
         if self._client_version is not None:
             headers["x-ayon-version"] = self._client_version
+
+        if self._sender is not None:
+            headers["x-sender"] = self._sender
 
         if self._access_token:
             if self._access_token_is_service:
