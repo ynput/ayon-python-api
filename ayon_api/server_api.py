@@ -2980,6 +2980,18 @@ class ServerAPI(object):
     def get_secrets(self):
         """Get all secrets.
 
+        Example output:
+            [
+                {
+                    "name": "secret_1",
+                    "value": "secret_value_1",
+                },
+                {
+                    "name": "secret_2",
+                    "value": "secret_value_2",
+                }
+            ]
+
         Returns:
             list[dict[str, str]]: List of secret entities.
         """
