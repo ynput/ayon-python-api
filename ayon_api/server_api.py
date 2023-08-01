@@ -896,6 +896,9 @@ class ServerAPI(object):
         if self._client_version is not None:
             headers["x-ayon-version"] = self._client_version
 
+        if self._sender is not None:
+            headers["x-sender"] = self._sender
+
         if self._access_token:
             if self._access_token_is_service:
                 headers["X-Api-Key"] = self._access_token
