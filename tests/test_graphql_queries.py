@@ -1,5 +1,6 @@
 import os
 import pytest
+
 from ayon_api.graphql import GraphQlQuery
 from ayon_api.graphql_queries import (
     project_graphql_query,
@@ -44,25 +45,20 @@ def make_project_query(keys, values, types):
     # by default from project_graphql_query(["name"])
     inserted = {"projectName"}
 
-    for i in range(len(keys)):
+    for key, entity_type, value in zip(keys, types, values):
         try:
-            query.add_variable(keys[i], types[i], values[i])
+            query.add_variable(key, entity_type, value)
         except KeyError:
-            if keys[i] not in inserted:
+            if key not in inserted:
                 return None
             else:
-                query.set_variable_value(keys[i], values[i])
+                query.set_variable_value(key, value)
 
-        inserted.add(keys[i])
-    
-    return query
+        inserted.add(key)
 
 
 def make_expected_get_variables_values(keys, values):
-    expected = {}
-    for i in range(len(keys)):
-        expected[keys[i]] = values[i]
-    return expected
+    return dict(zip(keys, values))
 
 
 @pytest.mark.parametrize(
@@ -81,7 +77,7 @@ def make_expected_get_variables_values(keys, values):
 def test_get_variables_values(keys, values, types):
     query = make_project_query(keys, values, types)
     # None means: unexpected exception thrown while adding variables
-    assert query != None
+    assert query is not None
 
     expected = make_expected_get_variables_values(keys, values)
     assert query.get_variables_values() == expected

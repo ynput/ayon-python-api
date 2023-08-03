@@ -4,11 +4,11 @@ To run use: pytest --envfile {environment path}.
 Make sure you have set AYON_TOKEN in your environment. 
 """
 
-
-import pytest
-import os
-from dotenv import load_dotenv
 import json
+import os
+import pytest
+from dotenv import load_dotenv
+
 from ayon_api import (
     is_connection_created,
     close_connection,
@@ -35,11 +35,9 @@ from ayon_api.exceptions import (
 )
 
 
-AYON_BASE_URL = "https://ayon.dev"
-AYON_REST_URL = "https://ayon.dev/api"
-PROJECT_NAME = "demo_Commercial"
-
-os.environ["AYON_SERVER_URL"] = AYON_BASE_URL
+AYON_BASE_URL = os.getenv("AYON_SERVER_URL")
+AYON_REST_URL = "{}/api".format(AYON_BASE_URL )
+PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
 
 
 def test_close_connection():
@@ -63,11 +61,10 @@ def test_get_rest_url():
 
 @pytest.mark.parametrize(
     "folder, name",
-    [("projects", "demo_Commercial")]
+    [("projects", PROJECT_NAME)]
 )
 def test_get(folder, name):
     entrypoint = folder + "/" + name
     res = get(entrypoint)
     assert res.status_code == 200
     assert isinstance(res.data, dict)
-    # print(res.data)
