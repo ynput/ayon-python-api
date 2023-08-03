@@ -1,4 +1,6 @@
+import os
 import pytest
+
 from ayon_api.graphql import GraphQlQuery
 from ayon_api.graphql_queries import (
     project_graphql_query,
@@ -10,11 +12,9 @@ from ayon_api.graphql_queries import (
 def empty_query():
     return GraphQlQuery("ProjectQuery")
 
-
 @pytest.fixture
 def project_query():
     return project_graphql_query(["name"])
-
 
 @pytest.fixture
 def folder_query():
@@ -22,8 +22,8 @@ def folder_query():
 
 
 def test_simple_duplicate_add_variable_exception(empty_query):
-    key, value_type = "someVariable", "String"
-    empty_query.add_variable(key, value_type)
+    key, value_type, value = "projectName", "[String!]", "kuba_v4_sync"
+    empty_query.add_variable(key, value_type, value)
     with pytest.raises(KeyError):
         empty_query.add_variable(key, value_type)
 
@@ -42,15 +42,19 @@ def test_simple_output(project_query):
 def make_project_query(keys, values, types):
     query = project_graphql_query(["name"])
 
-    # Function 'project_graphql_query' always adds 'projectName' variable
+    # by default from project_graphql_query(["name"])
     inserted = {"projectName"}
-    for key, value_type, value in zip(keys, types, values):
-        if key not in inserted:
-            inserted.add(key)
-            query.add_variable(key, value_type)
-        query.set_variable_value(key, value)
 
-    return query
+    for key, entity_type, value in zip(keys, types, values):
+        try:
+            query.add_variable(key, entity_type, value)
+        except KeyError:
+            if key not in inserted:
+                return None
+            else:
+                query.set_variable_value(key, value)
+
+        inserted.add(key)
 
 
 def make_expected_get_variables_values(keys, values):
