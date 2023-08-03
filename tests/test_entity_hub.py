@@ -7,6 +7,7 @@ from ayon_api._api import (
     get_folder_by_id,
     get_folders
 )
+from ayon_api.exceptions import HTTPRequestError
 
 
 PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
@@ -279,6 +280,41 @@ def test_large_move_of_folders__with_duplicated_names(
 
 def test_move_tasks():
     raise NotImplementedError()
+
+
+@pytest.mark.parametrize(
+    "status_name1, status_name2",
+    [
+        ("entity_hub_folder1"),
+    ]
+)
+def test_create_status():
+    e = EntityHub(PROJECT_NAME)
+
+    e.project_entity.statuses.create(
+        "test_status",
+        "TEST",
+        "blocked",
+        "play_arrow",
+        "#ff0000"
+    )
+
+    e.project_entity.statuses.create(
+        "test_status2",
+        "TEST2",
+        "blocked",
+        "play_arrow",
+        "#00ff00"
+    )
+
+    e.commit_changes()
+
+    status = e.project_entity.statuses.get("test_status")
+    status.name = "test_status2"
+
+    with pytest.raises(HTTPRequestError):
+        e.commit_changes()
+    # print(list(e.project_entity.statuses)[0])
 
 
 def test_rename_status():
