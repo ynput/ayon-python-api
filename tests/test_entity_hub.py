@@ -13,9 +13,6 @@ from ayon_api.exceptions import HTTPRequestError
 PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
 
 
-DEBUG_PRINT = True
-
-
 @pytest.mark.parametrize(
     "folder_name, subfolder_name, folders_count",
     [
@@ -87,6 +84,10 @@ def test_create_delete_with_duplicated_names(
     subfolder_name,
     num_of_subfolders
     ):
+    """Creates two folders with duplicated names 
+    and delete one of them before commit.
+    Exception should not be raised.
+    """
     e = EntityHub(PROJECT_NAME)
 
     folder1 = e.add_new_folder("Folder", name=folder_name)
@@ -99,6 +100,7 @@ def test_create_delete_with_duplicated_names(
             name=f"{subfolder_name}{folder_number:03}"
         )
         subfolders.append(subfolder)
+        e.commit_changes()
 
         # create and delete folder with same name
         subfolder = e.add_new_folder(
@@ -107,8 +109,7 @@ def test_create_delete_with_duplicated_names(
             name=f"{subfolder_name}{folder_number:03}"
         )
         e.delete_entity(subfolder)
-
-    e.commit_changes()
+        e.commit_changes()
 
     assert e.get_folder_by_id(PROJECT_NAME, folder1["id"]) is not None
 
@@ -129,6 +130,11 @@ def test_create_delete_with_duplicated_names(
     ]
 )
 def test_move_with_duplicated_names(folder_name):
+    """Test of moving folders with duplicated names to the same parent 
+    folder for some time. Before the commit, everything is set correctly.
+    Creates two folders with subfolders 
+    and switches the parent folders of subfolders.
+    """
     e = EntityHub(PROJECT_NAME)
 
     parent_folder = e.add_new_folder("Folder", name=folder_name)
@@ -155,7 +161,7 @@ def test_move_with_duplicated_names(folder_name):
 
 
     # raises an exception (duplicated names)
-    # """
+    """
     # switch the parent folders - duplicated names exception shouldn't be raised
     e.set_entity_parent(subfolders[0]["id"], folders[1]["id"])
     e.set_entity_parent(subfolders[1]["id"], folders[0]["id"])
@@ -181,7 +187,7 @@ def test_move_with_duplicated_names(folder_name):
             subfolders[0]["id"]
         )["parent_id"] == folders[0]["id"]
     assert e.get_folder_by_id(PROJECT_NAME, subfolders[1]["id"]) is None
-    # """
+    """
 
     # ------------------------------
     e.delete_entity(parent_folder)
@@ -236,9 +242,6 @@ def test_large_move_of_folders__with_duplicated_names(
 
     # raises exception - duplicated name under parent_id
     """
-    if DEBUG_PRINT:
-        print()
-
     # move all subfolders from one folder to the next one
     for index, subfolder_id in enumerate(subfolder_ids):
         # next folder (for last folder -> first folder)
@@ -248,8 +251,6 @@ def test_large_move_of_folders__with_duplicated_names(
         subfolder = e.get_folder_by_id(subfolder_id)
         current_parent_id = subfolder["parent_id"]
         assert new_parent_id != current_parent_id
-        if DEBUG_PRINT:
-            print(subfolder_id, "|", subfolder["name"], ": ", current_parent_id, " -> ", new_parent_id)
         e.set_entity_parent(subfolder_id, new_parent_id)
 
     e.commit_changes()
@@ -288,7 +289,7 @@ def test_move_tasks():
         ("entity_hub_folder1"),
     ]
 )
-def test_create_status():
+def test_duplicated_status_name():
     e = EntityHub(PROJECT_NAME)
 
     e.project_entity.statuses.create(
