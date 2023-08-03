@@ -1,3 +1,10 @@
+"""Tests of folder hierarchy - creating, deleting and moving
+folders, products, versions, etc.
+
+To run use: pytest --envfile {environment path}.
+Make sure you have set AYON_TOKEN in your environment. 
+"""
+
 import pytest
 import os
 from dotenv import load_dotenv
@@ -34,7 +41,7 @@ PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
     ]
 )
 def test_operations_with_folder(folder_name):
-    """Test of attributes updates of the folder entity.
+    """Test of attributes updates - folder.
     """
 
     s = OperationsSession()
@@ -220,11 +227,11 @@ def test_whole_hierarchy(
         s.commit()
 
         assert list(get_versions(
-                PROJECT_NAME, 
-                version_ids=[version_id],
-                product_ids=[product_id])) != []
+            PROJECT_NAME, 
+            version_ids=[version_id],
+            product_ids=[product_id])) != []
 
-        my_version_ids.append(version_id)        
+        my_version_ids.append(version_id)
 
         # test duplicate name
         with pytest.raises(FailedOperations):
@@ -340,14 +347,14 @@ def test_delete_folder_with_product(
 )
 def test_subfolder_hierarchy(
     folder_name,
-    subfolder_name1, 
-    subfolder_name2, 
-    count_level1, 
+    subfolder_name1,
+    subfolder_name2,
+    count_level1,
     count_level2
     ):
     """Creates three levels of folder hierarchy and product in the last one. 
-    Tries creating entities with duplicated names and checks raising exceptions.
-    After creation of every entity is checked if the entity was really created.
+    Tries creating products with duplicated names and checks raising exceptions.
+    After creation of every product is checked if the product was really created.
     """
 
     s = OperationsSession()
@@ -359,8 +366,8 @@ def test_subfolder_hierarchy(
 
     # create subfolder with subfolders in each iteration
     folder_with_product = []
-    for i in range(count_level1):
-        folder = new_folder_entity(f"{subfolder_name1}{i:03}", "Folder", parent_id=parent_id)
+    for folder_number in range(count_level1):
+        folder = new_folder_entity(f"{subfolder_name1}{folder_number:03}", "Folder", parent_id=parent_id)
         folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
         s.commit()
 
@@ -371,23 +378,23 @@ def test_subfolder_hierarchy(
 
         # subfolder with same name
         with pytest.raises(FailedOperations):
-            folder = new_folder_entity(f"{subfolder_name1}{i:03}", "Folder", parent_id=parent_id)
+            folder = new_folder_entity(f"{subfolder_name1}{folder_number:03}", "Folder", parent_id=parent_id)
             _ = s.create_entity(PROJECT_NAME, "folder", folder)
             s.commit()
         
         # subfolder with same name but different type
         with pytest.raises(FailedOperations):
-            folder = new_folder_entity(f"{subfolder_name1}{i:03}", "Shot", parent_id=parent_id)
+            folder = new_folder_entity(f"{subfolder_name1}{folder_number:03}", "Shot", parent_id=parent_id)
             _ = s.create_entity(PROJECT_NAME, "folder", folder)
             s.commit()
 
         # create subfolder with products in each iteration
-        for j in range(count_level2):
-            folder = new_folder_entity(f"{subfolder_name2}{j:03}", "Shot", parent_id=folder_id)
+        for subfolder_number in range(count_level2):
+            folder = new_folder_entity(f"{subfolder_name2}{subfolder_number:03}", "Shot", parent_id=folder_id)
             subfolder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
             s.commit()
             folder_with_product.append(subfolder_id)
-            # folder_with_product.append(f"{subfolder_name2}{j:03}")
+            # folder_with_product.append(f"{subfolder_name2}{subfolder_number:03}")
 
             assert list(get_folders(
                 PROJECT_NAME, 
@@ -396,7 +403,7 @@ def test_subfolder_hierarchy(
 
             # subfolder with same name
             with pytest.raises(FailedOperations):
-                folder = new_folder_entity(f"{subfolder_name2}{j:03}", "Shot", parent_id=folder_id)
+                folder = new_folder_entity(f"{subfolder_name2}{subfolder_number:03}", "Shot", parent_id=folder_id)
                 _ = s.create_entity(PROJECT_NAME, "folder", folder)
                 s.commit()
 
