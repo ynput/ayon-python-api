@@ -1,19 +1,40 @@
-[tool.poetry]
-name = "ayon_api"
-version = "0.2.1"
-description = "Python api for AYON server"
-authors = ["ynput.io <info@ynput.io>"]
+[project]
+name = "ayon-python-api"
+version = "0.3.5"
+description = "AYON Python API"
+license = {file = "LICENSE"}
+readme = {file = "README.md", content-type = "text/markdown"}
+authors = [
+    {name = "ynput.io", email = "info@ynput.io"}
+]
+keywords = ["AYON", "ynput", "OpenPype", "vfx"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "requests >= 2.27.1",
+    "six >= 1.15",
+    "Unidecode >= 1.2.0",
+    "appdirs >=1, <2",
+]
+
+[project.urls]
+Repository = "https://github.com/ynput/ayon-python-api"
+Changelog = "https://github.com/ynput/ayon-python-api/releases"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=2.7,>=3.6.5"
 requests = "^2.28.1"
 six = "^1.15"
-Unidecode = "^1.2"
+Unidecode = "1.2.0" # Python 2 support
 appdirs = "^1.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"

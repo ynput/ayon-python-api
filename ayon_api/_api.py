@@ -25,12 +25,29 @@ class GlobalServerAPI(ServerAPI):
     but that can be filled afterwards with calling 'login' method.
     """
 
-    def __init__(self, site_id=None, client_version=None):
+    def __init__(
+        self,
+        site_id=None,
+        client_version=None,
+        default_settings_variant=None,
+        ssl_verify=None,
+        cert=None,
+    ):
         url = self.get_url()
         token = self.get_token()
 
-        super(GlobalServerAPI, self).__init__(url, token, site_id, client_version)
-
+        super(GlobalServerAPI, self).__init__(
+            url,
+            token,
+            site_id,
+            client_version,
+            default_settings_variant,
+            ssl_verify,
+            cert,
+            # We want to make sure that server and api key validation
+            #   happens all the time in 'GlobalServerAPI'.
+            create_session=False,
+        )
         self.validate_server_availability()
         self.create_session()
 
@@ -129,17 +146,6 @@ class ServiceContext:
     addon_version = None
     service_name = None
 
-    @staticmethod
-    def get_value_from_envs(env_keys, value=None):
-        if value:
-            return value
-
-        for env_key in env_keys:
-            value = os.environ.get(env_key)
-            if value:
-                break
-        return value
-
     @classmethod
     def init_service(
         cls,
@@ -150,14 +156,8 @@ class ServiceContext:
         service_name=None,
         connect=True
     ):
-        token = cls.get_value_from_envs(
-            ("AY_API_KEY", "AYON_API_KEY"),
-            token
-        )
-        server_url = cls.get_value_from_envs(
-            ("AY_SERVER_URL", "AYON_SERVER_URL"),
-            server_url
-        )
+        token = token or os.environ.get("AYON_API_KEY")
+        server_url = server_url or os.environ.get("AYON_SERVER_URL")
         if not server_url:
             raise FailedServiceInit("URL to server is not set")
 
@@ -166,18 +166,9 @@ class ServiceContext:
                 "Token to server {} is not set".format(server_url)
             )
 
-        addon_name = cls.get_value_from_envs(
-            ("AY_ADDON_NAME", "AYON_ADDON_NAME"),
-            addon_name
-        )
-        addon_version = cls.get_value_from_envs(
-            ("AY_ADDON_VERSION", "AYON_ADDON_VERSION"),
-            addon_version
-        )
-        service_name = cls.get_value_from_envs(
-            ("AY_SERVICE_NAME", "AYON_SERVICE_NAME"),
-            service_name
-        )
+        addon_name = addon_name or os.environ.get("AYON_ADDON_NAME")
+        addon_version = addon_version or os.environ.get("AYON_ADDON_VERSION")
+        service_name = service_name or os.environ.get("AYON_SERVICE_NAME")
 
         cls.token = token
         cls.server_url = server_url
@@ -401,6 +392,28 @@ def set_default_settings_variant(variant):
     return con.set_default_settings_variant(variant)
 
 
+def get_sender():
+    """Sender used to send requests.
+
+    Returns:
+        Union[str, None]: Sender name or None.
+    """
+
+    con = get_server_api_connection()
+    return con.get_sender()
+
+
+def set_sender(sender):
+    """Change sender used for requests.
+
+    Args:
+        sender (Union[str, None]): Sender name or None.
+    """
+
+    con = get_server_api_connection()
+    return con.set_sender(sender)
+
+
 def get_base_url():
     con = get_server_api_connection()
     return con.get_base_url()
@@ -531,6 +544,53 @@ def download_addon_private_file(*args, **kwargs):
     return con.download_addon_private_file(*args, **kwargs)
 
 
+def get_info(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_info(*args, **kwargs)
+
+
+def get_server_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_server_version(*args, **kwargs)
+
+
+def get_server_version_tuple(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_server_version_tuple(*args, **kwargs)
+
+
+# Installers
+def get_installers(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_installers(*args, **kwargs)
+
+
+def create_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_installer(*args, **kwargs)
+
+
+def update_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_installer(*args, **kwargs)
+
+
+def delete_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_installer(*args, **kwargs)
+
+
+def download_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    con.download_installer(*args, **kwargs)
+
+
+def upload_installer(*args, **kwargs):
+    con = get_server_api_connection()
+    con.upload_installer(*args, **kwargs)
+
+
+# Dependency packages
 def get_dependencies_info(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_dependencies_info(*args, **kwargs)
@@ -551,14 +611,54 @@ def upload_dependency_package(*args, **kwargs):
     return con.upload_dependency_package(*args, **kwargs)
 
 
+def get_dependency_packages(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_dependency_packages(*args, **kwargs)
+
+
+def create_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_dependency_package(*args, **kwargs)
+
+
+def update_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_dependency_package(*args, **kwargs)
+
+
 def delete_dependency_package(*args, **kwargs):
     con = get_server_api_connection()
     return con.delete_dependency_package(*args, **kwargs)
 
 
+def upload_addon_zip(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.upload_addon_zip(*args, **kwargs)
+
+
 def get_project_anatomy_presets(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_anatomy_presets(*args, **kwargs)
+
+
+def get_bundles(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_bundles(*args, **kwargs)
+
+
+def create_bundle(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_bundle(*args, **kwargs)
+
+
+def update_bundle(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_bundle(*args, **kwargs)
+
+
+def delete_bundle(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_bundle(*args, **kwargs)
 
 
 def get_project_anatomy_preset(*args, **kwargs):
@@ -606,6 +706,11 @@ def get_addon_site_settings(*args, **kwargs):
     return con.get_addon_site_settings(*args, **kwargs)
 
 
+def get_bundle_settings(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_bundle_settings(*args, **kwargs)
+
+
 def get_addons_studio_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_addons_studio_settings(*args, **kwargs)
@@ -619,6 +724,26 @@ def get_addons_project_settings(*args, **kwargs):
 def get_addons_settings(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_addons_settings(*args, **kwargs)
+
+
+def get_secrets(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_secrets(*args, **kwargs)
+
+
+def get_secret(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_secret(*args, **kwargs)
+
+
+def save_secret(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_secret(*args, **kwargs)
+
+
+def delete_secret(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_secret(*args, **kwargs)
 
 
 def get_project_names(*args, **kwargs):
@@ -639,6 +764,11 @@ def get_projects(*args, **kwargs):
 def get_folders(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_folders(*args, **kwargs)
+
+
+def get_folders_hierarchy(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_folders_hierarchy(*args, **kwargs)
 
 
 def get_tasks(*args, **kwargs):

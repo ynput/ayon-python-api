@@ -14,7 +14,16 @@ except ImportError:
     HTTPStatus = None
 
 import requests
-from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+try:
+    # This should be used if 'requests' have it available
+    from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+except ImportError:
+    # Older versions of 'requests' don't have custom exception for json
+    #   decode error
+    try:
+        from simplejson import JSONDecodeError as RequestsJSONDecodeError
+    except ImportError:
+        from json import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
     DEFAULT_PRODUCT_TYPE_FIELDS,
@@ -60,6 +69,7 @@ from .utils import (
     entity_data_json_default,
     failed_json_default,
     TransferProgress,
+    create_dependency_package_basename,
 )
 
 PatternType = type(re.compile(""))
@@ -68,6 +78,14 @@ JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
 PROJECT_NAME_REGEX = re.compile(
     "^[{}]+$".format(PROJECT_NAME_ALLOWED_SYMBOLS)
+)
+
+VERSION_REGEX = re.compile(
+    r"(?P<major>0|[1-9]\d*)"
+    r"\.(?P<minor>0|[1-9]\d*)"
+    r"\.(?P<patch>0|[1-9]\d*)"
+    r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
+    r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
 
 
@@ -106,6 +124,10 @@ class RestApiResponse(object):
         self._data = data
 
     @property
+    def text(self):
+        return self._response.text
+
+    @property
     def orig_response(self):
         return self._response
 
@@ -141,11 +163,13 @@ class RestApiResponse(object):
     def status_code(self):
         return self.status
 
-    def raise_for_status(self):
+    def raise_for_status(self, message=None):
         try:
             self._response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            raise HTTPRequestError(str(exc), exc.response)
+            if message is None:
+                message = str(exc)
+            raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
         return self._response.__enter__(*args, **kwargs)
@@ -301,9 +325,18 @@ class ServerAPI(object):
             connection is created from the same machine under same user.
         client_version (Optional[str]): Version of client application (used in
             desktop client application).
-        default_settings_variant (Optional[str]): Settings variant used by
-            default if a method for settings won't get any (by default is
-            'production').
+        default_settings_variant (Optional[Literal["production", "staging"]]):
+            Settings variant used by default if a method for settings won't
+            get any (by default is 'production').
+        sender (Optional[str]): Sender of requests. Used in server logs and
+            propagated into events.
+        ssl_verify (Union[bool, str, None]): Verify SSL certificate
+            Looks for env variable value 'AYON_CA_FILE' by default. If not
+            available then 'True' is used.
+        cert (Optional[str]): Path to certificate file. Looks for env
+            variable value 'AYON_CERT_FILE' by default.
+        create_session (Optional[bool]): Create session for connection if
+            token is available. Default is True.
     """
 
     def __init__(
@@ -312,7 +345,11 @@ class ServerAPI(object):
         token=None,
         site_id=None,
         client_version=None,
-        default_settings_variant=None
+        default_settings_variant=None,
+        sender=None,
+        ssl_verify=None,
+        cert=None,
+        create_session=True,
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -325,10 +362,30 @@ class ServerAPI(object):
         self._access_token = token
         self._site_id = site_id
         self._client_version = client_version
-        self._default_settings_variant = default_settings_variant
+        self._default_settings_variant = (
+            default_settings_variant
+            or "production"
+        )
+        self._sender = sender
+
+        if ssl_verify is None:
+            # Custom AYON env variable for CA file or 'True'
+            # - that should cover most default behaviors in 'requests'
+            #   with 'certifi'
+            ssl_verify = os.environ.get("AYON_CA_FILE") or True
+
+        if cert is None:
+            cert = os.environ.get("AYON_CERT_FILE")
+
+        self._ssl_verify = ssl_verify
+        self._cert = cert
+
         self._access_token_is_service = None
         self._token_is_valid = None
+        self._token_validation_started = False
         self._server_available = None
+        self._server_version = None
+        self._server_version_tuple = None
 
         self._session = None
 
@@ -348,6 +405,11 @@ class ServerAPI(object):
         self._as_user_stack = _AsUserStack()
         self._thumbnail_cache = ThumbnailCache(True)
 
+        # Create session
+        if self._access_token and create_session:
+            self.validate_server_availability()
+            self.create_session()
+
     @property
     def log(self):
         if self._log is None:
@@ -362,6 +424,54 @@ class ServerAPI(object):
 
     base_url = property(get_base_url)
     rest_url = property(get_rest_url)
+
+    def get_ssl_verify(self):
+        """Enable ssl verification.
+
+        Returns:
+            bool: Current state of ssl verification.
+        """
+
+        return self._ssl_verify
+
+    def set_ssl_verify(self, ssl_verify):
+        """Change ssl verification state.
+
+        Args:
+            ssl_verify (Union[bool, str, None]): Enabled/disable
+                ssl verification, can be a path to file.
+        """
+
+        if self._ssl_verify == ssl_verify:
+            return
+        self._ssl_verify = ssl_verify
+        if self._session is not None:
+            self._session.verify = ssl_verify
+
+    def get_cert(self):
+        """Current cert file used for connection to server.
+
+        Returns:
+            Union[str, None]: Path to cert file.
+        """
+
+        return self._cert
+
+    def set_cert(self, cert):
+        """Change cert file used for connection to server.
+
+        Args:
+            cert (Union[str, None]): Path to cert file.
+        """
+
+        if cert == self._cert:
+            return
+        self._cert = cert
+        if self._session is not None:
+            self._session.cert = cert
+
+    ssl_verify = property(get_ssl_verify, set_ssl_verify)
+    cert = property(get_cert, set_cert)
 
     @property
     def access_token(self):
@@ -448,15 +558,42 @@ class ServerAPI(object):
                 as default variant.
 
         Args:
-            variant (Union[str, None]): Settings variant name.
+            variant (Literal['production', 'staging']): Settings variant name.
         """
 
+        if variant not in ("production", "staging"):
+            raise ValueError((
+                "Invalid variant name {}. Expected 'production' or 'staging'"
+            ).format(variant))
         self._default_settings_variant = variant
 
     default_settings_variant = property(
         get_default_settings_variant,
         set_default_settings_variant
     )
+
+    def get_sender(self):
+        """Sender used to send requests.
+
+        Returns:
+            Union[str, None]: Sender name or None.
+        """
+
+        return self._sender
+
+    def set_sender(self, sender):
+        """Change sender used for requests.
+
+        Args:
+            sender (Union[str, None]): Sender name or None.
+        """
+
+        if sender == self._sender:
+            return
+        self._sender = sender
+        self._update_session_headers()
+
+    sender = property(get_sender, set_sender)
 
     def get_default_service_username(self):
         """Default username used for callbacks when used with service API key.
@@ -534,7 +671,11 @@ class ServerAPI(object):
     @property
     def is_server_available(self):
         if self._server_available is None:
-            response = requests.get(self._base_url)
+            response = requests.get(
+                self._base_url,
+                cert=self._cert,
+                verify=self._ssl_verify
+            )
             self._server_available = response.status_code == 200
         return self._server_available
 
@@ -555,6 +696,7 @@ class ServerAPI(object):
 
     def validate_token(self):
         try:
+            self._token_validation_started = True
             # TODO add other possible validations
             # - existence of 'user' key in info
             # - validate that 'site_id' is in 'sites' in info
@@ -564,6 +706,9 @@ class ServerAPI(object):
 
         except UnauthorizedError:
             self._token_is_valid = False
+
+        finally:
+            self._token_validation_started = False
         return self._token_is_valid
 
     def set_token(self, token):
@@ -576,8 +721,25 @@ class ServerAPI(object):
         self._token_is_valid = None
         self.close_session()
 
-    def create_session(self):
+    def create_session(self, ignore_existing=True, force=False):
+        """Create a connection session.
+
+        Session helps to keep connection with server without
+            need to reconnect on each call.
+
+        Args:
+            ignore_existing (bool): If session already exists,
+                ignore creation.
+            force (bool): If session already exists, close it and
+                create new.
+        """
+
+        if force and self._session is not None:
+            self.close_session()
+
         if self._session is not None:
+            if ignore_existing:
+                return
             raise ValueError("Session is already created.")
 
         self._as_user_stack.clear()
@@ -585,6 +747,8 @@ class ServerAPI(object):
         self.validate_token()
 
         session = requests.Session()
+        session.cert = self._cert
+        session.verify = self._ssl_verify
         session.headers.update(self.get_headers())
 
         self._session_functions_mapping = {
@@ -614,6 +778,7 @@ class ServerAPI(object):
             ("X-as-user", self._as_user_stack.username),
             ("x-ayon-version", self._client_version),
             ("x-ayon-site-id", self._site_id),
+            ("x-sender", self._sender),
         ):
             if value is not None:
                 self._session.headers[key] = value
@@ -631,11 +796,51 @@ class ServerAPI(object):
             Use this method for validation of token instead of 'get_user'.
 
         Returns:
-            Dict[str, Any]: Information from server.
+            dict[str, Any]: Information from server.
         """
 
         response = self.get("info")
         return response.data
+
+    def get_server_version(self):
+        """Get server version.
+
+        Version should match semantic version (https://semver.org/).
+
+        Returns:
+            str: Server version.
+        """
+
+        if self._server_version is None:
+            self._server_version = self.get_info()["version"]
+        return self._server_version
+
+    def get_server_version_tuple(self):
+        """Get server version as tuple.
+
+        Version should match semantic version (https://semver.org/).
+
+        This function only returns first three numbers of version.
+
+        Returns:
+            Tuple[int, int, int, Union[str, None], Union[str, None]]: Server
+                version.
+        """
+
+        if self._server_version_tuple is None:
+            re_match = VERSION_REGEX.fullmatch(
+                self.get_server_version())
+            self._server_version_tuple = (
+                int(re_match.group("major")),
+                int(re_match.group("minor")),
+                int(re_match.group("patch")),
+                re_match.group("prerelease"),
+                re_match.group("buildmetadata")
+            )
+        return self._server_version_tuple
+
+    server_version = property(get_server_version)
+    server_version_tuple = property(get_server_version_tuple)
 
     def _get_user_info(self):
         if self._access_token is None:
@@ -691,6 +896,9 @@ class ServerAPI(object):
         if self._client_version is not None:
             headers["x-ayon-version"] = self._client_version
 
+        if self._sender is not None:
+            headers["x-sender"] = self._sender
+
         if self._access_token:
             if self._access_token_is_service:
                 headers["X-Api-Key"] = self._access_token
@@ -702,7 +910,19 @@ class ServerAPI(object):
                     self._access_token)
         return headers
 
-    def login(self, username, password):
+    def login(self, username, password, create_session=True):
+        """Login to server.
+
+        Args:
+            username (str): Username.
+            password (str): Password.
+            create_session (Optional[bool]): Create session after login.
+                Default: True.
+
+        Raises:
+            AuthenticationError: Login failed.
+        """
+
         if self.has_valid_token:
             try:
                 user_info = self.get_user()
@@ -712,31 +932,40 @@ class ServerAPI(object):
             current_username = user_info.get("name")
             if current_username == username:
                 self.close_session()
-                self.create_session()
+                if create_session:
+                    self.create_session()
                 return
 
         self.reset_token()
 
         self.validate_server_availability()
 
-        response = self.post(
-            "auth/login",
-            name=username,
-            password=password
-        )
-        if response.status_code != 200:
-            _detail = response.data.get("detail")
-            details = ""
-            if _detail:
-                details = " {}".format(_detail)
+        self._token_validation_started = True
 
-            raise AuthenticationError("Login failed {}".format(details))
+        try:
+            response = self.post(
+                "auth/login",
+                name=username,
+                password=password
+            )
+            if response.status_code != 200:
+                _detail = response.data.get("detail")
+                details = ""
+                if _detail:
+                    details = " {}".format(_detail)
+
+                raise AuthenticationError("Login failed {}".format(details))
+
+        finally:
+            self._token_validation_started = False
 
         self._access_token = response["token"]
 
         if not self.has_valid_token:
             raise AuthenticationError("Invalid credentials")
-        self.create_session()
+
+        if create_session:
+            self.create_session()
 
     def logout(self, soft=False):
         if self._access_token:
@@ -749,6 +978,15 @@ class ServerAPI(object):
 
     def _do_rest_request(self, function, url, **kwargs):
         if self._session is None:
+            # Validate token if was not yet validated
+            #    - ignore validation if we're in middle of
+            #       validation
+            if (
+                self._token_is_valid is None
+                and not self._token_validation_started
+            ):
+                self.validate_token()
+
             if "headers" not in kwargs:
                 kwargs["headers"] = self.get_headers()
 
@@ -869,7 +1107,7 @@ class ServerAPI(object):
             event_id (str): Id of event.
 
         Returns:
-            Dict[str, Any]: Full event data.
+            dict[str, Any]: Full event data.
         """
 
         response = self.get("events/{}".format(event_id))
@@ -902,7 +1140,7 @@ class ServerAPI(object):
                 for each event.
 
         Returns:
-            Generator[Dict[str, Any]]: Available events matching filters.
+            Generator[dict[str, Any]]: Available events matching filters.
         """
 
         filters = {}
@@ -1036,7 +1274,8 @@ class ServerAPI(object):
         target_topic,
         sender,
         description=None,
-        sequential=None
+        sequential=None,
+        events_filter=None,
     ):
         """Enroll job based on events.
 
@@ -1078,6 +1317,8 @@ class ServerAPI(object):
                 in target event.
             sequential (Optional[bool]): The source topic must be processed
                 in sequence.
+            events_filter (Optional[ayon_server.sqlfilter.Filter]): A dict-like
+                with conditions to filter the source event.
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1093,6 +1334,8 @@ class ServerAPI(object):
             kwargs["sequential"] = sequential
         if description is not None:
             kwargs["description"] = description
+        if events_filter is not None:
+            kwargs["filter"] = events_filter
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
             return None
@@ -1171,13 +1414,15 @@ class ServerAPI(object):
             progress.set_transfer_done()
         return progress
 
-    def _upload_file(self, url, filepath, progress):
+    def _upload_file(self, url, filepath, progress, request_type=None):
+        if request_type is None:
+            request_type = RequestTypes.put
         kwargs = {}
         if self._session is None:
             kwargs["headers"] = self.get_headers()
-            post_func = self._base_functions_mapping[RequestTypes.post]
+            post_func = self._base_functions_mapping[request_type]
         else:
-            post_func = self._session_functions_mapping[RequestTypes.post]
+            post_func = self._session_functions_mapping[request_type]
 
         with open(filepath, "rb") as stream:
             stream.seek(0, io.SEEK_END)
@@ -1187,8 +1432,11 @@ class ServerAPI(object):
             response = post_func(url, data=stream, **kwargs)
         response.raise_for_status()
         progress.set_transferred_size(size)
+        return response
 
-    def upload_file(self, endpoint, filepath, progress=None):
+    def upload_file(
+        self, endpoint, filepath, progress=None, request_type=None
+    ):
         """Upload file to server.
 
         Todos:
@@ -1199,6 +1447,11 @@ class ServerAPI(object):
             filepath (str): Source filepath.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track upload progress.
+            request_type (Optional[RequestType]): Type of request that will
+                be used to upload file.
+
+        Returns:
+            requests.Response: Response object.
         """
 
         if endpoint.startswith(self._base_url):
@@ -1217,7 +1470,7 @@ class ServerAPI(object):
         progress.set_started()
 
         try:
-            self._upload_file(url, filepath, progress)
+            return self._upload_file(url, filepath, progress, request_type)
 
         except Exception as exc:
             progress.set_failed(str(exc))
@@ -1269,7 +1522,7 @@ class ServerAPI(object):
             Cache schema - How to find out it is outdated?
 
         Returns:
-            Dict[str, Any]: Full server schema.
+            dict[str, Any]: Full server schema.
         """
 
         url = "{}/openapi.json".format(self._base_url)
@@ -1287,7 +1540,7 @@ class ServerAPI(object):
         e.g. 'config' has just object definition without reference schema.
 
         Returns:
-            Dict[str, Any]: Component schemas.
+            dict[str, Any]: Component schemas.
         """
 
         server_schema = self.get_server_schema()
@@ -1354,13 +1607,11 @@ class ServerAPI(object):
         """
 
         response = self.delete("attributes/{}".format(attribute_name))
-        if response.status_code != 204:
-            # TODO raise different exception
-            raise ValueError(
-                "Attribute \"{}\" was not created/updated. {}".format(
-                    attribute_name, response.detail
-                )
+        response.raise_for_status(
+            "Attribute \"{}\" was not created/updated. {}".format(
+                attribute_name, response.detail
             )
+        )
 
         self.reset_attributes_schema()
 
@@ -1395,7 +1646,7 @@ class ServerAPI(object):
                 received.
 
         Returns:
-            Dict[str, Dict[str, Any]]: Attribute schemas that are available
+            dict[str, dict[str, Any]]: Attribute schemas that are available
                 for entered entity type.
         """
         attributes = self._entity_type_attributes_cache.get(entity_type)
@@ -1497,7 +1748,7 @@ class ServerAPI(object):
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            subpaths (tuple[str]): Any amount of subpaths that are added to
+            *subpaths (str): Any amount of subpaths that are added to
                 addon url.
 
         Returns:
@@ -1563,6 +1814,159 @@ class ServerAPI(object):
         )
         return dst_filepath
 
+    def get_installers(self, version=None, platform_name=None):
+        """Information about desktop application installers on server.
+
+        Desktop application installers are helpers to download/update AYON
+        desktop application for artists.
+
+        Args:
+            version (Optional[str]): Filter installers by version.
+            platform_name (Optional[str]): Filter installers by platform name.
+
+        Returns:
+            list[dict[str, Any]]:
+        """
+
+        query_fields = [
+            "{}={}".format(key, value)
+            for key, value in (
+                ("version", version),
+                ("platform", platform_name),
+            )
+            if value
+        ]
+        query = ""
+        if query_fields:
+            query = "?{}".format(",".join(query_fields))
+
+        response = self.get("desktop/installers{}".format(query))
+        response.raise_for_status()
+        return response.data
+
+    def create_installer(
+        self,
+        filename,
+        version,
+        python_version,
+        platform_name,
+        python_modules,
+        runtime_python_modules,
+        checksum,
+        checksum_algorithm,
+        file_size,
+        sources=None,
+    ):
+        """Create new installer information on server.
+
+        This step will create only metadata. Make sure to upload installer
+            to the server using 'upload_installer' method.
+
+        Runtime python modules are modules that are required to run AYON
+            desktop application, but are not added to PYTHONPATH for any
+            subprocess.
+
+        Args:
+            filename (str): Installer filename.
+            version (str): Version of installer.
+            python_version (str): Version of Python.
+            platform_name (str): Name of platform.
+            python_modules (dict[str, str]): Python modules that are available
+                in installer.
+            runtime_python_modules (dict[str, str]): Runtime python modules
+                that are available in installer.
+            checksum (str): Installer file checksum.
+            checksum_algorithm (str): Type of checksum used to create checksum.
+            file_size (int): File size.
+            sources (Optional[list[dict[str, Any]]]): List of sources that
+                can be used to download file.
+        """
+
+        body = {
+            "filename": filename,
+            "version": version,
+            "pythonVersion": python_version,
+            "platform": platform_name,
+            "pythonModules": python_modules,
+            "runtimePythonModules": runtime_python_modules,
+            "checksum": checksum,
+            "checksumAlgorithm": checksum_algorithm,
+            "size": file_size,
+        }
+        if sources:
+            body["sources"] = sources
+
+        response = self.post("desktop/installers", **body)
+        response.raise_for_status()
+
+    def update_installer(self, filename, sources):
+        """Update installer information on server.
+
+        Args:
+            filename (str): Installer filename.
+            sources (list[dict[str, Any]]): List of sources that
+                can be used to download file. Fully replaces existing sources.
+        """
+
+        response = self.patch(
+            "desktop/installers/{}".format(filename),
+            sources=sources
+        )
+        response.raise_for_status()
+
+    def delete_installer(self, filename):
+        """Delete installer from server.
+
+        Args:
+            filename (str): Installer filename.
+        """
+
+        response = self.delete("desktop/installers/{}".format(filename))
+        response.raise_for_status()
+
+    def download_installer(
+        self,
+        filename,
+        dst_filepath,
+        chunk_size=None,
+        progress=None
+    ):
+        """Download installer file from server.
+
+        Args:
+            filename (str): Installer filename.
+            dst_filepath (str): Destination filepath.
+            chunk_size (Optional[int]): Download chunk size.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
+        """
+
+        self.download_file(
+            "desktop/installers/{}".format(filename),
+            dst_filepath,
+            chunk_size=chunk_size,
+            progress=progress
+        )
+
+    def upload_installer(self, src_filepath, dst_filename, progress=None):
+        """Upload installer file to server.
+
+        Args:
+            src_filepath (str): Source filepath.
+            dst_filename (str): Destination filename.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
+
+        Returns:
+            requests.Response: Response object.
+        """
+
+        return self.upload_file(
+            "desktop/installers/{}".format(dst_filename),
+            src_filepath,
+            progress=progress
+        )
+
     def get_dependencies_info(self):
         """Information about dependency packages on server.
 
@@ -1581,13 +1985,22 @@ class ServerAPI(object):
                 "productionPackage": str
             }
 
+        Deprecated:
+            Deprecated since server version 0.2.1. Use
+                'get_dependency_packages' instead.
+
         Returns:
             dict[str, Any]: Information about dependency packages known for
                 server.
         """
 
-        result = self.get("dependencies")
-        return result.data
+        major, minor, patch, _, _ = self.server_version_tuple
+        if major == 0 and (minor < 2 or (minor == 2 and patch < 1)):
+            result = self.get("dependencies")
+            return result.data
+        packages = self.get_dependency_packages()
+        packages["productionPackage"] = None
+        return packages
 
     def update_dependency_info(
         self,
@@ -1604,21 +2017,26 @@ class ServerAPI(object):
 
         The endpoint can be used to create or update dependency package.
 
+
+        Deprecated:
+            Deprecated for server version 0.2.1. Use
+                'create_dependency_pacakge' instead.
+
         Args:
             name (str): Name of dependency package.
-            platform_name (Literal["windows", "linux", "darwin"]): Platform for
-                which is dependency package targeted.
+            platform_name (Literal["windows", "linux", "darwin"]): Platform
+                for which is dependency package targeted.
             size (int): Size of dependency package in bytes.
             checksum (str): Checksum of archive file where dependencies are.
             checksum_algorithm (Optional[str]): Algorithm used to calculate
                 checksum. By default, is used 'md5' (defined by server).
-            supported_addons (Optional[Dict[str, str]]): Name of addons for
+            supported_addons (Optional[dict[str, str]]): Name of addons for
                 which was the package created.
                 '{"<addon name>": "<addon version>", ...}'
-            python_modules (Optional[Dict[str, str]]): Python modules in
+            python_modules (Optional[dict[str, str]]): Python modules in
                 dependencies package.
                 '{"<module name>": "<module version>", ...}'
-            sources (Optional[List[Dict[str, Any]]]): Information about
+            sources (Optional[list[dict[str, Any]]]): Information about
                 sources where dependency package is available.
         """
 
@@ -1641,31 +2059,167 @@ class ServerAPI(object):
             checksum=checksum,
             **kwargs
         )
-        if response.status not in (200, 201, 204):
-            raise ServerError("Failed to create/update dependency")
+        response.raise_for_status("Failed to create/update dependency")
+        return response.data
+
+    def get_dependency_packages(self):
+        """Information about dependency packages on server.
+
+        To download dependency package, use 'download_dependency_package'
+        method and pass in 'filename'.
+
+        Example data structure:
+            {
+                "packages": [
+                    {
+                        "filename": str,
+                        "platform": str,
+                        "checksum": str,
+                        "checksumAlgorithm": str,
+                        "size": int,
+                        "sources": list[dict[str, Any]],
+                        "supportedAddons": dict[str, str],
+                        "pythonModules": dict[str, str]
+                    }
+                ]
+            }
+
+        Returns:
+            dict[str, Any]: Information about dependency packages known for
+                server.
+        """
+
+        result = self.get("desktop/dependency_packages")
+        result.raise_for_status()
+        return result.data
+
+    def _get_dependency_package_route(
+        self, filename=None, platform_name=None
+    ):
+        major, minor, patch, _, _ = self.server_version_tuple
+        if major == 0 and (minor > 2 or (minor == 2 and patch >= 1)):
+            base = "desktop/dependency_packages"
+            if not filename:
+                return base
+            return "{}/{}".format(base, filename)
+
+        # Backwards compatibility for AYON server 0.2.0 and lower
+        if platform_name is None:
+            platform_name = platform.system().lower()
+        base = "dependencies"
+        if not filename:
+            return base
+        return "{}/{}/{}".format(base, filename, platform_name)
+
+    def create_dependency_package(
+        self,
+        filename,
+        python_modules,
+        source_addons,
+        installer_version,
+        checksum,
+        checksum_algorithm,
+        file_size,
+        sources=None,
+        platform_name=None,
+    ):
+        """Create dependency package on server.
+
+        The package will be created on a server, it is also required to upload
+        the package archive file (using 'upload_dependency_package').
+
+        Args:
+            filename (str): Filename of dependency package.
+            python_modules (dict[str, str]): Python modules in dependency
+                package.
+                '{"<module name>": "<module version>", ...}'
+            source_addons (dict[str, str]): Name of addons for which is
+                dependency package created.
+                '{"<addon name>": "<addon version>", ...}'
+            installer_version (str): Version of installer for which was
+                package created.
+            checksum (str): Checksum of archive file where dependencies are.
+            checksum_algorithm (str): Algorithm used to calculate checksum.
+            file_size (Optional[int]): Size of file.
+            sources (Optional[list[dict[str, Any]]]): Information about
+                sources from where it is possible to get file.
+            platform_name (Optional[str]): Name of platform for which is
+                dependency package targeted. Default value is
+                current platform.
+        """
+
+        post_body = {
+            "filename": filename,
+            "pythonModules": python_modules,
+            "sourceAddons": source_addons,
+            "installerVersion": installer_version,
+            "checksum": checksum,
+            "checksumAlgorithm": checksum_algorithm,
+            "size": file_size,
+            "platform": platform_name or platform.system().lower(),
+        }
+        if sources:
+            post_body["sources"] = sources
+
+        route = self._get_dependency_package_route()
+        response = self.post(route, **post_body)
+        response.raise_for_status()
+
+    def update_dependency_package(self, filename, sources):
+        """Update dependency package metadata on server.
+
+        Args:
+            filename (str): Filename of dependency package.
+            sources (list[dict[str, Any]]): Information about
+                sources from where it is possible to get file. Fully replaces
+                existing sources.
+        """
+
+        response = self.patch(
+            self._get_dependency_package_route(filename),
+            sources=sources
+        )
+        response.raise_for_status()
+
+    def delete_dependency_package(self, filename, platform_name=None):
+        """Remove dependency package for specific platform.
+
+        Args:
+            filename (str): Filename of dependency package. Or name of package
+                for server version 0.2.0 or lower.
+            platform_name (Optional[str]): Which platform of the package
+                should be removed. Current platform is used if not passed.
+                Deprecated since version 0.2.1
+        """
+
+        route = self._get_dependency_package_route(filename, platform_name)
+        response = self.delete(route)
+        response.raise_for_status("Failed to delete dependency file")
         return response.data
 
     def download_dependency_package(
         self,
-        package_name,
+        src_filename,
         dst_directory,
-        filename,
+        dst_filename,
         platform_name=None,
         chunk_size=None,
         progress=None,
     ):
         """Download dependency package from server.
 
-        This method requires to have authorized token available. The package is
-        only downloaded.
+        This method requires to have authorized token available. The package
+        is only downloaded.
 
         Args:
-            package_name (str): Name of package to download.
+            src_filename (str): Filename of dependency pacakge.
+                For server version 0.2.0 and lower it is name of package
+                to download.
             dst_directory (str): Where the file should be downloaded.
-            filename (str): Name of destination filename.
+            dst_filename (str): Name of destination filename.
             platform_name (Optional[str]): Name of platform for which the
                 dependency package is targeted. Default value is
-                current platform.
+                current platform. Deprecated since server version 0.2.1.
             chunk_size (Optional[int]): Download chunk size.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track download progress.
@@ -1673,12 +2227,11 @@ class ServerAPI(object):
         Returns:
             str: Filepath to downloaded file.
        """
-        if platform_name is None:
-            platform_name = platform.system().lower()
 
-        package_filepath = os.path.join(dst_directory, filename)
+        route = self._get_dependency_package_route(src_filename, platform_name)
+        package_filepath = os.path.join(dst_directory, dst_filename)
         self.download_file(
-            "dependencies/{}/{}".format(package_name, platform_name),
+            route,
             package_filepath,
             chunk_size=chunk_size,
             progress=progress
@@ -1686,46 +2239,199 @@ class ServerAPI(object):
         return package_filepath
 
     def upload_dependency_package(
-        self, filepath, package_name, platform_name=None, progress=None
+        self, src_filepath, dst_filename, platform_name=None, progress=None
     ):
         """Upload dependency package to server.
 
         Args:
-            filepath (str): Path to a package file.
-            package_name (str): Name of package. Must be unique.
+            src_filepath (str): Path to a package file.
+            dst_filename (str): Dependency package filename or name of package
+                for server version 0.2.0 or lower. Must be unique.
             platform_name (Optional[str]): For which platform is the
-                package targeted.
+                package targeted. Deprecated since server version 0.2.1.
             progress (Optional[TransferProgress]): Object to keep track about
                 upload state.
         """
 
-        if platform_name is None:
-            platform_name = platform.system().lower()
+        route = self._get_dependency_package_route(dst_filename, platform_name)
+        self.upload_file(route, src_filepath, progress=progress)
 
-        self.upload_file(
-            "dependencies/{}/{}".format(package_name, platform_name),
-            filepath,
-            progress=progress
-        )
+    def create_dependency_package_basename(self, platform_name=None):
+        """Create basename for dependency package file.
 
-    def delete_dependency_package(self, package_name, platform_name=None):
-        """Remove dependency package for specific platform.
+        Deprecated:
+            Use 'create_dependency_package_basename' from `ayon_api` or
+                `ayon_api.utils` instead.
 
         Args:
-            package_name (str): Name of package to remove.
-            platform_name (Optional[str]): Which platform of the package
-                should be removed. Current platform is used if not passed.
+            platform_name (Optional[str]): Name of platform for which the
+                bundle is targeted. Default value is current platform.
+
+        Returns:
+            str: Dependency package name with timestamp and platform.
         """
 
-        if platform_name is None:
-            platform_name = platform.system().lower()
+        return create_dependency_package_basename(platform_name)
+
+    def upload_addon_zip(self, src_filepath, progress=None):
+        """Upload addon zip file to server.
+
+        File is validated on server. If it is valid, it is installed. It will
+            create an event job which can be tracked (tracking part is not
+            implemented yet).
+
+        Example output:
+            {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
+
+        Args:
+            src_filepath (str): Path to a zip file.
+            progress (Optional[TransferProgress]): Object to keep track about
+                upload state.
+
+        Returns:
+            dict[str, Any]: Response data from server.
+        """
+
+        response = self.upload_file(
+            "addons/install",
+            src_filepath,
+            progress=progress,
+            request_type=RequestTypes.post,
+        )
+        return response.json()
+
+    def _get_bundles_route(self):
+        major, minor, patch, _, _ = self.server_version_tuple
+        # Backwards compatibility for AYON server 0.3.0
+        # - first version where bundles were available
+        if major == 0 and minor == 3 and patch == 0:
+            return "desktop/bundles"
+        return "bundles"
+
+    def get_bundles(self):
+        """Server bundles with basic information.
+
+        Example output:
+            {
+                "bundles": [
+                    {
+                        "name": "my_bundle",
+                        "createdAt": "2023-06-12T15:37:02.420260",
+                        "installerVersion": "1.0.0",
+                        "addons": {
+                            "core": "1.2.3"
+                        },
+                        "dependencyPackages": {
+                            "windows": "a_windows_package123.zip",
+                            "linux": "a_linux_package123.zip",
+                            "darwin": "a_mac_package123.zip"
+                        },
+                        "isProduction": False,
+                        "isStaging": False
+                    }
+                ],
+                "productionBundle": "my_bundle",
+                "stagingBundle": "test_bundle"
+            }
+
+        Returns:
+            dict[str, Any]: Server bundles with basic information.
+        """
+
+        response = self.get(self._get_bundles_route())
+        response.raise_for_status()
+        return response.data
+
+    def create_bundle(
+        self,
+        name,
+        addon_versions,
+        installer_version,
+        dependency_packages=None,
+        is_production=None,
+        is_staging=None
+    ):
+        """Create bundle on server.
+
+        Bundle cannot be changed once is created. Only isProduction, isStaging
+        and dependency packages can change after creation.
+
+        Args:
+            name (str): Name of bundle.
+            addon_versions (dict[str, str]): Addon versions.
+            installer_version (Union[str, None]): Installer version.
+            dependency_packages (Optional[dict[str, str]]): Dependency
+                package names. Keys are platform names and values are name of
+                packages.
+            is_production (Optional[bool]): Bundle will be marked as
+                production.
+            is_staging (Optional[bool]): Bundle will be marked as staging.
+        """
+
+        body = {
+            "name": name,
+            "installerVersion": installer_version,
+            "addons": addon_versions,
+        }
+        for key, value in (
+            ("dependencyPackages", dependency_packages),
+            ("isProduction", is_production),
+            ("isStaging", is_staging),
+        ):
+            if value is not None:
+                body[key] = value
+
+        response = self.post(self._get_bundles_route(), **body)
+        response.raise_for_status()
+
+    def update_bundle(
+        self,
+        bundle_name,
+        dependency_packages=None,
+        is_production=None,
+        is_staging=None
+    ):
+        """Update bundle on server.
+
+        Dependency packages can be update only for single platform. Others
+        will be left untouched. Use 'None' value to unset dependency package
+        from bundle.
+
+        Args:
+            bundle_name (str): Name of bundle.
+            dependency_packages (Optional[dict[str, str]]): Dependency pacakge
+                names that should be used with the bundle.
+            is_production (Optional[bool]): Bundle will be marked as
+                production.
+            is_staging (Optional[bool]): Bundle will be marked as staging.
+        """
+
+        body = {
+            key: value
+            for key, value in (
+                ("dependencyPackages", dependency_packages),
+                ("isProduction", is_production),
+                ("isStaging", is_staging),
+            )
+            if value is not None
+        }
+        response = self.patch(
+            "{}/{}".format(self._get_bundles_route(), bundle_name),
+            **body
+        )
+        response.raise_for_status()
+
+    def delete_bundle(self, bundle_name):
+        """Delete bundle from server.
+
+        Args:
+            bundle_name (str): Name of bundle to delete.
+        """
 
         response = self.delete(
-            "dependencies/{}/{}".format(package_name, platform_name),
+            "{}/{}".format(self._get_bundles_route(), bundle_name)
         )
-        if response.status != 200:
-            raise ServerError("Failed to delete dependency file")
-        return response.data
+        response.raise_for_status()
 
     # Anatomy presets
     def get_project_anatomy_presets(self):
@@ -1868,17 +2574,17 @@ class ServerAPI(object):
     ):
         """Addon studio settings.
 
-       Receive studio settings for specific version of an addon.
+        Receive studio settings for specific version of an addon.
 
-       Args:
-           addon_name (str): Name of addon.
-           addon_version (str): Version of addon.
-           variant (Optional[str]): Name of settings variant. By default,
-                is used 'default_settings_variant' passed on init.
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            variant (Optional[Literal['production', 'staging']]): Name of
+                settings variant. Used 'default_settings_variant' by default.
 
-       Returns:
+        Returns:
            dict[str, Any]: Addon settings.
-       """
+        """
 
         if variant is None:
             variant = self.default_settings_variant
@@ -1916,8 +2622,8 @@ class ServerAPI(object):
             addon_version (str): Version of addon.
             project_name (str): Name of project for which the settings are
                 received.
-            variant (Optional[str]): Name of settings variant. By default,
-                is used 'production'.
+            variant (Optional[Literal['production', 'staging']]): Name of
+                settings variant. Used 'default_settings_variant' by default.
             site_id (Optional[str]): Name of site which is used for site
                 overrides. Is filled with connection 'site_id' attribute
                 if not passed.
@@ -1973,8 +2679,8 @@ class ServerAPI(object):
             project_name (Optional[str]): Name of project for which the
                 settings are received. A studio settings values are received
                 if is 'None'.
-            variant (Optional[str]): Name of settings variant. By default,
-                is used 'production'.
+            variant (Optional[Literal['production', 'staging']]): Name of
+                settings variant. Used 'default_settings_variant' by default.
             site_id (Optional[str]): Name of site which is used for site
                 overrides. Is filled with connection 'site_id' attribute
                 if not passed.
@@ -2024,12 +2730,106 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data
 
-    def get_addons_studio_settings(self, variant=None, only_values=True):
+    def get_bundle_settings(
+        self,
+        bundle_name=None,
+        project_name=None,
+        variant=None,
+        site_id=None,
+        use_site=True
+    ):
+        """Get complete set of settings for given data.
+
+        If project is not passed then studio settings are returned. If variant
+        is not passed 'default_settings_variant' is used. If bundle name is
+        not passed then current production/staging bundle is used, based on
+        variant value.
+
+        Output contains addon settings and site settings in single dictionary.
+
+        TODOs:
+            - test how it behaves if there is not any bundle.
+            - test how it behaves if there is not any production/staging
+                bundle.
+
+        Warnings:
+            For AYON server < 0.3.0 bundle name will be ignored.
+
+        Example output:
+            {
+                "addons": [
+                    {
+                        "name": "addon-name",
+                        "version": "addon-version",
+                        "settings": {...}
+                        "siteSettings": {...}
+                    }
+                ]
+            }
+
+        Returns:
+            dict[str, Any]: All settings for single bundle.
+        """
+
+        major, minor, _, _, _ = self.server_version_tuple
+        query_values = {
+            key: value
+            for key, value in (
+                ("project_name", project_name),
+                ("variant", variant or self.default_settings_variant),
+                ("bundle_name", bundle_name),
+            )
+            if value
+        }
+        if use_site:
+            if not site_id:
+                site_id = self.site_id
+            if site_id:
+                query_values["site_id"] = site_id
+
+        if major == 0 and minor >= 3:
+            url = "settings"
+        else:
+            # Backward compatibility for AYON server < 0.3.0
+            url = "settings/addons"
+            query_values.pop("bundle_name", None)
+            for new_key, old_key in (
+                ("project_name", "project"),
+                ("site_id", "site"),
+            ):
+                if new_key in query_values:
+                    query_values[old_key] = query_values.pop(new_key)
+
+        query = prepare_query_string(query_values)
+        response = self.get("{}{}".format(url, query))
+        response.raise_for_status()
+        return response.data
+
+    def get_addons_studio_settings(
+        self,
+        bundle_name=None,
+        variant=None,
+        site_id=None,
+        use_site=True,
+        only_values=True
+    ):
         """All addons settings in one bulk.
 
+        Warnings:
+            Behavior of this function changed with AYON server version 0.3.0.
+                Structure of output from server changed. If using
+                'only_values=True' then output should be same as before.
+
         Args:
-            variant (Optional[Literal[production, staging]]): Variant of
-                settings. By default, is used 'production'.
+            bundle_name (Optional[str]): Name of bundle for which should be
+                settings received.
+            variant (Optional[Literal['production', 'staging']]): Name of
+                settings variant. Used 'default_settings_variant' by default.
+            site_id (Optional[str]): Id of site for which want to receive
+                site overrides.
+            use_site (bool): To force disable option of using site overrides
+                set to 'False'. In that case won't be applied any site
+                overrides.
             only_values (Optional[bool]): Output will contain only settings
                 values without metadata about addons.
 
@@ -2037,20 +2837,28 @@ class ServerAPI(object):
             dict[str, Any]: Settings of all addons on server.
         """
 
-        query_values = {}
-        if variant:
-            query_values["variant"] = variant
-        query = prepare_query_string(query_values)
-        response = self.get("settings/addons{}".format(query))
-        response.raise_for_status()
-        output = response.data
+        output = self.get_bundle_settings(
+            bundle_name=bundle_name,
+            variant=variant,
+            site_id=site_id,
+            use_site=use_site
+        )
         if only_values:
-            output = output["settings"]
+            major, minor, patch, _, _ = self.server_version_tuple
+            if major == 0 and minor >= 3:
+                output = {
+                    addon["name"]: addon["settings"]
+                    for addon in output["addons"]
+                }
+            else:
+                # Backward compatibility for AYON server < 0.3.0
+                output = output["settings"]
         return output
 
     def get_addons_project_settings(
         self,
         project_name,
+        bundle_name=None,
         variant=None,
         site_id=None,
         use_site=True,
@@ -2069,11 +2877,18 @@ class ServerAPI(object):
         argument which is by default set to 'True'. In that case output
         contains only value of 'settings' key.
 
+        Warnings:
+            Behavior of this function changed with AYON server version 0.3.0.
+                Structure of output from server changed. If using
+                'only_values=True' then output should be same as before.
+
         Args:
             project_name (str): Name of project for which are settings
                 received.
-            variant (Optional[Literal[production, staging]]): Variant of
-                settings. By default, is used 'production'.
+            bundle_name (Optional[str]): Name of bundle for which should be
+                settings received.
+            variant (Optional[Literal['production', 'staging']]): Name of
+                settings variant. Used 'default_settings_variant' by default.
             site_id (Optional[str]): Id of site for which want to receive
                 site overrides.
             use_site (bool): To force disable option of using site overrides
@@ -2087,27 +2902,31 @@ class ServerAPI(object):
                 project.
         """
 
-        query_values = {
-            "project": project_name
-        }
-        if variant:
-            query_values["variant"] = variant
+        if not project_name:
+            raise ValueError("Project name must be passed.")
 
-        if use_site:
-            if not site_id:
-                site_id = self.default_settings_variant
-            if site_id:
-                query_values["site"] = site_id
-        query = prepare_query_string(query_values)
-        response = self.get("settings/addons{}".format(query))
-        response.raise_for_status()
-        output = response.data
+        output = self.get_bundle_settings(
+            project_name=project_name,
+            bundle_name=bundle_name,
+            variant=variant,
+            site_id=site_id,
+            use_site=use_site
+        )
         if only_values:
-            output = output["settings"]
+            major, minor, patch, _, _ = self.server_version_tuple
+            if major == 0 and minor >= 3:
+                output = {
+                    addon["name"]: addon["settings"]
+                    for addon in output["addons"]
+                }
+            else:
+                # Backward compatibility for AYON server < 0.3.0
+                output = output["settings"]
         return output
 
     def get_addons_settings(
         self,
+        bundle_name=None,
         project_name=None,
         variant=None,
         site_id=None,
@@ -2119,11 +2938,18 @@ class ServerAPI(object):
         Based on 'project_name' will receive studio settings or project
         settings. In case project is not passed is 'site_id' ignored.
 
+        Warnings:
+            Behavior of this function changed with AYON server version 0.3.0.
+                Structure of output from server changed. If using
+                'only_values=True' then output should be same as before.
+
         Args:
+            bundle_name (Optional[str]): Name of bundle for which should be
+                settings received.
             project_name (Optional[str]): Name of project for which should be
                 settings received.
-            variant (Optional[Literal[production, staging]]): Settings variant.
-                By default, is used 'production'.
+            variant (Optional[Literal['production', 'staging']]): Name of
+                settings variant. Used 'default_settings_variant' by default.
             site_id (Optional[str]): Id of site for which want to receive
                 site overrides.
             use_site (Optional[bool]): To force disable option of using site
@@ -2134,11 +2960,95 @@ class ServerAPI(object):
         """
 
         if project_name is None:
-            return self.get_addons_studio_settings(variant, only_values)
+            return self.get_addons_studio_settings(
+                bundle_name=bundle_name,
+                variant=variant,
+                site_id=site_id,
+                use_site=use_site,
+                only_values=only_values
+            )
 
         return self.get_addons_project_settings(
-            project_name, variant, site_id, use_site, only_values
+            project_name=project_name,
+            bundle_name=bundle_name,
+            variant=variant,
+            site_id=site_id,
+            use_site=use_site,
+            only_values=only_values
         )
+
+    def get_secrets(self):
+        """Get all secrets.
+
+        Example output:
+            [
+                {
+                    "name": "secret_1",
+                    "value": "secret_value_1",
+                },
+                {
+                    "name": "secret_2",
+                    "value": "secret_value_2",
+                }
+            ]
+
+        Returns:
+            list[dict[str, str]]: List of secret entities.
+        """
+
+        response = self.get("secrets")
+        response.raise_for_status()
+        return response.data
+
+    def get_secret(self, secret_name):
+        """Get secret by name.
+
+        Example output:
+            {
+                "name": "secret_name",
+                "value": "secret_value",
+            }
+
+        Args:
+            secret_name (str): Name of secret.
+
+        Returns:
+            dict[str, str]: Secret entity data.
+        """
+
+        response = self.get("secrets/{}".format(secret_name))
+        response.raise_for_status()
+        return response.data
+
+    def save_secret(self, secret_name, secret_value):
+        """Save secret.
+
+        This endpoint can create and update secret.
+
+        Args:
+            secret_name (str): Name of secret.
+            secret_value (str): Value of secret.
+        """
+
+        response = self.put(
+            "secrets/{}".format(secret_name),
+            name=secret_name,
+            value=secret_value,
+        )
+        response.raise_for_status()
+        return response.data
+
+
+    def delete_secret(self, secret_name):
+        """Delete secret by name.
+
+        Args:
+            secret_name (str): Name of secret to delete.
+        """
+
+        response = self.delete("secrets/{}".format(secret_name))
+        response.raise_for_status()
+        return response.data
 
     # Entity getters
     def get_rest_project(self, project_name):
@@ -2150,7 +3060,7 @@ class ServerAPI(object):
             project_name (str): Name of project.
 
         Returns:
-            Union[Dict[str, Any], None]: Project entity data or 'None' if
+            Union[dict[str, Any], None]: Project entity data or 'None' if
                 project was not found.
         """
 
@@ -2174,7 +3084,7 @@ class ServerAPI(object):
                 are returned if 'None' is passed.
 
         Returns:
-            Generator[Dict[str, Any]]: Available projects.
+            Generator[dict[str, Any]]: Available projects.
         """
 
         for project_name in self.get_project_names(active, library):
@@ -2235,7 +3145,7 @@ class ServerAPI(object):
                 are returned if 'None' is passed.
 
         Returns:
-            List[str]: List of available project names.
+            list[str]: List of available project names.
         """
 
         query_keys = {}
@@ -2276,7 +3186,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[Dict[str, Any]]: Queried projects.
+            Generator[dict[str, Any]]: Queried projects.
         """
 
         if fields is None:
@@ -2316,7 +3226,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[Dict[str, Any], None]: Project entity data or None
+            Union[dict[str, Any], None]: Project entity data or None
                 if project was not found.
         """
 
@@ -2351,6 +3261,65 @@ class ServerAPI(object):
             if own_attributes:
                 fill_own_attribs(project)
         return project
+
+    def get_folders_hierarchy(
+        self,
+        project_name,
+        search_string=None,
+        folder_types=None
+    ):
+        """Get project hierarchy.
+
+        All folders in project in hierarchy data structure.
+
+        Example output:
+            {
+                "hierarchy": [
+                    {
+                        "id": "...",
+                        "name": "...",
+                        "label": "...",
+                        "status": "...",
+                        "folderType": "...",
+                        "hasTasks": False,
+                        "taskNames": [],
+                        "parents": [],
+                        "parentId": None,
+                        "children": [...children folders...]
+                    },
+                    ...
+                ]
+            }
+
+        Args:
+            project_name (str): Project where to look for folders.
+            search_string (Optional[str]): Search string to filter folders.
+            folder_types (Optional[Iterable[str]]): Folder types to filter.
+
+        Returns:
+            dict[str, Any]: Response data from server.
+        """
+
+        if folder_types:
+            folder_types = ",".join(folder_types)
+
+        query_fields = [
+            "{}={}".format(key, value)
+            for key, value in (
+                ("search", search_string),
+                ("types", folder_types),
+            )
+            if value
+        ]
+        query = ""
+        if query_fields:
+            query = "?{}".format(",".join(query_fields))
+
+        response = self.get(
+            "projects/{}/hierarchy{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data
 
     def get_folders(
         self,
@@ -2923,7 +3892,6 @@ class ServerAPI(object):
                 if filtered_product is not None:
                     yield filtered_product
 
-
     def get_product_by_id(
         self,
         project_name,
@@ -3112,7 +4080,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[Dict[str, Any]]: Queried version entities.
+            Generator[dict[str, Any]]: Queried version entities.
         """
 
         if not fields:
@@ -3570,7 +4538,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[Dict[str, Any]]: Queried representation entities.
+            Generator[dict[str, Any]]: Queried representation entities.
         """
 
         if not fields:
@@ -4253,7 +5221,7 @@ class ServerAPI(object):
             ValueError: When project name already exists.
 
         Returns:
-            Dict[str, Any]: Created project entity.
+            dict[str, Any]: Created project entity.
         """
 
         if self.get_project(project_name):

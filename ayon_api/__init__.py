@@ -1,6 +1,8 @@
+from .version import __version__
 from .utils import (
     TransferProgress,
     slugify_string,
+    create_dependency_package_basename,
 )
 from .server_api import (
     ServerAPI,
@@ -28,6 +30,8 @@ from ._api import (
     set_client_version,
     get_default_settings_variant,
     set_default_settings_variant,
+    get_sender,
+    set_sender,
 
     get_base_url,
     get_rest_url,
@@ -59,13 +63,33 @@ from ._api import (
     get_addon_url,
     download_addon_private_file,
 
+    get_installers,
+    create_installer,
+    update_installer,
+    delete_installer,
+    download_installer,
+    upload_installer,
+
     get_dependencies_info,
     update_dependency_info,
+    get_dependency_packages,
+    create_dependency_package,
+    update_dependency_package,
+    delete_dependency_package,
 
     download_dependency_package,
     upload_dependency_package,
-    delete_dependency_package,
 
+    upload_addon_zip,
+
+    get_bundles,
+    create_bundle,
+    update_bundle,
+    delete_bundle,
+
+    get_info,
+    get_server_version,
+    get_server_version_tuple,
     get_user,
     get_users,
 
@@ -83,9 +107,15 @@ from ._api import (
     get_addon_studio_settings,
     get_addon_project_settings,
     get_addon_settings,
+    get_bundle_settings,
     get_addons_studio_settings,
     get_addons_project_settings,
     get_addons_settings,
+
+    get_secrets,
+    get_secret,
+    save_secret,
+    delete_secret,
 
     get_project_names,
     get_projects,
@@ -98,6 +128,7 @@ from ._api import (
     get_folder_by_name,
     get_folder_by_path,
     get_folders,
+    get_folders_hierarchy,
 
     get_tasks,
 
@@ -163,8 +194,11 @@ from ._api import (
 
 
 __all__ = (
+    "__version__",
+
     "TransferProgress",
     "slugify_string",
+    "create_dependency_package_basename",
 
     "ServerAPI",
 
@@ -189,6 +223,8 @@ __all__ = (
     "set_client_version",
     "get_default_settings_variant",
     "set_default_settings_variant",
+    "get_sender",
+    "set_sender",
 
     "get_base_url",
     "get_rest_url",
@@ -220,13 +256,33 @@ __all__ = (
     "get_addon_url",
     "download_addon_private_file",
 
+    "get_installers",
+    "create_installer",
+    "update_installer",
+    "delete_installer",
+    "download_installer",
+    "upload_installer",
+
     "get_dependencies_info",
     "update_dependency_info",
+    "get_dependency_packages",
+    "create_dependency_package",
+    "update_dependency_package",
+    "delete_dependency_package",
 
     "download_dependency_package",
     "upload_dependency_package",
-    "delete_dependency_package",
 
+    "upload_addon_zip",
+
+    "get_bundles",
+    "create_bundle",
+    "update_bundle",
+    "delete_bundle",
+
+    "get_info",
+    "get_server_version",
+    "get_server_version_tuple",
     "get_user",
     "get_users",
 
@@ -243,9 +299,15 @@ __all__ = (
     "get_addon_studio_settings",
     "get_addon_project_settings",
     "get_addon_settings",
+    "get_bundle_settings",
     "get_addons_studio_settings",
     "get_addons_project_settings",
     "get_addons_settings",
+
+    "get_secrets",
+    "get_secret",
+    "save_secret",
+    "delete_secret",
 
     "get_project_names",
     "get_projects",

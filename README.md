@@ -54,8 +54,7 @@ If pip complain that `ayon-python-api` is already installed just uninstall exist
     - Move entity hub to first place
     - Skip those which are invalid for the entity and fake it for base or remove it from base
   - Entity hub should use operations session to do changes
-  - Entity hub could also handle 'subset', 'version' and 'representation' entities
-  - Missing 'statuses' on project
+  - Entity hub could also handle 'product', 'version' and 'representation' entities
   - Missing 'status' on folders
   - Missing assignees on tasks
   - Pass docstrings and arguments definitions from `ServerAPI` methods to global functions
