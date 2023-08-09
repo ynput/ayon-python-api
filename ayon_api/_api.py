@@ -776,6 +776,16 @@ def get_tasks(*args, **kwargs):
     return con.get_tasks(*args, **kwargs)
 
 
+def get_task_by_id(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_id(*args, **kwargs)
+
+
+def get_task_by_name(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_name(*args, **kwargs)
+
+
 def get_folder_by_id(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_folder_by_id(*args, **kwargs)
