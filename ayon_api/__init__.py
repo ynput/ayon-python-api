@@ -131,6 +131,8 @@ from ._api import (
     get_folders_hierarchy,
 
     get_tasks,
+    get_task_by_id,
+    get_task_by_name,
 
     get_folder_ids_with_products,
     get_product_by_id,
@@ -322,6 +324,8 @@ __all__ = (
     "get_folders",
 
     "get_tasks",
+    "get_task_by_id",
+    "get_task_by_name",
 
     "get_folder_ids_with_products",
     "get_product_by_id",
