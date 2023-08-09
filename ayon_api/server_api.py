@@ -36,6 +36,7 @@ from .constants import (
     REPRESENTATION_FILES_FIELDS,
     DEFAULT_WORKFILE_INFO_FIELDS,
     DEFAULT_EVENT_FIELDS,
+    DEFAULT_USER_FIELDS,
 )
 from .thumbnails import ThumbnailCache
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
@@ -52,6 +53,7 @@ from .graphql_queries import (
     representations_parents_qraphql_query,
     workfiles_info_graphql_query,
     events_graphql_query,
+    users_graphql_query,
 )
 from .exceptions import (
     FailedOperations,
@@ -863,10 +865,36 @@ class ServerAPI(object):
         self._access_token_is_service = None
         return None
 
-    def get_users(self):
-        # TODO how to find out if user have permission?
-        users = self.get("users")
-        return users.data
+    def get_users(self, usernames=None, fields=None):
+        """Get Users.
+
+        Args:
+            usernames (Optional[Iterable[str]]): Filter by usernames.
+            fields (Optional[Iterable[str]]): fields to be queried
+                for users.
+
+        Returns:
+            Generator[dict[str, Any]]: Queried users.
+        """
+
+        filters = {}
+        if usernames is not None:
+            usernames = set(usernames)
+            if not usernames:
+                return
+            filters["userNames"] = list(usernames)
+
+        if not fields:
+            fields = DEFAULT_USER_FIELDS
+
+        query = users_graphql_query(set(fields))
+        for attr, filter_value in filters.items():
+            query.set_variable_value(attr, filter_value)
+
+        for parsed_data in query.continuous_query(self):
+            for user in parsed_data["users"]:
+                user["roles"] = json.loads(user["roles"])
+                yield user
 
     def get_user(self, username=None):
         output = None
