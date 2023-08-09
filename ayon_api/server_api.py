@@ -37,7 +37,6 @@ from .constants import (
     DEFAULT_WORKFILE_INFO_FIELDS,
     DEFAULT_EVENT_FIELDS,
 )
-from .thumbnails import ThumbnailCache
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
     project_graphql_query,
@@ -70,6 +69,7 @@ from .utils import (
     failed_json_default,
     TransferProgress,
     create_dependency_package_basename,
+    ThumbnailContent,
 )
 
 PatternType = type(re.compile(""))
@@ -403,7 +403,6 @@ class ServerAPI(object):
         self._entity_type_attributes_cache = {}
 
         self._as_user_stack = _AsUserStack()
-        self._thumbnail_cache = ThumbnailCache(True)
 
         # Create session
         if self._access_token and create_session:
@@ -4967,18 +4966,28 @@ class ServerAPI(object):
             return workfile_info
         return None
 
+    def _prepare_thumbnail_content(self, project_name, response):
+        content = None
+        content_type = response.content_type
+
+        # It is expected the response contains thumbnail id otherwise the
+        #   content cannot be cached and filepath returned
+        thumbnail_id = response.headers.get("X-Thumbnail-Id")
+        if thumbnail_id is not None:
+            content = response.content
+
+        return ThumbnailContent(
+            project_name, thumbnail_id, content, content_type
+        )
+
     def get_thumbnail(
         self, project_name, entity_type, entity_id, thumbnail_id=None
     ):
         """Get thumbnail from server.
 
-        Permissions of thumbnails are related to entities so thumbnails must be
-        queried per entity. So an entity type and entity type is required to
-        be passed.
-
-        If thumbnail id is passed logic can look into locally cached thumbnails
-        before calling server which can enhance loading time. If thumbnail id
-        is not passed the thumbnail is always downloaded even if is available.
+        Permissions of thumbnails are related to entities so thumbnails must
+        be queried per entity. So an entity type and entity type is required
+        to be passed.
 
         Notes:
             It is recommended to use one of prepared entity type specific
@@ -4992,20 +5001,16 @@ class ServerAPI(object):
             project_name (str): Project under which the entity is located.
             entity_type (str): Entity type which passed entity id represents.
             entity_id (str): Entity id for which thumbnail should be returned.
-            thumbnail_id (Optional[str]): Prepared thumbnail id from entity.
-                Used only to check if thumbnail was already cached.
+            thumbnail_id (Optional[str]): DEPRECATED Use
+                'get_thumbnail_by_id'.
 
         Returns:
-            Union[str, None]: Path to downloaded thumbnail or none if entity
-                does not have any (or if user does not have permissions).
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
         """
 
-        # Look for thumbnail into cache and return the path if was found
-        filepath = self._thumbnail_cache.get_thumbnail_filepath(
-            project_name, thumbnail_id
-        )
-        if filepath:
-            return filepath
+        if thumbnail_id:
+            return self.get_thumbnail_by_id(project_name, thumbnail_id)
 
         if entity_type in (
             "folder",
@@ -5014,29 +5019,12 @@ class ServerAPI(object):
         ):
             entity_type += "s"
 
-        # Receive thumbnail content from server
-        result = self.raw_get("projects/{}/{}/{}/thumbnail".format(
+        response = self.raw_get("projects/{}/{}/{}/thumbnail".format(
             project_name,
             entity_type,
             entity_id
         ))
-
-        if result.content_type is None:
-            return None
-
-        # It is expected the response contains thumbnail id otherwise the
-        #   content cannot be cached and filepath returned
-        thumbnail_id = result.headers.get("X-Thumbnail-Id")
-        if thumbnail_id is None:
-            return None
-
-        # Cache thumbnail and return path
-        return self._thumbnail_cache.store_thumbnail(
-            project_name,
-            thumbnail_id,
-            result.content,
-            result.content_type
-        )
+        return self._prepare_thumbnail_content(project_name, response)
 
     def get_folder_thumbnail(
         self, project_name, folder_id, thumbnail_id=None
