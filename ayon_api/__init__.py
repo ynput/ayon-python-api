@@ -163,6 +163,7 @@ from ._api import (
     get_workfile_info,
     get_workfile_info_by_id,
 
+    get_thumbnail_by_id,
     get_thumbnail,
     get_folder_thumbnail,
     get_version_thumbnail,
@@ -356,6 +357,7 @@ __all__ = (
     "get_workfile_info",
     "get_workfile_info_by_id",
 
+    "get_thumbnail_by_id",
     "get_thumbnail",
     "get_folder_thumbnail",
     "get_version_thumbnail",

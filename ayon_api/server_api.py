@@ -4980,6 +4980,39 @@ class ServerAPI(object):
             project_name, thumbnail_id, content, content_type
         )
 
+    def get_thumbnail_by_id(self, project_name, thumbnail_id):
+        """Get thumbnail from server by id.
+
+        Permissions of thumbnails are related to entities so thumbnails must
+        be queried per entity. So an entity type and entity type is required
+        to be passed.
+
+        Notes:
+            It is recommended to use one of prepared entity type specific
+                methods 'get_folder_thumbnail', 'get_version_thumbnail' or
+                'get_workfile_thumbnail'.
+            We do recommend pass thumbnail id if you have access to it. Each
+                entity that allows thumbnails has 'thumbnailId' field, so it
+                can be queried.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            thumbnail_id (Optional[str]): DEPRECATED Use
+                'get_thumbnail_by_id'.
+
+        Returns:
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
+        """
+
+        response = self.raw_get(
+            "projects/{}/thumbnails/{}".format(
+                project_name,
+                thumbnail_id
+            )
+        )
+        return self._prepare_thumbnail_content(project_name, response)
+
     def get_thumbnail(
         self, project_name, entity_type, entity_id, thumbnail_id=None
     ):
