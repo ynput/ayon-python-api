@@ -884,7 +884,7 @@ class ServerAPI(object):
             filters["userNames"] = list(usernames)
 
         if not fields:
-            fields = DEFAULT_USER_FIELDS
+            fields = self.get_default_fields_for_type("user")
 
         query = users_graphql_query(set(fields))
         for attr, filter_value in filters.items():
@@ -1200,7 +1200,7 @@ class ServerAPI(object):
         filters["includeLogsFilter"] = include_logs
 
         if not fields:
-            fields = DEFAULT_EVENT_FIELDS
+            fields = self.get_default_fields_for_type("event")
 
         query = events_graphql_query(set(fields))
         for attr, filter_value in filters.items():
@@ -1715,51 +1715,46 @@ class ServerAPI(object):
             set[str]: Fields that should be queried from server.
         """
 
-        attributes = self.get_attributes_for_type(entity_type)
+        # Event does not have attributes
+        if entity_type == "event":
+            return set(DEFAULT_EVENT_FIELDS)
+
         if entity_type == "project":
-            return DEFAULT_PROJECT_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+            entity_type_defaults = DEFAULT_PROJECT_FIELDS
 
-        if entity_type == "folder":
-            return DEFAULT_FOLDER_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "folder":
+            entity_type_defaults = DEFAULT_FOLDER_FIELDS
 
-        if entity_type == "task":
-            return DEFAULT_TASK_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "task":
+            entity_type_defaults = DEFAULT_TASK_FIELDS
 
-        if entity_type == "product":
-            return DEFAULT_PRODUCT_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "product":
+            entity_type_defaults = DEFAULT_PRODUCT_FIELDS
 
-        if entity_type == "version":
-            return DEFAULT_VERSION_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "version":
+            entity_type_defaults = DEFAULT_VERSION_FIELDS
 
-        if entity_type == "representation":
-            return (
+        elif entity_type == "representation":
+            entity_type_defaults = (
                 DEFAULT_REPRESENTATION_FIELDS
                 | REPRESENTATION_FILES_FIELDS
-                | {
-                    "attrib.{}".format(attr)
-                    for attr in attributes
-                }
             )
 
-        if entity_type == "productType":
-            return DEFAULT_PRODUCT_TYPE_FIELDS
+        elif entity_type == "productType":
+            entity_type_defaults = DEFAULT_PRODUCT_TYPE_FIELDS
 
-        raise ValueError("Unknown entity type \"{}\"".format(entity_type))
+        elif entity_type == "workfile":
+            entity_type_defaults = DEFAULT_WORKFILE_INFO_FIELDS
+
+        elif entity_type == "user":
+            entity_type_defaults = DEFAULT_USER_FIELDS
+
+        else:
+            raise ValueError("Unknown entity type \"{}\"".format(entity_type))
+        return (
+            entity_type_defaults
+            | self.get_attributes_fields_for_type(entity_type)
+        )
 
     def get_addons_info(self, details=True):
         """Get information about addons available on server.
