@@ -956,6 +956,11 @@ def delete_project(project_name):
     return con.delete_project(project_name)
 
 
+def get_thumbnail_by_id(project_name, thumbnail_id):
+    con = get_server_api_connection()
+    con.get_thumbnail_by_id(project_name, thumbnail_id)
+
+
 def get_thumbnail(project_name, entity_type, entity_id, thumbnail_id=None):
     con = get_server_api_connection()
     con.get_thumbnail(project_name, entity_type, entity_id, thumbnail_id)
