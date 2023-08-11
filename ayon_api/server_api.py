@@ -1690,6 +1690,19 @@ class ServerAPI(object):
 
         return copy.deepcopy(attributes)
 
+    def get_attributes_fields_for_type(self, entity_type):
+        """Prepare attribute fields for entity type.
+
+        Returns:
+            set[str]: Attributes fields for entity type.
+        """
+
+        attributes = self.get_attributes_for_type(entity_type)
+        return {
+            "attrib.{}".format(attr)
+            for attr in attributes
+        }
+
     def get_default_fields_for_type(self, entity_type):
         """Default fields for entity type.
 

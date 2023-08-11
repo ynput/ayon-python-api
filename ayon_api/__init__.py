@@ -94,6 +94,7 @@ from ._api import (
     get_users,
 
     get_attributes_for_type,
+    get_attributes_fields_for_type,
     get_default_fields_for_type,
 
     get_project_anatomy_preset,
@@ -290,6 +291,7 @@ __all__ = (
     "get_users",
 
     "get_attributes_for_type",
+    "get_attributes_fields_for_type",
     "get_default_fields_for_type",
 
     "get_project_anatomy_preset",
