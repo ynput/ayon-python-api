@@ -884,7 +884,7 @@ class ServerAPI(object):
             filters["userNames"] = list(usernames)
 
         if not fields:
-            fields = DEFAULT_USER_FIELDS
+            fields = self.get_default_fields_for_type("user")
 
         query = users_graphql_query(set(fields))
         for attr, filter_value in filters.items():
@@ -1200,7 +1200,7 @@ class ServerAPI(object):
         filters["includeLogsFilter"] = include_logs
 
         if not fields:
-            fields = DEFAULT_EVENT_FIELDS
+            fields = self.get_default_fields_for_type("event")
 
         query = events_graphql_query(set(fields))
         for attr, filter_value in filters.items():
@@ -1690,6 +1690,19 @@ class ServerAPI(object):
 
         return copy.deepcopy(attributes)
 
+    def get_attributes_fields_for_type(self, entity_type):
+        """Prepare attribute fields for entity type.
+
+        Returns:
+            set[str]: Attributes fields for entity type.
+        """
+
+        attributes = self.get_attributes_for_type(entity_type)
+        return {
+            "attrib.{}".format(attr)
+            for attr in attributes
+        }
+
     def get_default_fields_for_type(self, entity_type):
         """Default fields for entity type.
 
@@ -1702,51 +1715,46 @@ class ServerAPI(object):
             set[str]: Fields that should be queried from server.
         """
 
-        attributes = self.get_attributes_for_type(entity_type)
+        # Event does not have attributes
+        if entity_type == "event":
+            return set(DEFAULT_EVENT_FIELDS)
+
         if entity_type == "project":
-            return DEFAULT_PROJECT_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+            entity_type_defaults = DEFAULT_PROJECT_FIELDS
 
-        if entity_type == "folder":
-            return DEFAULT_FOLDER_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "folder":
+            entity_type_defaults = DEFAULT_FOLDER_FIELDS
 
-        if entity_type == "task":
-            return DEFAULT_TASK_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "task":
+            entity_type_defaults = DEFAULT_TASK_FIELDS
 
-        if entity_type == "product":
-            return DEFAULT_PRODUCT_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "product":
+            entity_type_defaults = DEFAULT_PRODUCT_FIELDS
 
-        if entity_type == "version":
-            return DEFAULT_VERSION_FIELDS | {
-                "attrib.{}".format(attr)
-                for attr in attributes
-            }
+        elif entity_type == "version":
+            entity_type_defaults = DEFAULT_VERSION_FIELDS
 
-        if entity_type == "representation":
-            return (
+        elif entity_type == "representation":
+            entity_type_defaults = (
                 DEFAULT_REPRESENTATION_FIELDS
                 | REPRESENTATION_FILES_FIELDS
-                | {
-                    "attrib.{}".format(attr)
-                    for attr in attributes
-                }
             )
 
-        if entity_type == "productType":
-            return DEFAULT_PRODUCT_TYPE_FIELDS
+        elif entity_type == "productType":
+            entity_type_defaults = DEFAULT_PRODUCT_TYPE_FIELDS
 
-        raise ValueError("Unknown entity type \"{}\"".format(entity_type))
+        elif entity_type == "workfile":
+            entity_type_defaults = DEFAULT_WORKFILE_INFO_FIELDS
+
+        elif entity_type == "user":
+            entity_type_defaults = DEFAULT_USER_FIELDS
+
+        else:
+            raise ValueError("Unknown entity type \"{}\"".format(entity_type))
+        return (
+            entity_type_defaults
+            | self.get_attributes_fields_for_type(entity_type)
+        )
 
     def get_addons_info(self, details=True):
         """Get information about addons available on server.
@@ -3221,8 +3229,6 @@ class ServerAPI(object):
         else:
             use_rest = False
             fields = set(fields)
-            if own_attributes:
-                fields.add("ownAttrib")
             for field in fields:
                 if field.startswith("config"):
                     use_rest = True
@@ -3235,6 +3241,13 @@ class ServerAPI(object):
                 yield project
 
         else:
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("project")
+
+            if own_attributes:
+                fields.add("ownAttrib")
+
             query = projects_graphql_query(fields)
             for parsed_data in query.continuous_query(self):
                 for project in parsed_data["projects"]:
@@ -3275,8 +3288,12 @@ class ServerAPI(object):
                 fill_own_attribs(project)
             return project
 
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= self.get_attributes_fields_for_type("project")
+
         if own_attributes:
-            field.add("ownAttrib")
+            fields.add("ownAttrib")
         query = project_graphql_query(fields)
         query.set_variable_value("projectName", project_name)
 
@@ -3433,10 +3450,13 @@ class ServerAPI(object):
 
             filters["parentFolderIds"] = list(parent_ids)
 
-        if fields:
-            fields = set(fields)
-        else:
+        if not fields:
             fields = self.get_default_fields_for_type("folder")
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("folder")
 
         use_rest = False
         if "data" in fields:
@@ -3670,8 +3690,11 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
-
-        fields = set(fields)
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("task")
 
         use_rest = False
         if "data" in fields:
@@ -3856,6 +3879,9 @@ class ServerAPI(object):
         # Convert fields and add minimum required fields
         if fields:
             fields = set(fields) | {"id"}
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("folder")
         else:
             fields = self.get_default_fields_for_type("product")
 
@@ -4112,7 +4138,11 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("version")
-        fields = set(fields)
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("version")
 
         if active is not None:
             fields.add("active")
@@ -4570,7 +4600,11 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("representation")
-        fields = set(fields)
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("representation")
 
         use_rest = False
         if "data" in fields:
@@ -4916,8 +4950,15 @@ class ServerAPI(object):
             filters["workfileIds"] = list(workfile_ids)
 
         if not fields:
-            fields = DEFAULT_WORKFILE_INFO_FIELDS
+            fields = self.get_default_fields_for_type("workfile")
+
         fields = set(fields)
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= {
+                "attrib.{}".format(attr)
+                for attr in self.get_attributes_for_type("workfile")
+            }
         if own_attributes:
             fields.add("ownAttrib")
 

@@ -991,6 +991,11 @@ def update_thumbnail(project_name, thumbnail_id, src_filepath):
     return con.update_thumbnail(project_name, thumbnail_id, src_filepath)
 
 
+def get_attributes_fields_for_type(entity_type):
+    con = get_server_api_connection()
+    return con.get_attributes_fields_for_type(entity_type)
+
+
 def get_default_fields_for_type(entity_type):
     con = get_server_api_connection()
     return con.get_default_fields_for_type(entity_type)
