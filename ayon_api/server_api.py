@@ -3229,8 +3229,6 @@ class ServerAPI(object):
         else:
             use_rest = False
             fields = set(fields)
-            if own_attributes:
-                fields.add("ownAttrib")
             for field in fields:
                 if field.startswith("config"):
                     use_rest = True
@@ -3243,6 +3241,13 @@ class ServerAPI(object):
                 yield project
 
         else:
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("project")
+
+            if own_attributes:
+                fields.add("ownAttrib")
+
             query = projects_graphql_query(fields)
             for parsed_data in query.continuous_query(self):
                 for project in parsed_data["projects"]:
@@ -3283,8 +3288,12 @@ class ServerAPI(object):
                 fill_own_attribs(project)
             return project
 
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= self.get_attributes_fields_for_type("project")
+
         if own_attributes:
-            field.add("ownAttrib")
+            fields.add("ownAttrib")
         query = project_graphql_query(fields)
         query.set_variable_value("projectName", project_name)
 
@@ -3441,10 +3450,13 @@ class ServerAPI(object):
 
             filters["parentFolderIds"] = list(parent_ids)
 
-        if fields:
-            fields = set(fields)
-        else:
+        if not fields:
             fields = self.get_default_fields_for_type("folder")
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("folder")
 
         use_rest = False
         if "data" in fields:
@@ -3678,8 +3690,11 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
-
-        fields = set(fields)
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("task")
 
         use_rest = False
         if "data" in fields:
@@ -3864,6 +3879,9 @@ class ServerAPI(object):
         # Convert fields and add minimum required fields
         if fields:
             fields = set(fields) | {"id"}
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("folder")
         else:
             fields = self.get_default_fields_for_type("product")
 
@@ -4120,7 +4138,11 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("version")
-        fields = set(fields)
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("version")
 
         if active is not None:
             fields.add("active")
@@ -4578,7 +4600,11 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("representation")
-        fields = set(fields)
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("representation")
 
         use_rest = False
         if "data" in fields:
@@ -4924,8 +4950,15 @@ class ServerAPI(object):
             filters["workfileIds"] = list(workfile_ids)
 
         if not fields:
-            fields = DEFAULT_WORKFILE_INFO_FIELDS
+            fields = self.get_default_fields_for_type("workfile")
+
         fields = set(fields)
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= {
+                "attrib.{}".format(attr)
+                for attr in self.get_attributes_for_type("workfile")
+            }
         if own_attributes:
             fields.add("ownAttrib")
 
