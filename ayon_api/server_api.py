@@ -130,6 +130,8 @@ class RestApiResponse(object):
 
     @property
     def text(self):
+        if self._response is None:
+            return self.detail
         return self._response.text
 
     @property
@@ -138,6 +140,8 @@ class RestApiResponse(object):
 
     @property
     def headers(self):
+        if self._response is None:
+            return {}
         return self._response.headers
 
     @property
@@ -151,6 +155,8 @@ class RestApiResponse(object):
 
     @property
     def content(self):
+        if self._response is None:
+            return None
         return self._response.content
 
     @property
