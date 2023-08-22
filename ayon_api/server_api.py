@@ -26,6 +26,8 @@ except ImportError:
         from json import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
+    SERVER_TIMEOUT,
+    SERVER_RETRIES,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
@@ -485,10 +487,40 @@ class ServerAPI(object):
 
     @classmethod
     def get_default_timeout(cls):
+        """Default value for requests timeout.
+
+        First looks for environment variable SERVER_TIMEOUT which can affect
+        timeout value. If not available then use class
+        attribute '_default_timeout'.
+
+        Returns:
+            float: Timeout value in seconds.
+        """
+
+        try:
+            return float(os.environ.get(SERVER_TIMEOUT))
+        except (ValueError, TypeError):
+            pass
+
         return cls._default_timeout
 
     @classmethod
     def get_default_max_retries(cls):
+        """Default value for requests max retries.
+
+        First looks for environment variable SERVER_RETRIES, which can affect
+        max retries value. If not available then use class attribute
+        '_default_max_retries'.
+
+        Returns:
+            int: Max retries value.
+        """
+
+        try:
+            return int(os.environ.get(SERVER_RETRIES))
+        except (ValueError, TypeError):
+            pass
+
         return cls._default_max_retries
 
     def get_timeout(self):
