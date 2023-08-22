@@ -339,7 +339,11 @@ class ServerAPI(object):
             variable value 'AYON_CERT_FILE' by default.
         create_session (Optional[bool]): Create session for connection if
             token is available. Default is True.
+        timeout (Optional[float]): Timeout for requests.
+        max_retries (Optional[int]): Number of retries for requests.
     """
+    _default_timeout = 10.0
+    _default_max_retries = 3
 
     def __init__(
         self,
@@ -352,6 +356,8 @@ class ServerAPI(object):
         ssl_verify=None,
         cert=None,
         create_session=True,
+        timeout=None,
+        max_retries=None,
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -369,6 +375,9 @@ class ServerAPI(object):
             or "production"
         )
         self._sender = sender
+
+        self.timeout = timeout
+        self.max_retries = max_retries
 
         if ssl_verify is None:
             # Custom AYON env variable for CA file or 'True'
@@ -473,6 +482,57 @@ class ServerAPI(object):
 
     ssl_verify = property(get_ssl_verify, set_ssl_verify)
     cert = property(get_cert, set_cert)
+
+    @classmethod
+    def get_default_timeout(cls):
+        return cls._default_timeout
+
+    @classmethod
+    def get_default_max_retries(cls):
+        return cls._default_max_retries
+
+    def get_timeout(self):
+        """Current value for requests timeout.
+
+        Returns:
+            float: Timeout value in seconds.
+        """
+
+        return self._timeout
+
+    def set_timeout(self, timeout):
+        """Change timeout value for requests.
+
+        Args:
+            timeout (Union[float, None]): Timeout value in seconds.
+        """
+
+        if timeout is None:
+            timeout = self.get_default_timeout()
+        self._timeout = float(timeout)
+
+    def get_max_retries(self):
+        """Current value for requests max retries.
+
+        Returns:
+            int: Max retries value.
+        """
+
+        return self._max_retries
+
+    def set_max_retries(self, max_retries):
+        """Change max retries value for requests.
+
+        Args:
+            max_retries (Union[int, None]): Max retries value.
+        """
+
+        if max_retries is None:
+            max_retries = self.get_default_max_retries()
+        self._max_retries = int(max_retries)
+
+    timeout = property(get_timeout, set_timeout)
+    max_retries = property(get_max_retries, set_max_retries)
 
     @property
     def access_token(self):
