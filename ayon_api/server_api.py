@@ -2,6 +2,7 @@ import os
 import re
 import io
 import json
+import time
 import logging
 import collections
 import platform
@@ -1096,6 +1097,10 @@ class ServerAPI(object):
         logout_from_server(self._base_url, self._access_token)
 
     def _do_rest_request(self, function, url, **kwargs):
+        kwargs.setdefault("timeout", self.timeout)
+        max_retries = kwargs.get("max_retries", self.max_retries)
+        if max_retries < 1:
+            max_retries = 1
         if self._session is None:
             # Validate token if was not yet validated
             #    - ignore validation if we're in middle of
@@ -1115,38 +1120,54 @@ class ServerAPI(object):
         elif isinstance(function, RequestType):
             function = self._session_functions_mapping[function]
 
-        try:
-            response = function(url, **kwargs)
+        response = None
+        new_response = None
+        for _ in range(max_retries):
+            try:
+                response = function(url, **kwargs)
+                break
 
-        except ConnectionRefusedError:
-            new_response = RestApiResponse(
-                None,
-                {"detail": "Unable to connect the server. Connection refused"}
-            )
-        except requests.exceptions.ConnectionError:
-            new_response = RestApiResponse(
-                None,
-                {"detail": "Unable to connect the server. Connection error"}
-            )
+            except ConnectionRefusedError:
+                # Server may be restarting
+                new_response = RestApiResponse(
+                    None,
+                    {"detail": "Unable to connect the server. Connection refused"}
+                )
+            except requests.exceptions.Timeout:
+                # Connection timed out
+                new_response = RestApiResponse(
+                    None,
+                    {"detail": "Connection timed out."}
+                )
+            except requests.exceptions.ConnectionError:
+                # Other connection error (ssl, etc) - does not make sense to
+                #   try call server again
+                new_response = RestApiResponse(
+                    None,
+                    {"detail": "Unable to connect the server. Connection error"}
+                )
+                break
+
+            time.sleep(0.1)
+
+        if new_response is not None:
+            return new_response
+
+        content_type = response.headers.get("Content-Type")
+        if content_type == "application/json":
+            try:
+                new_response = RestApiResponse(response)
+            except JSONDecodeError:
+                new_response = RestApiResponse(
+                    None,
+                    {
+                        "detail": "The response is not a JSON: {}".format(
+                            response.text)
+                    }
+                )
+
         else:
-            content_type = response.headers.get("Content-Type")
-            if content_type == "application/json":
-                try:
-                    new_response = RestApiResponse(response)
-                except JSONDecodeError:
-                    new_response = RestApiResponse(
-                        None,
-                        {
-                            "detail": "The response is not a JSON: {}".format(
-                                response.text)
-                        }
-                    )
-
-            elif content_type in ("image/jpeg", "image/png"):
-                new_response = RestApiResponse(response)
-
-            else:
-                new_response = RestApiResponse(response)
+            new_response = RestApiResponse(response)
 
         self.log.debug("Response {}".format(str(new_response)))
         return new_response
