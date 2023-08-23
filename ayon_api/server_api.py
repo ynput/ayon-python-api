@@ -3810,6 +3810,8 @@ class ServerAPI(object):
         product_ids=None,
         product_names=None,
         folder_ids=None,
+        product_types=None,
+        statuses=None,
         names_by_folder_ids=None,
         active=True,
         fields=None,
@@ -3828,6 +3830,10 @@ class ServerAPI(object):
                 filtering.
             folder_ids (Optional[Iterable[str]]): Ids of task parents.
                 Use 'None' if folder is direct child of project.
+            product_types (Optional[Iterable[str]]): Product types used for
+                filtering.
+            statuses (Optional[Iterable[str]]): Product statuses used for
+                filtering.
             names_by_folder_ids (Optional[dict[str, Iterable[str]]]): Product
                 name filtering by folder id.
             active (Optional[bool]): Filter active/inactive products.
@@ -3860,6 +3866,18 @@ class ServerAPI(object):
         if folder_ids is not None:
             filter_folder_ids = set(folder_ids)
             if not filter_folder_ids:
+                return
+
+        filter_product_types = None
+        if product_types is not None:
+            filter_product_types = set(product_types)
+            if not filter_product_types:
+                return
+
+        filter_statuses = None
+        if statuses is not None:
+            filter_statuses = set(statuses)
+            if not filter_statuses:
                 return
 
         # This will disable 'folder_ids' and 'product_names' filters
@@ -3907,6 +3925,12 @@ class ServerAPI(object):
         }
         if filter_folder_ids:
             filters["folderIds"] = list(filter_folder_ids)
+
+        if filter_product_types:
+            filters["productTypes"] = list(filter_product_types)
+
+        if filter_statuses:
+            filters["statuses"] = list(filter_statuses)
 
         if product_ids:
             filters["productIds"] = list(product_ids)
