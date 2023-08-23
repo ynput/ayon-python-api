@@ -3899,7 +3899,7 @@ class ServerAPI(object):
             fields = set(fields) | {"id"}
             if "attrib" in fields:
                 fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("folder")
+                fields |= self.get_attributes_fields_for_type("product")
         else:
             fields = self.get_default_fields_for_type("product")
 
