@@ -2140,7 +2140,12 @@ class ServerAPI(object):
                 server.
         """
 
-        result = self.get("desktop/dependency_packages")
+        endpoint = "desktop/dependencyPackages"
+        major, minor, _, _, _ = self.server_version_tuple
+        if major == 0 and minor <= 3:
+            endpoint = "desktop/dependency_packages"
+
+        result = self.get(endpoint)
         result.raise_for_status()
         return result.data
 
