@@ -9,13 +9,13 @@ SERVER_TOKEN_ENV_KEY = SERVER_API_ENV_KEY
 
 # --- User ---
 DEFAULT_USER_FIELDS = {
-    "roles",
+    "accessGroups",
+    "defaultAccessGroups",
     "name",
     "isService",
     "isManager",
     "isGuest",
     "isAdmin",
-    "defaultRoles",
     "createdAt",
     "active",
     "hasPassword",
