@@ -2,6 +2,7 @@ import os
 import re
 import io
 import json
+import time
 import logging
 import collections
 import platform
@@ -26,6 +27,8 @@ except ImportError:
         from json import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
+    SERVER_TIMEOUT_ENV_KEY,
+    SERVER_RETRIES_ENV_KEY,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
@@ -127,6 +130,8 @@ class RestApiResponse(object):
 
     @property
     def text(self):
+        if self._response is None:
+            return self.detail
         return self._response.text
 
     @property
@@ -135,6 +140,8 @@ class RestApiResponse(object):
 
     @property
     def headers(self):
+        if self._response is None:
+            return {}
         return self._response.headers
 
     @property
@@ -148,6 +155,8 @@ class RestApiResponse(object):
 
     @property
     def content(self):
+        if self._response is None:
+            return b""
         return self._response.content
 
     @property
@@ -339,7 +348,11 @@ class ServerAPI(object):
             variable value 'AYON_CERT_FILE' by default.
         create_session (Optional[bool]): Create session for connection if
             token is available. Default is True.
+        timeout (Optional[float]): Timeout for requests.
+        max_retries (Optional[int]): Number of retries for requests.
     """
+    _default_timeout = 10.0
+    _default_max_retries = 3
 
     def __init__(
         self,
@@ -352,6 +365,8 @@ class ServerAPI(object):
         ssl_verify=None,
         cert=None,
         create_session=True,
+        timeout=None,
+        max_retries=None,
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
@@ -369,6 +384,9 @@ class ServerAPI(object):
             or "production"
         )
         self._sender = sender
+
+        self._timeout = timeout
+        self._max_retries = max_retries
 
         if ssl_verify is None:
             # Custom AYON env variable for CA file or 'True'
@@ -473,6 +491,87 @@ class ServerAPI(object):
 
     ssl_verify = property(get_ssl_verify, set_ssl_verify)
     cert = property(get_cert, set_cert)
+
+    @classmethod
+    def get_default_timeout(cls):
+        """Default value for requests timeout.
+
+        First looks for environment variable SERVER_TIMEOUT_ENV_KEY which
+        can affect timeout value. If not available then use class
+        attribute '_default_timeout'.
+
+        Returns:
+            float: Timeout value in seconds.
+        """
+
+        try:
+            return float(os.environ.get(SERVER_TIMEOUT_ENV_KEY))
+        except (ValueError, TypeError):
+            pass
+
+        return cls._default_timeout
+
+    @classmethod
+    def get_default_max_retries(cls):
+        """Default value for requests max retries.
+
+        First looks for environment variable SERVER_RETRIES_ENV_KEY, which
+        can affect max retries value. If not available then use class
+        attribute '_default_max_retries'.
+
+        Returns:
+            int: Max retries value.
+        """
+
+        try:
+            return int(os.environ.get(SERVER_RETRIES_ENV_KEY))
+        except (ValueError, TypeError):
+            pass
+
+        return cls._default_max_retries
+
+    def get_timeout(self):
+        """Current value for requests timeout.
+
+        Returns:
+            float: Timeout value in seconds.
+        """
+
+        return self._timeout
+
+    def set_timeout(self, timeout):
+        """Change timeout value for requests.
+
+        Args:
+            timeout (Union[float, None]): Timeout value in seconds.
+        """
+
+        if timeout is None:
+            timeout = self.get_default_timeout()
+        self._timeout = float(timeout)
+
+    def get_max_retries(self):
+        """Current value for requests max retries.
+
+        Returns:
+            int: Max retries value.
+        """
+
+        return self._max_retries
+
+    def set_max_retries(self, max_retries):
+        """Change max retries value for requests.
+
+        Args:
+            max_retries (Union[int, None]): Max retries value.
+        """
+
+        if max_retries is None:
+            max_retries = self.get_default_max_retries()
+        self._max_retries = int(max_retries)
+
+    timeout = property(get_timeout, set_timeout)
+    max_retries = property(get_max_retries, set_max_retries)
 
     @property
     def access_token(self):
@@ -1004,6 +1103,10 @@ class ServerAPI(object):
         logout_from_server(self._base_url, self._access_token)
 
     def _do_rest_request(self, function, url, **kwargs):
+        kwargs.setdefault("timeout", self.timeout)
+        max_retries = kwargs.get("max_retries", self.max_retries)
+        if max_retries < 1:
+            max_retries = 1
         if self._session is None:
             # Validate token if was not yet validated
             #    - ignore validation if we're in middle of
@@ -1023,38 +1126,54 @@ class ServerAPI(object):
         elif isinstance(function, RequestType):
             function = self._session_functions_mapping[function]
 
-        try:
-            response = function(url, **kwargs)
+        response = None
+        new_response = None
+        for _ in range(max_retries):
+            try:
+                response = function(url, **kwargs)
+                break
 
-        except ConnectionRefusedError:
-            new_response = RestApiResponse(
-                None,
-                {"detail": "Unable to connect the server. Connection refused"}
-            )
-        except requests.exceptions.ConnectionError:
-            new_response = RestApiResponse(
-                None,
-                {"detail": "Unable to connect the server. Connection error"}
-            )
+            except ConnectionRefusedError:
+                # Server may be restarting
+                new_response = RestApiResponse(
+                    None,
+                    {"detail": "Unable to connect the server. Connection refused"}
+                )
+            except requests.exceptions.Timeout:
+                # Connection timed out
+                new_response = RestApiResponse(
+                    None,
+                    {"detail": "Connection timed out."}
+                )
+            except requests.exceptions.ConnectionError:
+                # Other connection error (ssl, etc) - does not make sense to
+                #   try call server again
+                new_response = RestApiResponse(
+                    None,
+                    {"detail": "Unable to connect the server. Connection error"}
+                )
+                break
+
+            time.sleep(0.1)
+
+        if new_response is not None:
+            return new_response
+
+        content_type = response.headers.get("Content-Type")
+        if content_type == "application/json":
+            try:
+                new_response = RestApiResponse(response)
+            except JSONDecodeError:
+                new_response = RestApiResponse(
+                    None,
+                    {
+                        "detail": "The response is not a JSON: {}".format(
+                            response.text)
+                    }
+                )
+
         else:
-            content_type = response.headers.get("Content-Type")
-            if content_type == "application/json":
-                try:
-                    new_response = RestApiResponse(response)
-                except JSONDecodeError:
-                    new_response = RestApiResponse(
-                        None,
-                        {
-                            "detail": "The response is not a JSON: {}".format(
-                                response.text)
-                        }
-                    )
-
-            elif content_type in ("image/jpeg", "image/png"):
-                new_response = RestApiResponse(response)
-
-            else:
-                new_response = RestApiResponse(response)
+            new_response = RestApiResponse(response)
 
         self.log.debug("Response {}".format(str(new_response)))
         return new_response
