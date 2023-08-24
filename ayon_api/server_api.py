@@ -385,8 +385,8 @@ class ServerAPI(object):
         )
         self._sender = sender
 
-        self.timeout = timeout
-        self.max_retries = max_retries
+        self._timeout = timeout
+        self._max_retries = max_retries
 
         if ssl_verify is None:
             # Custom AYON env variable for CA file or 'True'
