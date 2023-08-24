@@ -156,7 +156,7 @@ class RestApiResponse(object):
     @property
     def content(self):
         if self._response is None:
-            return None
+            return b""
         return self._response.content
 
     @property
