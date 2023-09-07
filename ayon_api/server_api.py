@@ -3515,7 +3515,9 @@ class ServerAPI(object):
         folder_ids=None,
         folder_paths=None,
         folder_names=None,
+        folder_types=None,
         parent_ids=None,
+        statuses=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -3536,8 +3538,12 @@ class ServerAPI(object):
                 for filtering.
             folder_names (Optional[Iterable[str]]): Folder names used
                 for filtering.
+            folder_types (Optional[Iterable[str]]): Folder types used
+                for filtering.
             parent_ids (Optional[Iterable[str]]): Ids of folder parents.
                 Use 'None' if folder is direct child of project.
+            statuses (Optional[Iterable[str]]): Folder statuses used
+                for filtering.
             active (Optional[bool]): Filter active/inactive folders.
                 Both are returned if is set to None.
             fields (Optional[Iterable[str]]): Fields to be queried for
@@ -3573,6 +3579,18 @@ class ServerAPI(object):
             if not folder_names:
                 return
             filters["folderNames"] = list(folder_names)
+
+        if folder_types is not None:
+            folder_types = set(folder_types)
+            if not folder_types:
+                return
+            filters["folderTypes"] = list(folder_types)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["folderStatuses"] = list(statuses)
 
         if parent_ids is not None:
             parent_ids = set(parent_ids)
