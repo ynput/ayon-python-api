@@ -5863,19 +5863,22 @@ class ServerAPI(object):
         """Helper method to get links from server for entity types.
 
         Example output:
-            [
-                {
-                    "id": "59a212c0d2e211eda0e20242ac120002",
-                    "linkType": "reference",
-                    "description": "reference link between folders",
-                    "projectName": "my_project",
-                    "author": "frantadmin",
-                    "entityId": "b1df109676db11ed8e8c6c9466b19aa8",
-                    "entityType": "folder",
-                    "direction": "out"
-                },
+            {
+                "59a212c0d2e211eda0e20242ac120001": [
+                    {
+                        "id": "59a212c0d2e211eda0e20242ac120002",
+                        "linkType": "reference",
+                        "description": "reference link between folders",
+                        "projectName": "my_project",
+                        "author": "frantadmin",
+                        "entityId": "b1df109676db11ed8e8c6c9466b19aa8",
+                        "entityType": "folder",
+                        "direction": "out"
+                    },
+                    ...
+                ],
                 ...
-            ]
+            }
 
         Args:
             project_name (str): Project where links are.
