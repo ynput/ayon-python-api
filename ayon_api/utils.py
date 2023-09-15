@@ -1,3 +1,4 @@
+import os
 import re
 import datetime
 import uuid
@@ -15,6 +16,7 @@ except ImportError:
 import requests
 import unidecode
 
+from .constants import SERVER_TIMEOUT_ENV_KEY
 from .exceptions import UrlError
 
 REMOVED_VALUE = object()
@@ -25,6 +27,23 @@ RepresentationParents = collections.namedtuple(
     "RepresentationParents",
     ("version", "product", "folder", "project")
 )
+
+
+def get_default_timeout():
+    """Default value for requests timeout.
+
+    First looks for environment variable SERVER_TIMEOUT_ENV_KEY which
+    can affect timeout value. If not available then use 10.0 s.
+
+    Returns:
+        float: Timeout value in seconds.
+    """
+
+    try:
+        return float(os.environ.get(SERVER_TIMEOUT_ENV_KEY))
+    except (ValueError, TypeError):
+        pass
+    return 10.0
 
 
 class ThumbnailContent:

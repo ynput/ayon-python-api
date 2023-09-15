@@ -75,6 +75,7 @@ from .utils import (
     TransferProgress,
     create_dependency_package_basename,
     ThumbnailContent,
+    get_default_timeout,
 )
 
 PatternType = type(re.compile(""))
@@ -351,7 +352,6 @@ class ServerAPI(object):
         timeout (Optional[float]): Timeout for requests.
         max_retries (Optional[int]): Number of retries for requests.
     """
-    _default_timeout = 10.0
     _default_max_retries = 3
 
     def __init__(
@@ -497,25 +497,6 @@ class ServerAPI(object):
     cert = property(get_cert, set_cert)
 
     @classmethod
-    def get_default_timeout(cls):
-        """Default value for requests timeout.
-
-        First looks for environment variable SERVER_TIMEOUT_ENV_KEY which
-        can affect timeout value. If not available then use class
-        attribute '_default_timeout'.
-
-        Returns:
-            float: Timeout value in seconds.
-        """
-
-        try:
-            return float(os.environ.get(SERVER_TIMEOUT_ENV_KEY))
-        except (ValueError, TypeError):
-            pass
-
-        return cls._default_timeout
-
-    @classmethod
     def get_default_max_retries(cls):
         """Default value for requests max retries.
 
@@ -551,7 +532,7 @@ class ServerAPI(object):
         """
 
         if timeout is None:
-            timeout = self.get_default_timeout()
+            timeout = get_default_timeout()
         self._timeout = float(timeout)
 
     def get_max_retries(self):
