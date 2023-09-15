@@ -753,12 +753,12 @@ def get_secrets(*args, **kwargs):
 
 def get_secret(*args, **kwargs):
     con = get_server_api_connection()
-    return con.delete_secret(*args, **kwargs)
+    return con.get_secret(*args, **kwargs)
 
 
 def save_secret(*args, **kwargs):
     con = get_server_api_connection()
-    return con.delete_secret(*args, **kwargs)
+    return con.save_secret(*args, **kwargs)
 
 
 def delete_secret(*args, **kwargs):
