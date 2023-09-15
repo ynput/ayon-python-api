@@ -497,6 +497,18 @@ class ServerAPI(object):
     cert = property(get_cert, set_cert)
 
     @classmethod
+    def get_default_timeout(cls):
+        """Default value for requests timeout.
+
+        Utils function 'get_default_timeout' is used by default.
+
+        Returns:
+            float: Timeout value in seconds.
+        """
+
+        return get_default_timeout()
+
+    @classmethod
     def get_default_max_retries(cls):
         """Default value for requests max retries.
 
@@ -532,7 +544,7 @@ class ServerAPI(object):
         """
 
         if timeout is None:
-            timeout = get_default_timeout()
+            timeout = self.get_default_timeout()
         self._timeout = float(timeout)
 
     def get_max_retries(self):
