@@ -1,3 +1,4 @@
+import os
 import re
 import datetime
 import uuid
@@ -15,6 +16,7 @@ except ImportError:
 import requests
 import unidecode
 
+from .constants import SERVER_TIMEOUT_ENV_KEY
 from .exceptions import UrlError
 
 REMOVED_VALUE = object()
@@ -25,6 +27,23 @@ RepresentationParents = collections.namedtuple(
     "RepresentationParents",
     ("version", "product", "folder", "project")
 )
+
+
+def get_default_timeout():
+    """Default value for requests timeout.
+
+    First looks for environment variable SERVER_TIMEOUT_ENV_KEY which
+    can affect timeout value. If not available then use 10.0 s.
+
+    Returns:
+        float: Timeout value in seconds.
+    """
+
+    try:
+        return float(os.environ.get(SERVER_TIMEOUT_ENV_KEY))
+    except (ValueError, TypeError):
+        pass
+    return 10.0
 
 
 class ThumbnailContent:
@@ -231,11 +250,13 @@ def _try_parse_url(url):
         return None
 
 
-def _try_connect_to_server(url):
+def _try_connect_to_server(url, timeout=None):
+    if timeout is None:
+        timeout = get_default_timeout()
     try:
         # TODO add validation if the url lead to Ayon server
-        #   - thiw won't validate if the url lead to 'google.com'
-        requests.get(url)
+        #   - this won't validate if the url lead to 'google.com'
+        requests.get(url, timeout=timeout)
 
     except BaseException:
         return False
@@ -313,7 +334,7 @@ def is_token_valid(url, token):
     return response.status_code == 200
 
 
-def validate_url(url):
+def validate_url(url, timeout=None):
     """Validate url if is valid and server is available.
 
     Validation checks if can be parsed as url and contains scheme.
@@ -334,6 +355,7 @@ def validate_url(url):
 
     Args:
         url (str): Server url.
+        timeout (Optional[int]): Timeout in seconds for connection to server.
 
     Returns:
         Url which was used to connect to server.
@@ -369,10 +391,10 @@ def validate_url(url):
     # - this will trigger UrlError if both will crash
     if not parsed_url.scheme:
         new_url = "https://" + modified_url
-        if _try_connect_to_server(new_url):
+        if _try_connect_to_server(new_url, timeout=timeout):
             return new_url
 
-    if _try_connect_to_server(modified_url):
+    if _try_connect_to_server(modified_url, timeout=timeout):
         return modified_url
 
     hints = []
