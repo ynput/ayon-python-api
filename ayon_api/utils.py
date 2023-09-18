@@ -340,16 +340,23 @@ def is_token_valid(url, token, timeout=None):
     if timeout is None:
         timeout = get_default_timeout()
 
-    headers = {
+    base_headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer {}".format(token)
     }
-    response = requests.get(
-        "{}/api/users/me".format(url),
-        headers=headers,
-        timeout=timeout,
-    )
-    return response.status_code == 200
+    for header_value in (
+        {"Authorization": "Bearer {}".format(token)},
+        {"X-Api-Key": token},
+    ):
+        headers = base_headers.copy()
+        headers.update(header_value)
+        response = requests.get(
+            "{}/api/users/me".format(url),
+            headers=headers,
+            timeout=timeout,
+        )
+        if response.status_code == 200:
+            return True
+    return False
 
 
 def validate_url(url, timeout=None):
