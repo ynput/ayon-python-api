@@ -263,19 +263,23 @@ def _try_connect_to_server(url, timeout=None):
     return True
 
 
-def login_to_server(url, username, password):
+def login_to_server(url, username, password, timeout=None):
     """Use login to the server to receive token.
 
     Args:
         url (str): Server url.
         username (str): User's username.
         password (str): User's password.
+        timeout (Optional[float]): Timeout for request. Value from
+            'get_default_timeout' is used if not specified.
 
     Returns:
         Union[str, None]: User's token if login was successfull.
             Otherwise 'None'.
     """
 
+    if timeout is None:
+        timeout = get_default_timeout()
     headers = {"Content-Type": "application/json"}
     response = requests.post(
         "{}/api/auth/login".format(url),
@@ -283,7 +287,8 @@ def login_to_server(url, username, password):
         json={
             "name": username,
             "password": password
-        }
+        },
+        timeout=timeout,
     )
     token = None
     # 200 - success
@@ -294,34 +299,46 @@ def login_to_server(url, username, password):
     return token
 
 
-def logout_from_server(url, token):
+def logout_from_server(url, token, timeout=None):
     """Logout from server and throw token away.
 
     Args:
         url (str): Url from which should be logged out.
         token (str): Token which should be used to log out.
+        timeout (Optional[float]): Timeout for request. Value from
+            'get_default_timeout' is used if not specified.
     """
 
+    if timeout is None:
+        timeout = get_default_timeout()
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer {}".format(token)
     }
     requests.post(
         url + "/api/auth/logout",
-        headers=headers
+        headers=headers,
+        timeout=timeout,
     )
 
 
-def is_token_valid(url, token):
+def is_token_valid(url, token, timeout=None):
     """Check if token is valid.
+
+    Token can be a user token or service api key.
 
     Args:
         url (str): Server url.
         token (str): User's token.
+        timeout (Optional[float]): Timeout for request. Value from
+            'get_default_timeout' is used if not specified.
 
     Returns:
         bool: True if token is valid.
     """
+
+    if timeout is None:
+        timeout = get_default_timeout()
 
     headers = {
         "Content-Type": "application/json",
@@ -329,7 +346,8 @@ def is_token_valid(url, token):
     }
     response = requests.get(
         "{}/api/users/me".format(url),
-        headers=headers
+        headers=headers,
+        timeout=timeout,
     )
     return response.status_code == 200
 
