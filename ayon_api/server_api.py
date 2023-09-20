@@ -931,8 +931,8 @@ class ServerAPI(object):
                 int(re_match.group("major")),
                 int(re_match.group("minor")),
                 int(re_match.group("patch")),
-                re_match.group("prerelease"),
-                re_match.group("buildmetadata")
+                re_match.group("prerelease") or "",
+                re_match.group("buildmetadata") or "",
             )
         return self._server_version_tuple
 
