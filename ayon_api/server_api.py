@@ -931,8 +931,8 @@ class ServerAPI(object):
                 int(re_match.group("major")),
                 int(re_match.group("minor")),
                 int(re_match.group("patch")),
-                re_match.group("prerelease"),
-                re_match.group("buildmetadata")
+                re_match.group("prerelease") or "",
+                re_match.group("buildmetadata") or "",
             )
         return self._server_version_tuple
 
@@ -2229,6 +2229,34 @@ class ServerAPI(object):
         response.raise_for_status("Failed to create/update dependency")
         return response.data
 
+    def _get_dependency_package_route(
+        self, filename=None, platform_name=None
+    ):
+        major, minor, patch, _, _ = self.server_version_tuple
+        if (major, minor, patch) <= (0, 2, 0):
+            # Backwards compatibility for AYON server 0.2.0 and lower
+            self.log.warning((
+                "Using deprecated dependency package route."
+                " Please update your AYON server to version 0.2.1 or higher."
+                " Backwards compatibility for this route will be removed"
+                " in future releases of ayon-python-api."
+            ))
+            if platform_name is None:
+                platform_name = platform.system().lower()
+            base = "dependencies"
+            if not filename:
+                return base
+            return "{}/{}/{}".format(base, filename, platform_name)
+
+        if (major, minor) <= (0, 3):
+            endpoint = "desktop/dependency_packages"
+        else:
+            endpoint = "desktop/dependencyPackages"
+
+        if filename:
+            return "{}/{}".format(endpoint, filename)
+        return endpoint
+
     def get_dependency_packages(self):
         """Information about dependency packages on server.
 
@@ -2256,32 +2284,10 @@ class ServerAPI(object):
                 server.
         """
 
-        endpoint = "desktop/dependencyPackages"
-        major, minor, _, _, _ = self.server_version_tuple
-        if major == 0 and minor <= 3:
-            endpoint = "desktop/dependency_packages"
-
+        endpoint = self._get_dependency_package_route()
         result = self.get(endpoint)
         result.raise_for_status()
         return result.data
-
-    def _get_dependency_package_route(
-        self, filename=None, platform_name=None
-    ):
-        major, minor, patch, _, _ = self.server_version_tuple
-        if major == 0 and (minor > 2 or (minor == 2 and patch >= 1)):
-            base = "desktop/dependency_packages"
-            if not filename:
-                return base
-            return "{}/{}".format(base, filename)
-
-        # Backwards compatibility for AYON server 0.2.0 and lower
-        if platform_name is None:
-            platform_name = platform.system().lower()
-        base = "dependencies"
-        if not filename:
-            return base
-        return "{}/{}/{}".format(base, filename, platform_name)
 
     def create_dependency_package(
         self,
