@@ -602,12 +602,12 @@ def delete_installer(*args, **kwargs):
 
 def download_installer(*args, **kwargs):
     con = get_server_api_connection()
-    con.download_installer(*args, **kwargs)
+    return con.download_installer(*args, **kwargs)
 
 
 def upload_installer(*args, **kwargs):
     con = get_server_api_connection()
-    con.upload_installer(*args, **kwargs)
+    return con.upload_installer(*args, **kwargs)
 
 
 # Dependency packages
@@ -978,12 +978,14 @@ def delete_project(project_name):
 
 def get_thumbnail_by_id(project_name, thumbnail_id):
     con = get_server_api_connection()
-    con.get_thumbnail_by_id(project_name, thumbnail_id)
+    return con.get_thumbnail_by_id(project_name, thumbnail_id)
 
 
 def get_thumbnail(project_name, entity_type, entity_id, thumbnail_id=None):
     con = get_server_api_connection()
-    con.get_thumbnail(project_name, entity_type, entity_id, thumbnail_id)
+    return con.get_thumbnail(
+        project_name, entity_type, entity_id, thumbnail_id
+    )
 
 
 def get_folder_thumbnail(project_name, folder_id, thumbnail_id=None):
