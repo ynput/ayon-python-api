@@ -144,6 +144,7 @@ def product_types_query(fields):
             query_queue.append((k, v, field))
     return query
 
+
 def project_product_types_query(fields):
     query = GraphQlQuery("ProjectProductTypes")
     project_query = query.add_field("project")
