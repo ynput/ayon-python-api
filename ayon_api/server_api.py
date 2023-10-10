@@ -1489,8 +1489,10 @@ class ServerAPI(object):
                 in target event.
             sequential (Optional[bool]): The source topic must be processed
                 in sequence.
-            events_filter (Optional[ayon_server.sqlfilter.Filter]): A
-                dict-like with conditions to filter the source event.
+            events_filter (Optional[dict[str, Any]]): Filtering conditions
+                to filter the source event. For more technical specifications
+                look to server backed 'ayon_server.sqlfilter.Filter'.
+                TODO: Add example of filters.
             max_retries (Optional[int]): How many times can be event retried.
                 Default value is based on server (3 at the time of this PR).
 
