@@ -1447,6 +1447,7 @@ class ServerAPI(object):
         description=None,
         sequential=None,
         events_filter=None,
+        max_retries=None,
     ):
         """Enroll job based on events.
 
@@ -1488,8 +1489,10 @@ class ServerAPI(object):
                 in target event.
             sequential (Optional[bool]): The source topic must be processed
                 in sequence.
-            events_filter (Optional[ayon_server.sqlfilter.Filter]): A dict-like
-                with conditions to filter the source event.
+            events_filter (Optional[ayon_server.sqlfilter.Filter]): A
+                dict-like with conditions to filter the source event.
+            max_retries (Optional[int]): How many times can be event retried.
+                Default value is based on server (3 at the time of this PR).
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1500,6 +1503,7 @@ class ServerAPI(object):
             "sourceTopic": source_topic,
             "targetTopic": target_topic,
             "sender": sender,
+            "maxRetries": max_retries,
         }
         if sequential is not None:
             kwargs["sequential"] = sequential
