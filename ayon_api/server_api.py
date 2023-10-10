@@ -1144,20 +1144,19 @@ class ServerAPI(object):
                     None,
                     {"detail": "Unable to connect the server. Connection refused"}
                 )
+
             except requests.exceptions.Timeout:
                 # Connection timed out
                 new_response = RestApiResponse(
                     None,
                     {"detail": "Connection timed out."}
                 )
+
             except requests.exceptions.ConnectionError:
-                # Other connection error (ssl, etc) - does not make sense to
-                #   try call server again
                 new_response = RestApiResponse(
                     None,
                     {"detail": "Unable to connect the server. Connection error"}
                 )
-                break
 
             time.sleep(0.1)
 
