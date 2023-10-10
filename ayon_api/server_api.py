@@ -1342,7 +1342,9 @@ class ServerAPI(object):
         status=None,
         description=None,
         summary=None,
-        payload=None
+        payload=None,
+        progress=None,
+        retries=None
     ):
         kwargs = {
             key: value
@@ -1353,9 +1355,27 @@ class ServerAPI(object):
                 ("description", description),
                 ("summary", summary),
                 ("payload", payload),
+                ("progress", progress),
+                ("retries", retries),
             )
             if value is not None
         }
+        # 'progress' and 'retries' are available since 0.5.x server version
+        major, minor, _, _, _ = self.server_version_tuple
+        if (major, minor) < (0, 5):
+            args = []
+            if progress is not None:
+                args.append("progress")
+            if retries is not None:
+                args.append("retries")
+            fields = ", ".join("'{}'".format(f) for f in args)
+            ending = "s" if len(args) > 1 else ""
+            raise ValueError((
+                 "Your server version '{}' does not support update"
+                 " of {} field{} on event. The fields are supported since"
+                 " server version '0.5'."
+            ).format(self.get_server_version(), fields, ending))
+
         response = self.patch(
             "events/{}".format(event_id),
             **kwargs
@@ -1427,6 +1447,7 @@ class ServerAPI(object):
         description=None,
         sequential=None,
         events_filter=None,
+        max_retries=None,
     ):
         """Enroll job based on events.
 
@@ -1468,8 +1489,12 @@ class ServerAPI(object):
                 in target event.
             sequential (Optional[bool]): The source topic must be processed
                 in sequence.
-            events_filter (Optional[ayon_server.sqlfilter.Filter]): A dict-like
-                with conditions to filter the source event.
+            events_filter (Optional[dict[str, Any]]): Filtering conditions
+                to filter the source event. For more technical specifications
+                look to server backed 'ayon_server.sqlfilter.Filter'.
+                TODO: Add example of filters.
+            max_retries (Optional[int]): How many times can be event retried.
+                Default value is based on server (3 at the time of this PR).
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1480,6 +1505,7 @@ class ServerAPI(object):
             "sourceTopic": source_topic,
             "targetTopic": target_topic,
             "sender": sender,
+            "maxRetries": max_retries,
         }
         if sequential is not None:
             kwargs["sequential"] = sequential
