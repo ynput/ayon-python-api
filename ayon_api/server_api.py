@@ -1372,7 +1372,8 @@ class ServerAPI(object):
             ending = "s" if len(args) > 1 else ""
             raise ValueError((
                  "Your server version '{}' does not support update"
-                 " of {} field{} on event. Use version at least 0.5"
+                 " of {} field{} on event. The fields are supported since"
+                 " server version '0.5'."
             ).format(self.get_server_version(), fields, ending))
 
         response = self.patch(
