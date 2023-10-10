@@ -1335,14 +1335,16 @@ class ServerAPI(object):
                 yield event
 
     def update_event(
-        self,
-        event_id,
-        sender=None,
-        project_name=None,
-        status=None,
-        description=None,
-        summary=None,
-        payload=None
+            self,
+            event_id,
+            sender=None,
+            project_name=None,
+            status=None,
+            description=None,
+            summary=None,
+            payload=None,
+            progress=None,
+            retries=None
     ):
         kwargs = {
             key: value
@@ -1353,6 +1355,8 @@ class ServerAPI(object):
                 ("description", description),
                 ("summary", summary),
                 ("payload", payload),
+                ("progress", progress),
+                ("retries", retries),
             )
             if value is not None
         }
