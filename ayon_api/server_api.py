@@ -1133,31 +1133,41 @@ class ServerAPI(object):
 
         response = None
         new_response = None
-        for _ in range(max_retries):
+        for retry_idx in reversed(range(max_retries)):
             try:
                 response = function(url, **kwargs)
                 break
 
             except ConnectionRefusedError:
+                if retry_idx == 0:
+                    self.log.warning(
+                        "Connection error happened.", exc_info=True
+                    )
+
                 # Server may be restarting
                 new_response = RestApiResponse(
                     None,
                     {"detail": "Unable to connect the server. Connection refused"}
                 )
+
             except requests.exceptions.Timeout:
                 # Connection timed out
                 new_response = RestApiResponse(
                     None,
                     {"detail": "Connection timed out."}
                 )
+
             except requests.exceptions.ConnectionError:
-                # Other connection error (ssl, etc) - does not make sense to
-                #   try call server again
+                # Log warning only on last attempt
+                if retry_idx == 0:
+                    self.log.warning(
+                        "Connection error happened.", exc_info=True
+                    )
+
                 new_response = RestApiResponse(
                     None,
                     {"detail": "Unable to connect the server. Connection error"}
                 )
-                break
 
             time.sleep(0.1)
 
