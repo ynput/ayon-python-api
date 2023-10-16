@@ -4365,9 +4365,6 @@ class ServerAPI(object):
                 fields.remove("attrib")
                 fields |= self.get_attributes_fields_for_type("version")
 
-        if active is not None:
-            fields.add("active")
-
         # Make sure fields have minimum required fields
         fields |= {"id", "version"}
 
@@ -4375,6 +4372,9 @@ class ServerAPI(object):
         if "data" in fields:
             use_rest = True
             fields = {"id"}
+
+        if active is not None:
+            fields.add("active")
 
         if own_attributes:
             fields.add("ownAttrib")
