@@ -655,13 +655,10 @@ class ServerAPI(object):
                 as default variant.
 
         Args:
-            variant (Literal['production', 'staging']): Settings variant name.
+            variant (str): Settings variant name. It is possible to use
+                'production', 'staging' or name of dev bundle.
         """
 
-        if variant not in ("production", "staging"):
-            raise ValueError((
-                "Invalid variant name {}. Expected 'production' or 'staging'"
-            ).format(variant))
         self._default_settings_variant = variant
 
     default_settings_variant = property(
