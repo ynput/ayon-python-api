@@ -1512,8 +1512,9 @@ class ServerAPI(object):
             "sourceTopic": source_topic,
             "targetTopic": target_topic,
             "sender": sender,
-            "maxRetries": max_retries,
         }
+        if max_retries is not None:
+            kwargs["maxRetries"] = max_retries
         if sequential is not None:
             kwargs["sequential"] = sequential
         if description is not None:
