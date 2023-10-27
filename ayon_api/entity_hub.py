@@ -2437,10 +2437,13 @@ class FolderEntity(BaseEntity):
 
         if self._path is None:
             parent = self.parent
-            path = self.name
             if parent.entity_type == "folder":
                 parent_path = parent.path
-                path = "/".join([parent_path, path])
+                path = "/".join([parent_path, self.name])
+            elif self._entity_hub.path_start_with_slash:
+                path = "/{}".format(self.name)
+            else:
+                path = self.name
             self._path = path
         return self._path
 
