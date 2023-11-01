@@ -176,6 +176,11 @@ class RestApiResponse(object):
         return self.status
 
     def raise_for_status(self, message=None):
+        if self._response is None:
+            if self._data and self._data.get("detail"):
+                raise ServerError(self._data["detail"])
+            raise ValueError("Response is not available.")
+
         try:
             self._response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
