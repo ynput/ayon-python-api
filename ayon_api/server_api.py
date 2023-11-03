@@ -93,6 +93,7 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
+_NOT_SET = object()
 
 
 def _get_description(response):
@@ -940,6 +941,172 @@ class ServerAPI(object):
 
     server_version = property(get_server_version)
     server_version_tuple = property(get_server_version_tuple)
+
+    def _prep_version_compare(self, major, minor, patch, prerelease, build):
+        s_major, s_minor, s_patch, s_prerelease, s_build = (
+            self.get_server_version_tuple()
+        )
+        l_list = [major]
+        s_list = [s_major]
+        output = (l_list, s_list)
+        if minor is None:
+            return output
+
+        l_list.append(minor)
+        s_list.append(s_minor)
+        if patch is None:
+            return output
+
+        l_list.append(patch)
+        s_list.append(s_patch)
+        if prerelease is _NOT_SET:
+            return output
+
+        l_list.append(prerelease or "")
+        s_list.append(s_prerelease)
+
+        if build is _NOT_SET:
+            return output
+
+        l_list.append(build or "")
+        s_list.append(s_build)
+        return output
+
+    def server_version_eq(
+        self,
+        major,
+        minor=None,
+        patch=None,
+        prerelease=_NOT_SET,
+        build=_NOT_SET
+    ):
+        """Check if server version is same as specified.
+
+        Args:
+            major (int): Major version.
+            minor (Optional[int]): Minor version.
+            patch (Optional[int]): Patch version.
+            prerelease (Optional[str]): Prerelease version.
+            build (Optional[str]): Build version.
+
+        Returns:
+            bool: True if server version is same.
+        """
+
+        result = self._prep_version_compare(
+            major, minor, patch, prerelease, build
+        )
+        l_list, s_list = result
+        return l_list == s_list
+
+    def server_version_lt(
+        self,
+        major,
+        minor=None,
+        patch=None,
+        prerelease=_NOT_SET,
+        build=_NOT_SET
+    ):
+        """Check if server version is lower than specified.
+
+        Args:
+            major (int): Major version.
+            minor (Optional[int]): Minor version.
+            patch (Optional[int]): Patch version.
+            prerelease (Optional[str]): Prerelease version.
+            build (Optional[str]): Build version.
+
+        Returns:
+            bool: True if server version is lower than specified.
+        """
+
+        result = self._prep_version_compare(
+            major, minor, patch, prerelease, build
+        )
+        l_list, s_list = result
+        return l_list < s_list
+
+    def server_version_le(
+        self,
+        major,
+        minor=None,
+        patch=None,
+        prerelease=_NOT_SET,
+        build=_NOT_SET
+    ):
+        """Check if server version is lower or equal than specified.
+
+        Args:
+            major (int): Major version.
+            minor (Optional[int]): Minor version.
+            patch (Optional[int]): Patch version.
+            prerelease (Optional[str]): Prerelease version.
+            build (Optional[str]): Build version.
+
+        Returns:
+            bool: True if server version is lower or equal than specified.
+        """
+
+        result = self._prep_version_compare(
+            major, minor, patch, prerelease, build
+        )
+        l_list, s_list = result
+        return l_list <= s_list
+
+    def server_version_gt(
+        self,
+        major,
+        minor=None,
+        patch=None,
+        prerelease=_NOT_SET,
+        build=_NOT_SET
+    ):
+        """Check if server version is greater than specified.
+
+        Args:
+            major (int): Major version.
+            minor (Optional[int]): Minor version.
+            patch (Optional[int]): Patch version.
+            prerelease (Optional[str]): Prerelease version.
+            build (Optional[str]): Build version.
+
+        Returns:
+            bool: True if server version is greater than specified.
+        """
+
+        result = self._prep_version_compare(
+            major, minor, patch, prerelease, build
+        )
+        l_list, s_list = result
+        return l_list > s_list
+
+    def server_version_ge(
+        self,
+        major,
+        minor=None,
+        patch=None,
+        prerelease=_NOT_SET,
+        build=_NOT_SET
+    ):
+        """Check if server version is greater or equal than specified.
+
+        Args:
+            major (int): Major version.
+            minor (Optional[int]): Minor version.
+            patch (Optional[int]): Patch version.
+            prerelease (Optional[str]): Prerelease version.
+            build (Optional[str]): Build version.
+
+        Returns:
+            bool: True if server version is greater or equal than specified.
+        """
+
+        result = self._prep_version_compare(
+            major, minor, patch, prerelease, build
+        )
+        l_list, s_list = result
+        return l_list >= s_list
+
 
     def _get_user_info(self):
         if self._access_token is None:
