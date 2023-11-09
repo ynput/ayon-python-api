@@ -27,8 +27,6 @@ except ImportError:
         from json import JSONDecodeError as RequestsJSONDecodeError
 
 from .constants import (
-    DEFAULT_VARIANT_ENV_KEY,
-    SERVER_TIMEOUT_ENV_KEY,
     SERVER_RETRIES_ENV_KEY,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
@@ -77,6 +75,7 @@ from .utils import (
     create_dependency_package_basename,
     ThumbnailContent,
     get_default_timeout,
+    get_default_settings_variant,
 )
 
 PatternType = type(re.compile(""))
@@ -387,8 +386,7 @@ class ServerAPI(object):
         self._client_version = client_version
         self._default_settings_variant = (
             default_settings_variant
-            or os.getenv(DEFAULT_VARIANT_ENV_KEY)
-            or "production"
+            or get_default_settings_variant()
         )
         self._sender = sender
 
