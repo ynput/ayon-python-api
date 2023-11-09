@@ -19,6 +19,7 @@ import unidecode
 from .constants import (
     SERVER_TIMEOUT_ENV_KEY,
     DEFAULT_VARIANT_ENV_KEY,
+    SITE_ID_ENV_KEY,
 )
 from .exceptions import UrlError
 
@@ -57,6 +58,16 @@ def get_default_settings_variant():
     """
 
     return os.environ.get(DEFAULT_VARIANT_ENV_KEY) or "production"
+
+
+def get_default_site_id():
+    """Site id used for server connection.
+
+    Returns:
+        Union[str, None]: Site id from environment variable or None.
+    """
+
+    return os.environ.get(SITE_ID_ENV_KEY)
 
 
 class ThumbnailContent:

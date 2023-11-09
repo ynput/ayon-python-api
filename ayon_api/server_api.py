@@ -76,8 +76,10 @@ from .utils import (
     ThumbnailContent,
     get_default_timeout,
     get_default_settings_variant,
+    get_default_site_id,
 )
 
+_PLACEHOLDER = object()
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 # This should be collected from server schema
@@ -363,7 +365,7 @@ class ServerAPI(object):
         self,
         base_url,
         token=None,
-        site_id=None,
+        site_id=_PLACEHOLDER,
         client_version=None,
         default_settings_variant=None,
         sender=None,
@@ -382,6 +384,9 @@ class ServerAPI(object):
         self._graphql_url = "{}/graphql".format(base_url)
         self._log = None
         self._access_token = token
+        # Allow to have 'site_id' to 'None'
+        if site_id is _PLACEHOLDER:
+            site_id = get_default_site_id()
         self._site_id = site_id
         self._client_version = client_version
         self._default_settings_variant = (
