@@ -44,6 +44,7 @@ DEFAULT_PROJECT_FIELDS = {
     "code",
     "config",
     "createdAt",
+    "data",
 }
 
 # --- Folders ---
@@ -56,6 +57,7 @@ DEFAULT_FOLDER_FIELDS = {
     "parentId",
     "active",
     "thumbnailId",
+    "data",
 }
 
 # --- Tasks ---
@@ -67,6 +69,7 @@ DEFAULT_TASK_FIELDS = {
     "folderId",
     "active",
     "assignees",
+    "data",
 }
 
 # --- Products ---
@@ -76,6 +79,7 @@ DEFAULT_PRODUCT_FIELDS = {
     "folderId",
     "active",
     "productType",
+    "data",
 }
 
 # --- Versions ---
@@ -90,6 +94,7 @@ DEFAULT_VERSION_FIELDS = {
     "thumbnailId",
     "createdAt",
     "updatedAt",
+    "data",
 }
 
 # --- Representations ---
@@ -100,6 +105,7 @@ DEFAULT_REPRESENTATION_FIELDS = {
     "createdAt",
     "active",
     "versionId",
+    "data",
 }
 
 REPRESENTATION_FILES_FIELDS = {
@@ -123,6 +129,7 @@ DEFAULT_WORKFILE_INFO_FIELDS = {
     "thumbnailId",
     "updatedAt",
     "updatedBy",
+    "data",
 }
 
 DEFAULT_EVENT_FIELDS = {

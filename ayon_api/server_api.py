@@ -9,6 +9,9 @@ import platform
 import copy
 import uuid
 from contextlib import contextmanager
+
+import six
+
 try:
     from http import HTTPStatus
 except ImportError:
@@ -420,6 +423,8 @@ class ServerAPI(object):
         self._server_available = None
         self._server_version = None
         self._server_version_tuple = None
+
+        self._graphql_allows_data_in_query = None
 
         self._session = None
 
@@ -945,6 +950,26 @@ class ServerAPI(object):
 
     server_version = property(get_server_version)
     server_version_tuple = property(get_server_version_tuple)
+
+    @property
+    def graphql_allows_data_in_query(self):
+        """GraphlQl query can support 'data' field.
+
+        This applies only to project hierarchy entities 'project', 'folder',
+        'task', 'product', 'version' and 'representation'. Others like 'user'
+        still require to use rest api to access 'data'.
+
+        Returns:
+            bool: True if server supports 'data' field in GraphQl query.
+        """
+
+        if self._graphql_allows_data_in_query is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            graphql_allows_data_in_query = True
+            if (major, minor, patch) < (0, 5, 5):
+                graphql_allows_data_in_query = False
+            self._graphql_allows_data_in_query = graphql_allows_data_in_query
+        return self._graphql_allows_data_in_query
 
     def _get_user_info(self):
         if self._access_token is None:
@@ -1888,31 +1913,45 @@ class ServerAPI(object):
             return set(DEFAULT_EVENT_FIELDS)
 
         if entity_type == "project":
-            entity_type_defaults = DEFAULT_PROJECT_FIELDS
+            entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
+            if not self.graphql_allows_data_in_query:
+                entity_type_defaults.discard("data")
 
         elif entity_type == "folder":
-            entity_type_defaults = DEFAULT_FOLDER_FIELDS
+            entity_type_defaults = set(DEFAULT_FOLDER_FIELDS)
+            if not self.graphql_allows_data_in_query:
+                entity_type_defaults.discard("data")
 
         elif entity_type == "task":
-            entity_type_defaults = DEFAULT_TASK_FIELDS
+            entity_type_defaults = set(DEFAULT_TASK_FIELDS)
+            if not self.graphql_allows_data_in_query:
+                entity_type_defaults.discard("data")
 
         elif entity_type == "product":
-            entity_type_defaults = DEFAULT_PRODUCT_FIELDS
+            entity_type_defaults = set(DEFAULT_PRODUCT_FIELDS)
+            if not self.graphql_allows_data_in_query:
+                entity_type_defaults.discard("data")
 
         elif entity_type == "version":
-            entity_type_defaults = DEFAULT_VERSION_FIELDS
+            entity_type_defaults = set(DEFAULT_VERSION_FIELDS)
+            if not self.graphql_allows_data_in_query:
+                entity_type_defaults.discard("data")
 
         elif entity_type == "representation":
             entity_type_defaults = (
                 DEFAULT_REPRESENTATION_FIELDS
                 | REPRESENTATION_FILES_FIELDS
             )
+            if not self.graphql_allows_data_in_query:
+                entity_type_defaults.discard("data")
 
         elif entity_type == "productType":
-            entity_type_defaults = DEFAULT_PRODUCT_TYPE_FIELDS
+            entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
 
         elif entity_type == "workfile":
-            entity_type_defaults = DEFAULT_WORKFILE_INFO_FIELDS
+            entity_type_defaults = set(DEFAULT_WORKFILE_INFO_FIELDS)
+            if not self.graphql_allows_data_in_query:
+                entity_type_defaults.discard("data")
 
         elif entity_type == "user":
             entity_type_defaults = set(DEFAULT_USER_FIELDS)
@@ -3664,7 +3703,7 @@ class ServerAPI(object):
                 fields |= self.get_attributes_fields_for_type("folder")
 
         use_rest = False
-        if "data" in fields:
+        if "data" in fields and not self.graphql_allows_data_in_query:
             use_rest = True
             fields = {"id"}
 
@@ -3685,6 +3724,8 @@ class ServerAPI(object):
 
                 if use_rest:
                     folder = self.get_rest_folder(project_name, folder["id"])
+                else:
+                    self._convert_entity_data(folder)
 
                 if own_attributes:
                     fill_own_attribs(folder)
@@ -3902,7 +3943,7 @@ class ServerAPI(object):
                 fields |= self.get_attributes_fields_for_type("task")
 
         use_rest = False
-        if "data" in fields:
+        if "data" in fields and not self.graphql_allows_data_in_query:
             use_rest = True
             fields = {"id"}
 
@@ -3923,6 +3964,8 @@ class ServerAPI(object):
 
                 if use_rest:
                     task = self.get_rest_task(project_name, task["id"])
+                else:
+                    self._convert_entity_data(task)
 
                 if own_attributes:
                     fill_own_attribs(task)
@@ -4003,6 +4046,8 @@ class ServerAPI(object):
 
         if use_rest:
             product = self.get_rest_product(project_name, product["id"])
+        else:
+            self._convert_entity_data(product)
 
         if own_attributes:
             fill_own_attribs(product)
@@ -4109,7 +4154,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("product")
 
         use_rest = False
-        if "data" in fields:
+        if "data" in fields and not self.graphql_allows_data_in_query:
             use_rest = True
             fields = {"id"}
 
@@ -4377,7 +4422,7 @@ class ServerAPI(object):
         fields |= {"id", "version"}
 
         use_rest = False
-        if "data" in fields:
+        if "data" in fields and not self.graphql_allows_data_in_query:
             use_rest = True
             fields = {"id"}
 
@@ -4457,6 +4502,8 @@ class ServerAPI(object):
                         version = self.get_rest_version(
                             project_name, version["id"]
                         )
+                    else:
+                        self._convert_entity_data(version)
 
                     if own_attributes:
                         fill_own_attribs(version)
@@ -4836,7 +4883,7 @@ class ServerAPI(object):
                 fields |= self.get_attributes_fields_for_type("representation")
 
         use_rest = False
-        if "data" in fields:
+        if "data" in fields and not self.graphql_allows_data_in_query:
             use_rest = True
             fields = {"id"}
 
@@ -4899,6 +4946,8 @@ class ServerAPI(object):
                     repre = self.get_rest_representation(
                         project_name, repre["id"]
                     )
+                else:
+                    self._convert_entity_data(repre)
 
                 if "context" in repre:
                     orig_context = repre["context"]
@@ -5014,10 +5063,18 @@ class ServerAPI(object):
 
         parsed_data = query.query(self)
         for repre in parsed_data["project"]["representations"]:
+            if "data" in repre:
+                repre["data"] = json.loads(repre["data"])
             repre_id = repre["id"]
             version = repre.pop("version")
+            if "data" in version:
+                version["data"] = json.loads(version["data"])
             product = version.pop("product")
+            if "data" in product:
+                product["data"] = json.loads(product["data"])
             folder = product.pop("folder")
+            if "data" in folder:
+                folder["data"] = json.loads(folder["data"])
             output[repre_id] = RepresentationParents(
                 version, product, folder, project
             )
@@ -6328,3 +6385,11 @@ class ServerAPI(object):
                     op_result["detail"],
                 ))
         return op_results
+
+    def _convert_entity_data(self, entity):
+        entity_data = entity.get("data")
+        if (
+            entity_data is not None
+            and isinstance(entity_data, six.string_types)
+        ):
+            entity["data"] = json.loads(entity_data)
