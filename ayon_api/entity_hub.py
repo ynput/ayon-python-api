@@ -36,14 +36,17 @@ class EntityHub(object):
     """
 
     def __init__(
-        self, project_name, connection=None, allow_data_changes=False
+        self, project_name, connection=None, allow_data_changes=None
     ):
         if not connection:
             connection = get_server_api_connection()
-        major, minor, _, _, _ = connection.server_version_tuple
+        major, minor, patch, _, _ = connection.server_version_tuple
         path_start_with_slash = True
         if (major, minor) < (0, 6):
             path_start_with_slash = False
+
+        if allow_data_changes is None:
+            allow_data_changes = connection.graphql_allows_data_in_query
 
         self._connection = connection
         self._path_start_with_slash = path_start_with_slash
