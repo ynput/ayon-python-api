@@ -5063,18 +5063,14 @@ class ServerAPI(object):
 
         parsed_data = query.query(self)
         for repre in parsed_data["project"]["representations"]:
-            if "data" in repre:
-                repre["data"] = json.loads(repre["data"])
             repre_id = repre["id"]
             version = repre.pop("version")
-            if "data" in version:
-                version["data"] = json.loads(version["data"])
             product = version.pop("product")
-            if "data" in product:
-                product["data"] = json.loads(product["data"])
             folder = product.pop("folder")
-            if "data" in folder:
-                folder["data"] = json.loads(folder["data"])
+            self._convert_entity_data(repre)
+            self._convert_entity_data(version)
+            self._convert_entity_data(product)
+            self._convert_entity_data(folder)
             output[repre_id] = RepresentationParents(
                 version, product, folder, project
             )
@@ -6387,6 +6383,8 @@ class ServerAPI(object):
         return op_results
 
     def _convert_entity_data(self, entity):
+        if not entity:
+            return
         entity_data = entity.get("data")
         if (
             entity_data is not None
