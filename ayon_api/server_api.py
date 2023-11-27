@@ -4841,6 +4841,15 @@ class ServerAPI(object):
                 context = json.loads(orig_context)
             representation["context"] = context
 
+        repre_files = representation.get("files")
+        if not repre_files:
+            return
+
+        for repre_file in repre_files:
+            repre_file_size = repre_file.get("size")
+            if repre_file_size is not None:
+                repre_file["size"] = int(repre_file["size"])
+
     def get_representations(
         self,
         project_name,
