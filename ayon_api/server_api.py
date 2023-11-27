@@ -4897,7 +4897,9 @@ class ServerAPI(object):
             fields = set(fields)
             if "attrib" in fields:
                 fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("representation")
+                fields |= self.get_attributes_fields_for_type(
+                    "representation"
+                )
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
