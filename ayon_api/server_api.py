@@ -4833,6 +4833,14 @@ class ServerAPI(object):
         )
         return latest_version["id"] == version_id
 
+    def _representation_conversion(self, representation):
+        if "context" in representation:
+            orig_context = representation["context"]
+            context = {}
+            if orig_context and orig_context != "null":
+                context = json.loads(orig_context)
+            representation["context"] = context
+
     def get_representations(
         self,
         project_name,
@@ -4949,12 +4957,7 @@ class ServerAPI(object):
                 else:
                     self._convert_entity_data(repre)
 
-                if "context" in repre:
-                    orig_context = repre["context"]
-                    context = {}
-                    if orig_context and orig_context != "null":
-                        context = json.loads(orig_context)
-                    repre["context"] = context
+                self._representation_conversion(repre)
 
                 if own_attributes:
                     fill_own_attribs(repre)
