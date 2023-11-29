@@ -4719,7 +4719,7 @@ class ServerAPI(object):
             own_attributes=own_attributes
         )
         return {
-            version["parent"]: version
+            version["productId"]: version
             for version in versions
         }
 
