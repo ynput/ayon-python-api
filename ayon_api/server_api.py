@@ -363,6 +363,10 @@ class ServerAPI(object):
         max_retries (Optional[int]): Number of retries for requests.
     """
     _default_max_retries = 3
+    # 1 MB chunk by default
+    # TODO find out if these are reasonable default value
+    default_download_chunk_size = 1024 * 1024
+    default_upload_chunk_size = 1024 * 1024
 
     def __init__(
         self,
@@ -1596,6 +1600,10 @@ class ServerAPI(object):
         download happens in thread and other thread want to catch changes over
         time.
 
+        Todos:
+            Use retries and timeout.
+            Return RestApiResponse.
+
         Args:
             endpoint (str): Endpoint or URL to file that should be downloaded.
             filepath (str): Path where file will be downloaded.
@@ -1606,8 +1614,7 @@ class ServerAPI(object):
         """
 
         if not chunk_size:
-            # 1 MB chunk by default
-            chunk_size = 1024 * 1024
+            chunk_size = self.default_download_chunk_size
 
         if endpoint.startswith(self._base_url):
             url = endpoint
@@ -1634,33 +1641,93 @@ class ServerAPI(object):
             progress.set_transfer_done()
         return progress
 
-    def _upload_file(self, url, filepath, progress, request_type=None):
+    @staticmethod
+    def _upload_chunks_iter(file_stream, progress, chunk_size):
+        """Generator that yields chunks of file.
+
+        Args:
+            file_stream (io.BinaryIO): Byte stream.
+            progress (TransferProgress): Object to track upload progress.
+            chunk_size (int): Size of chunks that are uploaded at once.
+
+        Yields:
+            bytes: Chunk of file.
+        """
+
+        # Get size of file
+        file_stream.seek(0, io.SEEK_END)
+        size = file_stream.tell()
+        file_stream.seek(0)
+        # Set content size to progress object
+        progress.set_content_size(size)
+
+        while True:
+            chunk = file_stream.read(chunk_size)
+            if not chunk:
+                break
+            progress.add_transferred_chunk(len(chunk))
+            yield chunk
+
+    def _upload_file(
+        self,
+        url,
+        filepath,
+        progress,
+        request_type=None,
+        chunk_size=None,
+        **kwargs
+    ):
+        """
+
+        Args:
+            url (str): Url where file will be uploaded.
+            filepath (str): Source filepath.
+            progress (TransferProgress): Object that gives ability to track
+                progress.
+            request_type (Optional[RequestType]): Type of request that will
+                be used. Default is PUT.
+            chunk_size (Optional[int]): Size of chunks that are uploaded
+                at once.
+            **kwargs (Any): Additional arguments that will be passed
+                to request function.
+
+        Returns:
+            RestApiResponse: Server response.
+        """
+
         if request_type is None:
             request_type = RequestTypes.put
-        kwargs = {}
+
         if self._session is None:
-            kwargs["headers"] = self.get_headers()
+            headers = kwargs.setdefault("headers", {})
+            for key, value in self.get_headers().items():
+                if key not in headers:
+                    headers[key] = value
             post_func = self._base_functions_mapping[request_type]
         else:
             post_func = self._session_functions_mapping[request_type]
 
+        if not chunk_size:
+            chunk_size = self.default_upload_chunk_size
+
         with open(filepath, "rb") as stream:
-            stream.seek(0, io.SEEK_END)
-            size = stream.tell()
-            stream.seek(0)
-            progress.set_content_size(size)
-            response = post_func(url, data=stream, **kwargs)
+            response = post_func(
+                url,
+                data=self._upload_chunks_iter(stream, progress, chunk_size),
+                **kwargs
+            )
+
         response.raise_for_status()
-        progress.set_transferred_size(size)
         return response
 
     def upload_file(
-        self, endpoint, filepath, progress=None, request_type=None
+        self, endpoint, filepath, progress=None, request_type=None, **kwargs
     ):
         """Upload file to server.
 
         Todos:
-            Uploading with more detailed progress.
+            Use retries and timeout.
+            Return RestApiResponse.
 
         Args:
             endpoint (str): Endpoint or url where file will be uploaded.
@@ -1669,6 +1736,8 @@ class ServerAPI(object):
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+            **kwargs (Any): Additional arguments that will be passed
+                to request function.
 
         Returns:
             requests.Response: Response object.
@@ -1690,7 +1759,9 @@ class ServerAPI(object):
         progress.set_started()
 
         try:
-            return self._upload_file(url, filepath, progress, request_type)
+            return self._upload_file(
+                url, filepath, progress, request_type, **kwargs
+            )
 
         except Exception as exc:
             progress.set_failed(str(exc))
@@ -5536,16 +5607,14 @@ class ServerAPI(object):
             return thumbnail_id
 
         mime_type = self._get_thumbnail_mime_type(src_filepath)
-        with open(src_filepath, "rb") as stream:
-            content = stream.read()
-
-        response = self.raw_post(
+        response = self.upload_file(
             "projects/{}/thumbnails".format(project_name),
+            src_filepath,
+            request_type=RequestTypes.post,
             headers={"Content-Type": mime_type},
-            data=content
         )
         response.raise_for_status()
-        return response.data["id"]
+        return response.json()["id"]
 
     def update_thumbnail(self, project_name, thumbnail_id, src_filepath):
         """Change thumbnail content by id.
@@ -5566,13 +5635,11 @@ class ServerAPI(object):
             raise ValueError("Entered filepath does not exist.")
 
         mime_type = self._get_thumbnail_mime_type(src_filepath)
-        with open(src_filepath, "rb") as stream:
-            content = stream.read()
-
-        response = self.raw_put(
+        response = self.upload_file(
             "projects/{}/thumbnails/{}".format(project_name, thumbnail_id),
+            src_filepath,
+            request_type=RequestTypes.put,
             headers={"Content-Type": mime_type},
-            data=content
         )
         response.raise_for_status()
 
