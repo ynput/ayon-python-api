@@ -4833,6 +4833,23 @@ class ServerAPI(object):
         )
         return latest_version["id"] == version_id
 
+    def _representation_conversion(self, representation):
+        if "context" in representation:
+            orig_context = representation["context"]
+            context = {}
+            if orig_context and orig_context != "null":
+                context = json.loads(orig_context)
+            representation["context"] = context
+
+        repre_files = representation.get("files")
+        if not repre_files:
+            return
+
+        for repre_file in repre_files:
+            repre_file_size = repre_file.get("size")
+            if repre_file_size is not None:
+                repre_file["size"] = int(repre_file["size"])
+
     def get_representations(
         self,
         project_name,
@@ -4880,7 +4897,9 @@ class ServerAPI(object):
             fields = set(fields)
             if "attrib" in fields:
                 fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("representation")
+                fields |= self.get_attributes_fields_for_type(
+                    "representation"
+                )
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -4949,12 +4968,7 @@ class ServerAPI(object):
                 else:
                     self._convert_entity_data(repre)
 
-                if "context" in repre:
-                    orig_context = repre["context"]
-                    context = {}
-                    if orig_context and orig_context != "null":
-                        context = json.loads(orig_context)
-                    repre["context"] = context
+                self._representation_conversion(repre)
 
                 if own_attributes:
                     fill_own_attribs(repre)
@@ -5067,7 +5081,6 @@ class ServerAPI(object):
             version = repre.pop("version")
             product = version.pop("product")
             folder = product.pop("folder")
-            self._convert_entity_data(repre)
             self._convert_entity_data(version)
             self._convert_entity_data(product)
             self._convert_entity_data(folder)
