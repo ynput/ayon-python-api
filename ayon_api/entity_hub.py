@@ -2549,7 +2549,10 @@ class FolderEntity(BaseEntity):
         if self.thumbnail_id is not UNKNOWN_VALUE:
             output["thumbnailId"] = self.thumbnail_id
 
-        if self._entity_hub.allow_data_changes:
+        if (
+            self._entity_hub.allow_data_changes
+            and self._data is not UNKNOWN_VALUE
+        ):
             output["data"] = self._data
         return output
 
