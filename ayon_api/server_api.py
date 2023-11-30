@@ -4781,6 +4781,10 @@ class ServerAPI(object):
             dict[str, dict[str, Any]]: Last versions by product id.
         """
 
+        if fields:
+            fields = set(fields)
+            fields.add("productId")
+
         versions = self.get_versions(
             project_name,
             product_ids=product_ids,
