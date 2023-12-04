@@ -488,6 +488,9 @@ def events_graphql_query(fields):
     states_var = query.add_variable("eventStates", "[String!]")
     users_var = query.add_variable("eventUsers", "[String!]")
     include_logs_var = query.add_variable("includeLogsFilter", "Boolean!")
+    has_children_var = query.add_variable("hasChildrenFilter", "Boolean!")
+    newer_than_var = query.add_variable("newerThanFilter", "String!")
+    older_than_var = query.add_variable("olderThanFilter", "String!")
 
     events_field = query.add_field_with_edges("events")
     events_field.set_filter("topics", topics_var)
@@ -495,6 +498,9 @@ def events_graphql_query(fields):
     events_field.set_filter("states", states_var)
     events_field.set_filter("users", users_var)
     events_field.set_filter("includeLogs", include_logs_var)
+    events_field.set_filter("hasChildren", has_children_var)
+    events_field.set_filter("newerThan", newer_than_var)
+    events_field.set_filter("olderThan", older_than_var)
 
     nested_fields = fields_to_dict(set(fields))
 

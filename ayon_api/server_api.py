@@ -1318,6 +1318,9 @@ class ServerAPI(object):
         states=None,
         users=None,
         include_logs=None,
+        has_children=None,
+        newer_than=None,
+        older_than=None,
         fields=None
     ):
         """Get events from server with filtering options.
@@ -1333,6 +1336,12 @@ class ServerAPI(object):
             users (Optional[Iterable[str]]): Filtering by users
                 who created/triggered an event.
             include_logs (Optional[bool]): Query also log events.
+            has_children (Optional[bool]): Event is with/without children
+                events. If 'None' then all events are returned, default.
+            newer_than (Optional[str]): Return only events newer than given
+                iso datetime string.
+            older_than (Optional[str]): Return only events older than given
+                iso datetime string.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each event.
 
@@ -1368,6 +1377,15 @@ class ServerAPI(object):
         if include_logs is None:
             include_logs = False
         filters["includeLogsFilter"] = include_logs
+
+        if has_children is not None:
+            filters["hasChildrenFilter"] = has_children
+
+        if newer_than is not None:
+            filters["newerThanFilter"] = newer_than
+
+        if older_than is not None:
+            filters["olderThanFilter"] = older_than
 
         if not fields:
             fields = self.get_default_fields_for_type("event")
