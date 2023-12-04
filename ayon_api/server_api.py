@@ -4227,8 +4227,11 @@ class ServerAPI(object):
         product_names=None,
         folder_ids=None,
         product_types=None,
-        statuses=None,
+        product_name_regex=None,
+        product_path_regex=None,
         names_by_folder_ids=None,
+        statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -4248,10 +4251,15 @@ class ServerAPI(object):
                 Use 'None' if folder is direct child of project.
             product_types (Optional[Iterable[str]]): Product types used for
                 filtering.
-            statuses (Optional[Iterable[str]]): Product statuses used for
-                filtering.
+            product_name_regex (Optional[str]): Filter products by name regex.
+            product_path_regex (Optional[str]): Filter products by path regex.
+                Path starts with folder path and ends with product name.
             names_by_folder_ids (Optional[dict[str, Iterable[str]]]): Product
                 name filtering by folder id.
+            statuses (Optional[Iterable[str]]): Product statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Product tags used
+                for filtering.
             active (Optional[bool]): Filter active/inactive products.
                 Both are returned if is set to None.
             fields (Optional[Iterable[str]]): Fields to be queried for
@@ -4267,11 +4275,7 @@ class ServerAPI(object):
         if not project_name:
             return
 
-        if product_ids is not None:
-            product_ids = set(product_ids)
-            if not product_ids:
-                return
-
+        # Prepare these filters before 'name_by_filter_ids' filter
         filter_product_names = None
         if product_names is not None:
             filter_product_names = set(product_names)
@@ -4282,18 +4286,6 @@ class ServerAPI(object):
         if folder_ids is not None:
             filter_folder_ids = set(folder_ids)
             if not filter_folder_ids:
-                return
-
-        filter_product_types = None
-        if product_types is not None:
-            filter_product_types = set(product_types)
-            if not filter_product_types:
-                return
-
-        filter_statuses = None
-        if statuses is not None:
-            filter_statuses = set(statuses)
-            if not filter_statuses:
                 return
 
         # This will disable 'folder_ids' and 'product_names' filters
@@ -4339,20 +4331,42 @@ class ServerAPI(object):
         filters = {
             "projectName": project_name
         }
+
         if filter_folder_ids:
             filters["folderIds"] = list(filter_folder_ids)
 
-        if filter_product_types:
-            filters["productTypes"] = list(filter_product_types)
-
-        if filter_statuses:
-            filters["productStatuses"] = list(filter_statuses)
-
-        if product_ids:
-            filters["productIds"] = list(product_ids)
-
         if filter_product_names:
             filters["productNames"] = list(filter_product_names)
+
+        if product_ids is not None:
+            product_ids = set(product_ids)
+            if not product_ids:
+                return
+            filters["productIds"] = list(product_ids)
+
+        if product_types is not None:
+            product_types = set(product_types)
+            if not product_types:
+                return
+            filters["productTypes"] = list(product_types)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["productStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["productTags"] = list(tags)
+
+        if product_name_regex:
+            filters["productNameRegex"] = product_name_regex
+
+        if product_path_regex:
+            filters["productPathRegex"] = product_path_regex
 
         query = products_graphql_query(fields)
         for attr, filter_value in filters.items():
