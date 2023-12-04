@@ -303,20 +303,20 @@ def versions_graphql_query(fields):
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
-    products_field = project_field.add_field_with_edges("versions")
-    products_field.set_filter("ids", version_ids_var)
-    products_field.set_filter("productIds", product_ids_var)
-    products_field.set_filter("versions", versions_var)
-    products_field.set_filter("heroOnly", hero_only_var)
-    products_field.set_filter("latestOnly", latest_only_var)
-    products_field.set_filter("heroOrLatestOnly", hero_or_latest_only_var)
+    versions_field = project_field.add_field_with_edges("versions")
+    versions_field.set_filter("ids", version_ids_var)
+    versions_field.set_filter("productIds", product_ids_var)
+    versions_field.set_filter("versions", versions_var)
+    versions_field.set_filter("heroOnly", hero_only_var)
+    versions_field.set_filter("latestOnly", latest_only_var)
+    versions_field.set_filter("heroOrLatestOnly", hero_or_latest_only_var)
 
     nested_fields = fields_to_dict(set(fields))
-    add_links_fields(products_field, nested_fields)
+    add_links_fields(versions_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
-        query_queue.append((key, value, products_field))
+        query_queue.append((key, value, versions_field))
 
     while query_queue:
         item = query_queue.popleft()
