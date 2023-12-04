@@ -5023,6 +5023,9 @@ class ServerAPI(object):
         representation_names=None,
         version_ids=None,
         names_by_version_ids=None,
+        has_links=None,
+        statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -5045,6 +5048,12 @@ class ServerAPI(object):
             names_by_version_ids (Optional[bool]): Find representations
                 by names and version ids. This filter discard all
                 other filters.
+            has_links (Optional[bool]): Filter representations with/without
+                links. Ignored when None, default behavior.
+            statuses (Optional[Iterable[str]]): Representation statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Representation tags used
+                for filtering.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): Fields to be queried for
@@ -5116,6 +5125,21 @@ class ServerAPI(object):
 
         if representaion_names_filter:
             filters["representationNames"] = list(representaion_names_filter)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["representationStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["representationTags"] = list(tags)
+
+        if has_links is not None:
+            filters["representationHasLinks"] = has_links
 
         query = representations_graphql_query(fields)
 

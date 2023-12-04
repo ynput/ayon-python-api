@@ -360,6 +360,7 @@ def representations_graphql_query(fields):
     repre_ids_var = query.add_variable("representationIds", "[String!]")
     repre_names_var = query.add_variable("representationNames", "[String!]")
     version_ids_var = query.add_variable("versionIds", "[String!]")
+    has_links_var = query.add_variable("representationHasLinks", "Boolean!")
     statuses_var = query.add_variable(
         "representationStatuses", "[String!]"
     )
@@ -374,6 +375,7 @@ def representations_graphql_query(fields):
     repres_field.set_filter("ids", repre_ids_var)
     repres_field.set_filter("versionIds", version_ids_var)
     repres_field.set_filter("names", repre_names_var)
+    repres_field.set_filter("hasLinks", has_links_var)
     repres_field.set_filter("statuses", statuses_var)
     repres_field.set_filter("tags", tags_var)
 
