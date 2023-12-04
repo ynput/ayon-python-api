@@ -3670,7 +3670,13 @@ class ServerAPI(object):
         folder_names=None,
         folder_types=None,
         parent_ids=None,
+        folder_path_regex=None,
+        has_products=None,
+        has_tasks=None,
+        has_links=None,
+        has_children=None,
         statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -3695,7 +3701,19 @@ class ServerAPI(object):
                 for filtering.
             parent_ids (Optional[Iterable[str]]): Ids of folder parents.
                 Use 'None' if folder is direct child of project.
+            folder_path_regex (Optional[str]): Folder path regex used
+                for filtering.
+            has_products (Optional[bool]): Filter folders with/without
+                products. Ignored when None, default behavior.
+            has_tasks (Optional[bool]): Filter folders with/without
+                tasks. Ignored when None, default behavior.
+            has_links (Optional[bool]): Filter folders with/without
+                links. Ignored when None, default behavior.
+            has_children (Optional[bool]): Filter folders with/without
+                children. Ignored when None, default behavior.
             statuses (Optional[Iterable[str]]): Folder statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Folder tags used
                 for filtering.
             active (Optional[bool]): Filter active/inactive folders.
                 Both are returned if is set to None.
@@ -3745,6 +3763,12 @@ class ServerAPI(object):
                 return
             filters["folderStatuses"] = list(statuses)
 
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["folderTags"] = list(tags)
+
         if parent_ids is not None:
             parent_ids = set(parent_ids)
             if not parent_ids:
@@ -3764,6 +3788,21 @@ class ServerAPI(object):
                 parent_ids.add("root")
 
             filters["parentFolderIds"] = list(parent_ids)
+
+        if folder_path_regex is not None:
+            filters["folderPathRegex"] = folder_path_regex
+
+        if has_products is not None:
+            filters["folderHasProducts"] = has_products
+
+        if has_tasks is not None:
+            filters["folderHasTasks"] = has_tasks
+
+        if has_links is not None:
+            filters["folderHasLinks"] = has_links
+
+        if has_children is not None:
+            filters["folderHasChildren"] = has_children
 
         if not fields:
             fields = self.get_default_fields_for_type("folder")
