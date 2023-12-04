@@ -4580,6 +4580,10 @@ class ServerAPI(object):
             latest (Optional[bool]): Return only latest version of standard
                 versions. This can be combined only with 'standard' attribute
                 set to True.
+            statuses (Optional[Iterable[str]]): Representation statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Representation tags used
+                for filtering.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): Fields to be queried
