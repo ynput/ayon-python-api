@@ -5395,6 +5395,9 @@ class ServerAPI(object):
         workfile_ids=None,
         task_ids=None,
         paths=None,
+        path_regex=None,
+        statuses=None,
+        tags=None,
         fields=None,
         own_attributes=False
     ):
@@ -5405,6 +5408,7 @@ class ServerAPI(object):
             workfile_ids (Optional[Iterable[str]]): Workfile ids.
             task_ids (Optional[Iterable[str]]): Task ids.
             paths (Optional[Iterable[str]]): Rootless workfiles paths.
+            path_regex (Optional[str]): Regex filter for workfile path.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
@@ -5428,11 +5432,26 @@ class ServerAPI(object):
                 return
             filters["paths"] = list(paths)
 
+        if path_regex is not None:
+            filters["workfilePathRegex"] = path_regex
+
         if workfile_ids is not None:
             workfile_ids = set(workfile_ids)
             if not workfile_ids:
                 return
             filters["workfileIds"] = list(workfile_ids)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["workfileStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["workfileTags"] = list(tags)
 
         if not fields:
             fields = self.get_default_fields_for_type("workfile")

@@ -445,6 +445,10 @@ def workfiles_info_graphql_query(fields):
     workfiles_info_ids = query.add_variable("workfileIds", "[String!]")
     task_ids_var = query.add_variable("taskIds", "[String!]")
     paths_var = query.add_variable("paths", "[String!]")
+    path_regex_var = query.add_variable("workfilePathRegex", "String!")
+    has_links_var = query.add_variable("workfilehasLinks", "Boolean!")
+    statuses_var = query.add_variable("workfileStatuses", "[String!]")
+    tags_var = query.add_variable("workfileTags", "[String!]")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -453,6 +457,8 @@ def workfiles_info_graphql_query(fields):
     workfiles_field.set_filter("ids", workfiles_info_ids)
     workfiles_field.set_filter("taskIds", task_ids_var)
     workfiles_field.set_filter("paths", paths_var)
+    workfiles_field.set_filter("pathEx", path_regex_var)
+    workfiles_field.set_filter("hasLinks", has_links_var)
     workfiles_field.set_filter("statuses", statuses_var)
     workfiles_field.set_filter("tags", tags_var)
 
