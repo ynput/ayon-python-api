@@ -4527,6 +4527,8 @@ class ServerAPI(object):
         hero=True,
         standard=True,
         latest=None,
+        statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -4601,6 +4603,18 @@ class ServerAPI(object):
             if not versions:
                 return
             filters["versions"] = list(versions)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["versionStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["versionTags"] = list(tags)
 
         if not hero and not standard:
             return
