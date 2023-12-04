@@ -4251,7 +4251,7 @@ class ServerAPI(object):
             filters["productTypes"] = list(filter_product_types)
 
         if filter_statuses:
-            filters["statuses"] = list(filter_statuses)
+            filters["productStatuses"] = list(filter_statuses)
 
         if product_ids:
             filters["productIds"] = list(product_ids)
