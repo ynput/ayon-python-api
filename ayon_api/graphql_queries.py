@@ -228,6 +228,8 @@ def tasks_graphql_query(fields):
     task_names_var = query.add_variable("taskNames", "[String!]")
     task_types_var = query.add_variable("taskTypes", "[String!]")
     folder_ids_var = query.add_variable("folderIds", "[String!]")
+    assignees_any_var = query.add_variable("taskAssigneesAny", "[String!]")
+    assignees_all_var = query.add_variable("taskAssigneesAll", "[String!]")
     statuses_var = query.add_variable("taskStatuses", "[String!]")
     tags_var = query.add_variable("taskTags", "[String!]")
 
@@ -240,6 +242,8 @@ def tasks_graphql_query(fields):
     tasks_field.set_filter("names", task_names_var)
     tasks_field.set_filter("taskTypes", task_types_var)
     tasks_field.set_filter("folderIds", folder_ids_var)
+    tasks_field.set_filter("assigneesAny", assignees_any_var)
+    tasks_field.set_filter("assignees", assignees_all_var)
     tasks_field.set_filter("statuses", statuses_var)
     tasks_field.set_filter("tags", tags_var)
 

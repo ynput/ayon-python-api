@@ -3988,6 +3988,10 @@ class ServerAPI(object):
         task_names=None,
         task_types=None,
         folder_ids=None,
+        assignees=None,
+        assignees_all=None,
+        statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -4001,6 +4005,16 @@ class ServerAPI(object):
             task_types (Iterable[str]): Task types used for filtering.
             folder_ids (Iterable[str]): Ids of task parents. Use 'None'
                 if folder is direct child of project.
+            assignees (Optional[Iterable[str]]): Task assignees used for
+                filtering. All tasks with any of passed assignees are
+                returned.
+            assignees_all (Optional[Iterable[str]]): Task assignees used
+                for filtering. Task must have all of passed assignees to be
+                returned.
+            statuses (Optional[Iterable[str]]): Task statuses used for
+                filtering.
+            tags (Optional[Iterable[str]]): Task tags used for
+                filtering.
             active (Optional[bool]): Filter active/inactive tasks.
                 Both are returned if is set to None.
             fields (Optional[Iterable[str]]): Fields to be queried for
@@ -4043,6 +4057,30 @@ class ServerAPI(object):
             if not folder_ids:
                 return
             filters["folderIds"] = list(folder_ids)
+
+        if assignees is not None:
+            assignees = set(assignees)
+            if not assignees:
+                return
+            filters["taskAssigneesAny"] = list(assignees)
+
+        if assignees_all is not None:
+            assignees_all = set(assignees_all)
+            if not assignees_all:
+                return
+            filters["taskAssigneesAll"] = list(assignees_all)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["taskStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["taskTags"] = list(tags)
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
