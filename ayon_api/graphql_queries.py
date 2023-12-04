@@ -180,7 +180,7 @@ def folders_graphql_query(fields):
     folder_types_var = query.add_variable("folderTypes", "[String!]")
     has_products_var = query.add_variable("folderHasProducts", "Boolean!")
     has_tasks_var = query.add_variable("folderHasTasks", "Boolean!")
-    has_links_var = query.add_variable("folderHasLinks", "Boolean!")
+    has_links_var = query.add_variable("folderHasLinks", "HasLinksFilter")
     has_children_var = query.add_variable("folderHasChildren", "Boolean!")
     statuses_var = query.add_variable("folderStatuses", "[String!]")
     tags_var = query.add_variable("folderTags", "[String!]")
@@ -365,7 +365,7 @@ def representations_graphql_query(fields):
     repre_ids_var = query.add_variable("representationIds", "[String!]")
     repre_names_var = query.add_variable("representationNames", "[String!]")
     version_ids_var = query.add_variable("versionIds", "[String!]")
-    has_links_var = query.add_variable("representationHasLinks", "Boolean!")
+    has_links_var = query.add_variable("representationHasLinks", "HasLinksFilter")
     statuses_var = query.add_variable(
         "representationStatuses", "[String!]"
     )
@@ -451,7 +451,7 @@ def workfiles_info_graphql_query(fields):
     task_ids_var = query.add_variable("taskIds", "[String!]")
     paths_var = query.add_variable("paths", "[String!]")
     path_regex_var = query.add_variable("workfilePathRegex", "String!")
-    has_links_var = query.add_variable("workfilehasLinks", "Boolean!")
+    has_links_var = query.add_variable("workfilehasLinks", "HasLinksFilter")
     statuses_var = query.add_variable("workfileStatuses", "[String!]")
     tags_var = query.add_variable("workfileTags", "[String!]")
 

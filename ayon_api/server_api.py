@@ -3691,11 +3691,11 @@ class ServerAPI(object):
         folder_path_regex=None,
         has_products=None,
         has_tasks=None,
-        has_links=None,
         has_children=None,
         statuses=None,
         tags=None,
         active=True,
+        has_links=None,
         fields=None,
         own_attributes=False
     ):
@@ -3725,8 +3725,6 @@ class ServerAPI(object):
                 products. Ignored when None, default behavior.
             has_tasks (Optional[bool]): Filter folders with/without
                 tasks. Ignored when None, default behavior.
-            has_links (Optional[bool]): Filter folders with/without
-                links. Ignored when None, default behavior.
             has_children (Optional[bool]): Filter folders with/without
                 children. Ignored when None, default behavior.
             statuses (Optional[Iterable[str]]): Folder statuses used
@@ -3735,6 +3733,8 @@ class ServerAPI(object):
                 for filtering.
             active (Optional[bool]): Filter active/inactive folders.
                 Both are returned if is set to None.
+            has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+                representations with IN/OUT/ANY links.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -3817,7 +3817,7 @@ class ServerAPI(object):
             filters["folderHasTasks"] = has_tasks
 
         if has_links is not None:
-            filters["folderHasLinks"] = has_links
+            filters["folderHasLinks"] = has_links.upper()
 
         if has_children is not None:
             filters["folderHasChildren"] = has_children
@@ -5059,10 +5059,10 @@ class ServerAPI(object):
         representation_names=None,
         version_ids=None,
         names_by_version_ids=None,
-        has_links=None,
         statuses=None,
         tags=None,
         active=True,
+        has_links=None,
         fields=None,
         own_attributes=False
     ):
@@ -5084,14 +5084,14 @@ class ServerAPI(object):
             names_by_version_ids (Optional[bool]): Find representations
                 by names and version ids. This filter discard all
                 other filters.
-            has_links (Optional[bool]): Filter representations with/without
-                links. Ignored when None, default behavior.
             statuses (Optional[Iterable[str]]): Representation statuses used
                 for filtering.
             tags (Optional[Iterable[str]]): Representation tags used
                 for filtering.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
+            has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+                representations with IN/OUT/ANY links.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
@@ -5175,7 +5175,7 @@ class ServerAPI(object):
             filters["representationTags"] = list(tags)
 
         if has_links is not None:
-            filters["representationHasLinks"] = has_links
+            filters["representationHasLinks"] = has_links.upper()
 
         query = representations_graphql_query(fields)
 
@@ -5434,6 +5434,7 @@ class ServerAPI(object):
         path_regex=None,
         statuses=None,
         tags=None,
+        has_links=None,
         fields=None,
         own_attributes=False
     ):
@@ -5445,6 +5446,12 @@ class ServerAPI(object):
             task_ids (Optional[Iterable[str]]): Task ids.
             paths (Optional[Iterable[str]]): Rootless workfiles paths.
             path_regex (Optional[str]): Regex filter for workfile path.
+            statuses (Optional[Iterable[str]]): Workfile info statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Workfile info tags used
+                for filtering.
+            has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+                representations with IN/OUT/ANY links.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
@@ -5488,6 +5495,9 @@ class ServerAPI(object):
             if not tags:
                 return
             filters["workfileTags"] = list(tags)
+
+        if has_links is not None:
+            filters["workfilehasLinks"] = has_links.upper()
 
         if not fields:
             fields = self.get_default_fields_for_type("workfile")
