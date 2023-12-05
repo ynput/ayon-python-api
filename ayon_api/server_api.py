@@ -1318,6 +1318,9 @@ class ServerAPI(object):
         states=None,
         users=None,
         include_logs=None,
+        has_children=None,
+        newer_than=None,
+        older_than=None,
         fields=None
     ):
         """Get events from server with filtering options.
@@ -1333,6 +1336,12 @@ class ServerAPI(object):
             users (Optional[Iterable[str]]): Filtering by users
                 who created/triggered an event.
             include_logs (Optional[bool]): Query also log events.
+            has_children (Optional[bool]): Event is with/without children
+                events. If 'None' then all events are returned, default.
+            newer_than (Optional[str]): Return only events newer than given
+                iso datetime string.
+            older_than (Optional[str]): Return only events older than given
+                iso datetime string.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each event.
 
@@ -1368,6 +1377,15 @@ class ServerAPI(object):
         if include_logs is None:
             include_logs = False
         filters["includeLogsFilter"] = include_logs
+
+        if has_children is not None:
+            filters["hasChildrenFilter"] = has_children
+
+        if newer_than is not None:
+            filters["newerThanFilter"] = newer_than
+
+        if older_than is not None:
+            filters["olderThanFilter"] = older_than
 
         if not fields:
             fields = self.get_default_fields_for_type("event")
@@ -3670,8 +3688,14 @@ class ServerAPI(object):
         folder_names=None,
         folder_types=None,
         parent_ids=None,
+        folder_path_regex=None,
+        has_products=None,
+        has_tasks=None,
+        has_children=None,
         statuses=None,
+        tags=None,
         active=True,
+        has_links=None,
         fields=None,
         own_attributes=False
     ):
@@ -3695,10 +3719,22 @@ class ServerAPI(object):
                 for filtering.
             parent_ids (Optional[Iterable[str]]): Ids of folder parents.
                 Use 'None' if folder is direct child of project.
+            folder_path_regex (Optional[str]): Folder path regex used
+                for filtering.
+            has_products (Optional[bool]): Filter folders with/without
+                products. Ignored when None, default behavior.
+            has_tasks (Optional[bool]): Filter folders with/without
+                tasks. Ignored when None, default behavior.
+            has_children (Optional[bool]): Filter folders with/without
+                children. Ignored when None, default behavior.
             statuses (Optional[Iterable[str]]): Folder statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Folder tags used
                 for filtering.
             active (Optional[bool]): Filter active/inactive folders.
                 Both are returned if is set to None.
+            has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+                representations with IN/OUT/ANY links.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -3745,6 +3781,12 @@ class ServerAPI(object):
                 return
             filters["folderStatuses"] = list(statuses)
 
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["folderTags"] = list(tags)
+
         if parent_ids is not None:
             parent_ids = set(parent_ids)
             if not parent_ids:
@@ -3764,6 +3806,21 @@ class ServerAPI(object):
                 parent_ids.add("root")
 
             filters["parentFolderIds"] = list(parent_ids)
+
+        if folder_path_regex is not None:
+            filters["folderPathRegex"] = folder_path_regex
+
+        if has_products is not None:
+            filters["folderHasProducts"] = has_products
+
+        if has_tasks is not None:
+            filters["folderHasTasks"] = has_tasks
+
+        if has_links is not None:
+            filters["folderHasLinks"] = has_links.upper()
+
+        if has_children is not None:
+            filters["folderHasChildren"] = has_children
 
         if not fields:
             fields = self.get_default_fields_for_type("folder")
@@ -3949,6 +4006,10 @@ class ServerAPI(object):
         task_names=None,
         task_types=None,
         folder_ids=None,
+        assignees=None,
+        assignees_all=None,
+        statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -3962,6 +4023,16 @@ class ServerAPI(object):
             task_types (Iterable[str]): Task types used for filtering.
             folder_ids (Iterable[str]): Ids of task parents. Use 'None'
                 if folder is direct child of project.
+            assignees (Optional[Iterable[str]]): Task assignees used for
+                filtering. All tasks with any of passed assignees are
+                returned.
+            assignees_all (Optional[Iterable[str]]): Task assignees used
+                for filtering. Task must have all of passed assignees to be
+                returned.
+            statuses (Optional[Iterable[str]]): Task statuses used for
+                filtering.
+            tags (Optional[Iterable[str]]): Task tags used for
+                filtering.
             active (Optional[bool]): Filter active/inactive tasks.
                 Both are returned if is set to None.
             fields (Optional[Iterable[str]]): Fields to be queried for
@@ -4004,6 +4075,30 @@ class ServerAPI(object):
             if not folder_ids:
                 return
             filters["folderIds"] = list(folder_ids)
+
+        if assignees is not None:
+            assignees = set(assignees)
+            if not assignees:
+                return
+            filters["taskAssigneesAny"] = list(assignees)
+
+        if assignees_all is not None:
+            assignees_all = set(assignees_all)
+            if not assignees_all:
+                return
+            filters["taskAssigneesAll"] = list(assignees_all)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["taskStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["taskTags"] = list(tags)
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -4132,8 +4227,11 @@ class ServerAPI(object):
         product_names=None,
         folder_ids=None,
         product_types=None,
-        statuses=None,
+        product_name_regex=None,
+        product_path_regex=None,
         names_by_folder_ids=None,
+        statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -4153,10 +4251,15 @@ class ServerAPI(object):
                 Use 'None' if folder is direct child of project.
             product_types (Optional[Iterable[str]]): Product types used for
                 filtering.
-            statuses (Optional[Iterable[str]]): Product statuses used for
-                filtering.
+            product_name_regex (Optional[str]): Filter products by name regex.
+            product_path_regex (Optional[str]): Filter products by path regex.
+                Path starts with folder path and ends with product name.
             names_by_folder_ids (Optional[dict[str, Iterable[str]]]): Product
                 name filtering by folder id.
+            statuses (Optional[Iterable[str]]): Product statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Product tags used
+                for filtering.
             active (Optional[bool]): Filter active/inactive products.
                 Both are returned if is set to None.
             fields (Optional[Iterable[str]]): Fields to be queried for
@@ -4172,11 +4275,7 @@ class ServerAPI(object):
         if not project_name:
             return
 
-        if product_ids is not None:
-            product_ids = set(product_ids)
-            if not product_ids:
-                return
-
+        # Prepare these filters before 'name_by_filter_ids' filter
         filter_product_names = None
         if product_names is not None:
             filter_product_names = set(product_names)
@@ -4187,18 +4286,6 @@ class ServerAPI(object):
         if folder_ids is not None:
             filter_folder_ids = set(folder_ids)
             if not filter_folder_ids:
-                return
-
-        filter_product_types = None
-        if product_types is not None:
-            filter_product_types = set(product_types)
-            if not filter_product_types:
-                return
-
-        filter_statuses = None
-        if statuses is not None:
-            filter_statuses = set(statuses)
-            if not filter_statuses:
                 return
 
         # This will disable 'folder_ids' and 'product_names' filters
@@ -4244,20 +4331,42 @@ class ServerAPI(object):
         filters = {
             "projectName": project_name
         }
+
         if filter_folder_ids:
             filters["folderIds"] = list(filter_folder_ids)
 
-        if filter_product_types:
-            filters["productTypes"] = list(filter_product_types)
-
-        if filter_statuses:
-            filters["statuses"] = list(filter_statuses)
-
-        if product_ids:
-            filters["productIds"] = list(product_ids)
-
         if filter_product_names:
             filters["productNames"] = list(filter_product_names)
+
+        if product_ids is not None:
+            product_ids = set(product_ids)
+            if not product_ids:
+                return
+            filters["productIds"] = list(product_ids)
+
+        if product_types is not None:
+            product_types = set(product_types)
+            if not product_types:
+                return
+            filters["productTypes"] = list(product_types)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["productStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["productTags"] = list(tags)
+
+        if product_name_regex:
+            filters["productNameRegex"] = product_name_regex
+
+        if product_path_regex:
+            filters["productPathRegex"] = product_path_regex
 
         query = products_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -4450,6 +4559,8 @@ class ServerAPI(object):
         hero=True,
         standard=True,
         latest=None,
+        statuses=None,
+        tags=None,
         active=True,
         fields=None,
         own_attributes=False
@@ -4469,6 +4580,10 @@ class ServerAPI(object):
             latest (Optional[bool]): Return only latest version of standard
                 versions. This can be combined only with 'standard' attribute
                 set to True.
+            statuses (Optional[Iterable[str]]): Representation statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Representation tags used
+                for filtering.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): Fields to be queried
@@ -4524,6 +4639,18 @@ class ServerAPI(object):
             if not versions:
                 return
             filters["versions"] = list(versions)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["versionStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["versionTags"] = list(tags)
 
         if not hero and not standard:
             return
@@ -4932,7 +5059,10 @@ class ServerAPI(object):
         representation_names=None,
         version_ids=None,
         names_by_version_ids=None,
+        statuses=None,
+        tags=None,
         active=True,
+        has_links=None,
         fields=None,
         own_attributes=False
     ):
@@ -4954,8 +5084,14 @@ class ServerAPI(object):
             names_by_version_ids (Optional[bool]): Find representations
                 by names and version ids. This filter discard all
                 other filters.
+            statuses (Optional[Iterable[str]]): Representation statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Representation tags used
+                for filtering.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
+            has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+                representations with IN/OUT/ANY links.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
@@ -5025,6 +5161,21 @@ class ServerAPI(object):
 
         if representaion_names_filter:
             filters["representationNames"] = list(representaion_names_filter)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["representationStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["representationTags"] = list(tags)
+
+        if has_links is not None:
+            filters["representationHasLinks"] = has_links.upper()
 
         query = representations_graphql_query(fields)
 
@@ -5280,6 +5431,10 @@ class ServerAPI(object):
         workfile_ids=None,
         task_ids=None,
         paths=None,
+        path_regex=None,
+        statuses=None,
+        tags=None,
+        has_links=None,
         fields=None,
         own_attributes=False
     ):
@@ -5290,6 +5445,13 @@ class ServerAPI(object):
             workfile_ids (Optional[Iterable[str]]): Workfile ids.
             task_ids (Optional[Iterable[str]]): Task ids.
             paths (Optional[Iterable[str]]): Rootless workfiles paths.
+            path_regex (Optional[str]): Regex filter for workfile path.
+            statuses (Optional[Iterable[str]]): Workfile info statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Workfile info tags used
+                for filtering.
+            has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+                representations with IN/OUT/ANY links.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
@@ -5313,11 +5475,29 @@ class ServerAPI(object):
                 return
             filters["paths"] = list(paths)
 
+        if path_regex is not None:
+            filters["workfilePathRegex"] = path_regex
+
         if workfile_ids is not None:
             workfile_ids = set(workfile_ids)
             if not workfile_ids:
                 return
             filters["workfileIds"] = list(workfile_ids)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["workfileStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["workfileTags"] = list(tags)
+
+        if has_links is not None:
+            filters["workfilehasLinks"] = has_links.upper()
 
         if not fields:
             fields = self.get_default_fields_for_type("workfile")
