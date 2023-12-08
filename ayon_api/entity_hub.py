@@ -1284,7 +1284,10 @@ class BaseEntity(object):
             changes["name"] = self._name
 
         if self._entity_hub.allow_data_changes:
-            if self._orig_data != self._data:
+            if (
+                self._data is not UNKNOWN_VALUE
+                and self._orig_data != self._data
+            ):
                 changes["data"] = self._data
 
         if self._orig_thumbnail_id != self._thumbnail_id:
