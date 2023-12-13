@@ -3012,7 +3012,6 @@ class ServerAPI(object):
             dict[str, Any]: All settings for single bundle.
         """
 
-        major, minor, _, _, _ = self.server_version_tuple
         query_values = {
             key: value
             for key, value in (
@@ -3028,21 +3027,8 @@ class ServerAPI(object):
             if site_id:
                 query_values["site_id"] = site_id
 
-        if major == 0 and minor >= 3:
-            url = "settings"
-        else:
-            # Backward compatibility for AYON server < 0.3.0
-            url = "settings/addons"
-            query_values.pop("bundle_name", None)
-            for new_key, old_key in (
-                ("project_name", "project"),
-                ("site_id", "site"),
-            ):
-                if new_key in query_values:
-                    query_values[old_key] = query_values.pop(new_key)
-
         query = prepare_query_string(query_values)
-        response = self.get("{}{}".format(url, query))
+        response = self.get("settings{}".format(query))
         response.raise_for_status()
         return response.data
 
@@ -3085,15 +3071,10 @@ class ServerAPI(object):
             use_site=use_site
         )
         if only_values:
-            major, minor, patch, _, _ = self.server_version_tuple
-            if major == 0 and minor >= 3:
-                output = {
-                    addon["name"]: addon["settings"]
-                    for addon in output["addons"]
-                }
-            else:
-                # Backward compatibility for AYON server < 0.3.0
-                output = output["settings"]
+            output = {
+                addon["name"]: addon["settings"]
+                for addon in output["addons"]
+            }
         return output
 
     def get_addons_project_settings(
@@ -3154,15 +3135,10 @@ class ServerAPI(object):
             use_site=use_site
         )
         if only_values:
-            major, minor, patch, _, _ = self.server_version_tuple
-            if major == 0 and minor >= 3:
-                output = {
-                    addon["name"]: addon["settings"]
-                    for addon in output["addons"]
-                }
-            else:
-                # Backward compatibility for AYON server < 0.3.0
-                output = output["settings"]
+            output = {
+                addon["name"]: addon["settings"]
+                for addon in output["addons"]
+            }
         return output
 
     def get_addons_settings(
