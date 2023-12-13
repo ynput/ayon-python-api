@@ -2541,14 +2541,6 @@ class ServerAPI(object):
         )
         return response.json()
 
-    def _get_bundles_route(self):
-        major, minor, patch, _, _ = self.server_version_tuple
-        # Backwards compatibility for AYON server 0.3.0
-        # - first version where bundles were available
-        if major == 0 and minor == 3 and patch == 0:
-            return "desktop/bundles"
-        return "bundles"
-
     def get_bundles(self):
         """Server bundles with basic information.
 
@@ -2579,7 +2571,7 @@ class ServerAPI(object):
             dict[str, Any]: Server bundles with basic information.
         """
 
-        response = self.get(self._get_bundles_route())
+        response = self.get("bundles")
         response.raise_for_status()
         return response.data
 
@@ -2622,7 +2614,7 @@ class ServerAPI(object):
             if value is not None:
                 body[key] = value
 
-        response = self.post(self._get_bundles_route(), **body)
+        response = self.post("bundles", **body)
         response.raise_for_status()
 
     def update_bundle(
@@ -2657,7 +2649,7 @@ class ServerAPI(object):
             if value is not None
         }
         response = self.patch(
-            "{}/{}".format(self._get_bundles_route(), bundle_name),
+            "{}/{}".format("bundles", bundle_name),
             **body
         )
         response.raise_for_status()
@@ -2670,7 +2662,7 @@ class ServerAPI(object):
         """
 
         response = self.delete(
-            "{}/{}".format(self._get_bundles_route(), bundle_name)
+            "{}/{}".format("bundles", bundle_name)
         )
         response.raise_for_status()
 
