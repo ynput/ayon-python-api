@@ -8,6 +8,7 @@ import collections
 import platform
 import copy
 import uuid
+import warnings
 from contextlib import contextmanager
 
 import six
