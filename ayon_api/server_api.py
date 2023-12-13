@@ -2969,16 +2969,13 @@ class ServerAPI(object):
             - test how it behaves if there is not any production/staging
                 bundle.
 
-        Warnings:
-            For AYON server < 0.3.0 bundle name will be ignored.
-
         Example output:
             {
                 "addons": [
                     {
                         "name": "addon-name",
                         "version": "addon-version",
-                        "settings": {...}
+                        "settings": {...},
                         "siteSettings": {...}
                     }
                 ]
