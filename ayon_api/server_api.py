@@ -2401,30 +2401,8 @@ class ServerAPI(object):
         response.raise_for_status("Failed to create/update dependency")
         return response.data
 
-    def _get_dependency_package_route(
-        self, filename=None, platform_name=None
-    ):
-        major, minor, patch, _, _ = self.server_version_tuple
-        if (major, minor, patch) <= (0, 2, 0):
-            # Backwards compatibility for AYON server 0.2.0 and lower
-            self.log.warning((
-                "Using deprecated dependency package route."
-                " Please update your AYON server to version 0.2.1 or higher."
-                " Backwards compatibility for this route will be removed"
-                " in future releases of ayon-python-api."
-            ))
-            if platform_name is None:
-                platform_name = platform.system().lower()
-            base = "dependencies"
-            if not filename:
-                return base
-            return "{}/{}/{}".format(base, filename, platform_name)
-
-        if (major, minor) <= (0, 3):
-            endpoint = "desktop/dependency_packages"
-        else:
-            endpoint = "desktop/dependencyPackages"
-
+    def _get_dependency_package_route(self, filename=None):
+        endpoint = "desktop/dependencyPackages"
         if filename:
             return "{}/{}".format(endpoint, filename)
         return endpoint
@@ -2535,14 +2513,21 @@ class ServerAPI(object):
         """Remove dependency package for specific platform.
 
         Args:
-            filename (str): Filename of dependency package. Or name of package
-                for server version 0.2.0 or lower.
-            platform_name (Optional[str]): Which platform of the package
-                should be removed. Current platform is used if not passed.
-                Deprecated since version 0.2.1
+            filename (str): Filename of dependency package.
+            platform_name (Optional[str]): Deprecated.
         """
 
-        route = self._get_dependency_package_route(filename, platform_name)
+        if platform_name is not None:
+            warnings.warn(
+                (
+                    "Argument 'platform_name' is deprecated in"
+                    " 'delete_dependency_package'. The argument will be"
+                    " removed, please modify your code accordingly."
+                ),
+                DeprecationWarning
+            )
+
+        route = self._get_dependency_package_route(filename)
         response = self.delete(route)
         response.raise_for_status("Failed to delete dependency file")
         return response.data
@@ -2567,18 +2552,25 @@ class ServerAPI(object):
                 to download.
             dst_directory (str): Where the file should be downloaded.
             dst_filename (str): Name of destination filename.
-            platform_name (Optional[str]): Name of platform for which the
-                dependency package is targeted. Default value is
-                current platform. Deprecated since server version 0.2.1.
+            platform_name (Optional[str]): Deprecated.
             chunk_size (Optional[int]): Download chunk size.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track download progress.
 
         Returns:
             str: Filepath to downloaded file.
-       """
+        """
 
-        route = self._get_dependency_package_route(src_filename, platform_name)
+        if platform_name is not None:
+            warnings.warn(
+                (
+                    "Argument 'platform_name' is deprecated in"
+                    " 'download_dependency_package'. The argument will be"
+                    " removed, please modify your code accordingly."
+                ),
+                DeprecationWarning
+            )
+        route = self._get_dependency_package_route(src_filename)
         package_filepath = os.path.join(dst_directory, dst_filename)
         self.download_file(
             route,
@@ -2597,13 +2589,22 @@ class ServerAPI(object):
             src_filepath (str): Path to a package file.
             dst_filename (str): Dependency package filename or name of package
                 for server version 0.2.0 or lower. Must be unique.
-            platform_name (Optional[str]): For which platform is the
-                package targeted. Deprecated since server version 0.2.1.
+            platform_name (Optional[str]): Deprecated.
             progress (Optional[TransferProgress]): Object to keep track about
                 upload state.
         """
 
-        route = self._get_dependency_package_route(dst_filename, platform_name)
+        if platform_name is not None:
+            warnings.warn(
+                (
+                    "Argument 'platform_name' is deprecated in"
+                    " 'upload_dependency_package'. The argument will be"
+                    " removed, please modify your code accordingly."
+                ),
+                DeprecationWarning
+            )
+
+        route = self._get_dependency_package_route(dst_filename)
         self.upload_file(route, src_filepath, progress=progress)
 
     def create_dependency_package_basename(self, platform_name=None):
