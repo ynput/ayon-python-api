@@ -2497,23 +2497,6 @@ class ServerAPI(object):
         route = self._get_dependency_package_route(dst_filename)
         self.upload_file(route, src_filepath, progress=progress)
 
-    def create_dependency_package_basename(self, platform_name=None):
-        """Create basename for dependency package file.
-
-        Deprecated:
-            Use 'create_dependency_package_basename' from `ayon_api` or
-                `ayon_api.utils` instead.
-
-        Args:
-            platform_name (Optional[str]): Name of platform for which the
-                bundle is targeted. Default value is current platform.
-
-        Returns:
-            str: Dependency package name with timestamp and platform.
-        """
-
-        return create_dependency_package_basename(platform_name)
-
     def upload_addon_zip(self, src_filepath, progress=None):
         """Upload addon zip file to server.
 
