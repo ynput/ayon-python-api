@@ -1022,17 +1022,10 @@ class ServerAPI(object):
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
-        # Backwards compatibility for server 0.3.x
-        #   - will be removed in future releases
-        major, minor, _, _, _ = self.server_version_tuple
-        access_groups_field = "accessGroups"
-        if major == 0 and minor <= 3:
-            access_groups_field = "roles"
-
         for parsed_data in query.continuous_query(self):
             for user in parsed_data["users"]:
-                user[access_groups_field] = json.loads(
-                    user[access_groups_field])
+                user["accessGroups"] = json.loads(
+                    user["accessGroups"])
                 yield user
 
     def get_user(self, username=None):
@@ -2044,14 +2037,6 @@ class ServerAPI(object):
 
         elif entity_type == "user":
             entity_type_defaults = set(DEFAULT_USER_FIELDS)
-            # Backwards compatibility for server 0.3.x
-            #   - will be removed in future releases
-            major, minor, _, _, _ = self.server_version_tuple
-            if major == 0 and minor <= 3:
-                entity_type_defaults.discard("accessGroups")
-                entity_type_defaults.discard("defaultAccessGroups")
-                entity_type_defaults.add("roles")
-                entity_type_defaults.add("defaultRoles")
 
         else:
             raise ValueError("Unknown entity type \"{}\"".format(entity_type))
