@@ -231,7 +231,10 @@ class EntityHub(object):
             return None
 
         if entity_type == "folder":
-            return self.add_folder(entity_data)
+            folder_entity = self.add_folder(entity_data)
+            folder_entity.has_published_content = entity_data["hasProducts"]
+            return folder_entity
+
         elif entity_type == "task":
             return self.add_task(entity_data)
 
@@ -483,13 +486,14 @@ class EntityHub(object):
         }
         for folder in folders:
             folder_entity = self._entities_by_id.get(folder["id"])
-            if folder_entity is not None:
-                if folder_entity.parent_id == entity.id:
-                    children_ids.add(folder_entity.id)
-                continue
+            if folder_entity is None:
+                folder_entity = self.add_folder(folder)
+                children_ids.add(folder_entity.id)
 
-            folder_entity = self.add_folder(folder)
-            children_ids.add(folder_entity.id)
+            elif folder_entity.parent_id == entity.id:
+                children_ids.add(folder_entity.id)
+
+            folder_entity.has_published_content = folder["hasProducts"]
 
         for task in tasks:
             task_entity = self._entities_by_id.get(task["id"])
