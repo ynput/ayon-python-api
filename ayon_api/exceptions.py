@@ -53,7 +53,10 @@ class GraphQlQueryFailed(Exception):
             msg = error["message"]
             path = error.get("path")
             if path:
-                msg += " on item '{}'".format("/".join(path))
+                msg += " on item '{}'".format("/".join(
+                    # Convert to string
+                    str(x) for x in path
+                ))
             locations = error.get("locations")
             if locations:
                 _locations = [
