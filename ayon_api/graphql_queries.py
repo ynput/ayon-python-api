@@ -41,8 +41,12 @@ def add_links_fields(entity_field, nested_fields):
 
     link_field = entity_field.add_field_with_edges("links")
 
+    link_name_var = link_field.add_variable("linkNames", "[String!]")
+    link_name_regex_var = link_field.add_variable("linkNameRegex", "String!")
     link_type_var = link_field.add_variable("linkTypes", "[String!]")
     link_dir_var = link_field.add_variable("linkDirection", "String!")
+    link_field.set_filter("names", link_name_var)
+    link_field.set_filter("nameEx", link_name_regex_var)
     link_field.set_filter("linkTypes", link_type_var)
     link_field.set_filter("direction", link_dir_var)
 
