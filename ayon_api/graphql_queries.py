@@ -1,5 +1,6 @@
 import collections
 
+from .constants import DEFAULT_LINK_FIELDS
 from .graphql import FIELD_VALUE, GraphQlQuery
 
 
@@ -30,16 +31,7 @@ def add_links_fields(entity_field, nested_fields):
         return
     links_fields = nested_fields.pop("links")
 
-    link_edge_fields = {
-        "id",
-        "linkType",
-        "projectName",
-        "entityType",
-        "entityId",
-        "direction",
-        "description",
-        "author",
-    }
+    link_edge_fields = set(DEFAULT_LINK_FIELDS)
     if isinstance(links_fields, dict):
         simple_fields = set(links_fields)
         simple_variant = len(simple_fields - link_edge_fields) == 0
