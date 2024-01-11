@@ -5974,7 +5974,8 @@ class ServerAPI(object):
         input_id,
         input_type,
         output_id,
-        output_type
+        output_type,
+        link_name=None,
     ):
         """Create link between 2 entities.
 
@@ -5992,6 +5993,8 @@ class ServerAPI(object):
             input_type (str): Entity type of input entity.
             output_id (str): Id of output entity.
             output_type (str): Entity type of output entity.
+            link_name (Optional[str]): Name of link.
+                Available from server version '1.0.0-rc.6'.
 
         Returns:
             dict[str, str]: Information about link.
@@ -6002,11 +6005,25 @@ class ServerAPI(object):
 
         full_link_type_name = self.get_full_link_type_name(
             link_type_name, input_type, output_type)
+
+        kwargs = {
+            "input": input_id,
+            "output": output_id,
+        }
+        major, minor, patch, rel, _ = self.server_version_tuple
+        rel_regex = re.compile(r"rc\.[0-5]")
+        if (
+            ((major, minor, patch) == (1, 0, 0) and rel_regex.match(rel))
+            or (major, minor, patch) < (1, 0, 0)
+        ):
+            kwargs["link"] = full_link_type_name
+        else:
+            kwargs["linkType"] = full_link_type_name
+            if link_name:
+                kwargs["name"] = link_name
+
         response = self.post(
-            "projects/{}/links".format(project_name),
-            link=full_link_type_name,
-            input=input_id,
-            output=output_id
+            "projects/{}/links".format(project_name), **kwargs
         )
         response.raise_for_status()
         return response.data
