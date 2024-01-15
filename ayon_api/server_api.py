@@ -188,6 +188,8 @@ class RestApiResponse(object):
                 raise ServerError(self._data["detail"])
             raise ValueError("Response is not available.")
 
+        if self.status_code == 401:
+            raise UnauthorizedError("Missing or invalid authentication token")
         try:
             self._response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
@@ -915,6 +917,7 @@ class ServerAPI(object):
         """
 
         response = self.get("info")
+        response.raise_for_status()
         return response.data
 
     def get_server_version(self):
@@ -983,7 +986,9 @@ class ServerAPI(object):
 
         if self._access_token_is_service is not None:
             response = self.get("users/me")
-            return response.data
+            if response.status == 200:
+                return response.data
+            return None
 
         self._access_token_is_service = False
         response = self.get("users/me")
@@ -1031,13 +1036,11 @@ class ServerAPI(object):
                 yield user
 
     def get_user(self, username=None):
-        output = None
         if username is None:
-            output = self._get_user_info()
-        else:
-            response = self.get("users/{}".format(username))
-            if response.status == 200:
-                output = response.data
+            return self._get_user_info()
+        response = self.get("users/{}".format(username))
+        response.raise_for_status()
+        return response.data
 
         if output is None:
             raise UnauthorizedError("User is not authorized.")
@@ -1856,10 +1859,7 @@ class ServerAPI(object):
 
         if self._attributes_schema is None:
             result = self.get("attributes")
-            if result.status_code != 200:
-                raise UnauthorizedError(
-                    "User must be authorized to receive attributes"
-                )
+            result.raise_for_status()
             self._attributes_schema = result.data
         return copy.deepcopy(self._attributes_schema)
 
