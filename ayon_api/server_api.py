@@ -43,6 +43,7 @@ from .constants import (
     DEFAULT_WORKFILE_INFO_FIELDS,
     DEFAULT_EVENT_FIELDS,
     DEFAULT_USER_FIELDS,
+    DEFAULT_LINK_FIELDS,
 )
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
@@ -5974,7 +5975,8 @@ class ServerAPI(object):
         input_id,
         input_type,
         output_id,
-        output_type
+        output_type,
+        link_name=None,
     ):
         """Create link between 2 entities.
 
@@ -5992,6 +5994,8 @@ class ServerAPI(object):
             input_type (str): Entity type of input entity.
             output_id (str): Id of output entity.
             output_type (str): Entity type of output entity.
+            link_name (Optional[str]): Name of link.
+                Available from server version '1.0.0-rc.6'.
 
         Returns:
             dict[str, str]: Information about link.
@@ -6002,11 +6006,31 @@ class ServerAPI(object):
 
         full_link_type_name = self.get_full_link_type_name(
             link_type_name, input_type, output_type)
+
+        kwargs = {
+            "input": input_id,
+            "output": output_id,
+        }
+        major, minor, patch, rel, _ = self.server_version_tuple
+        rel_regex = re.compile(r"rc\.[0-5]")
+        if (
+            ((major, minor, patch) == (1, 0, 0) and rel_regex.match(rel))
+            or (major, minor, patch) < (1, 0, 0)
+        ):
+            kwargs["link"] = full_link_type_name
+            if link_name:
+                raise NotImplementedError((
+                    "Link name is not supported"
+                    " for version of AYON server {}"
+                ).format(self.server_version))
+        else:
+            kwargs["linkType"] = full_link_type_name
+
+        if link_name:
+            kwargs["name"] = link_name
+
         response = self.post(
-            "projects/{}/links".format(project_name),
-            link=full_link_type_name,
-            input=input_id,
-            output=output_id
+            "projects/{}/links".format(project_name), **kwargs
         )
         response.raise_for_status()
         return response.data
@@ -6027,7 +6051,9 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
-    def _prepare_link_filters(self, filters, link_types, link_direction):
+    def _prepare_link_filters(
+        self, filters, link_types, link_direction, link_names, link_name_regex
+    ):
         """Add links filters for GraphQl queries.
 
         Args:
@@ -6035,6 +6061,8 @@ class ServerAPI(object):
             link_types (Union[Iterable[str], None]): Link types filters.
             link_direction (Union[Literal["in", "out"], None]): Direction of
                 link "in", "out" or 'None' for both.
+            link_names (Union[Iterable[str], None]): Link name filters.
+            link_name_regex (Union[str, None]): Regex filter for link name.
 
         Returns:
             bool: Links are valid, and query from server can happen.
@@ -6046,10 +6074,19 @@ class ServerAPI(object):
                 return False
             filters["linkTypes"] = list(link_types)
 
+        if link_names is not None:
+            link_names = set(link_names)
+            if not link_names:
+                return False
+            filters["linkNames"] = list(link_names)
+
         if link_direction is not None:
             if link_direction not in ("in", "out"):
                 return False
             filters["linkDirection"] = link_direction
+
+        if link_name_regex is not None:
+            filters["linkNameRegex"] = link_name_regex
         return True
 
     def get_entities_links(
@@ -6058,7 +6095,9 @@ class ServerAPI(object):
         entity_type,
         entity_ids=None,
         link_types=None,
-        link_direction=None
+        link_direction=None,
+        link_names=None,
+        link_name_regex=None,
     ):
         """Helper method to get links from server for entity types.
 
@@ -6089,6 +6128,8 @@ class ServerAPI(object):
             link_types (Optional[Iterable[str]]): Link type filters.
             link_direction (Optional[Literal["in", "out"]]): Link direction
                 filter.
+            link_names (Optional[Iterable[str]]): Link name filters.
+            link_name_regex (Optional[str]): Regex filter for link name.
 
         Returns:
             dict[str, list[dict[str, Any]]]: Link info by entity ids.
@@ -6132,10 +6173,30 @@ class ServerAPI(object):
                 return output
             filters[id_filter_key] = list(entity_ids)
 
-        if not self._prepare_link_filters(filters, link_types, link_direction):
+        if not self._prepare_link_filters(
+            filters, link_types, link_direction, link_names, link_name_regex
+        ):
             return output
 
-        query = query_func({"id", "links"})
+        link_fields = {"id", "links"}
+        # Backwards compatibility for server version 1.0.0-rc.5 and lower
+        # ---------
+        major, minor, patch, rel, _ = self.server_version_tuple
+        rel_regex = re.compile(r"rc\.[0-5]")
+        if (
+            ((major, minor, patch) == (1, 0, 0) and rel_regex.match(rel))
+            or (major, minor, patch) < (1, 0, 0)
+        ):
+            fields = set(DEFAULT_LINK_FIELDS)
+            fields.discard("name")
+            link_fields.discard("links")
+            link_fields |= {
+                "links.{}".format(field)
+                for field in fields
+            }
+        # ---------
+
+        query = query_func(link_fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 

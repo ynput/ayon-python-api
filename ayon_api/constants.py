@@ -146,3 +146,15 @@ DEFAULT_EVENT_FIELDS = {
     "updatedAt",
     "user",
 }
+
+DEFAULT_LINK_FIELDS = {
+    "id",
+    "linkType",
+    "projectName",
+    "entityType",
+    "entityId",
+    "name",
+    "direction",
+    "description",
+    "author",
+}
