@@ -6018,10 +6018,16 @@ class ServerAPI(object):
             or (major, minor, patch) < (1, 0, 0)
         ):
             kwargs["link"] = full_link_type_name
+            if link_name:
+                raise NotImplementedError((
+                    "Link name is not supported"
+                    " for version of AYON server {}"
+                ).format(self.server_version))
         else:
             kwargs["linkType"] = full_link_type_name
-            if link_name:
-                kwargs["name"] = link_name
+
+        if link_name:
+            kwargs["name"] = link_name
 
         response = self.post(
             "projects/{}/links".format(project_name), **kwargs
