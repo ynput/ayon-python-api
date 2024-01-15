@@ -1037,14 +1037,14 @@ class ServerAPI(object):
 
     def get_user(self, username=None):
         if username is None:
-            return self._get_user_info()
+            output = self._get_user_info()
+            if output is None:
+                raise UnauthorizedError("User is not authorized.")
+            return output
+
         response = self.get("users/{}".format(username))
         response.raise_for_status()
         return response.data
-
-        if output is None:
-            raise UnauthorizedError("User is not authorized.")
-        return output
 
     def get_headers(self, content_type=None):
         if content_type is None:
