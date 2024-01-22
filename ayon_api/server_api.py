@@ -1476,6 +1476,9 @@ class ServerAPI(object):
             store (Optional[bool]): Store event in event queue for possible
                 future processing otherwise is event send only
                 to active listeners.
+
+        Returns:
+            RestApiResponse: Response from server.
         """
 
         if summary is None:
