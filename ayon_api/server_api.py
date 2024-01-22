@@ -1495,11 +1495,10 @@ class ServerAPI(object):
             "finished": finished,
             "store": store,
         }
-        if self.post("events", **event_data):
-            self.log.debug("Dispatched event {}".format(topic))
-            return True
-        self.log.error("Unable to dispatch event {}".format(topic))
-        return False
+
+        response = self.post("events", **event_data)
+        response.raise_for_status()
+        return response
 
     def enroll_event_job(
         self,
