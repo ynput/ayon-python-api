@@ -235,11 +235,14 @@ def get_service_name():
     return ServiceContext.service_name
 
 
-def get_service_addon_settings():
+def get_service_addon_settings(project_name=None):
     """Addon settings of service which initialized service.
 
     Service context must be initialized to be able to use this function. Call
     'init_service' on you service start to do so.
+
+    Args:
+        project_name (Optional[str]): Project name.
 
     Returns:
         Dict[str, Any]: Addon settings.
@@ -252,7 +255,9 @@ def get_service_addon_settings():
     addon_version = get_service_addon_version()
     if addon_name is None or addon_version is None:
         raise ValueError("Service is not initialized")
-    return get_addon_settings(addon_name, addon_version)
+    return get_addon_settings(
+        addon_name, addon_version, project_name=project_name
+    )
 
 
 def is_connection_created():
