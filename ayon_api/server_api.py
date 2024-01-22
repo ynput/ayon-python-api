@@ -207,6 +207,9 @@ class RestApiResponse(object):
         return "<{} [{}]>".format(self.__class__.__name__, self.status)
 
     def __len__(self):
+        return int(200 <= self.status < 400)
+
+    def __bool__(self):
         return 200 <= self.status < 400
 
     def __getitem__(self, key):
