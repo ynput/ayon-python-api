@@ -207,6 +207,9 @@ class RestApiResponse(object):
         return "<{} [{}]>".format(self.__class__.__name__, self.status)
 
     def __len__(self):
+        return int(200 <= self.status < 400)
+
+    def __bool__(self):
         return 200 <= self.status < 400
 
     def __getitem__(self, key):
@@ -1476,6 +1479,9 @@ class ServerAPI(object):
             store (Optional[bool]): Store event in event queue for possible
                 future processing otherwise is event send only
                 to active listeners.
+
+        Returns:
+            RestApiResponse: Response from server.
         """
 
         if summary is None:
@@ -1495,11 +1501,10 @@ class ServerAPI(object):
             "finished": finished,
             "store": store,
         }
-        if self.post("events", **event_data):
-            self.log.debug("Dispatched event {}".format(topic))
-            return True
-        self.log.error("Unable to dispatch event {}".format(topic))
-        return False
+
+        response = self.post("events", **event_data)
+        response.raise_for_status()
+        return response
 
     def enroll_event_job(
         self,
