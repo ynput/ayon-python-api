@@ -34,16 +34,18 @@ extensions = ['sphinx.ext.autodoc',
 # -- Napoleon settings -------------------------------------------------------
 
 napoleon_google_docstring = True
-napoleon_numpy_docstring = True
-napoleon_include_init_with_doc = True
-napoleon_include_private_with_doc = True
-napoleon_include_special_with_doc = True
+napoleon_numpy_docstring = False
+napoleon_include_init_with_doc = False
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
+napoleon_use_ivar = True
+napoleon_use_param = False
 napoleon_use_rtype = True
+napoleon_preprocess_types = True
+napoleon_attr_annotations = True
 
 templates_path = ['_templates']
 exclude_patterns = ['tests', 'venv', 'build', 'Thumbs.db', '.DS_Store']
@@ -61,12 +63,11 @@ html_logo = './_static/AYON_blackG_dot.svg'
 html_theme_options = {
     'color_scheme': '',
     'canonical_url': 'https://github.com/ynput/ayon-python-api',
-    'analytics_id': 'UA-XXXXXXX-1',
     'style_external_links': False,
     'collapse_navigation': True,
     'sticky_navigation': True,
     'navigation_depth': 4,
-    'includehidden': True,
+    'includehidden': False,
     'titles_only': False,
     'github_url': 'https://github.com/ynput/ayon-python-api',
 }
