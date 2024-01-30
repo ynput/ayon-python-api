@@ -367,10 +367,10 @@ class ServerAPI(object):
         sender (Optional[str]): Sender of requests. Used in server logs and
             propagated into events.
         ssl_verify (Union[bool, str, None]): Verify SSL certificate
-            Looks for env variable value 'AYON_CA_FILE' by default. If not
+            Looks for env variable value ``AYON_CA_FILE`` by default. If not
             available then 'True' is used.
         cert (Optional[str]): Path to certificate file. Looks for env
-            variable value 'AYON_CERT_FILE' by default.
+            variable value ``AYON_CERT_FILE`` by default.
         create_session (Optional[bool]): Create session for connection if
             token is available. Default is True.
         timeout (Optional[float]): Timeout for requests.
@@ -853,7 +853,7 @@ class ServerAPI(object):
         """Create a connection session.
 
         Session helps to keep connection with server without
-            need to reconnect on each call.
+        need to reconnect on each call.
 
         Args:
             ignore_existing (bool): If session already exists,
@@ -2082,7 +2082,8 @@ class ServerAPI(object):
     def get_addon_url(self, addon_name, addon_version, *subpaths):
         """Calculate url to addon route.
 
-        Example:
+        Examples:
+
             >>> api = ServerAPI("https://your.url.com")
             >>> api.get_addon_url(
             ...     "example", "1.0.0", "private", "my.zip")
@@ -2322,7 +2323,8 @@ class ServerAPI(object):
         To download dependency package, use 'download_dependency_package'
         method and pass in 'filename'.
 
-        Example data structure:
+        Example data structure::
+
             {
                 "packages": [
                     {
@@ -2363,16 +2365,20 @@ class ServerAPI(object):
         """Create dependency package on server.
 
         The package will be created on a server, it is also required to upload
-        the package archive file (using 'upload_dependency_package').
+        the package archive file (using :meth:`upload_dependency_package`).
 
         Args:
             filename (str): Filename of dependency package.
             python_modules (dict[str, str]): Python modules in dependency
-                package.
-                '{"<module name>": "<module version>", ...}'
+                package::
+
+                    {"<module name>": "<module version>", ...}
+
             source_addons (dict[str, str]): Name of addons for which is
-                dependency package created.
-                '{"<addon name>": "<addon version>", ...}'
+                dependency package created::
+
+                    {"<addon name>": "<addon version>", ...}
+                    
             installer_version (str): Version of installer for which was
                 package created.
             checksum (str): Checksum of archive file where dependencies are.
@@ -2523,7 +2529,8 @@ class ServerAPI(object):
             create an event job which can be tracked (tracking part is not
             implemented yet).
 
-        Example output:
+        Example output::
+
             {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
 
         Args:
@@ -2546,8 +2553,8 @@ class ServerAPI(object):
     def get_bundles(self):
         """Server bundles with basic information.
 
-        Example output::
-            ```
+        This is example output::
+        
             {
                 "bundles": [
                     {
@@ -2569,7 +2576,6 @@ class ServerAPI(object):
                 "productionBundle": "my_bundle",
                 "stagingBundle": "test_bundle"
             }
-            ```
 
         Returns:
             dict[str, Any]: Server bundles with basic information.
@@ -2674,7 +2680,8 @@ class ServerAPI(object):
     def get_project_anatomy_presets(self):
         """Anatomy presets available on server.
 
-        Content has basic information about presets. Example output:
+        Content has basic information about presets. Example output::
+
             [
                 {
                     "name": "netflix_VFX",
@@ -2984,12 +2991,13 @@ class ServerAPI(object):
 
         Output contains addon settings and site settings in single dictionary.
 
-        TODOs:
+        Todos:
             - test how it behaves if there is not any bundle.
             - test how it behaves if there is not any production/staging
                 bundle.
 
-        Example output:
+        Example output::
+
             {
                 "addons": [
                     {
@@ -6006,7 +6014,8 @@ class ServerAPI(object):
 
         Link has a type which must already exists on a project.
 
-        Example output:
+        Example output::
+
             {
                 "id": "59a212c0d2e211eda0e20242ac120002"
             }
