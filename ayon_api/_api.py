@@ -56,8 +56,8 @@ class GlobalServerAPI(ServerAPI):
 
         If user is the same as current user and token is available the
         login is skipped.
-        """
 
+        """
         previous_token = self._access_token
         super(GlobalServerAPI, self).login(username, password)
         if self.has_valid_token and previous_token != self._access_token:
@@ -78,8 +78,8 @@ class GlobalServerAPI(ServerAPI):
         Args:
             url (str): New server url.
             token (str): User's token.
-        """
 
+        """
         os.environ[SERVER_URL_ENV_KEY] = url or ""
         os.environ[SERVER_API_ENV_KEY] = token or ""
 
@@ -89,8 +89,8 @@ class GlobalContext:
 
     Goal is to avoid create connection on import which can be dangerous in
     some cases.
-    """
 
+    """
     _connection = None
 
     @classmethod
@@ -138,8 +138,8 @@ class ServiceContext:
     All what must be done is to call 'init_service' function/method. The
     arguments are for cases when the service is running in specific environment
     and their values are e.g. loaded from private file or for testing purposes.
-    """
 
+    """
     token = None
     server_url = None
     addon_name = None
@@ -191,8 +191,8 @@ def init_service(*args, **kwargs):
 
     The service expect specific environment variables. The variables must all
     be set to make the connection work as a service.
-    """
 
+    """
     ServiceContext.init_service(*args, **kwargs)
 
 
@@ -204,8 +204,8 @@ def get_service_addon_name():
 
     Returns:
         Union[str, None]: Name of addon or None.
-    """
 
+    """
     return ServiceContext.addon_name
 
 
@@ -217,8 +217,8 @@ def get_service_addon_version():
 
     Returns:
         Union[str, None]: Version of addon or None.
-    """
 
+    """
     return ServiceContext.addon_version
 
 
@@ -230,8 +230,8 @@ def get_service_name():
 
     Returns:
         Union[str, None]: Name of service if service was registered.
+        
     """
-
     return ServiceContext.service_name
 
 
@@ -249,8 +249,8 @@ def get_service_addon_settings(project_name=None):
 
     Raises:
         ValueError: When service was not initialized.
-    """
 
+    """
     addon_name = get_service_addon_name()
     addon_version = get_service_addon_version()
     if addon_name is None or addon_version is None:
@@ -265,8 +265,8 @@ def is_connection_created():
 
     Returns:
         bool: True if connection was connected.
-    """
 
+    """
     return GlobalContext.is_connection_created()
 
 
@@ -279,14 +279,13 @@ def create_connection(site_id=None, client_version=None):
 
     Returns:
         GlobalServerAPI: Created connection.
-    """
 
+    """
     return GlobalContext.create_connection(site_id, client_version)
 
 
 def close_connection():
     """Close global connection if is connected."""
-
     GlobalContext.close_connection()
 
 
@@ -298,8 +297,8 @@ def change_token(url, token):
     Args:
         url (str): Server url.
         token (str): API key token.
-    """
 
+    """
     GlobalContext.change_token(url, token)
 
 
@@ -309,8 +308,8 @@ def set_environments(url, token):
     Args:
         url (Union[str, None]): Url to server or None to unset environments.
         token (Union[str, None]): API key token to be used for connection.
-    """
 
+    """
     GlobalServerAPI.set_environments(url, token)
 
 
@@ -322,8 +321,8 @@ def get_server_api_connection():
 
     Returns:
         GlobalServerAPI: Object of connection to server.
-    """
 
+    """
     return GlobalContext.get_server_api_connection()
 
 
@@ -339,8 +338,8 @@ def set_site_id(site_id):
 
     Args:
         site_id (Union[str, None]): Site id used in connection.
-    """
 
+    """
     con = get_server_api_connection()
     con.set_site_id(site_id)
 
@@ -352,8 +351,8 @@ def get_client_version():
 
     Returns:
         str: Client version string used in connection.
-    """
 
+    """
     con = get_server_api_connection()
     return con.get_client_version()
 
@@ -365,8 +364,8 @@ def set_client_version(client_version):
 
     Args:
         client_version (Union[str, None]): Client version string.
-    """
 
+    """
     con = get_server_api_connection()
     con.set_client_version(client_version)
 
@@ -376,8 +375,8 @@ def get_default_settings_variant():
 
     Returns:
         Union[str, None]: name of variant or None.
-    """
 
+    """
     con = get_server_api_connection()
     return con.get_default_settings_variant()
 
@@ -387,12 +386,12 @@ def set_default_settings_variant(variant):
 
     Note:
         It is recommended to set only 'production' or 'staging' variants
-            as default variant.
+        as default variant.
 
     Args:
         variant (Union[str, None]): Settings variant name.
-    """
 
+    """
     con = get_server_api_connection()
     return con.set_default_settings_variant(variant)
 
@@ -402,8 +401,8 @@ def get_sender():
 
     Returns:
         Union[str, None]: Sender name or None.
-    """
 
+    """
     con = get_server_api_connection()
     return con.get_sender()
 
@@ -413,8 +412,8 @@ def set_sender(sender):
 
     Args:
         sender (Union[str, None]): Sender name or None.
-    """
 
+    """
     con = get_server_api_connection()
     return con.set_sender(sender)
 

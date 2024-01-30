@@ -39,6 +39,7 @@ class QueryVariable(object):
 
     Args:
         variable_name (str): Name of variable in query.
+
     """
 
     def __init__(self, variable_name):
@@ -48,13 +49,11 @@ class QueryVariable(object):
     @property
     def name(self):
         """Name used in field filter."""
-
         return self._name
 
     @property
     def variable_name(self):
         """Name of variable in query definition."""
-
         return self._variable_name
 
     def __hash__(self):
@@ -75,8 +74,8 @@ class GraphQlQuery:
 
     Args:
         name (str): Name of query.
+        
     """
-
     offset = 2
 
     def __init__(self, name):
@@ -91,8 +90,8 @@ class GraphQlQuery:
 
         Returns:
             int: Ident spaces.
-        """
 
+        """
         return 0
 
     @property
@@ -101,8 +100,8 @@ class GraphQlQuery:
 
         Returns:
             int: Ident spaces for children.
-        """
 
+        """
         return self.indent
 
     @property
@@ -113,8 +112,8 @@ class GraphQlQuery:
 
         Returns:
             bool: If still need query from server.
-        """
 
+        """
         for child in self._children:
             if child.need_query:
                 return True
@@ -146,8 +145,8 @@ class GraphQlQuery:
 
         Raises:
             KeyError: If variable was already added before.
-        """
 
+        """
         if key in self._variables:
             raise KeyError(
                 "Variable \"{}\" was already set with type {}.".format(
@@ -171,8 +170,8 @@ class GraphQlQuery:
 
         Returns:
             QueryVariable: Variable object used in query string.
-        """
 
+        """
         return self._variables[key]["variable"]
 
     def get_variable_value(self, key, default=None):
@@ -184,8 +183,8 @@ class GraphQlQuery:
 
         Returns:
             Any: Variable value.
-        """
 
+        """
         variable_item = self._variables.get(key)
         if variable_item:
             return variable_item["value"]
@@ -199,7 +198,6 @@ class GraphQlQuery:
             value (Any): Variable value used in query. Variable is not used
                 if value is 'None'.
         """
-
         self._variables[key]["value"] = value
 
     def get_variable_keys(self):
@@ -207,8 +205,8 @@ class GraphQlQuery:
 
         Returns:
             set[str]: Variable keys.
-        """
 
+        """
         return set(self._variables.keys())
 
     def get_variables_values(self):
@@ -218,8 +216,8 @@ class GraphQlQuery:
 
         Returns:
             Dict[str, Any]: Variable values by their name.
-        """
 
+        """
         output = {}
         for key, item in self._variables.items():
             value = item["value"]
@@ -233,8 +231,8 @@ class GraphQlQuery:
 
         Args:
             field (BaseGraphQlQueryField): Add field to query children.
-        """
 
+        """
         if field in self._children:
             return
 
@@ -249,8 +247,8 @@ class GraphQlQuery:
 
         Returns:
             GraphQlQueryEdgeField: Created field object.
-        """
 
+        """
         item = GraphQlQueryEdgeField(name, self)
         self.add_obj_field(item)
         return item
@@ -263,8 +261,8 @@ class GraphQlQuery:
 
         Returns:
             GraphQlQueryField: Created field object.
-        """
 
+        """
         item = GraphQlQueryField(name, self)
         self.add_obj_field(item)
         return item
@@ -277,8 +275,8 @@ class GraphQlQuery:
 
         Raises:
             ValueError: Query has no fiels.
-        """
 
+        """
         if not self._children:
             raise ValueError("Missing fields to query")
 
@@ -313,8 +311,9 @@ class GraphQlQuery:
         Args:
             data (Dict[str, Any]): Data received using calculated query.
             output (Dict[str, Any]): Where parsed data are stored.
-        """
+            progress_data (Dict[str, Any]): Data used for paging.
 
+        """
         if not data:
             return
 
@@ -329,8 +328,8 @@ class GraphQlQuery:
 
         Returns:
             Dict[str, Any]: Parsed output from GraphQl query.
-        """
 
+        """
         progress_data = {}
         output = {}
         while self.need_query:
@@ -354,8 +353,8 @@ class GraphQlQuery:
 
         Returns:
             Dict[str, Any]: Parsed output from GraphQl query.
-        """
 
+        """
         progress_data = {}
         if self.has_multiple_edge_fields:
             output = {}
@@ -395,8 +394,8 @@ class BaseGraphQlQueryField(object):
         name (str): Name of field.
         parent (Union[BaseGraphQlQueryField, GraphQlQuery]): Parent object of a
             field.
-    """
 
+    """
     def __init__(self, name, parent):
         if isinstance(parent, GraphQlQuery):
             query_item = parent
@@ -433,8 +432,8 @@ class BaseGraphQlQueryField(object):
 
         Raises:
             KeyError: If variable was already added before.
-        """
 
+        """
         return self._parent.add_variable(key, value_type, value)
 
     def get_variable(self, key):
@@ -445,8 +444,8 @@ class BaseGraphQlQueryField(object):
 
         Returns:
             QueryVariable: Variable object used in query string.
-        """
 
+        """
         return self._parent.get_variable(key)
 
     @property
@@ -457,8 +456,8 @@ class BaseGraphQlQueryField(object):
 
         Returns:
             bool: If still need query from server.
-        """
 
+        """
         if self._need_query:
             return True
 
@@ -472,8 +471,8 @@ class BaseGraphQlQueryField(object):
 
         Returns:
             Iterator[BaseGraphQlQueryField]: Children fields.
-        """
 
+        """
         for child in self._children:
             yield child
 
@@ -489,8 +488,8 @@ class BaseGraphQlQueryField(object):
 
         Returns:
             int: Counter edge fields
-        """
 
+        """
         counter = 0
         if isinstance(self, GraphQlQueryEdgeField):
             counter = 1
@@ -536,8 +535,8 @@ class BaseGraphQlQueryField(object):
 
         Returns:
             str: Field path in query.
-        """
 
+        """
         if self._path is None:
             if isinstance(self._parent, GraphQlQuery):
                 path = self._name
@@ -618,8 +617,8 @@ class BaseGraphQlQueryField(object):
 
         Returns:
             Dict[str, Any]: Fields filters.
-        """
 
+        """
         return copy.deepcopy(self._filters)
 
     def _filters_to_string(self):
@@ -641,7 +640,6 @@ class BaseGraphQlQueryField(object):
 
     def _fake_children_parse(self):
         """Mark children as they don't need query."""
-
         for child in self._children_iter():
             child.parse_result({}, {}, {})
 

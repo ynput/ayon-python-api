@@ -41,8 +41,8 @@ def get_default_timeout():
 
     Returns:
         float: Timeout value in seconds.
-    """
 
+    """
     try:
         return float(os.environ.get(SERVER_TIMEOUT_ENV_KEY))
     except (ValueError, TypeError):
@@ -55,8 +55,8 @@ def get_default_settings_variant():
 
     Returns:
         str: Settings variant from environment variable or 'production'.
-    """
 
+    """
     return os.environ.get(DEFAULT_VARIANT_ENV_KEY) or "production"
 
 
@@ -65,8 +65,8 @@ def get_default_site_id():
 
     Returns:
         Union[str, None]: Site id from environment variable or None.
-    """
 
+    """
     return os.environ.get(SITE_ID_ENV_KEY)
 
 
@@ -78,8 +78,8 @@ class ThumbnailContent:
         thumbnail_id (Union[str, None]): Thumbnail id.
         content_type (Union[str, None]): Content type e.g. 'image/png'.
         content (Union[bytes, None]): Thumbnail content.
-    """
 
+    """
     def __init__(self, project_name, thumbnail_id, content, content_type):
         self.project_name = project_name
         self.thumbnail_id = thumbnail_id
@@ -88,12 +88,7 @@ class ThumbnailContent:
 
     @property
     def id(self):
-        """Wrapper for thumbnail id.
-
-        Returns:
-
-        """
-
+        """Wrapper for thumbnail id."""
         return self.thumbnail_id
 
     @property
@@ -102,6 +97,7 @@ class ThumbnailContent:
 
         Returns:
             bool: Content is valid and can be used.
+
         """
         return (
             self.thumbnail_id is not None
@@ -120,8 +116,8 @@ def prepare_query_string(key_values):
 
     Returns:
         str: Query string.
-    """
 
+    """
     if not key_values:
         return ""
     return "?{}".format(urlencode(key_values))
@@ -192,8 +188,8 @@ def slugify_string(
     Returns:
         Union[str, Set[str]]: Based on 'make_set' value returns slugified
             string.
-    """
 
+    """
     tmp_string = unidecode.unidecode(input_string)
     if lower:
         tmp_string = tmp_string.lower()
@@ -246,7 +242,6 @@ def prepare_attribute_changes(old_entity, new_entity, replace=False):
 
 def prepare_entity_changes(old_entity, new_entity, replace=False):
     """Prepare changes of entities."""
-
     changes = {}
     for key, new_value in new_entity.items():
         if key == "attrib":
@@ -300,8 +295,8 @@ def login_to_server(url, username, password, timeout=None):
     Returns:
         Union[str, None]: User's token if login was successfull.
             Otherwise 'None'.
-    """
 
+    """
     if timeout is None:
         timeout = get_default_timeout()
     headers = {"Content-Type": "application/json"}
@@ -331,8 +326,8 @@ def logout_from_server(url, token, timeout=None):
         token (str): Token which should be used to log out.
         timeout (Optional[float]): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
-    """
 
+    """
     if timeout is None:
         timeout = get_default_timeout()
     headers = {
@@ -359,8 +354,8 @@ def is_token_valid(url, token, timeout=None):
 
     Returns:
         bool: True if token is valid.
-    """
 
+    """
     if timeout is None:
         timeout = get_default_timeout()
 
@@ -411,8 +406,8 @@ def validate_url(url, timeout=None):
 
     Raises:
         UrlError: Error with short description and hints for user.
-    """
 
+    """
     stripperd_url = url.strip()
     if not stripperd_url:
         raise UrlError(
@@ -484,8 +479,8 @@ class TransferProgress:
         Returns:
             Union[int, None]: Content size in bytes or None
                 if is unknown.
-        """
 
+        """
         return self._content_size
 
     def set_content_size(self, content_size):
@@ -496,8 +491,8 @@ class TransferProgress:
 
         Raises:
             ValueError: If content size was already set.
-        """
 
+        """
         if self._content_size is not None:
             raise ValueError("Content size was set more then once")
         self._content_size = content_size
@@ -507,8 +502,8 @@ class TransferProgress:
 
         Returns:
             bool: True if transfer started.
-        """
 
+        """
         return self._started
 
     def set_started(self):
@@ -516,8 +511,8 @@ class TransferProgress:
 
         Raises:
             ValueError: If transfer was already started.
-        """
 
+        """
         if self._started:
             raise ValueError("Progress already started")
         self._started = True
@@ -527,8 +522,8 @@ class TransferProgress:
 
         Returns:
             bool: Transfer finished.
-        """
 
+        """
         return self._transfer_done
 
     def set_transfer_done(self):
@@ -537,8 +532,8 @@ class TransferProgress:
         Raises:
             ValueError: If progress was already marked as done
                 or wasn't started yet.
-        """
 
+        """
         if self._transfer_done:
             raise ValueError("Progress was already marked as done")
         if not self._started:
@@ -550,8 +545,8 @@ class TransferProgress:
 
         Returns:
             bool: True if transfer failed.
-        """
 
+        """
         return self._failed
 
     def get_fail_reason(self):
@@ -560,8 +555,8 @@ class TransferProgress:
         Returns:
             Union[str, None]: Reason why transfer
                 failed or None.
-        """
 
+        """
         return self._fail_reason
 
     def set_failed(self, reason):
@@ -569,8 +564,8 @@ class TransferProgress:
 
         Args:
             reason (str): Reason why transfer failed.
-        """
 
+        """
         self._fail_reason = reason
         self._failed = True
 
@@ -579,8 +574,8 @@ class TransferProgress:
 
         Returns:
             int: Already transferred size in bytes.
-        """
 
+        """
         return self._transferred
 
     def set_transferred_size(self, transferred):
@@ -588,8 +583,8 @@ class TransferProgress:
 
         Args:
             transferred (int): Already transferred size in bytes.
-        """
 
+        """
         self._transferred = transferred
 
     def add_transferred_chunk(self, chunk_size):
@@ -598,8 +593,8 @@ class TransferProgress:
         Args:
             chunk_size (int): Add transferred chunk size
                 in bytes.
-        """
-        
+
+        """     
         self._transferred += chunk_size
 
     def get_source_url(self):
@@ -611,8 +606,8 @@ class TransferProgress:
 
         Returns:
             str: Source url from where transfer happens.
-        """
 
+        """
         return self._source_url
 
     def set_source_url(self, url):
@@ -620,8 +615,8 @@ class TransferProgress:
 
         Args:
             url (str): Source url from where transfer happens.
-        """
 
+        """
         self._source_url = url
 
     def get_destination_url(self):
@@ -633,8 +628,8 @@ class TransferProgress:
 
         Returns:
             str: Destination url where transfer happens.
-        """
 
+        """
         return self._destination_url
 
     def set_destination_url(self, url):
@@ -642,8 +637,8 @@ class TransferProgress:
 
         Args:
             url (str): Destination url where transfer happens.
-        """
 
+        """
         self._destination_url = url
 
     @property
@@ -652,8 +647,8 @@ class TransferProgress:
 
         Returns:
             bool: True if transfer is running.
-        """
 
+        """
         if (
             not self.started
             or self.transfer_done
@@ -669,8 +664,8 @@ class TransferProgress:
         Returns:
             Union[float, None]: Transfer progress in percents or 'None'
                 if content size is unknown.
-        """
 
+        """
         if self._content_size is None:
             return None
         return (self._transferred * 100.0) / float(self._content_size)
@@ -694,8 +689,8 @@ def create_dependency_package_basename(platform_name=None):
 
     Returns:
         str: Dependency package name with timestamp and platform.
-    """
 
+    """
     if platform_name is None:
         platform_name = platform.system().lower()
 

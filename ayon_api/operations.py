@@ -48,8 +48,8 @@ def new_folder_entity(
 
     Returns:
         Dict[str, Any]: Skeleton of folder entity.
-    """
 
+    """
     if attribs is None:
         attribs = {}
 
@@ -104,8 +104,8 @@ def new_product_entity(
 
     Returns:
         Dict[str, Any]: Skeleton of product entity.
-    """
 
+    """
     if attribs is None:
         attribs = {}
 
@@ -158,8 +158,8 @@ def new_version_entity(
 
     Returns:
         Dict[str, Any]: Skeleton of version entity.
-    """
 
+    """
     if attribs is None:
         attribs = {}
 
@@ -220,8 +220,8 @@ def new_hero_version_entity(
 
     Returns:
         Dict[str, Any]: Skeleton of version entity.
-    """
 
+    """
     if attribs is None:
         attribs = {}
 
@@ -275,8 +275,8 @@ def new_representation_entity(
 
     Returns:
         Dict[str, Any]: Skeleton of representation entity.
-    """
 
+    """
     if attribs is None:
         attribs = {}
 
@@ -325,8 +325,8 @@ def new_workfile_info(
 
     Returns:
         Dict[str, Any]: Skeleton of workfile info entity.
-    """
 
+    """
     if attribs is None:
         attribs = {}
 
@@ -365,8 +365,8 @@ class AbstractOperation(object):
         project_name (str): On which project operation will happen.
         entity_type (str): Type of entity on which change happens.
             e.g. 'folder', 'representation' etc.
-    """
 
+    """
     def __init__(self, project_name, entity_type, session):
         self._project_name = project_name
         self._entity_type = entity_type
@@ -380,7 +380,6 @@ class AbstractOperation(object):
     @property
     def id(self):
         """Identifier of operation."""
-
         return self._id
 
     @property
@@ -391,7 +390,6 @@ class AbstractOperation(object):
     @abstractmethod
     def operation_name(self):
         """Stringified type of operation."""
-
         pass
 
     def to_data(self):
@@ -399,8 +397,8 @@ class AbstractOperation(object):
 
         Returns:
             Dict[str, Any]: Description of operation.
-        """
 
+        """
         return {
             "id": self._id,
             "entity_type": self.entity_type,
@@ -417,8 +415,8 @@ class CreateOperation(AbstractOperation):
         entity_type (str): Type of entity on which change happens.
             e.g. 'folder', 'representation' etc.
         data (Dict[str, Any]): Data of entity that will be created.
-    """
 
+    """
     operation_name = "create"
 
     def __init__(self, project_name, entity_type, data, session):
@@ -489,8 +487,8 @@ class UpdateOperation(AbstractOperation):
         update_data (Dict[str, Any]): Key -> value changes that will be set in
             database. If value is set to 'REMOVED_VALUE' the key will be
             removed. Only first level of dictionary is checked (on purpose).
-    """
 
+    """
     operation_name = "update"
 
     def __init__(
@@ -560,8 +558,8 @@ class DeleteOperation(AbstractOperation):
         entity_type (str): Type of entity on which change happens.
             e.g. 'folder', 'representation' etc.
         entity_id (str): Entity id that will be removed.
-    """
 
+    """
     operation_name = "delete"
 
     def __init__(self, project_name, entity_type, entity_id, session):
@@ -609,8 +607,8 @@ class OperationsSession(object):
 
     Args:
         project_name (str): Project name to which are operations related.
-    """
 
+    """
     def __init__(self, con=None):
         if con is None:
             con = get_server_api_connection()
@@ -637,6 +635,7 @@ class OperationsSession(object):
 
         Args:
             operation (BaseOperation): Operation that should be processed.
+
         """
         if not isinstance(
             operation,
@@ -653,8 +652,8 @@ class OperationsSession(object):
 
         Args:
             operation (BaseOperation): Operation that should be processed.
-        """
 
+        """
         self.add(operation)
 
     def extend(self, operations):
@@ -663,19 +662,17 @@ class OperationsSession(object):
         Args:
             operations (List[BaseOperation]): Operations that should be
                 processed.
-        """
 
+        """
         for operation in operations:
             self.add(operation)
 
     def remove(self, operation):
         """Remove operation."""
-
         self._operations.remove(operation)
 
     def clear(self):
         """Clear all registered operations."""
-
         self._operations = []
 
     def to_data(self):
@@ -686,7 +683,6 @@ class OperationsSession(object):
 
     def commit(self):
         """Commit session operations."""
-
         operations, self._operations = self._operations, []
         if not operations:
             return
@@ -719,8 +715,8 @@ class OperationsSession(object):
 
         Returns:
             CreateOperation: Object of update operation.
-        """
 
+        """
         operation = CreateOperation(
             project_name, entity_type, data, self
         )
@@ -741,8 +737,8 @@ class OperationsSession(object):
 
         Returns:
             UpdateOperation: Object of update operation.
-        """
 
+        """
         operation = UpdateOperation(
             project_name, entity_type, entity_id, update_data, self
         )
@@ -761,8 +757,8 @@ class OperationsSession(object):
 
         Returns:
             DeleteOperation: Object of delete operation.
-        """
 
+        """
         operation = DeleteOperation(
             project_name, entity_type, entity_id, self
         )

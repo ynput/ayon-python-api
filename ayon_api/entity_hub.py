@@ -45,6 +45,7 @@ class EntityHub(object):
             key on entities. This is not recommended as 'data' may be use for
             secure information and would also slow down server queries. Content
             of 'data' key can't be received only GraphQl.
+            
     """
 
     def __init__(
@@ -82,8 +83,8 @@ class EntityHub(object):
 
         Returns:
             bool: Data changes are allowed.
-        """
 
+        """
         return self._allow_data_changes
 
     @property
@@ -94,8 +95,8 @@ class EntityHub(object):
 
         Returns:
             bool: Path starts with slash.
-        """
 
+        """
         return self._path_start_with_slash
 
     @property
@@ -104,8 +105,8 @@ class EntityHub(object):
 
         Returns:
             str: Name of project.
-        """
 
+        """
         return self._project_name
 
     @property
@@ -114,8 +115,8 @@ class EntityHub(object):
 
         Returns:
             ProjectEntity: Project entity.
-        """
 
+        """
         if self._project_entity is UNKNOWN_VALUE:
             self.fill_project_from_server()
         return self._project_entity
@@ -135,8 +136,8 @@ class EntityHub(object):
         Returns:
             Dict[str, Dict[str, Any]]: Attribute schemas that are available
                 for entered entity type.
-        """
 
+        """
         return self._connection.get_attributes_for_type(entity_type)
 
     def get_entity_by_id(self, entity_id):
@@ -149,8 +150,8 @@ class EntityHub(object):
 
         Returns:
             Union[BaseEntity, None]: Entity object or None.
-        """
 
+        """
         return self._entities_by_id.get(entity_id)
 
     def get_folder_by_id(self, entity_id, allow_query=True):
@@ -163,8 +164,8 @@ class EntityHub(object):
 
         Returns:
             Union[FolderEntity, None]: Object of folder or 'None'.
-        """
 
+        """
         if allow_query:
             return self.get_or_query_entity_by_id(entity_id, ["folder"])
         return self._entities_by_id.get(entity_id)
@@ -179,8 +180,8 @@ class EntityHub(object):
 
         Returns:
            Union[TaskEntity, None]: Object of folder or 'None'.
-        """
 
+        """
         if allow_query:
             return self.get_or_query_entity_by_id(entity_id, ["task"])
         return self._entities_by_id.get(entity_id)
@@ -195,8 +196,8 @@ class EntityHub(object):
             entity_id (str): Entity id.
             entity_types (Iterable[str]): Possible entity types that can the id
                 represent. e.g. '["folder", "project"]'
-        """
 
+        """
         existing_entity = self._entities_by_id.get(entity_id)
         if existing_entity is not None:
             return existing_entity
@@ -246,8 +247,8 @@ class EntityHub(object):
 
         Returns:
             Iterator[BaseEntity]: All queried/created entities cached in hub.
-        """
 
+        """
         for entity in self._entities_by_id.values():
             yield entity
 
@@ -273,8 +274,8 @@ class EntityHub(object):
 
         Returns:
             FolderEntity: Added folder entity.
-        """
 
+        """
         folder_entity = FolderEntity(
             *args, **kwargs, created=created, entity_hub=self
         )
@@ -301,8 +302,8 @@ class EntityHub(object):
 
         Returns:
             TaskEntity: Added task entity.
-        """
 
+        """
         task_entity = TaskEntity(
             *args, **kwargs, created=created, entity_hub=self
         )
@@ -317,8 +318,8 @@ class EntityHub(object):
 
         Returns:
             FolderEntity: Added folder entity.
-        """
 
+        """
         folder_entity = FolderEntity.from_entity_data(folder, entity_hub=self)
         self.add_entity(folder_entity)
         return folder_entity
@@ -331,8 +332,8 @@ class EntityHub(object):
 
         Returns:
             TaskEntity: Added task entity.
-        """
 
+        """
         task_entity = TaskEntity.from_entity_data(task, entity_hub=self)
         self.add_entity(task_entity)
         return task_entity
@@ -342,8 +343,8 @@ class EntityHub(object):
 
         Args:
             entity (BaseEntity): Entity that should be added to hub's cache.
-        """
 
+        """
         self._entities_by_id[entity.id] = entity
         parent_children = self._entities_by_parent_id[entity.parent_id]
         if entity not in parent_children:
@@ -363,8 +364,8 @@ class EntityHub(object):
 
         The path cache is always propagated from top to bottom so if an entity
         has not cached path it means that any children can't have it cached.
-        """
 
+        """
         if self._path_reset_queue is not None:
             self._path_reset_queue.append(folder_id)
             return
@@ -564,8 +565,8 @@ class EntityHub(object):
 
         Raises:
             ValueError: When project was not found on server.
-        """
 
+        """
         project_name = self.project_name
         project = self._connection.get_project(
             project_name,
@@ -604,7 +605,6 @@ class EntityHub(object):
 
     def query_entities_from_server(self):
         """Query whole project at once."""
-
         project_entity = self.fill_project_from_server()
 
         folder_fields = self._get_folder_fields()
@@ -738,8 +738,8 @@ class EntityHub(object):
                 in project changes.
             post_changes (dict[str, Any]): An object where post changes will
                 be stored.
-        """
 
+        """
         if changes_key not in project_changes:
             return
 
@@ -775,8 +775,8 @@ class EntityHub(object):
         Returns:
             dict[str, Any]: Changes that will be committed after hierarchy
                 changes.
-        """
 
+        """
         project_changes = self.project_entity.changes
 
         post_changes = {}
@@ -801,10 +801,10 @@ class EntityHub(object):
     def commit_changes(self):
         """Commit any changes that happened on entities.
 
-        Todos:
+        Todo:
             Use Operations Session instead of known operations body.
-        """
 
+        """
         post_project_changes = self._pre_commit_project()
         self.project_entity.lock()
 
@@ -916,6 +916,7 @@ class Attributes(object):
         attrib_keys (Iterable[str]): Keys that are available in attribs of the
             entity.
         values (Union[None, Dict[str, Any]]): Values of attributes.
+
     """
 
     def __init__(self, attrib_keys, values=UNKNOWN_VALUE):
@@ -957,8 +958,8 @@ class Attributes(object):
             key (str): Attribute name.
             default (Any): Default value to return when attribute was not
                 found.
-        """
 
+        """
         attribute = self._attributes.get(key)
         if attribute is None:
             return default
@@ -970,8 +971,8 @@ class Attributes(object):
         Args:
             key (str): Attribute name.
             value (Any): New value of the attribute.
-        """
 
+        """
         self[key] = value
 
     def get_attribute(self, key):
@@ -985,8 +986,8 @@ class Attributes(object):
 
         Raises:
             KeyError: When attribute is not available.
-        """
 
+        """
         return self._attributes[key]
 
     def lock(self):
@@ -999,8 +1000,8 @@ class Attributes(object):
 
         Returns:
             Dict[str, Any]: Key mapping with new values.
-        """
 
+        """
         return {
             attr_key: attribute.value
             for attr_key, attribute in self._attributes.items()
@@ -1045,6 +1046,7 @@ class BaseEntity(object):
             the entity.
         created (Optional[bool]): Entity is new. When 'None' is passed the
             value is defined based on value of 'entity_id'.
+
     """
 
     def __init__(
@@ -1124,8 +1126,8 @@ class BaseEntity(object):
 
         Returns:
             str: Entity id.
-        """
 
+        """
         return self._entity_id
 
     @property
@@ -1143,8 +1145,8 @@ class BaseEntity(object):
         Returns:
             Attributes: Attributes object handling changes and values of
                 attributes on entity.
-        """
 
+        """
         return self._attribs
 
     @property
@@ -1156,8 +1158,8 @@ class BaseEntity(object):
 
         Returns:
             Dict[str, Any]: Custom data on entity.
-        """
 
+        """
         return self._data
 
     @property
@@ -1166,8 +1168,8 @@ class BaseEntity(object):
 
         Returns:
             str: Name of project under which entity lives.
-        """
 
+        """
         return self._entity_hub.project_name
 
     @property
@@ -1177,8 +1179,8 @@ class BaseEntity(object):
 
         Returns:
             Literal[project, folder, task]: Entity type.
-        """
 
+        """
         pass
 
     @property
@@ -1188,8 +1190,8 @@ class BaseEntity(object):
 
         Returns:
             Iterable[str]: Possible entity types of parent.
-        """
 
+        """
         pass
 
     @property
@@ -1200,8 +1202,8 @@ class BaseEntity(object):
         Returns:
             Union[Dict[str, Any], None]: All values that have changed on
                 entity. New entity must return None.
-        """
 
+        """
         pass
 
     @classmethod
@@ -1215,8 +1217,8 @@ class BaseEntity(object):
 
         Returns:
             BaseEntity: Object of the class.
-        """
 
+        """
         pass
 
     @abstractmethod
@@ -1225,8 +1227,8 @@ class BaseEntity(object):
 
         Returns:
             Dict[str, Any]: Entity data.
-        """
 
+        """
         pass
 
     @property
@@ -1237,8 +1239,8 @@ class BaseEntity(object):
 
         Returns:
             bool: Entity is immutable for hierarchy changes.
-        """
 
+        """
         if self._immutable_for_hierarchy_cache is not None:
             return self._immutable_for_hierarchy_cache
 
@@ -1265,8 +1267,8 @@ class BaseEntity(object):
         Returns:
             Union[bool, None]: Bool to explicitly telling if is immutable or
                 not otherwise None.
-        """
 
+        """
         return None
 
     @property
@@ -1281,8 +1283,8 @@ class BaseEntity(object):
         Args:
             bottom_to_top (bool): Reset cache from top hierarchy to bottom or
                 from bottom hierarchy to top.
-        """
 
+        """
         self._immutable_for_hierarchy_cache = None
         self._entity_hub.reset_immutable_for_hierarchy_cache(
             self.id, bottom_to_top
@@ -1293,8 +1295,8 @@ class BaseEntity(object):
 
         Returns:
             Dict[str, Any]: Changes on entity. Key and it's new value.
-        """
 
+        """
         changes = {}
         if self._orig_name != self._name:
             changes["name"] = self._name
@@ -1322,7 +1324,6 @@ class BaseEntity(object):
 
     def lock(self):
         """Lock entity as 'saved' so all changes are discarded."""
-
         self._orig_parent_id = self._parent_id
         self._orig_name = self._name
         self._orig_data = copy.deepcopy(self._data)
@@ -1348,8 +1349,8 @@ class BaseEntity(object):
 
         Returns:
             Union[str, None]: Id of parent entity or none if is not set.
-        """
 
+        """
         return self._parent_id
 
     def set_parent_id(self, parent_id):
@@ -1361,8 +1362,8 @@ class BaseEntity(object):
         Raises:
             ValueError: If parent was not found by id.
             TypeError: If validation of parent does not pass.
-        """
 
+        """
         if parent_id != self._parent_id:
             orig_parent_id = self._parent_id
             self._parent_id = parent_id
@@ -1377,8 +1378,8 @@ class BaseEntity(object):
 
         Returns:
             Union[BaseEntity, None]: Parent object.
-        """
 
+        """
         parent = self._entity_hub.get_entity_by_id(self._parent_id)
         if parent is not None:
             return parent
@@ -1401,8 +1402,8 @@ class BaseEntity(object):
 
         Raises:
             TypeError: If validation of parent does not pass.
+            
         """
-
         parent_id = None
         if parent is not None:
             parent_id = parent.id
@@ -1421,8 +1422,8 @@ class BaseEntity(object):
 
         Returns:
             Union[List[str], Type[UNKNOWN_VALUE]]: Children iterator.
-        """
 
+        """
         if self._children_ids is UNKNOWN_VALUE:
             if not allow_query:
                 return self._children_ids
@@ -1436,8 +1437,8 @@ class BaseEntity(object):
 
         Returns:
             Union[List[BaseEntity], Type[UNKNOWN_VALUE]]: Children iterator.
-        """
 
+        """
         if self._children_ids is UNKNOWN_VALUE:
             if not allow_query:
                 return self._children_ids
@@ -1458,8 +1459,8 @@ class BaseEntity(object):
 
         Raises:
             TypeError: When child object has invalid type to be children.
-        """
 
+        """
         child_id = child
         if isinstance(child_id, BaseEntity):
             child_id = child.id
@@ -1476,8 +1477,8 @@ class BaseEntity(object):
 
         Args:
             child (Union[str, BaseEntity]): Child object or child id to remove.
-        """
 
+        """
         child_id = child
         if isinstance(child_id, BaseEntity):
             child_id = child.id
@@ -1491,8 +1492,8 @@ class BaseEntity(object):
 
         Returns:
             Union[str, None]: Id of parent entity or none if is not set.
-        """
 
+        """
         return self._thumbnail_id
 
     def set_thumbnail_id(self, thumbnail_id):
@@ -1500,8 +1501,8 @@ class BaseEntity(object):
 
         Args:
             thumbnail_id (Union[str, None]): Id of thumbnail for entity.
-        """
 
+        """
         self._thumbnail_id = thumbnail_id
 
     thumbnail_id = property(get_thumbnail_id, set_thumbnail_id)
@@ -1512,8 +1513,8 @@ class BaseEntity(object):
 
         Returns:
             bool: Entity is newly created.
-        """
 
+        """
         return self._created
 
     def fill_children_ids(self, children_ids):
@@ -1521,8 +1522,8 @@ class BaseEntity(object):
 
         Warning:
             This is not an api call but is called from entity hub.
-        """
 
+        """
         self._children_ids = set(children_ids)
 
 
@@ -1539,8 +1540,8 @@ class ProjectStatus:
         index (Optional[int]): Index of the status.
         project_statuses (Optional[_ProjectStatuses]): Project statuses
             wrapper.
-    """
 
+    """
     valid_states = ("not_started", "in_progress", "done", "blocked")
     color_regex = re.compile(r"#([a-f0-9]{6})$")
     default_state = "in_progress"
@@ -1610,8 +1611,8 @@ class ProjectStatus:
         """Lock status.
 
         Changes were commited and current values are now the original values.
-        """
 
+        """
         self._is_new = False
         self._original_name = self.name
         self._original_short_name = self.short_name
@@ -1629,8 +1630,8 @@ class ProjectStatus:
 
         Returns:
             str: Slugified name.
-        """
 
+        """
         return slugify_string(name.lower())
 
     def get_project_statuses(self):
@@ -1638,8 +1639,8 @@ class ProjectStatus:
 
         Returns:
             _ProjectStatuses: Project statuses object.
-        """
 
+        """
         return self._project_statuses
 
     def set_project_statuses(self, project_statuses):
@@ -1647,8 +1648,8 @@ class ProjectStatus:
 
         Args:
             project_statuses (_ProjectStatuses): Project statuses object.
-        """
 
+        """
         self._project_statuses = project_statuses
 
     def unset_project_statuses(self, project_statuses):
@@ -1656,8 +1657,8 @@ class ProjectStatus:
 
         Args:
             project_statuses (_ProjectStatuses): Project statuses object.
-        """
 
+        """
         if self._project_statuses is project_statuses:
             self._project_statuses = None
             self._index = None
@@ -1668,8 +1669,8 @@ class ProjectStatus:
 
         Returns:
             bool: Status has changed.
-        """
 
+        """
         return (
             self._is_new
             or self._original_name != self._name
@@ -1682,7 +1683,6 @@ class ProjectStatus:
 
     def delete(self):
         """Remove status from project statuses object."""
-
         if self._project_statuses is not None:
             self._project_statuses.remove(self)
 
@@ -1692,8 +1692,8 @@ class ProjectStatus:
         Returns:
             Union[int, None]: Index of status or None if status is not under
                 project.
-        """
 
+        """
         return self._index
 
     def set_index(self, index, **kwargs):
@@ -1702,8 +1702,8 @@ class ProjectStatus:
         Returns:
             Union[int, None]: Index of status or None if status is not under
                 project.
-        """
 
+        """
         if kwargs.get("from_parent"):
             self._index = index
         else:
@@ -1714,8 +1714,8 @@ class ProjectStatus:
 
         Returns:
             str: Status name.
-        """
 
+        """
         return self._name
 
     def set_name(self, name):
@@ -1723,8 +1723,8 @@ class ProjectStatus:
 
         Args:
             name (str): New status name.
-        """
 
+        """
         if not isinstance(name, six.string_types):
             raise TypeError("Name must be a string.")
         if name == self._name:
@@ -1737,8 +1737,8 @@ class ProjectStatus:
 
         Returns:
             str: Status short name.
-        """
 
+        """
         return self._short_name
 
     def set_short_name(self, short_name):
@@ -1746,8 +1746,8 @@ class ProjectStatus:
 
         Args:
             short_name (str): New status short name. 3 letters tops.
-        """
 
+        """
         if not isinstance(short_name, six.string_types):
             raise TypeError("Short name must be a string.")
         self._short_name = short_name
@@ -1757,8 +1757,8 @@ class ProjectStatus:
 
         Returns:
             str: Name of the icon.
-        """
 
+        """
         return self._icon
 
     def set_icon(self, icon):
@@ -1766,8 +1766,8 @@ class ProjectStatus:
 
         Args:
             icon (str): Name of the icon.
-        """
 
+        """
         if icon is None:
             icon = ""
         if not isinstance(icon, six.string_types):
@@ -1783,8 +1783,8 @@ class ProjectStatus:
 
         Returns:
             str: Slugified and lower status name.
-        """
 
+        """
         if self._slugified_name is None:
             self._slugified_name = self.slugify_name(self.name)
         return self._slugified_name
@@ -1795,8 +1795,8 @@ class ProjectStatus:
         Return:
             Literal[not_started, in_progress, done, blocked]: General
                 state of status.
-        """
 
+        """
         return self._state
 
     def set_state(self, state):
@@ -1805,8 +1805,8 @@ class ProjectStatus:
         Args:
             state (Literal[not_started, in_progress, done, blocked]): General
                 state of status.
-        """
 
+        """
         if state not in self.valid_states:
             raise ValueError("Invalid state '{}'".format(str(state)))
         self._state = state
@@ -1816,8 +1816,8 @@ class ProjectStatus:
 
         Returns:
             str: Status color.
-        """
 
+        """
         return self._color
 
     def set_color(self, color):
@@ -1825,8 +1825,8 @@ class ProjectStatus:
 
         Args:
             color (str): Color in hex format. Example: '#ff0000'.
-        """
 
+        """
         if not isinstance(color, six.string_types):
             raise TypeError(
                 "Color must be string got '{}'".format(type(color)))
@@ -1851,8 +1851,8 @@ class ProjectStatus:
 
         Args:
             other (ProjectStatus): Other status to validate.
-        """
 
+        """
         o_project_statuses = other.project_statuses
         m_project_statuses = self.project_statuses
         if o_project_statuses is None and m_project_statuses is None:
@@ -1878,8 +1878,8 @@ class ProjectStatus:
 
         Args:
             other (ProjectStatus): Status to move before.
-        """
 
+        """
         self._validate_other_p_statuses(other)
         self._project_statuses.set_status_index(self, other.index)
 
@@ -1888,8 +1888,8 @@ class ProjectStatus:
 
         Args:
             other (ProjectStatus): Status to move after.
-        """
 
+        """
         self._validate_other_p_statuses(other)
         self._project_statuses.set_status_index(self, other.index + 1)
 
@@ -1898,8 +1898,8 @@ class ProjectStatus:
 
         Returns:
             dict[str, str]: Status data.
-        """
 
+        """
         output = {
             "name": self.name,
             "shortName": self.short_name,
@@ -1924,8 +1924,8 @@ class ProjectStatus:
             index (Optional[int]): Status index.
             project_statuses (Optional[ProjectStatuses]): Project statuses
                 object which wraps the status for a project.
-        """
 
+        """
         return cls(
             data["name"],
             data.get("shortName", data.get("short_name")),
@@ -1946,10 +1946,10 @@ class _ProjectStatuses:
         statuses receive them by one of the getter methods and change their
         values.
 
-    Todos:
+    Todo:
         Validate if statuses are duplicated.
-    """
 
+    """
     def __init__(self, statuses):
         self._statuses = [
             ProjectStatus.from_data(status, idx, self)
@@ -1966,8 +1966,8 @@ class _ProjectStatuses:
 
         Yields:
             ProjectStatus: Project status.
-        """
 
+        """
         for status in self._statuses:
             yield status
 
@@ -1991,8 +1991,8 @@ class _ProjectStatuses:
 
         Returns:
             ProjectStatus: Created project status.
-        """
 
+        """
         status = ProjectStatus(
             name, short_name, state, icon, color, is_new=True
         )
@@ -2003,8 +2003,8 @@ class _ProjectStatuses:
         """Lock statuses.
 
         Changes were commited and current values are now the original values.
-        """
 
+        """
         self._orig_status_length = len(self._statuses)
         self._set_called = False
         for status in self._statuses:
@@ -2012,7 +2012,6 @@ class _ProjectStatuses:
 
     def to_data(self):
         """Convert to project statuses data."""
-
         return [
             status.to_data()
             for status in self._statuses
@@ -2025,8 +2024,8 @@ class _ProjectStatuses:
 
         Args:
             statuses (list[dict[str, str]]): List of statuses data.
-        """
 
+        """
         self._set_called = True
         self._statuses = [
             ProjectStatus.from_data(status, idx, self)
@@ -2039,8 +2038,8 @@ class _ProjectStatuses:
 
         Returns:
             bool: True if statuses changed, False otherwise.
-        """
 
+        """
         if self._set_called:
             return True
 
@@ -2063,8 +2062,8 @@ class _ProjectStatuses:
 
         Returns:
             Union[ProjectStatus, Any]: Status or default value.
-        """
 
+        """
         return next(
             (
                 status
@@ -2089,8 +2088,8 @@ class _ProjectStatuses:
         Raises:
             ValueError: If status is not found and default value is not
                 defined.
-        """
 
+        """
         output = next(
             (
                 idx
@@ -2114,8 +2113,8 @@ class _ProjectStatuses:
 
         Returns:
             Union[ProjectStatus, None]: Status or None if not found.
-        """
 
+        """
         slugified_name = ProjectStatus.slugify_name(name)
         return next(
             (
@@ -2136,8 +2135,8 @@ class _ProjectStatuses:
 
         Returns:
             ProjectStatus: Removed status.
-        """
 
+        """
         matching_status = self.get(name)
         if matching_status is None:
             if ignore_missing:
@@ -2156,8 +2155,8 @@ class _ProjectStatuses:
 
         Returns:
             Union[ProjectStatus, None]: Removed status.
-        """
 
+        """
         index = self.index(status, default=None)
         if index is None:
             if ignore_missing:
@@ -2174,8 +2173,8 @@ class _ProjectStatuses:
 
         Returns:
             ProjectStatus: Removed status.
-        """
 
+        """
         status = self._statuses.pop(index)
         status.unset_project_statuses(self)
         for st in self._statuses[index:]:
@@ -2192,8 +2191,8 @@ class _ProjectStatuses:
 
         Returns:
             ProjectStatus: Inserted status.
-        """
 
+        """
         if not isinstance(status, ProjectStatus):
             status = ProjectStatus.from_data(status)
 
@@ -2227,8 +2226,8 @@ class _ProjectStatuses:
 
         Returns:
             ProjectStatus: Inserted status.
-        """
 
+        """
         return self.insert(len(self._statuses), status)
 
     def set_status_index(self, status, index):
@@ -2237,8 +2236,8 @@ class _ProjectStatuses:
         Args:
             status (ProjectStatus): Status to set index.
             index (int): New status index.
-        """
 
+        """
         return self.insert(index, status)
 
 
