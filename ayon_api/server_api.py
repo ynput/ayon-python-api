@@ -1,3 +1,8 @@
+"""Server API.
+
+Provides access to server API.
+
+"""
 import os
 import re
 import io
@@ -223,6 +228,8 @@ class RestApiResponse(object):
 
 
 class GraphQlResponse:
+    """Graphql response."""
+
     def __init__(self, data):
         self.data = data
         self.errors = data.get("errors")
@@ -282,8 +289,8 @@ class _AsUserStack:
         >>> stack.set_default_username("DefaultName")
         >>> print(stack.username)
         DefaultName
-    """
 
+    """
     def __init__(self):
         self._users_by_id = {}
         self._user_ids = []
@@ -360,14 +367,15 @@ class ServerAPI(object):
         sender (Optional[str]): Sender of requests. Used in server logs and
             propagated into events.
         ssl_verify (Union[bool, str, None]): Verify SSL certificate
-            Looks for env variable value 'AYON_CA_FILE' by default. If not
+            Looks for env variable value ``AYON_CA_FILE`` by default. If not
             available then 'True' is used.
         cert (Optional[str]): Path to certificate file. Looks for env
-            variable value 'AYON_CERT_FILE' by default.
+            variable value ``AYON_CERT_FILE`` by default.
         create_session (Optional[bool]): Create session for connection if
             token is available. Default is True.
         timeout (Optional[float]): Timeout for requests.
         max_retries (Optional[int]): Number of retries for requests.
+
     """
     _default_max_retries = 3
     # 1 MB chunk by default
@@ -479,8 +487,8 @@ class ServerAPI(object):
 
         Returns:
             bool: Current state of ssl verification.
-        """
 
+        """
         return self._ssl_verify
 
     def set_ssl_verify(self, ssl_verify):
@@ -489,8 +497,8 @@ class ServerAPI(object):
         Args:
             ssl_verify (Union[bool, str, None]): Enabled/disable
                 ssl verification, can be a path to file.
-        """
 
+        """
         if self._ssl_verify == ssl_verify:
             return
         self._ssl_verify = ssl_verify
@@ -502,8 +510,8 @@ class ServerAPI(object):
 
         Returns:
             Union[str, None]: Path to cert file.
-        """
 
+        """
         return self._cert
 
     def set_cert(self, cert):
@@ -511,8 +519,8 @@ class ServerAPI(object):
 
         Args:
             cert (Union[str, None]): Path to cert file.
-        """
 
+        """
         if cert == self._cert:
             return
         self._cert = cert
@@ -530,8 +538,8 @@ class ServerAPI(object):
 
         Returns:
             float: Timeout value in seconds.
-        """
 
+        """
         return get_default_timeout()
 
     @classmethod
@@ -544,8 +552,8 @@ class ServerAPI(object):
 
         Returns:
             int: Max retries value.
-        """
 
+        """
         try:
             return int(os.environ.get(SERVER_RETRIES_ENV_KEY))
         except (ValueError, TypeError):
@@ -558,8 +566,8 @@ class ServerAPI(object):
 
         Returns:
             float: Timeout value in seconds.
-        """
 
+        """
         return self._timeout
 
     def set_timeout(self, timeout):
@@ -567,8 +575,8 @@ class ServerAPI(object):
 
         Args:
             timeout (Union[float, None]): Timeout value in seconds.
-        """
 
+        """
         if timeout is None:
             timeout = self.get_default_timeout()
         self._timeout = float(timeout)
@@ -578,8 +586,8 @@ class ServerAPI(object):
 
         Returns:
             int: Max retries value.
-        """
 
+        """
         return self._max_retries
 
     def set_max_retries(self, max_retries):
@@ -587,8 +595,8 @@ class ServerAPI(object):
 
         Args:
             max_retries (Union[int, None]): Max retries value.
-        """
 
+        """
         if max_retries is None:
             max_retries = self.get_default_max_retries()
         self._max_retries = int(max_retries)
@@ -602,8 +610,8 @@ class ServerAPI(object):
 
         Returns:
             Union[str, None]: Token string or None if not authorized yet.
-        """
 
+        """
         return self._access_token
 
     def get_site_id(self):
@@ -614,8 +622,8 @@ class ServerAPI(object):
 
         Returns:
             Union[str, None]: Site id value or None if not filled.
-        """
 
+        """
         return self._site_id
 
     def set_site_id(self, site_id):
@@ -626,8 +634,8 @@ class ServerAPI(object):
 
         Args:
             site_id (Union[str, None]): Site id value, or 'None' to unset.
-        """
 
+        """
         if self._site_id == site_id:
             return
         self._site_id = site_id
@@ -643,8 +651,8 @@ class ServerAPI(object):
 
         Returns:
             str: Client version string used in connection.
-        """
 
+        """
         return self._client_version
 
     def set_client_version(self, client_version):
@@ -654,8 +662,8 @@ class ServerAPI(object):
 
         Args:
             client_version (Union[str, None]): Client version string.
-        """
 
+        """
         if self._client_version == client_version:
             return
 
@@ -669,8 +677,8 @@ class ServerAPI(object):
 
         Returns:
             Union[str, None]: name of variant or None.
-        """
 
+        """
         return self._default_settings_variant
 
     def set_default_settings_variant(self, variant):
@@ -683,8 +691,8 @@ class ServerAPI(object):
         Args:
             variant (str): Settings variant name. It is possible to use
                 'production', 'staging' or name of dev bundle.
-        """
 
+        """
         self._default_settings_variant = variant
 
     default_settings_variant = property(
@@ -697,8 +705,8 @@ class ServerAPI(object):
 
         Returns:
             Union[str, None]: Sender name or None.
-        """
 
+        """
         return self._sender
 
     def set_sender(self, sender):
@@ -706,8 +714,8 @@ class ServerAPI(object):
 
         Args:
             sender (Union[str, None]): Sender name or None.
-        """
 
+        """
         if sender == self._sender:
             return
         self._sender = sender
@@ -720,8 +728,8 @@ class ServerAPI(object):
 
         Returns:
             Union[str, None]: Username if any was filled.
-        """
 
+        """
         return self._as_user_stack.get_default_username()
 
     def set_default_service_username(self, username=None):
@@ -737,8 +745,8 @@ class ServerAPI(object):
         Raises:
             ValueError: When connection is not yet authenticated or api key
                 is not service token.
-        """
 
+        """
         current_username = self._as_user_stack.get_default_username()
         if current_username == username:
             return
@@ -769,8 +777,8 @@ class ServerAPI(object):
         Raises:
             ValueError: When connection is not yet authenticated or api key
                 is not service token.
-        """
 
+        """
         if not self.has_valid_token:
             raise ValueError(
                 "Authentication of connection did not happen yet."
@@ -845,15 +853,15 @@ class ServerAPI(object):
         """Create a connection session.
 
         Session helps to keep connection with server without
-            need to reconnect on each call.
+        need to reconnect on each call.
 
         Args:
             ignore_existing (bool): If session already exists,
                 ignore creation.
             force (bool): If session already exists, close it and
                 create new.
-        """
 
+        """
         if force and self._session is not None:
             self.close_session()
 
@@ -917,8 +925,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Information from server.
-        """
 
+        """
         response = self.get("info")
         response.raise_for_status()
         return response.data
@@ -930,8 +938,8 @@ class ServerAPI(object):
 
         Returns:
             str: Server version.
-        """
 
+        """
         if self._server_version is None:
             self._server_version = self.get_info()["version"]
         return self._server_version
@@ -946,8 +954,8 @@ class ServerAPI(object):
         Returns:
             Tuple[int, int, int, Union[str, None], Union[str, None]]: Server
                 version.
-        """
 
+        """
         if self._server_version_tuple is None:
             re_match = VERSION_REGEX.fullmatch(
                 self.get_server_version())
@@ -965,7 +973,7 @@ class ServerAPI(object):
 
     @property
     def graphql_allows_data_in_query(self):
-        """GraphlQl query can support 'data' field.
+        """Graphql query can support 'data' field.
 
         This applies only to project hierarchy entities 'project', 'folder',
         'task', 'product', 'version' and 'representation'. Others like 'user'
@@ -973,8 +981,8 @@ class ServerAPI(object):
 
         Returns:
             bool: True if server supports 'data' field in GraphQl query.
-        """
 
+        """
         if self._graphql_allows_data_in_query is None:
             major, minor, patch, _, _ = self.server_version_tuple
             graphql_allows_data_in_query = True
@@ -1016,8 +1024,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried users.
-        """
 
+        """
         filters = {}
         if usernames is not None:
             usernames = set(usernames)
@@ -1089,8 +1097,8 @@ class ServerAPI(object):
 
         Raises:
             AuthenticationError: Login failed.
-        """
 
+        """
         if self.has_valid_token:
             try:
                 user_info = self.get_user()
@@ -1306,8 +1314,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Full event data.
-        """
 
+        """
         response = self.get("events/{}".format(event_id))
         response.raise_for_status()
         return response.data
@@ -1348,8 +1356,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Available events matching filters.
-        """
 
+        """
         filters = {}
         if topics is not None:
             topics = set(topics)
@@ -1463,7 +1471,7 @@ class ServerAPI(object):
     ):
         """Dispatch event to server.
 
-        Arg:
+        Args:
             topic (str): Event topic used for filtering of listeners.
             sender (Optional[str]): Sender of event.
             hash (Optional[str]): Event hash.
@@ -1482,8 +1490,8 @@ class ServerAPI(object):
 
         Returns:
             RestApiResponse: Response from server.
-        """
 
+        """
         if summary is None:
             summary = {}
         if payload is None:
@@ -1527,8 +1535,9 @@ class ServerAPI(object):
         at least one unfinished event with target topic, when set to 'True'.
         This helps when order of events matter and more than one process using
         the same target is running at the same time.
-        - Make sure the new event has updated status to '"finished"' status
-            when you're done with logic
+        
+        Make sure the new event has updated status to '"finished"' status
+        when you're done with logic
 
         Target topic should not clash with other processes/services.
 
@@ -1566,8 +1575,8 @@ class ServerAPI(object):
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
                 filters. Created event with 'target_topic'.
-        """
 
+        """
         kwargs = {
             "sourceTopic": source_topic,
             "targetTopic": target_topic,
@@ -1632,8 +1641,8 @@ class ServerAPI(object):
                 in single loop.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track download progress.
-        """
 
+        """
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
@@ -1673,8 +1682,8 @@ class ServerAPI(object):
 
         Yields:
             bytes: Chunk of file.
+    
         """
-
         # Get size of file
         file_stream.seek(0, io.SEEK_END)
         size = file_stream.tell()
@@ -1698,7 +1707,7 @@ class ServerAPI(object):
         chunk_size=None,
         **kwargs
     ):
-        """
+        """Upload file to server.
 
         Args:
             url (str): Url where file will be uploaded.
@@ -1714,8 +1723,8 @@ class ServerAPI(object):
 
         Returns:
             RestApiResponse: Server response.
-        """
 
+        """
         if request_type is None:
             request_type = RequestTypes.put
 
@@ -1761,9 +1770,9 @@ class ServerAPI(object):
                 to request function.
 
         Returns:
-            requests.Response: Response object.
+            requests.Response: Response object
+        
         """
-
         if endpoint.startswith(self._base_url):
             url = endpoint
         else:
@@ -1795,9 +1804,9 @@ class ServerAPI(object):
         """Trigger server restart.
 
         Restart may be required when a change of specific value happened on
-            server.
-        """
+        server.
 
+        """
         result = self.post("system/restart")
         if result.status_code != 204:
             # TODO add better exception
@@ -1813,8 +1822,8 @@ class ServerAPI(object):
 
         Returns:
             GraphQlResponse: Response from server.
-        """
 
+        """
         data = {"query": query, "variables": variables or {}}
         response = self._do_rest_request(
             RequestTypes.post,
@@ -1835,8 +1844,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Full server schema.
-        """
 
+        """
         url = "{}/openapi.json".format(self._base_url)
         response = self._do_rest_request(RequestTypes.get, url)
         if response:
@@ -1853,8 +1862,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Component schemas.
-        """
 
+        """
         server_schema = self.get_server_schema()
         return server_schema["components"]["schemas"]
 
@@ -1913,8 +1922,8 @@ class ServerAPI(object):
 
         Args:
             attribute_name (str): Name of attribute to remove.
-        """
 
+        """
         response = self.delete("attributes/{}".format(attribute_name))
         response.raise_for_status(
             "Attribute \"{}\" was not created/updated. {}".format(
@@ -1927,28 +1936,30 @@ class ServerAPI(object):
     def get_attributes_for_type(self, entity_type):
         """Get attribute schemas available for an entity type.
 
-        ```
-        # Example attribute schema
-        {
-            # Common
-            "type": "integer",
-            "title": "Clip Out",
-            "description": null,
-            "example": 1,
-            "default": 1,
-            # These can be filled based on value of 'type'
-            "gt": null,
-            "ge": null,
-            "lt": null,
-            "le": null,
-            "minLength": null,
-            "maxLength": null,
-            "minItems": null,
-            "maxItems": null,
-            "regex": null,
-            "enum": null
-        }
-        ```
+        Example::
+        
+            ```
+            # Example attribute schema
+            {
+                # Common
+                "type": "integer",
+                "title": "Clip Out",
+                "description": null,
+                "example": 1,
+                "default": 1,
+                # These can be filled based on value of 'type'
+                "gt": null,
+                "ge": null,
+                "lt": null,
+                "le": null,
+                "minLength": null,
+                "maxLength": null,
+                "minItems": null,
+                "maxItems": null,
+                "regex": null,
+                "enum": null
+            }
+            ```
 
         Args:
             entity_type (str): Entity type for which should be attributes
@@ -1957,6 +1968,7 @@ class ServerAPI(object):
         Returns:
             dict[str, dict[str, Any]]: Attribute schemas that are available
                 for entered entity type.
+
         """
         attributes = self._entity_type_attributes_cache.get(entity_type)
         if attributes is None:
@@ -1977,8 +1989,8 @@ class ServerAPI(object):
 
         Returns:
             set[str]: Attributes fields for entity type.
-        """
 
+        """
         attributes = self.get_attributes_for_type(entity_type)
         return {
             "attrib.{}".format(attr)
@@ -1995,8 +2007,8 @@ class ServerAPI(object):
 
         Returns:
             set[str]: Fields that should be queried from server.
-        """
 
+        """
         # Event does not have attributes
         if entity_type == "event":
             return set(DEFAULT_EVENT_FIELDS)
@@ -2058,8 +2070,8 @@ class ServerAPI(object):
         Args:
             details (Optional[bool]): Detailed data with information how
                 to get client code.
-        """
 
+        """
         endpoint = "addons"
         if details:
             endpoint += "?details=1"
@@ -2070,7 +2082,8 @@ class ServerAPI(object):
     def get_addon_url(self, addon_name, addon_version, *subpaths):
         """Calculate url to addon route.
 
-        Example:
+        Examples:
+
             >>> api = ServerAPI("https://your.url.com")
             >>> api.get_addon_url(
             ...     "example", "1.0.0", "private", "my.zip")
@@ -2084,8 +2097,8 @@ class ServerAPI(object):
 
         Returns:
             str: Final url.
-        """
 
+        """
         ending = ""
         if subpaths:
             ending = "/{}".format("/".join(subpaths))
@@ -2124,8 +2137,8 @@ class ServerAPI(object):
 
         Returns:
             str: Filepath to downloaded file.
-        """
 
+        """
         if not destination_filename:
             destination_filename = filename
         dst_filepath = os.path.join(destination_dir, destination_filename)
@@ -2157,8 +2170,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]:
-        """
 
+        """
         query_fields = [
             "{}={}".format(key, value)
             for key, value in (
@@ -2211,8 +2224,8 @@ class ServerAPI(object):
             file_size (int): File size.
             sources (Optional[list[dict[str, Any]]]): List of sources that
                 can be used to download file.
-        """
 
+        """
         body = {
             "filename": filename,
             "version": version,
@@ -2237,8 +2250,8 @@ class ServerAPI(object):
             filename (str): Installer filename.
             sources (list[dict[str, Any]]): List of sources that
                 can be used to download file. Fully replaces existing sources.
-        """
 
+        """
         response = self.patch(
             "desktop/installers/{}".format(filename),
             sources=sources
@@ -2250,8 +2263,8 @@ class ServerAPI(object):
 
         Args:
             filename (str): Installer filename.
-        """
 
+        """
         response = self.delete("desktop/installers/{}".format(filename))
         response.raise_for_status()
 
@@ -2270,8 +2283,8 @@ class ServerAPI(object):
             chunk_size (Optional[int]): Download chunk size.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track download progress.
-        """
 
+        """
         self.download_file(
             "desktop/installers/{}".format(filename),
             dst_filepath,
@@ -2290,8 +2303,8 @@ class ServerAPI(object):
 
         Returns:
             requests.Response: Response object.
-        """
 
+        """
         return self.upload_file(
             "desktop/installers/{}".format(dst_filename),
             src_filepath,
@@ -2310,7 +2323,8 @@ class ServerAPI(object):
         To download dependency package, use 'download_dependency_package'
         method and pass in 'filename'.
 
-        Example data structure:
+        Example data structure::
+
             {
                 "packages": [
                     {
@@ -2329,8 +2343,8 @@ class ServerAPI(object):
         Returns:
             dict[str, Any]: Information about dependency packages known for
                 server.
-        """
 
+        """
         endpoint = self._get_dependency_package_route()
         result = self.get(endpoint)
         result.raise_for_status()
@@ -2351,16 +2365,20 @@ class ServerAPI(object):
         """Create dependency package on server.
 
         The package will be created on a server, it is also required to upload
-        the package archive file (using 'upload_dependency_package').
+        the package archive file (using :meth:`upload_dependency_package`).
 
         Args:
             filename (str): Filename of dependency package.
             python_modules (dict[str, str]): Python modules in dependency
-                package.
-                '{"<module name>": "<module version>", ...}'
+                package::
+
+                    {"<module name>": "<module version>", ...}
+
             source_addons (dict[str, str]): Name of addons for which is
-                dependency package created.
-                '{"<addon name>": "<addon version>", ...}'
+                dependency package created::
+
+                    {"<addon name>": "<addon version>", ...}
+                    
             installer_version (str): Version of installer for which was
                 package created.
             checksum (str): Checksum of archive file where dependencies are.
@@ -2371,8 +2389,8 @@ class ServerAPI(object):
             platform_name (Optional[str]): Name of platform for which is
                 dependency package targeted. Default value is
                 current platform.
-        """
 
+        """
         post_body = {
             "filename": filename,
             "pythonModules": python_modules,
@@ -2398,8 +2416,8 @@ class ServerAPI(object):
             sources (list[dict[str, Any]]): Information about
                 sources from where it is possible to get file. Fully replaces
                 existing sources.
-        """
 
+        """
         response = self.patch(
             self._get_dependency_package_route(filename),
             sources=sources
@@ -2412,8 +2430,8 @@ class ServerAPI(object):
         Args:
             filename (str): Filename of dependency package.
             platform_name (Optional[str]): Deprecated.
-        """
 
+        """
         if platform_name is not None:
             warnings.warn(
                 (
@@ -2456,8 +2474,8 @@ class ServerAPI(object):
 
         Returns:
             str: Filepath to downloaded file.
-        """
 
+        """
         if platform_name is not None:
             warnings.warn(
                 (
@@ -2489,8 +2507,8 @@ class ServerAPI(object):
             platform_name (Optional[str]): Deprecated.
             progress (Optional[TransferProgress]): Object to keep track about
                 upload state.
-        """
 
+        """
         if platform_name is not None:
             warnings.warn(
                 (
@@ -2511,7 +2529,8 @@ class ServerAPI(object):
             create an event job which can be tracked (tracking part is not
             implemented yet).
 
-        Example output:
+        Example output::
+
             {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
 
         Args:
@@ -2521,8 +2540,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Response data from server.
-        """
 
+        """
         response = self.upload_file(
             "addons/install",
             src_filepath,
@@ -2534,7 +2553,8 @@ class ServerAPI(object):
     def get_bundles(self):
         """Server bundles with basic information.
 
-        Example output:
+        This is example output::
+        
             {
                 "bundles": [
                     {
@@ -2559,8 +2579,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Server bundles with basic information.
-        """
 
+        """
         response = self.get("bundles")
         response.raise_for_status()
         return response.data
@@ -2589,8 +2609,8 @@ class ServerAPI(object):
             is_production (Optional[bool]): Bundle will be marked as
                 production.
             is_staging (Optional[bool]): Bundle will be marked as staging.
-        """
 
+        """
         body = {
             "name": name,
             "installerVersion": installer_version,
@@ -2627,8 +2647,8 @@ class ServerAPI(object):
             is_production (Optional[bool]): Bundle will be marked as
                 production.
             is_staging (Optional[bool]): Bundle will be marked as staging.
-        """
 
+        """
         body = {
             key: value
             for key, value in (
@@ -2649,8 +2669,8 @@ class ServerAPI(object):
 
         Args:
             bundle_name (str): Name of bundle to delete.
-        """
 
+        """
         response = self.delete(
             "{}/{}".format("bundles", bundle_name)
         )
@@ -2660,7 +2680,8 @@ class ServerAPI(object):
     def get_project_anatomy_presets(self):
         """Anatomy presets available on server.
 
-        Content has basic information about presets. Example output:
+        Content has basic information about presets. Example output::
+
             [
                 {
                     "name": "netflix_VFX",
@@ -2675,8 +2696,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, str]]: Anatomy presets available on server.
-        """
 
+        """
         result = self.get("anatomy/presets")
         result.raise_for_status()
         return result.data.get("presets") or []
@@ -2692,8 +2713,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Anatomy preset values.
-        """
 
+        """
         if preset_name is None:
             preset_name = "_"
         result = self.get("anatomy/presets/{}".format(preset_name))
@@ -2713,8 +2734,8 @@ class ServerAPI(object):
 
         Returns:
              dict[str, dict[str, str]]: Root values by root name by site id.
-        """
 
+        """
         result = self.get("projects/{}/roots".format(project_name))
         result.raise_for_status()
         return result.data
@@ -2733,8 +2754,8 @@ class ServerAPI(object):
         Returns:
             dict[str, str]: Root values by root name or None if
                 site does not have overrides.
-        """
 
+        """
         if site_id is None:
             site_id = self.site_id
 
@@ -2759,8 +2780,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Schema of studio/project settings.
-        """
 
+        """
         args = tuple()
         if project_name:
             args = (project_name, )
@@ -2781,8 +2802,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Schema of site settings.
-        """
 
+        """
         result = self.get("addons/{}/{}/siteSettings/schema".format(
             addon_name, addon_version
         ))
@@ -2807,8 +2828,8 @@ class ServerAPI(object):
 
         Returns:
            dict[str, Any]: Addon settings.
-        """
 
+        """
         if variant is None:
             variant = self.default_settings_variant
 
@@ -2856,8 +2877,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Addon settings.
-        """
 
+        """
         if not use_site:
             site_id = None
         elif not site_id:
@@ -2913,8 +2934,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Addon settings.
-        """
 
+        """
         if project_name is None:
             return self.get_addon_studio_settings(
                 addon_name, addon_version, variant
@@ -2938,8 +2959,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Site settings.
-        """
 
+        """
         if site_id is None:
             site_id = self.site_id
 
@@ -2970,12 +2991,13 @@ class ServerAPI(object):
 
         Output contains addon settings and site settings in single dictionary.
 
-        TODOs:
+        Todos:
             - test how it behaves if there is not any bundle.
             - test how it behaves if there is not any production/staging
                 bundle.
 
-        Example output:
+        Example output::
+
             {
                 "addons": [
                     {
@@ -2989,8 +3011,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: All settings for single bundle.
-        """
 
+        """
         query_values = {
             key: value
             for key, value in (
@@ -3041,8 +3063,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Settings of all addons on server.
-        """
 
+        """
         output = self.get_bundle_settings(
             bundle_name=bundle_name,
             variant=variant,
@@ -3069,10 +3091,13 @@ class ServerAPI(object):
 
         Server returns information about used addon versions, so full output
         looks like:
+
+        ```json
             {
                 "settings": {...},
                 "addons": {...}
             }
+        ```
 
         The output can be limited to only values. To do so is 'only_values'
         argument which is by default set to 'True'. In that case output
@@ -3101,8 +3126,8 @@ class ServerAPI(object):
         Returns:
             dict[str, Any]: Settings of all addons on server for passed
                 project.
-        """
 
+        """
         if not project_name:
             raise ValueError("Project name must be passed.")
 
@@ -3153,8 +3178,8 @@ class ServerAPI(object):
                 any site overrides.
             only_values (Optional[bool]): Only settings values will be
                 returned. By default, is set to 'True'.
-        """
 
+        """
         if project_name is None:
             return self.get_addons_studio_settings(
                 bundle_name=bundle_name,
@@ -3190,8 +3215,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, str]]: List of secret entities.
-        """
 
+        """
         response = self.get("secrets")
         response.raise_for_status()
         return response.data
@@ -3210,8 +3235,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, str]: Secret entity data.
-        """
 
+        """
         response = self.get("secrets/{}".format(secret_name))
         response.raise_for_status()
         return response.data
@@ -3224,8 +3249,8 @@ class ServerAPI(object):
         Args:
             secret_name (str): Name of secret.
             secret_value (str): Value of secret.
-        """
 
+        """
         response = self.put(
             "secrets/{}".format(secret_name),
             name=secret_name,
@@ -3240,8 +3265,8 @@ class ServerAPI(object):
 
         Args:
             secret_name (str): Name of secret to delete.
-        """
 
+        """
         response = self.delete("secrets/{}".format(secret_name))
         response.raise_for_status()
         return response.data
@@ -3258,8 +3283,8 @@ class ServerAPI(object):
         Returns:
             Union[dict[str, Any], None]: Project entity data or 'None' if
                 project was not found.
-        """
 
+        """
         if not project_name:
             return None
 
@@ -3281,8 +3306,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Available projects.
-        """
 
+        """
         for project_name in self.get_project_names(active, library):
             project = self.get_rest_project(project_name)
             if project:
@@ -3299,8 +3324,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Received entity data.
-        """
 
+        """
         if not all((project_name, entity_type, entity_id)):
             return None
 
@@ -3342,8 +3367,8 @@ class ServerAPI(object):
 
         Returns:
             list[str]: List of available project names.
-        """
 
+        """
         query_keys = {}
         if active is not None:
             query_keys["active"] = "true" if active else "false"
@@ -3383,8 +3408,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried projects.
-        """
 
+        """
         if fields is None:
             use_rest = True
         else:
@@ -3429,8 +3454,8 @@ class ServerAPI(object):
         Returns:
             Union[dict[str, Any], None]: Project entity data or None
                 if project was not found.
-        """
 
+        """
         use_rest = True
         if fields is not None:
             use_rest = False
@@ -3503,8 +3528,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Response data from server.
-        """
 
+        """
         if folder_types:
             folder_types = ",".join(folder_types)
 
@@ -3589,8 +3614,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried folder entities.
-        """
 
+        """
         if not project_name:
             return
 
@@ -3725,8 +3750,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Folder entity data or None if was not found.
-        """
 
+        """
         folders = self.get_folders(
             project_name,
             folder_ids=[folder_id],
@@ -3760,8 +3785,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Folder entity data or None if was not found.
-        """
 
+        """
         folders = self.get_folders(
             project_name,
             folder_paths=[folder_path],
@@ -3797,8 +3822,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Folder entity data or None if was not found.
-        """
 
+        """
         folders = self.get_folders(
             project_name,
             folder_names=[folder_name],
@@ -3825,8 +3850,8 @@ class ServerAPI(object):
 
         Returns:
             set[str]: Folder ids that have at least one product.
-        """
 
+        """
         if folder_ids is not None:
             folder_ids = set(folder_ids)
             if not folder_ids:
@@ -3889,8 +3914,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried task entities.
-        """
 
+        """
         if not project_name:
             return
 
@@ -4005,8 +4030,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Task entity data or None if was not found.
-        """
 
+        """
         for task in self.get_tasks(
             project_name,
             folder_ids=[folder_id],
@@ -4038,8 +4063,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Task entity data or None if was not found.
-        """
 
+        """
         for task in self.get_tasks(
             project_name,
             task_ids=[task_id],
@@ -4116,8 +4141,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried product entities.
-        """
 
+        """
         if not project_name:
             return
 
@@ -4265,8 +4290,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Product entity data or None if was not found.
-        """
 
+        """
         products = self.get_products(
             project_name,
             product_ids=[product_id],
@@ -4300,8 +4325,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Product entity data or None if was not found.
-        """
 
+        """
         products = self.get_products(
             project_name,
             product_names=[product_name],
@@ -4325,8 +4350,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Product types information.
-        """
 
+        """
         if not fields:
             fields = self.get_default_fields_for_type("productType")
 
@@ -4348,8 +4373,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Product types information.
-        """
 
+        """
         if not fields:
             fields = self.get_default_fields_for_type("productType")
 
@@ -4375,8 +4400,8 @@ class ServerAPI(object):
 
         Returns:
             set[str]: Product type names.
-        """
 
+        """
         if project_name and product_ids:
             products = self.get_products(
                 project_name,
@@ -4440,8 +4465,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried version entities.
-        """
 
+        """
         if not fields:
             fields = self.get_default_fields_for_type("version")
         else:
@@ -4574,8 +4599,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
-       """
 
+        """
         versions = self.get_versions(
             project_name,
             version_ids=[version_id],
@@ -4610,8 +4635,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
-       """
 
+        """
         versions = self.get_versions(
             project_name,
             product_ids=[product_id],
@@ -4644,8 +4669,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
-       """
 
+        """
         versions = self.get_hero_versions(
             project_name,
             version_ids=[version_id],
@@ -4678,8 +4703,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
-       """
 
+        """
         versions = self.get_hero_versions(
             project_name,
             product_ids=[product_id],
@@ -4717,8 +4742,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
-       """
 
+        """
         return self.get_versions(
             project_name,
             version_ids=version_ids,
@@ -4752,8 +4777,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, dict[str, Any]]: Last versions by product id.
-        """
 
+        """
         if fields:
             fields = set(fields)
             fields.add("productId")
@@ -4793,8 +4818,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict[str, Any], None]: Queried version entity or None.
-        """
 
+        """
         versions = self.get_versions(
             project_name,
             product_ids=[product_id],
@@ -4831,8 +4856,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict[str, Any], None]: Queried version entity or None.
-        """
 
+        """
         if not folder_id:
             return None
 
@@ -4858,8 +4883,8 @@ class ServerAPI(object):
 
         Returns:
             bool: Version is latest or not.
-        """
 
+        """
         query = GraphQlQuery("VersionIsLatest")
         project_name_var = query.add_variable(
             "projectName", "String!", project_name
@@ -4946,8 +4971,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried representation entities.
-        """
 
+        """
         if not fields:
             fields = self.get_default_fields_for_type("representation")
         else:
@@ -5065,8 +5090,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict[str, Any], None]: Queried representation entity or None.
-        """
 
+        """
         representations = self.get_representations(
             project_name,
             representation_ids=[representation_id],
@@ -5099,8 +5124,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict[str, Any], None]: Queried representation entity or None.
-        """
 
+        """
         representations = self.get_representations(
             project_name,
             representation_names=[representation_name],
@@ -5125,8 +5150,8 @@ class ServerAPI(object):
         Returns:
             dict[str, RepresentationParents]: Parent entities by
                 representation id.
-        """
 
+        """
         if not representation_ids:
             return {}
 
@@ -5173,8 +5198,8 @@ class ServerAPI(object):
 
         Returns:
             RepresentationParents: Representation parent entities.
-        """
 
+        """
         if not representation_id:
             return None
 
@@ -5226,8 +5251,8 @@ class ServerAPI(object):
             >>> repre_ids = get_repre_ids_by_context_filters(
             ...     project_name, filters)
             >>> repres = get_representations(project_name, repre_ids)
-        """
 
+        """
         if not isinstance(context_filters, dict):
             raise TypeError(
                 "Expected 'dict' got {}".format(str(type(context_filters)))
@@ -5306,8 +5331,8 @@ class ServerAPI(object):
 
         Returns:
             Generator[dict[str, Any]]: Queried workfile info entites.
-        """
 
+        """
         filters = {"projectName": project_name}
         if task_ids is not None:
             task_ids = set(task_ids)
@@ -5386,8 +5411,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict[str, Any], None]: Workfile info entity or None.
-        """
 
+        """
         if not task_id or not path:
             return None
 
@@ -5417,8 +5442,8 @@ class ServerAPI(object):
 
         Returns:
             Union[dict[str, Any], None]: Workfile info entity or None.
-        """
 
+        """
         if not workfile_id:
             return None
 
@@ -5468,8 +5493,8 @@ class ServerAPI(object):
         Returns:
             ThumbnailContent: Thumbnail content wrapper. Does not have to be
                 valid.
-        """
 
+        """
         response = self.raw_get(
             "projects/{}/thumbnails/{}".format(
                 project_name,
@@ -5505,8 +5530,8 @@ class ServerAPI(object):
         Returns:
             ThumbnailContent: Thumbnail content wrapper. Does not have to be
                 valid.
-        """
 
+        """
         if thumbnail_id:
             return self.get_thumbnail_by_id(project_name, thumbnail_id)
 
@@ -5538,8 +5563,8 @@ class ServerAPI(object):
         Returns:
             Union[str, None]: Path to downloaded thumbnail or none if entity
                 does not have any (or if user does not have permissions).
-        """
 
+        """
         return self.get_thumbnail(
             project_name, "folder", folder_id, thumbnail_id
         )
@@ -5559,8 +5584,8 @@ class ServerAPI(object):
         Returns:
             Union[str, None]: Path to downloaded thumbnail or none if entity
                 does not have any (or if user does not have permissions).
-        """
 
+        """
         return self.get_thumbnail(
             project_name, "version", version_id, thumbnail_id
         )
@@ -5580,8 +5605,8 @@ class ServerAPI(object):
         Returns:
             Union[str, None]: Path to downloaded thumbnail or none if entity
                 does not have any (or if user does not have permissions).
-        """
 
+        """
         return self.get_thumbnail(
             project_name, "workfile", workfile_id, thumbnail_id
         )
@@ -5597,8 +5622,8 @@ class ServerAPI(object):
 
         Raises:
             ValueError: Mime type cannot be determined.
-        """
 
+        """
         ext = os.path.splitext(thumbnail_path)[-1].lower()
         if ext == ".png":
             return "image/png"
@@ -5623,8 +5648,8 @@ class ServerAPI(object):
 
         Raises:
             ValueError: When thumbnail source cannot be processed.
-        """
 
+        """
         if not os.path.exists(src_filepath):
             raise ValueError("Entered filepath does not exist.")
 
@@ -5659,8 +5684,8 @@ class ServerAPI(object):
 
         Raises:
             ValueError: When thumbnail source cannot be processed.
-        """
 
+        """
         if not os.path.exists(src_filepath):
             raise ValueError("Entered filepath does not exist.")
 
@@ -5704,8 +5729,9 @@ class ServerAPI(object):
 
         Returns:
             dict[str, Any]: Created project entity.
-        """
 
+
+        """
         if self.get_project(project_name):
             raise ValueError("Project with name \"{}\" already exists".format(
                 project_name
@@ -5774,9 +5800,10 @@ class ServerAPI(object):
             active (Optional[bool]): Change active state of a project.
             project_code (Optional[str]): Change project code. Not recommended
                 during production.
-            **changes: Other changed keys based on Rest API documentation.
-        """
+            
+        changes: Other changed keys based on Rest API documentation.
 
+        """
         changes.update({
             key: value
             for key, value in (
@@ -5807,8 +5834,8 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project name that will be removed.
-        """
 
+        """
         if not self.get_project(project_name):
             raise ValueError("Project with name \"{}\" was not found".format(
                 project_name
@@ -5833,8 +5860,8 @@ class ServerAPI(object):
 
         Returns:
             str: Full name of link type used for query from server.
-        """
 
+        """
         return "|".join([link_type_name, input_type, output_type])
 
     def get_link_types(self, project_name):
@@ -5856,8 +5883,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Link types available on project.
-        """
 
+        """
         response = self.get("projects/{}/links/types".format(project_name))
         response.raise_for_status()
         return response.data["types"]
@@ -5887,8 +5914,8 @@ class ServerAPI(object):
 
         Returns:
             Union[None, dict[str, Any]]: Link type information.
-        """
 
+        """
         full_type_name = self.get_full_link_type_name(
             link_type_name, input_type, output_type
         )
@@ -5914,8 +5941,8 @@ class ServerAPI(object):
 
         Raises:
             HTTPRequestError: Server error happened.
-        """
 
+        """
         if data is None:
             data = {}
         full_type_name = self.get_full_link_type_name(
@@ -5940,8 +5967,8 @@ class ServerAPI(object):
 
         Raises:
             HTTPRequestError: Server error happened.
-        """
 
+        """
         full_type_name = self.get_full_link_type_name(
             link_type_name, input_type, output_type
         )
@@ -5960,8 +5987,8 @@ class ServerAPI(object):
             input_type (str): Input entity type of link.
             output_type (str): Output entity type of link.
             data (Optional[dict[str, Any]]): Link type related data.
-        """
 
+        """
         link_type = self.get_link_type(
             project_name, link_type_name, input_type, output_type)
         if (
@@ -5987,7 +6014,8 @@ class ServerAPI(object):
 
         Link has a type which must already exists on a project.
 
-        Example output:
+        Example output::
+
             {
                 "id": "59a212c0d2e211eda0e20242ac120002"
             }
@@ -6007,8 +6035,8 @@ class ServerAPI(object):
 
         Raises:
             HTTPRequestError: Server error happened.
-        """
 
+        """
         full_link_type_name = self.get_full_link_type_name(
             link_type_name, input_type, output_type)
 
@@ -6049,8 +6077,8 @@ class ServerAPI(object):
 
         Raises:
             HTTPRequestError: Server error happened.
-        """
 
+        """
         response = self.delete(
             "projects/{}/links/{}".format(project_name, link_id)
         )
@@ -6071,8 +6099,8 @@ class ServerAPI(object):
 
         Returns:
             bool: Links are valid, and query from server can happen.
-        """
 
+        """
         if link_types is not None:
             link_types = set(link_types)
             if not link_types:
@@ -6106,7 +6134,7 @@ class ServerAPI(object):
     ):
         """Helper method to get links from server for entity types.
 
-        Example output:
+        Example output::
             {
                 "59a212c0d2e211eda0e20242ac120001": [
                     {
@@ -6138,8 +6166,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, list[dict[str, Any]]]: Link info by entity ids.
-        """
 
+        """
         if entity_type == "folder":
             query_func = folders_graphql_query
             id_filter_key = "folderIds"
@@ -6230,8 +6258,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, list[dict[str, Any]]]: Link info by folder ids.
-        """
 
+        """
         return self.get_entities_links(
             project_name, "folder", folder_ids, link_types, link_direction
         )
@@ -6254,8 +6282,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Link info of folder.
-        """
 
+        """
         return self.get_folders_links(
             project_name, [folder_id], link_types, link_direction
         )[folder_id]
@@ -6279,8 +6307,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, list[dict[str, Any]]]: Link info by task ids.
-        """
 
+        """
         return self.get_entities_links(
             project_name, "task", task_ids, link_types, link_direction
         )
@@ -6303,8 +6331,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Link info of task.
-        """
 
+        """
         return self.get_tasks_links(
             project_name, [task_id], link_types, link_direction
         )[task_id]
@@ -6328,8 +6356,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, list[dict[str, Any]]]: Link info by product ids.
-        """
 
+        """
         return self.get_entities_links(
             project_name, "product", product_ids, link_types, link_direction
         )
@@ -6352,8 +6380,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Link info of product.
-        """
 
+        """
         return self.get_products_links(
             project_name, [product_id], link_types, link_direction
         )[product_id]
@@ -6377,8 +6405,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, list[dict[str, Any]]]: Link info by version ids.
-        """
 
+        """
         return self.get_entities_links(
             project_name, "version", version_ids, link_types, link_direction
         )
@@ -6401,8 +6429,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Link info of version.
-        """
 
+        """
         return self.get_versions_links(
             project_name, [version_id], link_types, link_direction
         )[version_id]
@@ -6426,8 +6454,8 @@ class ServerAPI(object):
 
         Returns:
             dict[str, list[dict[str, Any]]]: Link info by representation ids.
-        """
 
+        """
         return self.get_entities_links(
             project_name,
             "representation",
@@ -6455,8 +6483,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Link info of representation.
-        """
 
+        """
         return self.get_representations_links(
             project_name, [representation_id], link_types, link_direction
         )[representation_id]
@@ -6492,8 +6520,8 @@ class ServerAPI(object):
 
         Returns:
             list[dict[str, Any]]: Operations result with process details.
-        """
 
+        """
         if not operations:
             return []
 
