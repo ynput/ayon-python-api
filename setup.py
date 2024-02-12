@@ -24,7 +24,7 @@ setup(
     include_package_data=True,
     # https://pypi.org/classifiers/
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
