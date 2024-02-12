@@ -3202,6 +3202,7 @@ class ServerAPI(object):
         """Get all secrets.
 
         Example output::
+
             [
                 {
                     "name": "secret_1",
@@ -3225,6 +3226,7 @@ class ServerAPI(object):
         """Get secret by name.
 
         Example output::
+
             {
                 "name": "secret_name",
                 "value": "secret_value",
