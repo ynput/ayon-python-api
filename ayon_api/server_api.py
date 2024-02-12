@@ -5800,8 +5800,7 @@ class ServerAPI(object):
             active (Optional[bool]): Change active state of a project.
             project_code (Optional[str]): Change project code. Not recommended
                 during production.
-            
-        changes: Other changed keys based on Rest API documentation.
+            **changes: Other changed keys based on Rest API documentation.
 
         """
         changes.update({
