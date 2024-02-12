@@ -15,7 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "requests = 2.27.1",
+    "requests >= 2.27.1",
     "six >= 1.15",
     "Unidecode >= 1.2.0",
     "appdirs >=1, <2",
