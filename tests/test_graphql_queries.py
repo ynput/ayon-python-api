@@ -58,10 +58,7 @@ def make_project_query(keys, values, types):
 
 
 def make_expected_get_variables_values(keys, values):
-    expected = {}
-    for i in range(len(keys)):
-        expected[keys[i]] = values[i]
-    return expected
+    return dict(zip(keys, values))
 
 
 @pytest.mark.parametrize(
@@ -80,7 +77,7 @@ def make_expected_get_variables_values(keys, values):
 def test_get_variables_values(keys, values, types):
     query = make_project_query(keys, values, types)
     # None means: unexpected exception thrown while adding variables
-    assert query != None
+    assert query is not None
 
     expected = make_expected_get_variables_values(keys, values)
     assert query.get_variables_values() == expected
