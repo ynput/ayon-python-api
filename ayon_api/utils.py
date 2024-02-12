@@ -594,7 +594,7 @@ class TransferProgress:
             chunk_size (int): Add transferred chunk size
                 in bytes.
 
-        """     
+        """
         self._transferred += chunk_size
 
     def get_source_url(self):

@@ -228,7 +228,7 @@ class RestApiResponse(object):
 
 
 class GraphQlResponse:
-    """Graphql response."""
+    """GraphQl response."""
 
     def __init__(self, data):
         self.data = data
@@ -973,7 +973,7 @@ class ServerAPI(object):
 
     @property
     def graphql_allows_data_in_query(self):
-        """Graphql query can support 'data' field.
+        """GraphQl query can support 'data' field.
 
         This applies only to project hierarchy entities 'project', 'folder',
         'task', 'product', 'version' and 'representation'. Others like 'user'
@@ -3201,7 +3201,7 @@ class ServerAPI(object):
     def get_secrets(self):
         """Get all secrets.
 
-        Example output:
+        Example output::
             [
                 {
                     "name": "secret_1",
@@ -3224,7 +3224,7 @@ class ServerAPI(object):
     def get_secret(self, secret_name):
         """Get secret by name.
 
-        Example output:
+        Example output::
             {
                 "name": "secret_name",
                 "value": "secret_value",
