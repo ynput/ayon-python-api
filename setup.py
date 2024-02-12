@@ -30,7 +30,7 @@ setup(
         "Programming Language :: Python :: 3",
     ],
     install_requires=[
-        "requests >= 2.27.1",
+        "requests = 2.27.1",
         "six >= 1.15",
         "Unidecode >= 1.2.0",
         "appdirs >=1, <2",
