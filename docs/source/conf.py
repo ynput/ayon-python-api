@@ -10,10 +10,19 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
+ayon_api_version_path = os.path.join(
+    os.path.dirname(os.path.dirname(current_dir)),
+    "ayon_api",
+    "version.py"
+)
+version_content = {}
+with open(ayon_api_version_path, "r") as stream:
+    exec(stream.read(), version_content)
 project = 'ayon-python-api'
 copyright = '2024, ynput.io <info@ynput.io>'
 author = 'ynput.io <info@ynput.io>'
-release = '1.0.1-dev.1'
+release = version_content["__version__"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
