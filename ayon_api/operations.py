@@ -202,9 +202,6 @@ def new_version_entity(
     if data is None:
         data = {}
 
-    if data is None:
-        data = {}
-
     output = {
         "id": _create_or_convert_to_id(entity_id),
         "version": int(version),
