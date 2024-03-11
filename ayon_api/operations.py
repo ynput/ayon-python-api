@@ -258,30 +258,19 @@ def new_hero_version_entity(
         Dict[str, Any]: Skeleton of version entity.
 
     """
-    if attribs is None:
-        attribs = {}
 
-    if data is None:
-        data = {}
-
-    output = {
-        "id": _create_or_convert_to_id(entity_id),
-        "version": -abs(int(version)),
-        "productId": product_id,
-        "attrib": attribs,
-        "data": data
-    }
-    if task_id:
-        output["taskId"] = task_id
-    if thumbnail_id:
-        output["thumbnailId"] = thumbnail_id
-    if author:
-        output["author"] = author
-    if tags:
-        output["tags"] = tags
-    if status:
-        output["status"] = status
-    return output
+    return new_version_entity(
+        -abs(int(version)),
+        product_id,
+        task_id,
+        thumbnail_id,
+        author,
+        status,
+        tags,
+        attribs,
+        data,
+        entity_id
+    )
 
 
 def new_representation_entity(
