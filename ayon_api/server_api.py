@@ -5706,7 +5706,7 @@ class ServerAPI(object):
         library_project=False,
         preset_name=None
     ):
-        """Create project using Ayon settings.
+        """Create project using AYON settings.
 
         This project creation function is not validating project entity on
         creation. It is because project entity is created blindly with only
