@@ -3261,7 +3261,6 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-
     def delete_secret(self, secret_name):
         """Delete secret by name.
 
@@ -5277,7 +5276,6 @@ class ServerAPI(object):
                 raise TypeError(
                     "Expected 'set', 'list', 'tuple' got {}".format(
                         str(type(filters))))
-
 
             new_filters = set()
             for filter_value in filters:
