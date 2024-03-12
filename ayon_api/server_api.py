@@ -1310,7 +1310,7 @@ class ServerAPI(object):
         get the full event information is required to receive it explicitly.
 
         Args:
-            event_id (str): Id of event.
+            event_id (str): Event id.
 
         Returns:
             dict[str, Any]: Full event data.
@@ -2748,7 +2748,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
 
         Returns:
@@ -3053,7 +3053,7 @@ class ServerAPI(object):
                 settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
             use_site (bool): To force disable option of using site overrides
                 set to 'False'. In that case won't be applied any site
@@ -3115,7 +3115,7 @@ class ServerAPI(object):
                 settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
             use_site (bool): To force disable option of using site overrides
                 set to 'False'. In that case won't be applied any site
@@ -5226,7 +5226,8 @@ class ServerAPI(object):
 
         Context filters have defined structure. To define filter of nested
             subfield use dot '.' as delimiter (For example 'task.name').
-        Filter values can be regex filters. String or 're.Pattern' can be used.
+        Filter values can be regex filters. String or ``re.Pattern`` can
+            be used.
 
         Args:
             project_name (str): Project where to look for representations.
@@ -6022,9 +6023,9 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where the link is created.
             link_type_name (str): Type of link.
-            input_id (str): Id of input entity.
+            input_id (str): Input entity id.
             input_type (str): Entity type of input entity.
-            output_id (str): Id of output entity.
+            output_id (str): Output entity id.
             output_type (str): Entity type of output entity.
             link_name (Optional[str]): Name of link.
                 Available from server version '1.0.0-rc.6'.
