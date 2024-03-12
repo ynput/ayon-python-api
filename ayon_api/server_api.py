@@ -4024,7 +4024,7 @@ class ServerAPI(object):
                 entities.
             folder_id (str): Folder id.
             task_name (str): Task name
-            fields (Optional[Iterable[str]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -4057,7 +4057,7 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             task_id (str): Task id.
-            fields (Optional[Iterable[str]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -4850,7 +4850,7 @@ class ServerAPI(object):
             folder_id (str): Folder id.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Optional[Iterable[str]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
