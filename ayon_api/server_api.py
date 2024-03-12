@@ -1474,7 +1474,7 @@ class ServerAPI(object):
         Args:
             topic (str): Event topic used for filtering of listeners.
             sender (Optional[str]): Sender of event.
-            hash (Optional[str]): Event hash.
+            event_hash (Optional[str]): Event hash.
             project_name (Optional[str]): Project name.
             username (Optional[str]): Username which triggered event.
             dependencies (Optional[list[str]]): List of event id dependencies.
