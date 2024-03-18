@@ -4864,7 +4864,7 @@ class ServerAPI(object):
             return None
 
         product = self.get_product_by_name(
-            project_name, product_name, folder_id, fields=["_id"]
+            project_name, product_name, folder_id, fields={"id"}
         )
         if not product:
             return None
