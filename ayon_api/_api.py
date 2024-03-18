@@ -970,6 +970,81 @@ def delete_project(project_name):
     return con.delete_project(project_name)
 
 
+def create_folder(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_folder(*args, **kwargs)
+
+
+def update_folder(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_folder(*args, **kwargs)
+
+
+def delete_folder(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_folder(*args, **kwargs)
+
+
+def create_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_task(*args, **kwargs)
+
+
+def update_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_task(*args, **kwargs)
+
+
+def delete_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_task(*args, **kwargs)
+
+
+def create_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_product(*args, **kwargs)
+
+
+def update_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_product(*args, **kwargs)
+
+
+def delete_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_product(*args, **kwargs)
+
+
+def create_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_version(*args, **kwargs)
+
+
+def update_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_version(*args, **kwargs)
+
+
+def delete_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_version(*args, **kwargs)
+
+
+def create_representation(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_representation(*args, **kwargs)
+
+
+def update_representation(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_representation(*args, **kwargs)
+
+
+def delete_representation(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_representation(*args, **kwargs)
+
+
 def get_thumbnail_by_id(project_name, thumbnail_id):
     con = get_server_api_connection()
     return con.get_thumbnail_by_id(project_name, thumbnail_id)

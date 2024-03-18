@@ -3872,6 +3872,154 @@ class ServerAPI(object):
             for folder in folders
         }
 
+    def create_folder(
+        self,
+        project_name,
+        name,
+        folder_type=None,
+        parent_id=None,
+        label=None,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        thumbnail_id=None,
+        folder_id=None,
+    ):
+        """Create new folder.
+
+        Args:
+            project_name (str): Project name.
+            name (str): Folder name.
+            folder_type (Optional[str]): Folder type.
+            parent_id (Optional[str]): Parent folder id. Parent is project
+                if is ``None``.
+            label (Optional[str]): Label of folder.
+            attrib (Optional[dict[str, Any]]): Folder attributes.
+            data (Optional[dict[str, Any]]): Folder data.
+            tags (Optional[Iterable[str]]): Folder tags.
+            status (Optional[str]): Folder status.
+            active (Optional[bool]): Folder active state.
+            thumbnail_id (Optional[str]): Folder thumbnail id.
+            folder_id (Optional[str]): Folder id. If not passed new id is
+                generated.
+
+        Returns:
+            str: Entity id.
+
+        """
+        if not folder_id:
+            folder_id = create_entity_id()
+        create_data = {
+            "id": folder_id,
+            "name": name,
+        }
+        for key, value in (
+            ("folderType", folder_type),
+            ("parentId", parent_id),
+            ("label", label),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+            ("thumbnailId", thumbnail_id),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        response = self.post(
+            "projects/{}/folders".format(project_name),
+            **create_data
+        )
+        response.raise_for_status()
+        return folder_id
+
+    def update_folder(
+        self,
+        project_name,
+        folder_id,
+        name=None,
+        folder_type=None,
+        parent_id=_PLACEHOLDER,
+        label=_PLACEHOLDER,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        thumbnail_id=_PLACEHOLDER,
+    ):
+        """Update folder entity on server.
+
+        Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
+            want to change their values. Value ``None`` would unset
+            their value.
+
+        Update of ``data`` will override existing value on folder entity.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            folder_id (str): Folder id.
+            name (Optional[str]): New name.
+            folder_type (Optional[str]): New folder type.
+            parent_id (Optional[Union[str, None]]): New parent folder id.
+            label (Optional[Union[str, None]]): New label.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("name", name),
+            ("folderType", folder_type),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        for key, value in (
+            ("label", label),
+            ("parentId", parent_id),
+            ("thumbnailId", thumbnail_id),
+        ):
+            if value is not _PLACEHOLDER:
+                update_data[key] = value
+
+        response = self.patch(
+            "projects/{}/folders/{}".format(project_name, folder_id),
+            **update_data
+        )
+        response.raise_for_status()
+
+    def delete_folder(self, project_name, folder_id, force=False):
+        """Delete folder.
+
+        Args:
+            project_name (str): Project name.
+            folder_id (str): Folder id to delete.
+            force (Optional[bool]): Folder delete folder with all children
+                folder, products, versions and representations.
+
+        """
+        url = "projects/{}/folders/{}".format(project_name, folder_id)
+        if force:
+            url += "?force=true"
+        response = self.delete(url)
+        response.raise_for_status()
+
     def get_tasks(
         self,
         project_name,
@@ -4076,6 +4224,156 @@ class ServerAPI(object):
         ):
             return task
         return None
+
+    def create_task(
+        self,
+        project_name,
+        name,
+        task_type,
+        folder_id,
+        label=None,
+        assignees=None,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        thumbnail_id=None,
+        task_id=None,
+    ):
+        """Create new task.
+
+        Args:
+            project_name (str): Project name.
+            name (str): Folder name.
+            task_type (str): Task type.
+            folder_id (str): Parent folder id.
+            label (Optional[str]): Label of folder.
+            assignees (Optional[Iterable[str]]): Task assignees.
+            attrib (Optional[dict[str, Any]]): Task attributes.
+            data (Optional[dict[str, Any]]): Task data.
+            tags (Optional[Iterable[str]]): Task tags.
+            status (Optional[str]): Task status.
+            active (Optional[bool]): Task active state.
+            thumbnail_id (Optional[str]): Task thumbnail id.
+            task_id (Optional[str]): Task id. If not passed new id is
+                generated.
+
+        Returns:
+            str: Task id.
+
+        """
+        if not task_id:
+            task_id = create_entity_id()
+        create_data = {
+            "id": task_id,
+            "name": name,
+            "taskType": task_type,
+            "folderId": folder_id,
+        }
+        for key, value in (
+            ("label", label),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("assignees", assignees),
+            ("active", active),
+            ("thumbnailId", thumbnail_id),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        response = self.post(
+            "projects/{}/tasks".format(project_name),
+            **create_data
+        )
+        response.raise_for_status()
+        return folder_id
+
+    def update_task(
+        self,
+        project_name,
+        task_id,
+        name=None,
+        task_type=None,
+        folder_id=None,
+        label=_PLACEHOLDER,
+        assignees=None,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        thumbnail_id=_PLACEHOLDER,
+    ):
+        """Update task entity on server.
+
+        Do not pass ``label`` amd ``thumbnail_id`` if you don't
+            want to change their values. Value ``None`` would unset
+            their value.
+
+        Update of ``data`` will override existing value on folder entity.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            task_id (str): Task id.
+            name (Optional[str]): New name.
+            task_type (Optional[str]): New task type.
+            folder_id (Optional[str]): New folder id.
+            label (Optional[Union[str, None]]): New label.
+            assignees (Optional[str]): New assignees.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("name", name),
+            ("taskType", task_type),
+            ("folderId", folder_id),
+            ("assignees", assignees),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        for key, value in (
+            ("label", label),
+            ("thumbnailId", thumbnail_id),
+        ):
+            if value is not _PLACEHOLDER:
+                update_data[key] = value
+
+        response = self.patch(
+            "projects/{}/tasks/{}".format(project_name, task_id),
+            **update_data
+        )
+        response.raise_for_status()
+
+    def delete_task(self, project_name, task_id):
+        """Delete task.
+
+        Args:
+            project_name (str): Project name.
+            task_id (str): Task id to delete.
+
+        """
+        response = self.delete(
+            "projects/{}/tasks/{}".format(project_name, task_id)
+        )
+        response.raise_for_status()
 
     def _filter_product(
         self, project_name, product, active, own_attributes, use_rest
@@ -4422,6 +4720,129 @@ class ServerAPI(object):
                 project_name, fields=["name"]
             )
         }
+
+    def create_product(
+        self,
+        project_name,
+        name,
+        product_type,
+        folder_id,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        product_id=None,
+    ):
+        """Create new product.
+
+        Args:
+            project_name (str): Project name.
+            name (str): Product name.
+            product_type (str): Product type.
+            folder_id (str): Parent folder id.
+            attrib (Optional[dict[str, Any]]): Product attributes.
+            data (Optional[dict[str, Any]]): Product data.
+            tags (Optional[Iterable[str]]): Product tags.
+            status (Optional[str]): Product status.
+            active (Optional[bool]): Product active state.
+            product_id (Optional[str]): Product id. If not passed new id is
+                generated.
+
+        Returns:
+            str: Product id.
+
+        """
+        if not product_id:
+            product_id = create_entity_id()
+        create_data = {
+            "id": product_id,
+            "name": name,
+            "productType": product_type,
+            "folderId": folder_id,
+        }
+        for key, value in (
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        response = self.post(
+            "projects/{}/products".format(project_name),
+            **create_data
+        )
+        response.raise_for_status()
+        return product_id
+
+    def update_product(
+        self,
+        project_name,
+        product_id,
+        name=None,
+        folder_id=None,
+        product_type=None,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+    ):
+        """Update product entity on server.
+
+        Update of ``data`` will override existing value on folder entity.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            product_id (str): Product id.
+            name (Optional[str]): New product name.
+            folder_id (Optional[str]): New product id.
+            product_type (Optional[str]): New product type.
+            attrib (Optional[dict[str, Any]]): New product attributes.
+            data (Optional[dict[str, Any]]): New product data.
+            tags (Optional[Iterable[str]]): New product tags.
+            status (Optional[str]): New product status.
+            active (Optional[bool]): New product active state.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("name", name),
+            ("productType", product_type),
+            ("folderId", folder_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        response = self.patch(
+            "projects/{}/products/{}".format(project_name, product_id),
+            **update_data
+        )
+        response.raise_for_status()
+
+    def delete_product(self, project_name, product_id):
+        """Delete product.
+
+        Args:
+            project_name (str): Project name.
+            product_id (str): Product id to delete.
+
+        """
+        response = self.delete(
+            "projects/{}/products/{}".format(project_name, product_id)
+        )
+        response.raise_for_status()
 
     def get_versions(
         self,
@@ -4908,6 +5329,148 @@ class ServerAPI(object):
         )
         return latest_version["id"] == version_id
 
+    def create_version(
+        self,
+        project_name,
+        version,
+        product_id,
+        task_id=None,
+        author=None,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        thumbnail_id=None,
+        version_id=None,
+    ):
+        """Create new version.
+
+        Args:
+            project_name (str): Project name.
+            version (int): Version.
+            product_id (str): Parent product id.
+            task_id (Optional[str]): Parent task id.
+            author (Optional[str]): Version author.
+            attrib (Optional[dict[str, Any]]): Version attributes.
+            data (Optional[dict[str, Any]]): Version data.
+            tags (Optional[Iterable[str]]): Version tags.
+            status (Optional[str]): Version status.
+            active (Optional[bool]): Version active state.
+            thumbnail_id (Optional[str]): Version thumbnail id.
+            version_id (Optional[str]): Version id. If not passed new id is
+                generated.
+
+        Returns:
+            str: Version id.
+
+        """
+        if not version_id:
+            version_id = create_entity_id()
+        create_data = {
+            "id": version_id,
+            "version": version,
+            "productId": product_id,
+        }
+        for key, value in (
+            ("taskId", task_id),
+            ("author", author),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+            ("thumbnailId", thumbnail_id),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        response = self.post(
+            "projects/{}/versions".format(project_name),
+            **create_data
+        )
+        response.raise_for_status()
+        return version_id
+
+    def update_version(
+        self,
+        project_name,
+        version_id,
+        version=None,
+        product_id=None,
+        task_id=_PLACEHOLDER,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        thumbnail_id=_PLACEHOLDER,
+    ):
+        """Update version entity on server.
+
+        Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
+            want to change their values. Value ``None`` would unset
+            their value.
+
+        Update of ``data`` will override existing value on folder entity.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            version_id (str): Version id.
+            version (Optional[int]): New version.
+            product_id (Optional[str]): New product id.
+            task_id (Optional[Union[str, None]]): New task id.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("version", version),
+            ("productId", product_id),
+            ("taskId", task_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        for key, value in (
+            ("taskId", task_id),
+            ("thumbnailId", thumbnail_id),
+        ):
+            if value is not _PLACEHOLDER:
+                update_data[key] = value
+
+        response = self.patch(
+            "projects/{}/versions/{}".format(project_name, version_id),
+            **update_data
+        )
+        response.raise_for_status()
+
+    def delete_version(self, project_name, version_id):
+        """Delete version.
+
+        Args:
+            project_name (str): Project name.
+            version_id (str): Version id to delete.
+
+        """
+        response = self.delete(
+            "projects/{}/versions/{}".format(project_name, version_id)
+        )
+        response.raise_for_status()
+
     def _representation_conversion(self, representation):
         if "context" in representation:
             orig_context = representation["context"]
@@ -5297,6 +5860,134 @@ class ServerAPI(object):
         )
         response.raise_for_status()
         return response.data["ids"]
+
+    def create_representation(
+        self,
+        project_name,
+        name,
+        version_id,
+        files=None,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+        representation_id=None,
+    ):
+        """Create new representation.
+
+        Args:
+            project_name (str): Project name.
+            name (str): Representation name.
+            version_id (str): Parent version id.
+            files (Optional[list[dict]]): Representation files information.
+            attrib (Optional[dict[str, Any]]): Representation attributes.
+            data (Optional[dict[str, Any]]): Representation data.
+            tags (Optional[Iterable[str]]): Representation tags.
+            status (Optional[str]): Representation status.
+            active (Optional[bool]): Representation active state.
+            representation_id (Optional[str]): Representation id. If not
+                passed new id is generated.
+
+        Returns:
+            str: Representation id.
+
+        """
+        if not representation_id:
+            representation_id = create_entity_id()
+        create_data = {
+            "id": representation_id,
+            "name": name,
+            "versionId": version_id,
+        }
+        for key, value in (
+            ("files", files),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        response = self.post(
+            "projects/{}/representations".format(project_name),
+            **create_data
+        )
+        response.raise_for_status()
+        return representation_id
+
+    def update_representation(
+        self,
+        project_name,
+        representation_id,
+        name=None,
+        version_id=None,
+        files=None,
+        attrib=None,
+        data=None,
+        tags=None,
+        status=None,
+        active=None,
+    ):
+        """Update representation entity on server.
+
+        Update of ``data`` will override existing value on folder entity.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            representation_id (str): Representation id.
+            name (Optional[str]): New name.
+            version_id (Optional[str]): New version id.
+            files (Optional[list[dict]]): New files
+                information.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("name", name),
+            ("versionId", version_id),
+            ("files", files),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        response = self.patch(
+            "projects/{}/representations/{}".format(
+                project_name, representation_id
+            ),
+            **update_data
+        )
+        response.raise_for_status()
+
+    def delete_representation(self, project_name, representation_id):
+        """Delete representation.
+
+        Args:
+            project_name (str): Project name.
+            representation_id (str): Representation id to delete.
+
+        """
+        response = self.delete(
+            "projects/{}/representation/{}".format(
+                project_name, representation_id
+            )
+        )
+        response.raise_for_status()
 
     def get_workfiles_info(
         self,
