@@ -5210,6 +5210,7 @@ class ServerAPI(object):
             project_name,
             product_ids=product_ids,
             latest=True,
+            hero=False,
             active=active,
             fields=fields,
             own_attributes=own_attributes
@@ -5247,6 +5248,7 @@ class ServerAPI(object):
             project_name,
             product_ids=[product_id],
             latest=True,
+            hero=False,
             active=active,
             fields=fields,
             own_attributes=own_attributes
