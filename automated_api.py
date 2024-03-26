@@ -145,7 +145,7 @@ def main():
             "Automated comment found multiple times in '_api.py'"
         )
 
-    new_content = AUTOMATED_COMMENT.join((parts[0], result))
+    new_content = f"{parts[0]}{AUTOMATED_COMMENT}\n{result}"
     with open(filepath, "w") as stream:
         print(new_content, file=stream)
 
