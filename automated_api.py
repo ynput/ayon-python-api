@@ -5,7 +5,6 @@ from ayon_api import ServerAPI
 
 EXCLUDED_METHODS = {
     "get_default_service_username",
-    "set_default_settings_variant",
     "validate_token",
     "set_token",
     "reset_token",
