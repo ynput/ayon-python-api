@@ -25,9 +25,12 @@ AUTOMATED_COMMENT = "\n".join((
 ))
 
 def indent_lines(src_str, indent=1):
-    return "\n".join(
-        [f"{'    ' * indent}{line}" for line in src_str.split("\n")]
-    )
+    new_lines = []
+    for line in src_str.split("\n"):
+        if line:
+            line = f"{'    ' * indent}{line}"
+        new_lines.append(line)
+    return "\n".join(new_lines)
 
 
 def split_sig_str(sig_str):
