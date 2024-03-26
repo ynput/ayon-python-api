@@ -57,7 +57,7 @@ def prepare_docstring(func):
     line_char = ""
     if "\n" in docstring:
         line_char = "\n"
-    return f'"""{docstring}{line_char}"""\n'
+    return f'"""{docstring}{line_char}\n"""'
 
 
 def prapre_body_sig_str(sig_str):
