@@ -18,6 +18,7 @@ EXCLUDED_METHODS = {
     "logout",
     "set_default_service_username",
 }
+EXCLUDED_IMPORT_NAMES = {"GlobalContext"}
 AUTOMATED_COMMENT = "\n".join((
     "# ------------------------------------------------",
     "#     This content is generated automatically.",
@@ -203,8 +204,9 @@ def main():
         result = func_regex.search(line)
         if result:
             name = result.group("name")
-            if not name.startswith("_"):
-                func_names.append(name)
+            if name.startswith("_") or name in EXCLUDED_IMPORT_NAMES:
+                continue
+            func_names.append(name)
 
     import_lines = ["from ._api import ("]
     for name in func_names:
