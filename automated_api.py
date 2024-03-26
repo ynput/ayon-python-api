@@ -44,7 +44,7 @@ def prepare_init_without_api(init_filepath):
         f'"{name}"' for name in function_names
     }
 
-    all_regex = re.compile("__all__ = \([^\)]*\)\n")
+    all_regex = re.compile("__all__ = \([^\)]*\)")
     all_content = all_regex.search(content)
     start, end = all_content.span()
     all_content_text = content[start:end]
@@ -65,7 +65,7 @@ def prepare_init_without_api(init_filepath):
         content
         .replace(api_imports_text, "{api_imports}")
         .replace(all_content_text, new_all_content_text)
-    )
+    ).rstrip("\n")
     tmp_init = formatting_content.format(all_content="", api_imports="")
     with open(init_filepath, "w") as stream:
         print(tmp_init, file=stream)
