@@ -41,11 +41,7 @@ def split_sig_str(sig_str):
 
 
 def prepare_func_def_line(attr_name, sig_str):
-    func_def = f"def {attr_name}{sig_str}:"
-    if len(func_def) <= 79:
-        return func_def + "\n"
-
-    return f"def {attr_name}{split_sig_str(sig_str)}:\n"
+    return f"def {attr_name}{sig_str}:\n"
 
 
 def prepare_docstring(func):
@@ -102,20 +98,20 @@ def prepare_api_functions():
             continue
 
         sig = inspect.signature(attr)
-        base_sig_str = (
-            str(sig)
-            .replace("(self, ", "(")
-            .replace("(self)", "()")
-        )
+        base_sig_str = str(sig)
+        if base_sig_str == "(self)":
+            sig_str = "()"
+        else:
+            sig_str = "(*args, **kwargs)"
 
-        func_def = prepare_func_def_line(attr_name, base_sig_str)
+        func_def = prepare_func_def_line(attr_name, sig_str)
 
         func_body_parts = []
         docstring = prepare_docstring(attr)
         if docstring:
             func_body_parts.append(docstring)
 
-        func_body_parts.extend(prepare_body_parts(attr_name, base_sig_str))
+        func_body_parts.extend(prepare_body_parts(attr_name, sig_str))
 
         func_body = indent_lines("\n".join(func_body_parts))
         full_def = func_def + func_body
