@@ -44,7 +44,7 @@ def prepare_init_without_api(init_filepath):
         f'"{name}"' for name in function_names
     }
 
-    all_regex = re.compile("__all__ = \([^\)]*\)")
+    all_regex = re.compile("__all__ = \([^\)]*\)\n")
     all_content = all_regex.search(content)
     start, end = all_content.span()
     all_content_text = content[start:end]
