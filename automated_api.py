@@ -1,4 +1,5 @@
 import os
+import re
 import inspect
 import ayon_api
 from ayon_api import ServerAPI
@@ -23,6 +24,54 @@ AUTOMATED_COMMENT = "\n".join((
     "# ------------------------------------------------",
 ))
 
+
+# Read init file and remove ._api imports
+def prepare_init_without_api(init_filepath):
+    with open(init_filepath, "r") as stream:
+        content = stream.read()
+
+    api_regex = re.compile("from \._api import \((?P<functions>[^\)]*)\)")
+    api_imports = api_regex.search(content)
+    start, end = api_imports.span()
+    api_imports_text = content[start:end]
+    functions_text = api_imports.group("functions")
+    function_names = [
+        line.strip().rstrip(",")
+        for line in functions_text.split("\n")
+        if line.strip()
+    ]
+    function_names_q = {
+        f'"{name}"' for name in function_names
+    }
+
+    all_regex = re.compile("__all__ = \([^\)]*\)")
+    all_content = all_regex.search(content)
+    start, end = all_content.span()
+    all_content_text = content[start:end]
+    filtered_lines = []
+    for line in content[start:end].split("\n"):
+        found = False
+        for name in function_names_q:
+            if name in line:
+                found = True
+                break
+        if not found:
+            filtered_lines.append(line)
+    new_all_content_text = (
+        "\n".join(filtered_lines).rstrip(") \n") + "\n\n{all_content}\n)"
+    )
+
+    formatting_content = (
+        content
+        .replace(api_imports_text, "{api_imports}")
+        .replace(all_content_text, new_all_content_text)
+    )
+    tmp_init = formatting_content.format(all_content="", api_imports="")
+    with open(init_filepath, "w") as stream:
+        print(tmp_init, file=stream)
+    return formatting_content
+
+# Creation of _api.py content
 def indent_lines(src_str, indent=1):
     new_lines = []
     for line in src_str.split("\n"):
@@ -120,14 +169,17 @@ def prepare_api_functions():
 
 
 def main():
-    # TODO add other content in '_api.py'
     # TODO order methods in some order
-    # TODO prepare '__init__.py' content too
-    result = prepare_api_functions()
     dirpath = os.path.dirname(os.path.dirname(
-        os.path.abspath(ayon_api.__file__)))
-    filepath = os.path.join(dirpath, "ayon_api", "_api.py")
-    with open(filepath, "r") as stream:
+        os.path.abspath(ayon_api.__file__)
+    ))
+    ayon_api_root = os.path.join(dirpath, "ayon_api")
+    init_filepath = os.path.join(ayon_api_root, "__init__.py")
+    api_filepath = os.path.join(ayon_api_root, "_api.py")
+    formatting_init_content = prepare_init_without_api(init_filepath)
+
+    result = prepare_api_functions()
+    with open(api_filepath, "r") as stream:
         old_content = stream.read()
 
     parts = old_content.split(AUTOMATED_COMMENT)
@@ -141,8 +193,35 @@ def main():
         )
 
     new_content = f"{parts[0]}{AUTOMATED_COMMENT}\n{result}"
-    with open(filepath, "w") as stream:
+    with open(api_filepath, "w") as stream:
         print(new_content, file=stream)
+
+    # find all functions and classes available in '_api.py'
+    func_regex = re.compile("^(def|class) (?P<name>[^\(]*)(\(|:).*")
+    func_names = []
+    for line in new_content.split("\n"):
+        result = func_regex.search(line)
+        if result:
+            name = result.group("name")
+            if not name.startswith("_"):
+                func_names.append(name)
+
+    import_lines = ["from ._api import ("]
+    for name in func_names:
+        import_lines.append(f"    {name},")
+    import_lines.append(")")
+
+    all_lines = [
+        f'    "{name}",'
+        for name in func_names
+    ]
+    new_init_content = formatting_init_content.format(
+        api_imports="\n".join(import_lines),
+        all_content="\n".join(all_lines),
+    )
+
+    with open(init_filepath, "w") as stream:
+        print(new_init_content, file=stream)
 
 
 if __name__ == "__main__":
