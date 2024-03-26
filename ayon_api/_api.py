@@ -325,6 +325,9 @@ def get_server_api_connection():
     """
     return GlobalContext.get_server_api_connection()
 
+# ------------------------------------------------
+#     This content is generated automatically.
+# ------------------------------------------------
 
 def get_site_id():
     con = get_server_api_connection()
