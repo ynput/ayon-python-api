@@ -2731,7 +2731,7 @@ class ServerAPI(object):
             dict[str, Any]: Anatomy preset values.
 
         """
-        if preset_name is None:
+        if not preset_name:
             preset_name = self.get_default_anatomy_preset_name()
         result = self.get("anatomy/presets/{}".format(preset_name))
         result.raise_for_status()
