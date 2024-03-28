@@ -1434,6 +1434,21 @@ def get_project_anatomy_presets():
     return con.get_project_anatomy_presets()
 
 
+def get_default_anatomy_preset_name():
+    """Name of default anatomy preset.
+
+    Primary preset is used as default preset. But when primary preset is
+    not set a built-in is used instead. Built-in preset is named '_'.
+
+    Returns:
+        str: Name of preset that can be used by
+            'get_project_anatomy_preset'.
+
+    """
+    con = get_server_api_connection()
+    return con.get_default_anatomy_preset_name()
+
+
 def get_project_anatomy_preset(*args, **kwargs):
     """Anatomy preset values by name.
 
@@ -1449,6 +1464,17 @@ def get_project_anatomy_preset(*args, **kwargs):
     """
     con = get_server_api_connection()
     return con.get_project_anatomy_preset(*args, **kwargs)
+
+
+def get_build_in_anatomy_preset():
+    """Get built-in anatomy preset.
+
+    Returns:
+        dict[str, Any]: Built-in anatomy preset.
+
+    """
+    con = get_server_api_connection()
+    return con.get_build_in_anatomy_preset()
 
 
 def get_project_roots_by_site(*args, **kwargs):
