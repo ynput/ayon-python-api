@@ -2702,6 +2702,22 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data.get("presets") or []
 
+    def get_default_anatomy_preset_name(self):
+        """Name of default anatomy preset.
+
+        Primary preset is used as default preset. But when primary preset is
+        not set a built-in is used instead. Built-in preset is named '_'.
+
+        Returns:
+            str: Name of preset that can be used by
+                'get_project_anatomy_preset'.
+
+        """
+        for preset in self.get_project_anatomy_presets():
+            if preset.get("primary"):
+                return preset["name"]
+        return "_"
+
     def get_project_anatomy_preset(self, preset_name=None):
         """Anatomy preset values by name.
 
@@ -2716,10 +2732,19 @@ class ServerAPI(object):
 
         """
         if preset_name is None:
-            preset_name = "_"
+            preset_name = self.get_default_anatomy_preset_name()
         result = self.get("anatomy/presets/{}".format(preset_name))
         result.raise_for_status()
         return result.data
+
+    def get_build_in_anatomy_preset(self):
+        """Get built-in anatomy preset.
+
+        Returns:
+            dict[str, Any]: Built-in anatomy preset.
+
+        """
+        return self.get_project_anatomy_preset("_")
 
     def get_project_roots_by_site(self, project_name):
         """Root overrides per site name.
