@@ -58,6 +58,7 @@ from .graphql_queries import (
     product_types_query,
     folders_graphql_query,
     tasks_graphql_query,
+    tasks_by_folder_paths_graphql_query,
     products_graphql_query,
     versions_graphql_query,
     representations_graphql_query,
@@ -4246,6 +4247,228 @@ class ServerAPI(object):
             active=None,
             fields=fields,
             own_attributes=own_attributes
+        ):
+            return task
+        return None
+
+    def get_tasks_by_folder_paths(
+        self,
+        project_name,
+        folder_paths,
+        task_names=None,
+        task_types=None,
+        assignees=None,
+        assignees_all=None,
+        statuses=None,
+        tags=None,
+        active=True,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query task entities from server by folder paths.
+
+        Args:
+            project_name (str): Name of project.
+            folder_paths (list[str]): Folder paths.
+            task_names (Iterable[str]): Task names used for filtering.
+            task_types (Iterable[str]): Task types used for filtering.
+            assignees (Optional[Iterable[str]]): Task assignees used for
+                filtering. All tasks with any of passed assignees are
+                returned.
+            assignees_all (Optional[Iterable[str]]): Task assignees used
+                for filtering. Task must have all of passed assignees to be
+                returned.
+            statuses (Optional[Iterable[str]]): Task statuses used for
+                filtering.
+            tags (Optional[Iterable[str]]): Task tags used for
+                filtering.
+            active (Optional[bool]): Filter active/inactive tasks.
+                Both are returned if is set to None.
+            fields (Optional[Iterable[str]]): Fields to be queried for
+                folder. All possible folder fields are returned
+                if 'None' is passed.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
+
+        Returns:
+            dict[dict[str, list[dict[str, Any]]]: Task entities by
+                folder path.
+
+        """
+        folder_paths = set(folder_paths)
+        if not project_name or not folder_paths:
+            return
+
+        filters = {
+            "projectName": project_name,
+            "folderPaths": list(folder_paths),
+        }
+
+        if task_names is not None:
+            task_names = set(task_names)
+            if not task_names:
+                return
+            filters["taskNames"] = list(task_names)
+
+        if task_types is not None:
+            task_types = set(task_types)
+            if not task_types:
+                return
+            filters["taskTypes"] = list(task_types)
+
+        if assignees is not None:
+            assignees = set(assignees)
+            if not assignees:
+                return
+            filters["taskAssigneesAny"] = list(assignees)
+
+        if assignees_all is not None:
+            assignees_all = set(assignees_all)
+            if not assignees_all:
+                return
+            filters["taskAssigneesAll"] = list(assignees_all)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["taskStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["taskTags"] = list(tags)
+
+        if not fields:
+            fields = self.get_default_fields_for_type("task")
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("task")
+
+        use_rest = False
+        if "data" in fields and not self.graphql_allows_data_in_query:
+            use_rest = True
+            fields = {"id"}
+
+        if active is not None:
+            fields.add("active")
+
+        if own_attributes:
+            fields.add("ownAttrib")
+
+        query = tasks_by_folder_paths_graphql_query(fields)
+        for attr, filter_value in filters.items():
+            query.set_variable_value(attr, filter_value)
+
+        output = {
+            folder_path: []
+            for folder_path in folder_paths
+        }
+        for parsed_data in query.continuous_query(self):
+            for folder in parsed_data["project"]["folders"]:
+                folder_path = folder["path"]
+                for task in folder["tasks"]:
+                    if active is not None and active is not task["active"]:
+                        continue
+
+                    if use_rest:
+                        task = self.get_rest_task(project_name, task["id"])
+                    else:
+                        self._convert_entity_data(task)
+
+                    if own_attributes:
+                        fill_own_attribs(task)
+                    output[folder_path].append(task)
+        return output
+
+    def get_tasks_by_folder_path(
+        self,
+        project_name,
+        folder_path,
+        task_names=None,
+        task_types=None,
+        assignees=None,
+        assignees_all=None,
+        statuses=None,
+        tags=None,
+        active=True,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query task entities from server by folder path.
+
+        Args:
+            project_name (str): Name of project.
+            folder_path (str): Folder path.
+            task_names (Iterable[str]): Task names used for filtering.
+            task_types (Iterable[str]): Task types used for filtering.
+            assignees (Optional[Iterable[str]]): Task assignees used for
+                filtering. All tasks with any of passed assignees are
+                returned.
+            assignees_all (Optional[Iterable[str]]): Task assignees used
+                for filtering. Task must have all of passed assignees to be
+                returned.
+            statuses (Optional[Iterable[str]]): Task statuses used for
+                filtering.
+            tags (Optional[Iterable[str]]): Task tags used for
+                filtering.
+            active (Optional[bool]): Filter active/inactive tasks.
+                Both are returned if is set to None.
+            fields (Optional[Iterable[str]]): Fields to be queried for
+                folder. All possible folder fields are returned
+                if 'None' is passed.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
+
+        """
+        return self.get_tasks_by_folder_paths(
+            project_name,
+            [folder_path],
+            task_names,
+            task_types=task_types,
+            assignees=assignees,
+            assignees_all=assignees_all,
+            statuses=statuses,
+            tags=tags,
+            active=active,
+            fields=fields,
+            own_attributes=own_attributes
+        )[folder_path]
+
+    def get_task_by_folder_path(
+        self,
+        project_name,
+        folder_path,
+        task_name,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query task entity by folder path and task name.
+
+        Args:
+            project_name (str): Project name.
+            folder_path (str): Folder path.
+            task_name (str): Task name.
+            fields (Optional[Iterable[str]]): Task fields that should
+                be returned.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Task entity data or None if was
+                not found.
+
+        """
+        for task in self.get_tasks_by_folder_path(
+            project_name,
+            folder_path,
+            active=None,
+            task_names=[task_name],
+            fields=fields,
+            own_attributes=own_attributes,
         ):
             return task
         return None
