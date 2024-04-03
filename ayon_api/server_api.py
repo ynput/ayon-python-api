@@ -3578,7 +3578,7 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_folders_list(self, project_name, include_attrib=False):
+    def get_folders_flat_hierarchy(self, project_name, include_attrib=False):
         """Get simplified flat list of all project folders.
 
         Similar to 'get_folders_hierarchy' but returns flat list and
