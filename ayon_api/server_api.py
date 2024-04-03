@@ -3578,6 +3578,54 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
+    def get_folders_list(self, project_name, include_attrib=False):
+        """Get simplified flat list of all project folders.
+
+        Similar to 'get_folders_hierarchy' but returns flat list and
+            is technically faster to retrieve.
+
+        Example::
+
+            [
+                {
+                    "id": "112233445566",
+                    "parentId": "112233445567",
+                    "path": "/root/parent/child",
+                    "parents": ["root", "parent"],
+                    "name": "child",
+                    "label": "Child",
+                    "folderType": "Folder",
+                    "hasTasks": False,
+                    "hasChildren": False,
+                    "taskNames": [
+                        "Compositing",
+                    ],
+                    "status": "In Progress",
+                    "attrib": {},
+                    "ownAttrib": [],
+                    "updatedAt": "2023-06-12T15:37:02.420260",
+                },
+                ...
+            ]
+
+        Args:
+            project_name (str): Project name.
+            include_attrib (Optional[bool]): Inclue attribute values
+                in output. Slower the query.
+
+        Returns:
+            list[dict[str, Any]]: List of folder entities.
+
+        """
+        query = "?attrib={}".format(
+            "true" if include_attrib else "false"
+        )
+        response = self.get(
+            "projects/{}/folders{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data["folders"]
+
     def get_folders(
         self,
         project_name,
