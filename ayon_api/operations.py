@@ -19,6 +19,42 @@ def _create_or_convert_to_id(entity_id=None):
     return entity_id
 
 
+def prepare_changes(old_entity, new_entity, entity_type):
+    """Prepare changes for entity update.
+
+    Notes:
+        Argument 'entity_type' is not used, yet. But there might be
+            differences in future.
+
+    Args:
+        old_entity (dict[str, Any]): Existing entity.
+        new_entity (dict[str, Any]): New entity.
+        entity_type (str): Entity type. "project", "folder", "product" etc.
+
+    Returns:
+        dict[str, Any]: Changes that have new entity.
+
+    """
+    changes = {}
+    for key in set(new_entity.keys()):
+        if key == "attrib":
+            continue
+
+        if key in new_entity and new_entity[key] != old_entity.get(key):
+            changes[key] = new_entity[key]
+            continue
+
+    attrib_changes = {}
+    if "attrib" in new_entity:
+        old_attrib = old_entity.get("attrib") or {}
+        for key, value in new_entity["attrib"].items():
+            if value != old_attrib.get(key):
+                attrib_changes[key] = value
+    if attrib_changes:
+        changes["attrib"] = attrib_changes
+    return changes
+
+
 def new_folder_entity(
     name,
     folder_type,
@@ -166,9 +202,6 @@ def new_version_entity(
     if data is None:
         data = {}
 
-    if data is None:
-        data = {}
-
     output = {
         "id": _create_or_convert_to_id(entity_id),
         "version": int(version),
@@ -222,30 +255,19 @@ def new_hero_version_entity(
         Dict[str, Any]: Skeleton of version entity.
 
     """
-    if attribs is None:
-        attribs = {}
 
-    if data is None:
-        data = {}
-
-    output = {
-        "id": _create_or_convert_to_id(entity_id),
-        "version": -abs(int(version)),
-        "productId": product_id,
-        "attrib": attribs,
-        "data": data
-    }
-    if task_id:
-        output["taskId"] = task_id
-    if thumbnail_id:
-        output["thumbnailId"] = thumbnail_id
-    if author:
-        output["author"] = author
-    if tags:
-        output["tags"] = tags
-    if status:
-        output["status"] = status
-    return output
+    return new_version_entity(
+        -abs(int(version)),
+        product_id,
+        task_id,
+        thumbnail_id,
+        author,
+        status,
+        tags,
+        attribs,
+        data,
+        entity_id
+    )
 
 
 def new_representation_entity(
