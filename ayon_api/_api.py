@@ -800,6 +800,21 @@ def get_task_by_name(*args, **kwargs):
     return con.get_task_by_name(*args, **kwargs)
 
 
+def get_tasks_by_folder_paths(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_paths(*args, **kwargs)
+
+
+def get_tasks_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_path(*args, **kwargs)
+
+
+def get_task_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_folder_path(*args, **kwargs)
+
+
 def get_folder_by_id(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_folder_by_id(*args, **kwargs)
