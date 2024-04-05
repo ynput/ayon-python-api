@@ -3618,6 +3618,12 @@ class ServerAPI(object):
             list[dict[str, Any]]: List of folder entities.
 
         """
+        major, minor, patch, rel, _ = self.server_version_tuple
+        if (major, minor, patch) < (1, 0, 8):
+            raise UnsupportedServerVersion(
+                "Function 'get_folders_flat_hierarchy' is supported"
+                " for AYON server 1.0.8 and above."
+            )
         query = "?attrib={}".format(
             "true" if include_attrib else "false"
         )
