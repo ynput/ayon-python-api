@@ -83,7 +83,6 @@ from .utils import (
     entity_data_json_default,
     failed_json_default,
     TransferProgress,
-    create_dependency_package_basename,
     ThumbnailContent,
     get_default_timeout,
     get_default_settings_variant,
