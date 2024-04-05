@@ -73,6 +73,7 @@ from .exceptions import (
     ServerNotReached,
     ServerError,
     HTTPRequestError,
+    UnsupportedServerVersion,
 )
 from .utils import (
     RepresentationParents,
@@ -6819,7 +6820,7 @@ class ServerAPI(object):
         ):
             kwargs["link"] = full_link_type_name
             if link_name:
-                raise NotImplementedError((
+                raise UnsupportedServerVersion((
                     "Link name is not supported"
                     " for version of AYON server {}"
                 ).format(self.server_version))
