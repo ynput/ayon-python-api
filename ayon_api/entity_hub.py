@@ -457,6 +457,7 @@ class EntityHub(object):
 
     def _query_entity_children(self, entity):
         folder_fields = self._get_folder_fields()
+        task_fields = self._get_task_fields()
         tasks = []
         folders = []
         if entity.entity_type == "project":
@@ -464,7 +465,7 @@ class EntityHub(object):
                 entity["name"],
                 parent_ids=[entity.id],
                 fields=folder_fields,
-                own_attributes=True
+                own_attributes=True,
             ))
 
         elif entity.entity_type == "folder":
@@ -472,13 +473,14 @@ class EntityHub(object):
                 self.project_entity["name"],
                 parent_ids=[entity.id],
                 fields=folder_fields,
-                own_attributes=True
+                own_attributes=True,
             ))
 
             tasks = list(self._connection.get_tasks(
                 self.project_entity["name"],
                 folder_ids=[entity.id],
-                own_attributes=True
+                fields=task_fields,
+                own_attributes=True,
             ))
 
         children_ids = {
@@ -601,7 +603,15 @@ class EntityHub(object):
         folder_fields.add("hasProducts")
         if self._allow_data_changes:
             folder_fields.add("data")
+        folder_fields |= {"status", "tags"}
         return folder_fields
+
+    def _get_task_fields(self):
+        task_fields = set(
+            self._connection.get_default_fields_for_type("task")
+        )
+        task_fields |= {"status", "tags"}
+        return task_fields
 
     def query_entities_from_server(self):
         """Query whole project at once."""
