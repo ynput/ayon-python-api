@@ -74,6 +74,7 @@ from .exceptions import (
     ServerNotReached,
     ServerError,
     HTTPRequestError,
+    UnsupportedServerVersion,
 )
 from .utils import (
     RepresentationParents,
@@ -83,7 +84,6 @@ from .utils import (
     entity_data_json_default,
     failed_json_default,
     TransferProgress,
-    create_dependency_package_basename,
     ThumbnailContent,
     get_default_timeout,
     get_default_settings_variant,
@@ -3579,6 +3579,60 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
+    def get_folders_flat_hierarchy(self, project_name, include_attrib=False):
+        """Get simplified flat list of all project folders.
+
+        Similar to 'get_folders_hierarchy' but returns flat list and
+            is technically faster to retrieve.
+
+        Example::
+
+            [
+                {
+                    "id": "112233445566",
+                    "parentId": "112233445567",
+                    "path": "/root/parent/child",
+                    "parents": ["root", "parent"],
+                    "name": "child",
+                    "label": "Child",
+                    "folderType": "Folder",
+                    "hasTasks": False,
+                    "hasChildren": False,
+                    "taskNames": [
+                        "Compositing",
+                    ],
+                    "status": "In Progress",
+                    "attrib": {},
+                    "ownAttrib": [],
+                    "updatedAt": "2023-06-12T15:37:02.420260",
+                },
+                ...
+            ]
+
+        Args:
+            project_name (str): Project name.
+            include_attrib (Optional[bool]): Inclue attribute values
+                in output. Slower the query.
+
+        Returns:
+            list[dict[str, Any]]: List of folder entities.
+
+        """
+        major, minor, patch, _, _ = self.server_version_tuple
+        if (major, minor, patch) < (1, 0, 8):
+            raise UnsupportedServerVersion(
+                "Function 'get_folders_flat_hierarchy' is supported"
+                " for AYON server 1.0.8 and above."
+            )
+        query = "?attrib={}".format(
+            "true" if include_attrib else "false"
+        )
+        response = self.get(
+            "projects/{}/folders{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data["folders"]
+
     def get_folders(
         self,
         project_name,
@@ -6994,7 +7048,7 @@ class ServerAPI(object):
         ):
             kwargs["link"] = full_link_type_name
             if link_name:
-                raise NotImplementedError((
+                raise UnsupportedServerVersion((
                     "Link name is not supported"
                     " for version of AYON server {}"
                 ).format(self.server_version))
