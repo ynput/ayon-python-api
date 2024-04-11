@@ -628,7 +628,9 @@ class OperationsSession(object):
     All operations must be related to single project.
 
     Args:
-        project_name (str): Project name to which are operations related.
+        con (Optional[ServerAPI]): Connection to server. Global connection
+            is used if not passed.
+
 
     """
     def __init__(self, con=None):
@@ -736,7 +738,7 @@ class OperationsSession(object):
                 must be added to operations list after it's parent is added.
 
         Returns:
-            CreateOperation: Object of update operation.
+            CreateOperation: Object of create operation.
 
         """
         operation = CreateOperation(
