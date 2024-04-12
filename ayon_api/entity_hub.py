@@ -205,6 +205,7 @@ class EntityHub(object):
         if not entity_types:
             return None
 
+        entity_type = None
         entity_data = None
         for entity_type in entity_types:
             if entity_type == "folder":
