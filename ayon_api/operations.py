@@ -631,7 +631,6 @@ class OperationsSession(object):
         con (Optional[ServerAPI]): Connection to server. Global connection
             is used if not passed.
 
-
     """
     def __init__(self, con=None):
         if con is None:
