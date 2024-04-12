@@ -37,6 +37,8 @@ except ImportError:
 
 from .constants import (
     SERVER_RETRIES_ENV_KEY,
+    DEFAULT_FOLDER_TYPE_FIELDS,
+    DEFAULT_TASK_TYPE_FIELDS,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
@@ -2046,6 +2048,12 @@ class ServerAPI(object):
             )
             if not self.graphql_allows_data_in_query:
                 entity_type_defaults.discard("data")
+
+        elif entity_type == "folderType":
+            entity_type_defaults = set(DEFAULT_FOLDER_TYPE_FIELDS)
+
+        elif entity_type == "taskType":
+            entity_type_defaults = set(DEFAULT_TASK_TYPE_FIELDS)
 
         elif entity_type == "productType":
             entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
