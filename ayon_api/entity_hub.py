@@ -618,15 +618,17 @@ class EntityHub(object):
         project_entity = self.fill_project_from_server()
 
         folder_fields = self._get_folder_fields()
+        task_fields = self._get_task_fields()
 
         folders = self._connection.get_folders(
             project_entity.name,
             fields=folder_fields,
-            own_attributes=True
+            own_attributes=True,
         )
         tasks = self._connection.get_tasks(
             project_entity.name,
-            own_attributes=True
+            fields=task_fields,
+            own_attributes=True,
         )
         folders_by_parent_id = collections.defaultdict(list)
         for folder in folders:
