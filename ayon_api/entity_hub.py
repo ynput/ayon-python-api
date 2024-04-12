@@ -8,6 +8,10 @@ from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
 
 
+class InvalidValueError(ValueError):
+    pass
+
+
 class _CustomNone(object):
     def __init__(self, name=None):
         self._name = name or "CustomNone"
@@ -2364,6 +2368,19 @@ class ProjectEntity(BaseEntity):
     task_types = property(get_task_types, set_task_types)
     statuses = property(get_statuses, set_statuses)
 
+    def get_status_by_slugified_name(self, name):
+        """Find status by name.
+
+        Args:
+            name (str): Status name.
+
+
+        Returns:
+            Union[ProjectStatus, None]: Status object or None.
+
+        """
+        return self._statuses_obj.get_status_by_slugified_name(name)
+
     def lock(self):
         super(ProjectEntity, self).lock()
         self._orig_folder_types = copy.deepcopy(self._folder_types)
@@ -2492,14 +2509,20 @@ class FolderEntity(BaseEntity):
         """
         return self._status
 
-    def set_status(self, status):
+    def set_status(self, status_name):
         """Set folder status.
 
         Args:
-            status (str): Status name.
+            status_name (str): Status name.
 
         """
-        self._status = status
+        project_entity = self._entity_hub.project_entity
+        status = project_entity.get_status_by_slugified_name(status_name)
+        if status is None:
+            raise InvalidValueError(
+                f"Status {status_name} is not available on project."
+            )
+        self._status = status_name
 
     status = property(get_status, set_status)
 
@@ -2746,14 +2769,20 @@ class TaskEntity(BaseEntity):
         """
         return self._status
 
-    def set_status(self, status):
+    def set_status(self, status_name):
         """Set folder status.
 
         Args:
-            status (str): Status name.
+            status_name (str): Status name.
 
         """
-        self._status = status
+        project_entity = self._entity_hub.project_entity
+        status = project_entity.get_status_by_slugified_name(status_name)
+        if status is None:
+            raise InvalidValueError(
+                f"Status {status_name} is not available on project."
+            )
+        self._status = status_name
 
     status = property(get_status, set_status)
 
