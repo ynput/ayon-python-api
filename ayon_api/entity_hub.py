@@ -8,10 +8,6 @@ from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
 
 
-class InvalidValueError(ValueError):
-    pass
-
-
 class _CustomNone(object):
     def __init__(self, name=None):
         self._name = name or "CustomNone"
@@ -2519,7 +2515,7 @@ class FolderEntity(BaseEntity):
         project_entity = self._entity_hub.project_entity
         status = project_entity.get_status_by_slugified_name(status_name)
         if status is None:
-            raise InvalidValueError(
+            raise ValueError(
                 f"Status {status_name} is not available on project."
             )
         self._status = status_name
@@ -2779,7 +2775,7 @@ class TaskEntity(BaseEntity):
         project_entity = self._entity_hub.project_entity
         status = project_entity.get_status_by_slugified_name(status_name)
         if status is None:
-            raise InvalidValueError(
+            raise ValueError(
                 f"Status {status_name} is not available on project."
             )
         self._status = status_name
