@@ -88,9 +88,9 @@ from .utils import (
     get_default_timeout,
     get_default_settings_variant,
     get_default_site_id,
+    NOT_SET,
 )
 
-_PLACEHOLDER = object()
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 # This should be collected from server schema
@@ -388,7 +388,7 @@ class ServerAPI(object):
         self,
         base_url,
         token=None,
-        site_id=_PLACEHOLDER,
+        site_id=NOT_SET,
         client_version=None,
         default_settings_variant=None,
         sender=None,
@@ -408,7 +408,7 @@ class ServerAPI(object):
         self._log = None
         self._access_token = token
         # Allow to have 'site_id' to 'None'
-        if site_id is _PLACEHOLDER:
+        if site_id is NOT_SET:
             site_id = get_default_site_id()
         self._site_id = site_id
         self._client_version = client_version
@@ -4022,14 +4022,14 @@ class ServerAPI(object):
         folder_id,
         name=None,
         folder_type=None,
-        parent_id=_PLACEHOLDER,
-        label=_PLACEHOLDER,
+        parent_id=NOT_SET,
+        label=NOT_SET,
         attrib=None,
         data=None,
         tags=None,
         status=None,
         active=None,
-        thumbnail_id=_PLACEHOLDER,
+        thumbnail_id=NOT_SET,
     ):
         """Update folder entity on server.
 
@@ -4075,7 +4075,7 @@ class ServerAPI(object):
             ("parentId", parent_id),
             ("thumbnailId", thumbnail_id),
         ):
-            if value is not _PLACEHOLDER:
+            if value is not NOT_SET:
                 update_data[key] = value
 
         response = self.patch(
@@ -4600,14 +4600,14 @@ class ServerAPI(object):
         name=None,
         task_type=None,
         folder_id=None,
-        label=_PLACEHOLDER,
+        label=NOT_SET,
         assignees=None,
         attrib=None,
         data=None,
         tags=None,
         status=None,
         active=None,
-        thumbnail_id=_PLACEHOLDER,
+        thumbnail_id=NOT_SET,
     ):
         """Update task entity on server.
 
@@ -4655,7 +4655,7 @@ class ServerAPI(object):
             ("label", label),
             ("thumbnailId", thumbnail_id),
         ):
-            if value is not _PLACEHOLDER:
+            if value is not NOT_SET:
                 update_data[key] = value
 
         response = self.patch(
@@ -5702,13 +5702,13 @@ class ServerAPI(object):
         version_id,
         version=None,
         product_id=None,
-        task_id=_PLACEHOLDER,
+        task_id=NOT_SET,
         attrib=None,
         data=None,
         tags=None,
         status=None,
         active=None,
-        thumbnail_id=_PLACEHOLDER,
+        thumbnail_id=NOT_SET,
     ):
         """Update version entity on server.
 
@@ -5753,7 +5753,7 @@ class ServerAPI(object):
             ("taskId", task_id),
             ("thumbnailId", thumbnail_id),
         ):
-            if value is not _PLACEHOLDER:
+            if value is not NOT_SET:
                 update_data[key] = value
 
         response = self.patch(

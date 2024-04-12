@@ -24,6 +24,7 @@ from .constants import (
 from .exceptions import UrlError
 
 REMOVED_VALUE = object()
+NOT_SET = object()
 SLUGIFY_WHITELIST = string.ascii_letters + string.digits
 SLUGIFY_SEP_WHITELIST = " ,./\\;:!|*^#@~+-_="
 
