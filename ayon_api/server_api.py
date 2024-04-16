@@ -2733,7 +2733,11 @@ class ServerAPI(object):
 
         """
         if preset_name is None:
-            preset_name = self.get_default_anatomy_preset_name()
+            preset_name = "__primary__"
+            major, minor, patch, _, _ = self.server_version_tuple
+            if (major, minor, patch) < (1, 0, 8):
+                preset_name = self.get_default_anatomy_preset_name()
+
         result = self.get("anatomy/presets/{}".format(preset_name))
         result.raise_for_status()
         return result.data
