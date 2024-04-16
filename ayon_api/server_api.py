@@ -5897,6 +5897,10 @@ class ServerAPI(object):
         if own_attributes:
             fields.add("ownAttrib")
 
+        if "files" in fields:
+            fields.discard("files")
+            fields |= REPRESENTATION_FILES_FIELDS
+
         filters = {
             "projectName": project_name
         }
