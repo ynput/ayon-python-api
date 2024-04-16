@@ -37,6 +37,8 @@ except ImportError:
 
 from .constants import (
     SERVER_RETRIES_ENV_KEY,
+    DEFAULT_FOLDER_TYPE_FIELDS,
+    DEFAULT_TASK_TYPE_FIELDS,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
@@ -2047,6 +2049,12 @@ class ServerAPI(object):
             if not self.graphql_allows_data_in_query:
                 entity_type_defaults.discard("data")
 
+        elif entity_type == "folderType":
+            entity_type_defaults = set(DEFAULT_FOLDER_TYPE_FIELDS)
+
+        elif entity_type == "taskType":
+            entity_type_defaults = set(DEFAULT_TASK_TYPE_FIELDS)
+
         elif entity_type == "productType":
             entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
 
@@ -3427,6 +3435,49 @@ class ServerAPI(object):
                 project_names.append(project["name"])
         return project_names
 
+    def _should_use_rest_project(self, fields=None):
+        """Fetch of project must be done using REST endpoint.
+
+        Returns:
+            bool: REST endpoint must be used to get requested fields.
+
+        """
+        if fields is None:
+            return True
+        for field in fields:
+            if field.startswith("config"):
+                return True
+        return False
+
+    def _prepare_project_fields(self, fields, own_attributes):
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= self.get_attributes_fields_for_type("project")
+
+        if "folderTypes" in fields:
+            fields.remove("folderTypes")
+            fields |= {
+                "folderTypes.{}".format(name)
+                for name in self.get_default_fields_for_type("folderType")
+            }
+
+        if "taskTypes" in fields:
+            fields.remove("taskTypes")
+            fields |= {
+                "taskTypes.{}".format(name)
+                for name in self.get_default_fields_for_type("taskType")
+            }
+
+        if "productTypes" in fields:
+            fields.remove("productTypes")
+            fields |= {
+                "productTypes.{}".format(name)
+                for name in self.get_default_fields_for_type("productType")
+            }
+
+        if own_attributes:
+            fields.add("ownAttrib")
+
     def get_projects(
         self, active=True, library=None, fields=None, own_attributes=False
     ):
@@ -3446,36 +3497,25 @@ class ServerAPI(object):
             Generator[dict[str, Any]]: Queried projects.
 
         """
-        if fields is None:
-            use_rest = True
-        else:
-            use_rest = False
+        if fields is not None:
             fields = set(fields)
-            for field in fields:
-                if field.startswith("config"):
-                    use_rest = True
-                    break
 
+        use_rest = self._should_use_rest_project(fields)
         if use_rest:
             for project in self.get_rest_projects(active, library):
                 if own_attributes:
                     fill_own_attribs(project)
                 yield project
+            return
 
-        else:
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("project")
+        self._prepare_project_fields(fields, own_attributes)
 
-            if own_attributes:
-                fields.add("ownAttrib")
-
-            query = projects_graphql_query(fields)
-            for parsed_data in query.continuous_query(self):
-                for project in parsed_data["projects"]:
-                    if own_attributes:
-                        fill_own_attribs(project)
-                    yield project
+        query = projects_graphql_query(fields)
+        for parsed_data in query.continuous_query(self):
+            for project in parsed_data["projects"]:
+                if own_attributes:
+                    fill_own_attribs(project)
+                yield project
 
     def get_project(self, project_name, fields=None, own_attributes=False):
         """Get project.
@@ -3492,30 +3532,15 @@ class ServerAPI(object):
                 if project was not found.
 
         """
-        use_rest = True
         if fields is not None:
-            use_rest = False
-            _fields = set()
-            for field in fields:
-                if field.startswith("config") or field == "data":
-                    use_rest = True
-                    break
-                _fields.add(field)
+            fields = set(fields)
 
-            fields = _fields
-
+        use_rest = self._should_use_rest_project(fields)
         if use_rest:
-            project = self.get_rest_project(project_name)
-            if own_attributes:
-                fill_own_attribs(project)
-            return project
+            return self.get_rest_project(project_name)
 
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= self.get_attributes_fields_for_type("project")
+        self._prepare_project_fields(fields, own_attributes)
 
-        if own_attributes:
-            fields.add("ownAttrib")
         query = project_graphql_query(fields)
         query.set_variable_value("projectName", project_name)
 
@@ -3526,6 +3551,7 @@ class ServerAPI(object):
             project["name"] = project_name
             if own_attributes:
                 fill_own_attribs(project)
+
         return project
 
     def get_folders_hierarchy(
