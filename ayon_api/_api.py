@@ -4,6 +4,9 @@ This implementation will be probably the most used part of package. Gives
 option to have singleton connection to Server URL based on environment variable
 values. All public functions and classes are imported in '__init__.py' so
 they're available directly in top module import.
+
+Function that are just wrappers for ServerAPI object are generated
+automatically, and changing them manually can cause issues.
 """
 
 import os
@@ -230,7 +233,7 @@ def get_service_name():
 
     Returns:
         Union[str, None]: Name of service if service was registered.
-        
+
     """
     return ServiceContext.service_name
 
@@ -326,12 +329,62 @@ def get_server_api_connection():
     return GlobalContext.get_server_api_connection()
 
 
+def get_base_url():
+    con = get_server_api_connection()
+    return con.get_base_url()
+
+
+def get_rest_url():
+    con = get_server_api_connection()
+    return con.get_rest_url()
+
+
+def get_ssl_verify():
+    con = get_server_api_connection()
+    return con.get_ssl_verify()
+
+
+def set_ssl_verify(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.set_ssl_verify(*args, **kwargs)
+
+
+def get_cert():
+    con = get_server_api_connection()
+    return con.get_cert()
+
+
+def set_cert(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.set_cert(*args, **kwargs)
+
+
+def get_timeout():
+    con = get_server_api_connection()
+    return con.get_timeout()
+
+
+def set_timeout(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.set_timeout(*args, **kwargs)
+
+
+def get_max_retries():
+    con = get_server_api_connection()
+    return con.get_max_retries()
+
+
+def set_max_retries(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.set_max_retries(*args, **kwargs)
+
+
 def get_site_id():
     con = get_server_api_connection()
     return con.get_site_id()
 
 
-def set_site_id(site_id):
+def set_site_id(*args, **kwargs):
     """Set site id of already connected client connection.
 
     Site id is human-readable machine id used in AYON desktop application.
@@ -341,7 +394,7 @@ def set_site_id(site_id):
 
     """
     con = get_server_api_connection()
-    con.set_site_id(site_id)
+    return con.set_site_id(*args, **kwargs)
 
 
 def get_client_version():
@@ -357,7 +410,7 @@ def get_client_version():
     return con.get_client_version()
 
 
-def set_client_version(client_version):
+def set_client_version(*args, **kwargs):
     """Set version of already connected client connection.
 
     Client version is version of AYON desktop application.
@@ -367,7 +420,7 @@ def set_client_version(client_version):
 
     """
     con = get_server_api_connection()
-    con.set_client_version(client_version)
+    return con.set_client_version(*args, **kwargs)
 
 
 def get_default_settings_variant():
@@ -381,7 +434,7 @@ def get_default_settings_variant():
     return con.get_default_settings_variant()
 
 
-def set_default_settings_variant(variant):
+def set_default_settings_variant(*args, **kwargs):
     """Change default variant for addon settings.
 
     Note:
@@ -393,7 +446,7 @@ def set_default_settings_variant(variant):
 
     """
     con = get_server_api_connection()
-    return con.set_default_settings_variant(variant)
+    return con.set_default_settings_variant(*args, **kwargs)
 
 
 def get_sender():
@@ -407,7 +460,7 @@ def get_sender():
     return con.get_sender()
 
 
-def set_sender(sender):
+def set_sender(*args, **kwargs):
     """Change sender used for requests.
 
     Args:
@@ -415,22 +468,32 @@ def set_sender(sender):
 
     """
     con = get_server_api_connection()
-    return con.set_sender(sender)
+    return con.set_sender(*args, **kwargs)
 
 
-def get_base_url():
+def get_info():
     con = get_server_api_connection()
-    return con.get_base_url()
+    return con.get_info()
 
 
-def get_rest_url():
+def get_server_version():
     con = get_server_api_connection()
-    return con.get_rest_url()
+    return con.get_server_version()
 
 
-def raw_get(*args, **kwargs):
+def get_server_version_tuple():
     con = get_server_api_connection()
-    return con.raw_get(*args, **kwargs)
+    return con.get_server_version_tuple()
+
+
+def get_users(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_users(*args, **kwargs)
+
+
+def get_user(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_user(*args, **kwargs)
 
 
 def raw_post(*args, **kwargs):
@@ -448,14 +511,14 @@ def raw_patch(*args, **kwargs):
     return con.raw_patch(*args, **kwargs)
 
 
+def raw_get(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.raw_get(*args, **kwargs)
+
+
 def raw_delete(*args, **kwargs):
     con = get_server_api_connection()
     return con.raw_delete(*args, **kwargs)
-
-
-def get(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get(*args, **kwargs)
 
 
 def post(*args, **kwargs):
@@ -473,29 +536,14 @@ def patch(*args, **kwargs):
     return con.patch(*args, **kwargs)
 
 
+def get(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get(*args, **kwargs)
+
+
 def delete(*args, **kwargs):
     con = get_server_api_connection()
     return con.delete(*args, **kwargs)
-
-
-def get_timeout(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_timeout(*args, **kwargs)
-
-
-def set_timeout(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.set_timeout(*args, **kwargs)
-
-
-def get_max_retries(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_max_retries(*args, **kwargs)
-
-
-def set_max_retries(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.set_max_retries(*args, **kwargs)
 
 
 def get_event(*args, **kwargs):
@@ -508,14 +556,14 @@ def get_events(*args, **kwargs):
     return con.get_events(*args, **kwargs)
 
 
-def dispatch_event(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.dispatch_event(*args, **kwargs)
-
-
 def update_event(*args, **kwargs):
     con = get_server_api_connection()
     return con.update_event(*args, **kwargs)
+
+
+def dispatch_event(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.dispatch_event(*args, **kwargs)
 
 
 def enroll_event_job(*args, **kwargs):
@@ -533,19 +581,49 @@ def upload_file(*args, **kwargs):
     return con.upload_file(*args, **kwargs)
 
 
+def trigger_server_restart():
+    con = get_server_api_connection()
+    return con.trigger_server_restart()
+
+
 def query_graphql(*args, **kwargs):
     con = get_server_api_connection()
     return con.query_graphql(*args, **kwargs)
 
 
-def get_users(*args, **kwargs):
+def get_graphql_schema():
     con = get_server_api_connection()
-    return con.get_users(*args, **kwargs)
+    return con.get_graphql_schema()
 
 
-def get_user(*args, **kwargs):
+def get_server_schema():
     con = get_server_api_connection()
-    return con.get_user(*args, **kwargs)
+    return con.get_server_schema()
+
+
+def get_schemas():
+    con = get_server_api_connection()
+    return con.get_schemas()
+
+
+def get_attributes_schema(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_attributes_schema(*args, **kwargs)
+
+
+def reset_attributes_schema():
+    con = get_server_api_connection()
+    return con.reset_attributes_schema()
+
+
+def set_attribute_config(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.set_attribute_config(*args, **kwargs)
+
+
+def remove_attribute_config(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.remove_attribute_config(*args, **kwargs)
 
 
 def get_attributes_for_type(*args, **kwargs):
@@ -553,14 +631,24 @@ def get_attributes_for_type(*args, **kwargs):
     return con.get_attributes_for_type(*args, **kwargs)
 
 
+def get_attributes_fields_for_type(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_attributes_fields_for_type(*args, **kwargs)
+
+
+def get_default_fields_for_type(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_default_fields_for_type(*args, **kwargs)
+
+
 def get_addons_info(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_addons_info(*args, **kwargs)
 
 
-def get_addon_url(addon_name, addon_version, *subpaths):
+def get_addon_url(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_addon_url(addon_name, addon_version, *subpaths)
+    return con.get_addon_url(*args, **kwargs)
 
 
 def download_addon_private_file(*args, **kwargs):
@@ -568,22 +656,6 @@ def download_addon_private_file(*args, **kwargs):
     return con.download_addon_private_file(*args, **kwargs)
 
 
-def get_info(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_info(*args, **kwargs)
-
-
-def get_server_version(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_server_version(*args, **kwargs)
-
-
-def get_server_version_tuple(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_server_version_tuple(*args, **kwargs)
-
-
-# Installers
 def get_installers(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_installers(*args, **kwargs)
@@ -614,23 +686,12 @@ def upload_installer(*args, **kwargs):
     return con.upload_installer(*args, **kwargs)
 
 
-# Dependency packages
-def download_dependency_package(*args, **kwargs):
+def get_dependency_packages():
     con = get_server_api_connection()
-    return con.download_dependency_package(*args, **kwargs)
+    return con.get_dependency_packages()
 
 
-def upload_dependency_package(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.upload_dependency_package(*args, **kwargs)
-
-
-def get_dependency_packages(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_dependency_packages(*args, **kwargs)
-
-
-def create_dependency_package(*args, **kwargs):
+def create_dependency_package(*args, **kwargs)
     con = get_server_api_connection()
     return con.create_dependency_package(*args, **kwargs)
 
@@ -645,19 +706,24 @@ def delete_dependency_package(*args, **kwargs):
     return con.delete_dependency_package(*args, **kwargs)
 
 
+def download_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.download_dependency_package(*args, **kwargs)
+
+
+def upload_dependency_package(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.upload_dependency_package(*args, **kwargs)
+
+
 def upload_addon_zip(*args, **kwargs):
     con = get_server_api_connection()
     return con.upload_addon_zip(*args, **kwargs)
 
 
-def get_project_anatomy_presets(*args, **kwargs):
+def get_bundles():
     con = get_server_api_connection()
-    return con.get_project_anatomy_presets(*args, **kwargs)
-
-
-def get_bundles(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_bundles(*args, **kwargs)
+    return con.get_bundles()
 
 
 def create_bundle(*args, **kwargs):
@@ -675,9 +741,24 @@ def delete_bundle(*args, **kwargs):
     return con.delete_bundle(*args, **kwargs)
 
 
+def get_project_anatomy_presets():
+    con = get_server_api_connection()
+    return con.get_project_anatomy_presets()
+
+
+def get_default_anatomy_preset_name():
+    con = get_server_api_connection()
+    return con.get_default_anatomy_preset_name()
+
+
 def get_project_anatomy_preset(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_anatomy_preset(*args, **kwargs)
+
+
+def get_build_in_anatomy_preset():
+    con = get_server_api_connection()
+    return con.get_build_in_anatomy_preset()
 
 
 def get_project_roots_by_site(*args, **kwargs):
@@ -740,9 +821,9 @@ def get_addons_settings(*args, **kwargs):
     return con.get_addons_settings(*args, **kwargs)
 
 
-def get_secrets(*args, **kwargs):
+def get_secrets():
     con = get_server_api_connection()
-    return con.get_secrets(*args, **kwargs)
+    return con.get_secrets()
 
 
 def get_secret(*args, **kwargs):
@@ -760,14 +841,49 @@ def delete_secret(*args, **kwargs):
     return con.delete_secret(*args, **kwargs)
 
 
+def get_rest_project(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_project(*args, **kwargs)
+
+
+def get_rest_projects(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_projects(*args, **kwargs)
+
+
+def get_rest_entity_by_id(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_entity_by_id(*args, **kwargs)
+
+
+def get_rest_folder(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_folder(*args, **kwargs)
+
+
+def get_rest_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_task(*args, **kwargs)
+
+
+def get_rest_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_product(*args, **kwargs)
+
+
+def get_rest_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_version(*args, **kwargs)
+
+
+def get_rest_representation(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_rest_representation(*args, **kwargs)
+
+
 def get_project_names(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_project_names(*args, **kwargs)
-
-
-def get_project(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_project(*args, **kwargs)
 
 
 def get_projects(*args, **kwargs):
@@ -775,9 +891,9 @@ def get_projects(*args, **kwargs):
     return con.get_projects(*args, **kwargs)
 
 
-def get_folders(*args, **kwargs):
+def get_project(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_folders(*args, **kwargs)
+    return con.get_project(*args, **kwargs)
 
 
 def get_folders_hierarchy(*args, **kwargs):
@@ -790,34 +906,9 @@ def get_folders_flat_hierarchy(*args, **kwargs):
     return con.get_folders_flat_hierarchy(*args, **kwargs)
 
 
-def get_tasks(*args, **kwargs):
+def get_folders(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_tasks(*args, **kwargs)
-
-
-def get_task_by_id(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_task_by_id(*args, **kwargs)
-
-
-def get_task_by_name(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_task_by_name(*args, **kwargs)
-
-
-def get_tasks_by_folder_paths(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_tasks_by_folder_paths(*args, **kwargs)
-
-
-def get_tasks_by_folder_path(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_tasks_by_folder_path(*args, **kwargs)
-
-
-def get_task_by_folder_path(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_task_by_folder_path(*args, **kwargs)
+    return con.get_folders(*args, **kwargs)
 
 
 def get_folder_by_id(*args, **kwargs):
@@ -840,19 +931,64 @@ def get_folder_ids_with_products(*args, **kwargs):
     return con.get_folder_ids_with_products(*args, **kwargs)
 
 
-def get_product_types(*args, **kwargs):
+def create_folder(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_product_types(*args, **kwargs)
+    return con.create_folder(*args, **kwargs)
 
 
-def get_project_product_types(*args, **kwargs):
+def update_folder(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_project_product_types(*args, **kwargs)
+    return con.update_folder(*args, **kwargs)
 
 
-def get_product_type_names(*args, **kwargs):
+def delete_folder(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_product_type_names(*args, **kwargs)
+    return con.delete_folder(*args, **kwargs)
+
+
+def get_tasks(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks(*args, **kwargs)
+
+
+def get_task_by_name(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_name(*args, **kwargs)
+
+
+def get_task_by_id(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_id(*args, **kwargs)
+
+
+def get_tasks_by_folder_paths(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_paths(*args, **kwargs)
+
+
+def get_tasks_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_path(*args, **kwargs)
+
+
+def get_task_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_folder_path(*args, **kwargs)
+
+
+def create_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_task(*args, **kwargs)
+
+
+def update_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_task(*args, **kwargs)
+
+
+def delete_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_task(*args, **kwargs)
 
 
 def get_products(*args, **kwargs):
@@ -868,6 +1004,36 @@ def get_product_by_id(*args, **kwargs):
 def get_product_by_name(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_product_by_name(*args, **kwargs)
+
+
+def get_product_types(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_product_types(*args, **kwargs)
+
+
+def get_project_product_types(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_project_product_types(*args, **kwargs)
+
+
+def get_product_type_names(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_product_type_names(*args, **kwargs)
+
+
+def create_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_product(*args, **kwargs)
+
+
+def update_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_product(*args, **kwargs)
+
+
+def delete_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_product(*args, **kwargs)
 
 
 def get_versions(*args, **kwargs):
@@ -920,6 +1086,21 @@ def version_is_latest(*args, **kwargs):
     return con.version_is_latest(*args, **kwargs)
 
 
+def create_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_version(*args, **kwargs)
+
+
+def update_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_version(*args, **kwargs)
+
+
+def delete_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_version(*args, **kwargs)
+
+
 def get_representations(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_representations(*args, **kwargs)
@@ -935,119 +1116,19 @@ def get_representation_by_name(*args, **kwargs):
     return con.get_representation_by_name(*args, **kwargs)
 
 
-def get_representation_parents(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_representation_parents(*args, **kwargs)
-
-
 def get_representations_parents(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_representations_parents(*args, **kwargs)
 
 
+def get_representation_parents(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_representation_parents(*args, **kwargs)
+
+
 def get_repre_ids_by_context_filters(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_repre_ids_by_context_filters(*args, **kwargs)
-
-
-def get_workfiles_info(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_workfiles_info(*args, **kwargs)
-
-
-def get_workfile_info(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_workfile_info(*args, **kwargs)
-
-
-def get_workfile_info_by_id(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.get_workfile_info_by_id(*args, **kwargs)
-
-
-def create_project(
-    project_name,
-    project_code,
-    library_project=False,
-    preset_name=None
-):
-    con = get_server_api_connection()
-    return con.create_project(
-        project_name,
-        project_code,
-        library_project,
-        preset_name
-    )
-
-
-def update_project(project_name, *args, **kwargs):
-    con = get_server_api_connection()
-    return con.update_project(project_name, *args, **kwargs)
-
-
-def delete_project(project_name):
-    con = get_server_api_connection()
-    return con.delete_project(project_name)
-
-
-def create_folder(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.create_folder(*args, **kwargs)
-
-
-def update_folder(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.update_folder(*args, **kwargs)
-
-
-def delete_folder(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.delete_folder(*args, **kwargs)
-
-
-def create_task(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.create_task(*args, **kwargs)
-
-
-def update_task(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.update_task(*args, **kwargs)
-
-
-def delete_task(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.delete_task(*args, **kwargs)
-
-
-def create_product(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.create_product(*args, **kwargs)
-
-
-def update_product(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.update_product(*args, **kwargs)
-
-
-def delete_product(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.delete_product(*args, **kwargs)
-
-
-def create_version(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.create_version(*args, **kwargs)
-
-
-def update_version(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.update_version(*args, **kwargs)
-
-
-def delete_version(*args, **kwargs):
-    con = get_server_api_connection()
-    return con.delete_version(*args, **kwargs)
 
 
 def create_representation(*args, **kwargs):
@@ -1065,291 +1146,166 @@ def delete_representation(*args, **kwargs):
     return con.delete_representation(*args, **kwargs)
 
 
-def get_thumbnail_by_id(project_name, thumbnail_id):
+def get_workfiles_info(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_thumbnail_by_id(project_name, thumbnail_id)
+    return con.get_workfiles_info(*args, **kwargs)
 
 
-def get_thumbnail(project_name, entity_type, entity_id, thumbnail_id=None):
+def get_workfile_info(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_thumbnail(
-        project_name, entity_type, entity_id, thumbnail_id
-    )
+    return con.get_workfile_info(*args, **kwargs)
 
 
-def get_folder_thumbnail(project_name, folder_id, thumbnail_id=None):
+def get_workfile_info_by_id(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_folder_thumbnail(project_name, folder_id, thumbnail_id)
+    return con.get_workfile_info_by_id(*args, **kwargs)
 
 
-def get_version_thumbnail(project_name, version_id, thumbnail_id=None):
+def get_thumbnail_by_id(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_version_thumbnail(project_name, version_id, thumbnail_id)
+    return con.get_thumbnail_by_id(*args, **kwargs)
 
 
-def get_workfile_thumbnail(project_name, workfile_id, thumbnail_id=None):
+def get_thumbnail(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_workfile_thumbnail(project_name, workfile_id, thumbnail_id)
+    return con.get_thumbnail(*args, **kwargs)
 
 
-def create_thumbnail(project_name, src_filepath, thumbnail_id=None):
+def get_folder_thumbnail(*args, **kwargs):
     con = get_server_api_connection()
-    return con.create_thumbnail(project_name, src_filepath, thumbnail_id)
+    return con.get_folder_thumbnail(*args, **kwargs)
 
 
-def update_thumbnail(project_name, thumbnail_id, src_filepath):
+def get_version_thumbnail(*args, **kwargs):
     con = get_server_api_connection()
-    return con.update_thumbnail(project_name, thumbnail_id, src_filepath)
+    return con.get_version_thumbnail(*args, **kwargs)
 
 
-def get_attributes_fields_for_type(entity_type):
+def get_workfile_thumbnail(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_attributes_fields_for_type(entity_type)
+    return con.get_workfile_thumbnail(*args, **kwargs)
 
 
-def get_default_fields_for_type(entity_type):
+def create_thumbnail(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_default_fields_for_type(entity_type)
+    return con.create_thumbnail(*args, **kwargs)
 
 
-def get_full_link_type_name(link_type_name, input_type, output_type):
+def update_thumbnail(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_full_link_type_name(
-        link_type_name, input_type, output_type)
+    return con.update_thumbnail(*args, **kwargs)
 
 
-def get_link_types(project_name):
+def create_project(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_link_types(project_name)
+    return con.create_project(*args, **kwargs)
 
 
-def get_link_type(project_name, link_type_name, input_type, output_type):
+def update_project(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_link_type(
-        project_name, link_type_name, input_type, output_type)
+    return con.update_project(*args, **kwargs)
 
 
-def create_link_type(
-    project_name, link_type_name, input_type, output_type, data=None):
+def delete_project(*args, **kwargs):
     con = get_server_api_connection()
-    return con.create_link_type(
-        project_name, link_type_name, input_type, output_type, data=data)
+    return con.delete_project(*args, **kwargs)
 
 
-def delete_link_type(project_name, link_type_name, input_type, output_type):
+def get_full_link_type_name(*args, **kwargs):
     con = get_server_api_connection()
-    return con.delete_link_type(
-        project_name, link_type_name, input_type, output_type)
+    return con.get_full_link_type_name(*args, **kwargs)
 
 
-def make_sure_link_type_exists(
-    project_name, link_type_name, input_type, output_type, data=None
-):
+def get_link_types(*args, **kwargs):
     con = get_server_api_connection()
-    return con.make_sure_link_type_exists(
-        project_name, link_type_name, input_type, output_type, data=data
-    )
+    return con.get_link_types(*args, **kwargs)
 
 
-def create_link(
-    project_name,
-    link_type_name,
-    input_id,
-    input_type,
-    output_id,
-    output_type
-):
+def get_link_type(*args, **kwargs):
     con = get_server_api_connection()
-    return con.create_link(
-        project_name,
-        link_type_name,
-        input_id, input_type,
-        output_id, output_type
-    )
+    return con.get_link_type(*args, **kwargs)
 
 
-def delete_link(project_name, link_id):
+def create_link_type(*args, **kwargs):
     con = get_server_api_connection()
-    return con.delete_link(project_name, link_id)
+    return con.create_link_type(*args, **kwargs)
 
 
-def get_entities_links(
-    project_name,
-    entity_type,
-    entity_ids=None,
-    link_types=None,
-    link_direction=None
-):
+def delete_link_type(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_entities_links(
-        project_name,
-        entity_type,
-        entity_ids,
-        link_types,
-        link_direction
-    )
+    return con.delete_link_type(*args, **kwargs)
 
 
-def get_folders_links(
-    project_name,
-    folder_ids=None,
-    link_types=None,
-    link_direction=None
-):
+def make_sure_link_type_exists(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_folders_links(
-        project_name,
-        folder_ids,
-        link_types,
-        link_direction
-    )
+    return con.make_sure_link_type_exists(*args, **kwargs)
 
 
-def get_folder_links(
-    project_name,
-    folder_id,
-    link_types=None,
-    link_direction=None
-):
+def create_link(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_folder_links(
-        project_name,
-        folder_id,
-        link_types,
-        link_direction
-    )
+    return con.create_link(*args, **kwargs)
 
 
-def get_tasks_links(
-    project_name,
-    task_ids=None,
-    link_types=None,
-    link_direction=None
-):
+def delete_link(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_tasks_links(
-        project_name,
-        task_ids,
-        link_types,
-        link_direction
-    )
+    return con.delete_link(*args, **kwargs)
 
 
-def get_task_links(
-    project_name,
-    task_id,
-    link_types=None,
-    link_direction=None
-):
+def get_entities_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_task_links(
-        project_name,
-        task_id,
-        link_types,
-        link_direction
-    )
+    return con.get_entities_links(*args, **kwargs)
 
 
-def get_products_links(
-    project_name,
-    product_ids=None,
-    link_types=None,
-    link_direction=None
-):
+def get_folders_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_products_links(
-        project_name,
-        product_ids,
-        link_types,
-        link_direction
-    )
+    return con.get_folders_links(*args, **kwargs)
 
 
-def get_product_links(
-    project_name,
-    product_id,
-    link_types=None,
-    link_direction=None
-):
+def get_folder_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_product_links(
-        project_name,
-        product_id,
-        link_types,
-        link_direction
-    )
+    return con.get_folder_links(*args, **kwargs)
 
 
-def get_versions_links(
-    project_name,
-    version_ids=None,
-    link_types=None,
-    link_direction=None
-):
+def get_tasks_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_versions_links(
-        project_name,
-        version_ids,
-        link_types,
-        link_direction
-    )
+    return con.get_tasks_links(*args, **kwargs)
 
 
-def get_version_links(
-    project_name,
-    version_id,
-    link_types=None,
-    link_direction=None
-):
+def get_task_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_version_links(
-        project_name,
-        version_id,
-        link_types,
-        link_direction
-    )
+    return con.get_task_links(*args, **kwargs)
 
 
-def get_representations_links(
-    project_name,
-    representation_ids=None,
-    link_types=None,
-    link_direction=None
-):
+def get_products_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_representations_links(
-        project_name,
-        representation_ids,
-        link_types,
-        link_direction
-    )
+    return con.get_products_links(*args, **kwargs)
 
 
-def get_representation_links(
-    project_name,
-    representation_id,
-    link_types=None,
-    link_direction=None
-):
+def get_product_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.get_representation_links(
-        project_name,
-        representation_id,
-        link_types,
-        link_direction
-    )
+    return con.get_product_links(*args, **kwargs)
 
 
-def send_batch_operations(
-    project_name,
-    operations,
-    can_fail=False,
-    raise_on_fail=True
-):
+def get_versions_links(*args, **kwargs):
     con = get_server_api_connection()
-    return con.send_batch_operations(
-        project_name,
-        operations,
-        can_fail=can_fail,
-        raise_on_fail=raise_on_fail
-    )
+    return con.get_versions_links(*args, **kwargs)
+
+
+def get_version_links(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_version_links(*args, **kwargs)
+
+
+def get_representations_links(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_representations_links(*args, **kwargs)
+
+
+def get_representation_links(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_representation_links(*args, **kwargs)
+
+
+def send_batch_operations(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.send_batch_operations(*args, **kwargs)
