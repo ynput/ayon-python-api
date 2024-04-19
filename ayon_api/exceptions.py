@@ -33,6 +33,16 @@ class ServerNotReached(ServerError):
     pass
 
 
+class UnsupportedServerVersion(ServerError):
+    """Server version does not support the requested operation.
+
+    This is used for known incompatibilities between the python api and
+        server. E.g. can be used when endpoint is not available anymore, or
+        is not yet available on server.
+    """
+    pass
+
+
 class RequestError(Exception):
     def __init__(self, message, response):
         self.response = response

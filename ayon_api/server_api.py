@@ -37,6 +37,8 @@ except ImportError:
 
 from .constants import (
     SERVER_RETRIES_ENV_KEY,
+    DEFAULT_FOLDER_TYPE_FIELDS,
+    DEFAULT_TASK_TYPE_FIELDS,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
@@ -58,6 +60,7 @@ from .graphql_queries import (
     product_types_query,
     folders_graphql_query,
     tasks_graphql_query,
+    tasks_by_folder_paths_graphql_query,
     products_graphql_query,
     versions_graphql_query,
     representations_graphql_query,
@@ -73,6 +76,7 @@ from .exceptions import (
     ServerNotReached,
     ServerError,
     HTTPRequestError,
+    UnsupportedServerVersion,
 )
 from .utils import (
     RepresentationParents,
@@ -82,14 +86,13 @@ from .utils import (
     entity_data_json_default,
     failed_json_default,
     TransferProgress,
-    create_dependency_package_basename,
     ThumbnailContent,
     get_default_timeout,
     get_default_settings_variant,
     get_default_site_id,
+    NOT_SET,
 )
 
-_PLACEHOLDER = object()
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 # This should be collected from server schema
@@ -387,7 +390,7 @@ class ServerAPI(object):
         self,
         base_url,
         token=None,
-        site_id=_PLACEHOLDER,
+        site_id=NOT_SET,
         client_version=None,
         default_settings_variant=None,
         sender=None,
@@ -407,7 +410,7 @@ class ServerAPI(object):
         self._log = None
         self._access_token = token
         # Allow to have 'site_id' to 'None'
-        if site_id is _PLACEHOLDER:
+        if site_id is NOT_SET:
             site_id = get_default_site_id()
         self._site_id = site_id
         self._client_version = client_version
@@ -1310,7 +1313,7 @@ class ServerAPI(object):
         get the full event information is required to receive it explicitly.
 
         Args:
-            event_id (str): Id of event.
+            event_id (str): Event id.
 
         Returns:
             dict[str, Any]: Full event data.
@@ -2046,6 +2049,12 @@ class ServerAPI(object):
             if not self.graphql_allows_data_in_query:
                 entity_type_defaults.discard("data")
 
+        elif entity_type == "folderType":
+            entity_type_defaults = set(DEFAULT_FOLDER_TYPE_FIELDS)
+
+        elif entity_type == "taskType":
+            entity_type_defaults = set(DEFAULT_TASK_TYPE_FIELDS)
+
         elif entity_type == "productType":
             entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
 
@@ -2732,7 +2741,11 @@ class ServerAPI(object):
 
         """
         if preset_name is None:
-            preset_name = self.get_default_anatomy_preset_name()
+            preset_name = "__primary__"
+            major, minor, patch, _, _ = self.server_version_tuple
+            if (major, minor, patch) < (1, 0, 8):
+                preset_name = self.get_default_anatomy_preset_name()
+
         result = self.get("anatomy/presets/{}".format(preset_name))
         result.raise_for_status()
         return result.data
@@ -2744,7 +2757,11 @@ class ServerAPI(object):
             dict[str, Any]: Built-in anatomy preset.
 
         """
-        return self.get_project_anatomy_preset("_")
+        preset_name = "__builtin__"
+        major, minor, patch, _, _ = self.server_version_tuple
+        if (major, minor, patch) < (1, 0, 8):
+            preset_name = "_"
+        return self.get_project_anatomy_preset(preset_name)
 
     def get_project_roots_by_site(self, project_name):
         """Root overrides per site name.
@@ -2773,7 +2790,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
 
         Returns:
@@ -3078,7 +3095,7 @@ class ServerAPI(object):
                 settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
             use_site (bool): To force disable option of using site overrides
                 set to 'False'. In that case won't be applied any site
@@ -3140,7 +3157,7 @@ class ServerAPI(object):
                 settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
             use_site (bool): To force disable option of using site overrides
                 set to 'False'. In that case won't be applied any site
@@ -3286,7 +3303,6 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-
     def delete_secret(self, secret_name):
         """Delete secret by name.
 
@@ -3418,6 +3434,49 @@ class ServerAPI(object):
                 project_names.append(project["name"])
         return project_names
 
+    def _should_use_rest_project(self, fields=None):
+        """Fetch of project must be done using REST endpoint.
+
+        Returns:
+            bool: REST endpoint must be used to get requested fields.
+
+        """
+        if fields is None:
+            return True
+        for field in fields:
+            if field.startswith("config"):
+                return True
+        return False
+
+    def _prepare_project_fields(self, fields, own_attributes):
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= self.get_attributes_fields_for_type("project")
+
+        if "folderTypes" in fields:
+            fields.remove("folderTypes")
+            fields |= {
+                "folderTypes.{}".format(name)
+                for name in self.get_default_fields_for_type("folderType")
+            }
+
+        if "taskTypes" in fields:
+            fields.remove("taskTypes")
+            fields |= {
+                "taskTypes.{}".format(name)
+                for name in self.get_default_fields_for_type("taskType")
+            }
+
+        if "productTypes" in fields:
+            fields.remove("productTypes")
+            fields |= {
+                "productTypes.{}".format(name)
+                for name in self.get_default_fields_for_type("productType")
+            }
+
+        if own_attributes:
+            fields.add("ownAttrib")
+
     def get_projects(
         self, active=True, library=None, fields=None, own_attributes=False
     ):
@@ -3437,36 +3496,25 @@ class ServerAPI(object):
             Generator[dict[str, Any]]: Queried projects.
 
         """
-        if fields is None:
-            use_rest = True
-        else:
-            use_rest = False
+        if fields is not None:
             fields = set(fields)
-            for field in fields:
-                if field.startswith("config"):
-                    use_rest = True
-                    break
 
+        use_rest = self._should_use_rest_project(fields)
         if use_rest:
             for project in self.get_rest_projects(active, library):
                 if own_attributes:
                     fill_own_attribs(project)
                 yield project
+            return
 
-        else:
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("project")
+        self._prepare_project_fields(fields, own_attributes)
 
-            if own_attributes:
-                fields.add("ownAttrib")
-
-            query = projects_graphql_query(fields)
-            for parsed_data in query.continuous_query(self):
-                for project in parsed_data["projects"]:
-                    if own_attributes:
-                        fill_own_attribs(project)
-                    yield project
+        query = projects_graphql_query(fields)
+        for parsed_data in query.continuous_query(self):
+            for project in parsed_data["projects"]:
+                if own_attributes:
+                    fill_own_attribs(project)
+                yield project
 
     def get_project(self, project_name, fields=None, own_attributes=False):
         """Get project.
@@ -3483,30 +3531,15 @@ class ServerAPI(object):
                 if project was not found.
 
         """
-        use_rest = True
         if fields is not None:
-            use_rest = False
-            _fields = set()
-            for field in fields:
-                if field.startswith("config") or field == "data":
-                    use_rest = True
-                    break
-                _fields.add(field)
+            fields = set(fields)
 
-            fields = _fields
-
+        use_rest = self._should_use_rest_project(fields)
         if use_rest:
-            project = self.get_rest_project(project_name)
-            if own_attributes:
-                fill_own_attribs(project)
-            return project
+            return self.get_rest_project(project_name)
 
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= self.get_attributes_fields_for_type("project")
+        self._prepare_project_fields(fields, own_attributes)
 
-        if own_attributes:
-            fields.add("ownAttrib")
         query = project_graphql_query(fields)
         query.set_variable_value("projectName", project_name)
 
@@ -3517,6 +3550,7 @@ class ServerAPI(object):
             project["name"] = project_name
             if own_attributes:
                 fill_own_attribs(project)
+
         return project
 
     def get_folders_hierarchy(
@@ -3577,6 +3611,60 @@ class ServerAPI(object):
         )
         response.raise_for_status()
         return response.data
+
+    def get_folders_flat_hierarchy(self, project_name, include_attrib=False):
+        """Get simplified flat list of all project folders.
+
+        Similar to 'get_folders_hierarchy' but returns flat list and
+            is technically faster to retrieve.
+
+        Example::
+
+            [
+                {
+                    "id": "112233445566",
+                    "parentId": "112233445567",
+                    "path": "/root/parent/child",
+                    "parents": ["root", "parent"],
+                    "name": "child",
+                    "label": "Child",
+                    "folderType": "Folder",
+                    "hasTasks": False,
+                    "hasChildren": False,
+                    "taskNames": [
+                        "Compositing",
+                    ],
+                    "status": "In Progress",
+                    "attrib": {},
+                    "ownAttrib": [],
+                    "updatedAt": "2023-06-12T15:37:02.420260",
+                },
+                ...
+            ]
+
+        Args:
+            project_name (str): Project name.
+            include_attrib (Optional[bool]): Inclue attribute values
+                in output. Slower the query.
+
+        Returns:
+            list[dict[str, Any]]: List of folder entities.
+
+        """
+        major, minor, patch, _, _ = self.server_version_tuple
+        if (major, minor, patch) < (1, 0, 8):
+            raise UnsupportedServerVersion(
+                "Function 'get_folders_flat_hierarchy' is supported"
+                " for AYON server 1.0.8 and above."
+            )
+        query = "?attrib={}".format(
+            "true" if include_attrib else "false"
+        )
+        response = self.get(
+            "projects/{}/folders{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data["folders"]
 
     def get_folders(
         self,
@@ -3967,14 +4055,14 @@ class ServerAPI(object):
         folder_id,
         name=None,
         folder_type=None,
-        parent_id=_PLACEHOLDER,
-        label=_PLACEHOLDER,
+        parent_id=NOT_SET,
+        label=NOT_SET,
         attrib=None,
         data=None,
         tags=None,
         status=None,
         active=None,
-        thumbnail_id=_PLACEHOLDER,
+        thumbnail_id=NOT_SET,
     ):
         """Update folder entity on server.
 
@@ -4020,7 +4108,7 @@ class ServerAPI(object):
             ("parentId", parent_id),
             ("thumbnailId", thumbnail_id),
         ):
-            if value is not _PLACEHOLDER:
+            if value is not NOT_SET:
                 update_data[key] = value
 
         response = self.patch(
@@ -4198,7 +4286,7 @@ class ServerAPI(object):
                 entities.
             folder_id (str): Folder id.
             task_name (str): Task name
-            fields (Optional[Iterable[str]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -4231,7 +4319,7 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             task_id (str): Task id.
-            fields (Optional[Iterable[str]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -4246,6 +4334,228 @@ class ServerAPI(object):
             active=None,
             fields=fields,
             own_attributes=own_attributes
+        ):
+            return task
+        return None
+
+    def get_tasks_by_folder_paths(
+        self,
+        project_name,
+        folder_paths,
+        task_names=None,
+        task_types=None,
+        assignees=None,
+        assignees_all=None,
+        statuses=None,
+        tags=None,
+        active=True,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query task entities from server by folder paths.
+
+        Args:
+            project_name (str): Name of project.
+            folder_paths (list[str]): Folder paths.
+            task_names (Iterable[str]): Task names used for filtering.
+            task_types (Iterable[str]): Task types used for filtering.
+            assignees (Optional[Iterable[str]]): Task assignees used for
+                filtering. All tasks with any of passed assignees are
+                returned.
+            assignees_all (Optional[Iterable[str]]): Task assignees used
+                for filtering. Task must have all of passed assignees to be
+                returned.
+            statuses (Optional[Iterable[str]]): Task statuses used for
+                filtering.
+            tags (Optional[Iterable[str]]): Task tags used for
+                filtering.
+            active (Optional[bool]): Filter active/inactive tasks.
+                Both are returned if is set to None.
+            fields (Optional[Iterable[str]]): Fields to be queried for
+                folder. All possible folder fields are returned
+                if 'None' is passed.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
+
+        Returns:
+            dict[dict[str, list[dict[str, Any]]]: Task entities by
+                folder path.
+
+        """
+        folder_paths = set(folder_paths)
+        if not project_name or not folder_paths:
+            return
+
+        filters = {
+            "projectName": project_name,
+            "folderPaths": list(folder_paths),
+        }
+
+        if task_names is not None:
+            task_names = set(task_names)
+            if not task_names:
+                return
+            filters["taskNames"] = list(task_names)
+
+        if task_types is not None:
+            task_types = set(task_types)
+            if not task_types:
+                return
+            filters["taskTypes"] = list(task_types)
+
+        if assignees is not None:
+            assignees = set(assignees)
+            if not assignees:
+                return
+            filters["taskAssigneesAny"] = list(assignees)
+
+        if assignees_all is not None:
+            assignees_all = set(assignees_all)
+            if not assignees_all:
+                return
+            filters["taskAssigneesAll"] = list(assignees_all)
+
+        if statuses is not None:
+            statuses = set(statuses)
+            if not statuses:
+                return
+            filters["taskStatuses"] = list(statuses)
+
+        if tags is not None:
+            tags = set(tags)
+            if not tags:
+                return
+            filters["taskTags"] = list(tags)
+
+        if not fields:
+            fields = self.get_default_fields_for_type("task")
+        else:
+            fields = set(fields)
+            if "attrib" in fields:
+                fields.remove("attrib")
+                fields |= self.get_attributes_fields_for_type("task")
+
+        use_rest = False
+        if "data" in fields and not self.graphql_allows_data_in_query:
+            use_rest = True
+            fields = {"id"}
+
+        if active is not None:
+            fields.add("active")
+
+        if own_attributes:
+            fields.add("ownAttrib")
+
+        query = tasks_by_folder_paths_graphql_query(fields)
+        for attr, filter_value in filters.items():
+            query.set_variable_value(attr, filter_value)
+
+        output = {
+            folder_path: []
+            for folder_path in folder_paths
+        }
+        for parsed_data in query.continuous_query(self):
+            for folder in parsed_data["project"]["folders"]:
+                folder_path = folder["path"]
+                for task in folder["tasks"]:
+                    if active is not None and active is not task["active"]:
+                        continue
+
+                    if use_rest:
+                        task = self.get_rest_task(project_name, task["id"])
+                    else:
+                        self._convert_entity_data(task)
+
+                    if own_attributes:
+                        fill_own_attribs(task)
+                    output[folder_path].append(task)
+        return output
+
+    def get_tasks_by_folder_path(
+        self,
+        project_name,
+        folder_path,
+        task_names=None,
+        task_types=None,
+        assignees=None,
+        assignees_all=None,
+        statuses=None,
+        tags=None,
+        active=True,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query task entities from server by folder path.
+
+        Args:
+            project_name (str): Name of project.
+            folder_path (str): Folder path.
+            task_names (Iterable[str]): Task names used for filtering.
+            task_types (Iterable[str]): Task types used for filtering.
+            assignees (Optional[Iterable[str]]): Task assignees used for
+                filtering. All tasks with any of passed assignees are
+                returned.
+            assignees_all (Optional[Iterable[str]]): Task assignees used
+                for filtering. Task must have all of passed assignees to be
+                returned.
+            statuses (Optional[Iterable[str]]): Task statuses used for
+                filtering.
+            tags (Optional[Iterable[str]]): Task tags used for
+                filtering.
+            active (Optional[bool]): Filter active/inactive tasks.
+                Both are returned if is set to None.
+            fields (Optional[Iterable[str]]): Fields to be queried for
+                folder. All possible folder fields are returned
+                if 'None' is passed.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
+
+        """
+        return self.get_tasks_by_folder_paths(
+            project_name,
+            [folder_path],
+            task_names,
+            task_types=task_types,
+            assignees=assignees,
+            assignees_all=assignees_all,
+            statuses=statuses,
+            tags=tags,
+            active=active,
+            fields=fields,
+            own_attributes=own_attributes
+        )[folder_path]
+
+    def get_task_by_folder_path(
+        self,
+        project_name,
+        folder_path,
+        task_name,
+        fields=None,
+        own_attributes=False
+    ):
+        """Query task entity by folder path and task name.
+
+        Args:
+            project_name (str): Project name.
+            folder_path (str): Folder path.
+            task_name (str): Task name.
+            fields (Optional[Iterable[str]]): Task fields that should
+                be returned.
+            own_attributes (Optional[bool]): Attribute values that are
+                not explicitly set on entity will have 'None' value.
+
+        Returns:
+            Union[dict[str, Any], None]: Task entity data or None if was
+                not found.
+
+        """
+        for task in self.get_tasks_by_folder_path(
+            project_name,
+            folder_path,
+            active=None,
+            task_names=[task_name],
+            fields=fields,
+            own_attributes=own_attributes,
         ):
             return task
         return None
@@ -4323,14 +4633,14 @@ class ServerAPI(object):
         name=None,
         task_type=None,
         folder_id=None,
-        label=_PLACEHOLDER,
+        label=NOT_SET,
         assignees=None,
         attrib=None,
         data=None,
         tags=None,
         status=None,
         active=None,
-        thumbnail_id=_PLACEHOLDER,
+        thumbnail_id=NOT_SET,
     ):
         """Update task entity on server.
 
@@ -4378,7 +4688,7 @@ class ServerAPI(object):
             ("label", label),
             ("thumbnailId", thumbnail_id),
         ):
-            if value is not _PLACEHOLDER:
+            if value is not NOT_SET:
                 update_data[key] = value
 
         response = self.patch(
@@ -5299,7 +5609,7 @@ class ServerAPI(object):
             folder_id (str): Folder id.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Optional[Iterable[str]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -5425,13 +5735,13 @@ class ServerAPI(object):
         version_id,
         version=None,
         product_id=None,
-        task_id=_PLACEHOLDER,
+        task_id=NOT_SET,
         attrib=None,
         data=None,
         tags=None,
         status=None,
         active=None,
-        thumbnail_id=_PLACEHOLDER,
+        thumbnail_id=NOT_SET,
     ):
         """Update version entity on server.
 
@@ -5476,7 +5786,7 @@ class ServerAPI(object):
             ("taskId", task_id),
             ("thumbnailId", thumbnail_id),
         ):
-            if value is not _PLACEHOLDER:
+            if value is not NOT_SET:
                 update_data[key] = value
 
         response = self.patch(
@@ -5585,6 +5895,10 @@ class ServerAPI(object):
 
         if own_attributes:
             fields.add("ownAttrib")
+
+        if "files" in fields:
+            fields.discard("files")
+            fields |= REPRESENTATION_FILES_FIELDS
 
         filters = {
             "projectName": project_name
@@ -5817,7 +6131,8 @@ class ServerAPI(object):
 
         Context filters have defined structure. To define filter of nested
             subfield use dot '.' as delimiter (For example 'task.name').
-        Filter values can be regex filters. String or 're.Pattern' can be used.
+        Filter values can be regex filters. String or ``re.Pattern`` can
+            be used.
 
         Args:
             project_name (str): Project where to look for representations.
@@ -5867,7 +6182,6 @@ class ServerAPI(object):
                 raise TypeError(
                     "Expected 'set', 'list', 'tuple' got {}".format(
                         str(type(filters))))
-
 
             new_filters = set()
             for filter_value in filters:
@@ -6425,7 +6739,7 @@ class ServerAPI(object):
         library_project=False,
         preset_name=None
     ):
-        """Create project using Ayon settings.
+        """Create project using AYON settings.
 
         This project creation function is not validating project entity on
         creation. It is because project entity is created blindly with only
@@ -6742,9 +7056,9 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where the link is created.
             link_type_name (str): Type of link.
-            input_id (str): Id of input entity.
+            input_id (str): Input entity id.
             input_type (str): Entity type of input entity.
-            output_id (str): Id of output entity.
+            output_id (str): Output entity id.
             output_type (str): Entity type of output entity.
             link_name (Optional[str]): Name of link.
                 Available from server version '1.0.0-rc.6'.
@@ -6771,7 +7085,7 @@ class ServerAPI(object):
         ):
             kwargs["link"] = full_link_type_name
             if link_name:
-                raise NotImplementedError((
+                raise UnsupportedServerVersion((
                     "Link name is not supported"
                     " for version of AYON server {}"
                 ).format(self.server_version))

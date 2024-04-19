@@ -2086,6 +2086,31 @@ def get_folders(*args, **kwargs):
     return con.get_folders(*args, **kwargs)
 
 
+def get_folders_flat_hierarchy(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_folders_flat_hierarchy(*args, **kwargs)
+
+
+def get_tasks(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks(*args, **kwargs)
+
+
+def get_tasks_by_folder_paths(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_paths(*args, **kwargs)
+
+
+def get_tasks_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_path(*args, **kwargs)
+
+
+def get_task_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_folder_path(*args, **kwargs)
+
+
 def get_folder_by_id(*args, **kwargs):
     """Query folder entity by id.
 

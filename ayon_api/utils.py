@@ -24,6 +24,7 @@ from .constants import (
 from .exceptions import UrlError
 
 REMOVED_VALUE = object()
+NOT_SET = object()
 SLUGIFY_WHITELIST = string.ascii_letters + string.digits
 SLUGIFY_SEP_WHITELIST = " ,./\\;:!|*^#@~+-_="
 
@@ -273,7 +274,7 @@ def _try_connect_to_server(url, timeout=None):
     if timeout is None:
         timeout = get_default_timeout()
     try:
-        # TODO add validation if the url lead to Ayon server
+        # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
         requests.get(url, timeout=timeout)
 
