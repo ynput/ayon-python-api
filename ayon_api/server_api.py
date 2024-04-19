@@ -3612,11 +3612,13 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_folders_flat_hierarchy(self, project_name, include_attrib=False):
+    def get_folders_rest(self, project_name, include_attrib=False):
         """Get simplified flat list of all project folders.
 
-        Similar to 'get_folders_hierarchy' but returns flat list and
-            is technically faster to retrieve.
+        Get all project folders in single REST call. This can be faster than
+            using 'get_folders' method which is using GraphQl, but does not
+            allow any filtering, and set of fields is defined
+            by server backend.
 
         Example::
 
@@ -3654,7 +3656,7 @@ class ServerAPI(object):
         major, minor, patch, _, _ = self.server_version_tuple
         if (major, minor, patch) < (1, 0, 8):
             raise UnsupportedServerVersion(
-                "Function 'get_folders_flat_hierarchy' is supported"
+                "Function 'get_folders_rest' is supported"
                 " for AYON server 1.0.8 and above."
             )
         query = "?attrib={}".format(
