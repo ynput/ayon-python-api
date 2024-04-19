@@ -2065,7 +2065,7 @@ def get_folders_flat_hierarchy(*args, **kwargs):
 
     Args:
         project_name (str): Project name.
-        include_attrib (Optional[bool]): Inclue attribute values
+        include_attrib (Optional[bool]): Include attribute values
             in output. Slower to query.
 
     Returns:
