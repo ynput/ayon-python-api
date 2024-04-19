@@ -233,7 +233,7 @@ def get_service_name():
 
     Returns:
         Union[str, None]: Name of service if service was registered.
-        
+
     """
     return ServiceContext.service_name
 
@@ -331,6 +331,105 @@ def get_server_api_connection():
 # ------------------------------------------------
 #     This content is generated automatically.
 # ------------------------------------------------
+def get_base_url():
+    con = get_server_api_connection()
+    return con.get_base_url()
+
+
+def get_rest_url():
+    con = get_server_api_connection()
+    return con.get_rest_url()
+
+
+def get_ssl_verify():
+    """Enable ssl verification.
+
+    Returns:
+        bool: Current state of ssl verification.
+
+    """
+    con = get_server_api_connection()
+    return con.get_ssl_verify()
+
+
+def set_ssl_verify(*args, **kwargs):
+    """Change ssl verification state.
+
+    Args:
+        ssl_verify (Union[bool, str, None]): Enabled/disable
+            ssl verification, can be a path to file.
+
+    """
+    con = get_server_api_connection()
+    return con.set_ssl_verify(*args, **kwargs)
+
+
+def get_cert():
+    """Current cert file used for connection to server.
+
+    Returns:
+        Union[str, None]: Path to cert file.
+
+    """
+    con = get_server_api_connection()
+    return con.get_cert()
+
+
+def set_cert(*args, **kwargs):
+    """Change cert file used for connection to server.
+
+    Args:
+        cert (Union[str, None]): Path to cert file.
+
+    """
+    con = get_server_api_connection()
+    return con.set_cert(*args, **kwargs)
+
+
+def get_timeout():
+    """Current value for requests timeout.
+
+    Returns:
+        float: Timeout value in seconds.
+
+    """
+    con = get_server_api_connection()
+    return con.get_timeout()
+
+
+def set_timeout(*args, **kwargs):
+    """Change timeout value for requests.
+
+    Args:
+        timeout (Union[float, None]): Timeout value in seconds.
+
+    """
+    con = get_server_api_connection()
+    return con.set_timeout(*args, **kwargs)
+
+
+def get_max_retries():
+    """Current value for requests max retries.
+
+    Returns:
+        int: Max retries value.
+
+    """
+    con = get_server_api_connection()
+    return con.get_max_retries()
+
+
+def set_max_retries(*args, **kwargs):
+    """Change max retries value for requests.
+
+    Args:
+        max_retries (Union[int, None]): Max retries value.
+
+    """
+    con = get_server_api_connection()
+    return con.set_max_retries(*args, **kwargs)
+
+
 def get_base_url():
     con = get_server_api_connection()
     return con.get_base_url()
@@ -1213,7 +1312,7 @@ def create_dependency_package(*args, **kwargs):
             dependency package created::
 
                 {"<addon name>": "<addon version>", ...}
-                
+
         installer_version (str): Version of installer for which was
             package created.
         checksum (str): Checksum of archive file where dependencies are.
@@ -2067,8 +2166,8 @@ def get_folders_flat_hierarchy(*args, **kwargs):
 
     Args:
         project_name (str): Project name.
-        include_attrib (Optional[bool]): Inclue attribute values
-            in output. Slower the query.
+        include_attrib (Optional[bool]): Include attribute values
+            in output. Slower to query.
 
     Returns:
         list[dict[str, Any]]: List of folder entities.
