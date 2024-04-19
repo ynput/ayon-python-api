@@ -274,7 +274,7 @@ def _try_connect_to_server(url, timeout=None):
     if timeout is None:
         timeout = get_default_timeout()
     try:
-        # TODO add validation if the url lead to Ayon server
+        # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
         requests.get(url, timeout=timeout)
 

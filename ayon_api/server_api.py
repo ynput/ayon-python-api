@@ -1313,7 +1313,7 @@ class ServerAPI(object):
         get the full event information is required to receive it explicitly.
 
         Args:
-            event_id (str): Id of event.
+            event_id (str): Event id.
 
         Returns:
             dict[str, Any]: Full event data.
@@ -1477,7 +1477,7 @@ class ServerAPI(object):
         Args:
             topic (str): Event topic used for filtering of listeners.
             sender (Optional[str]): Sender of event.
-            hash (Optional[str]): Event hash.
+            event_hash (Optional[str]): Event hash.
             project_name (Optional[str]): Project name.
             username (Optional[str]): Username which triggered event.
             dependencies (Optional[list[str]]): List of event id dependencies.
@@ -2790,7 +2790,7 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Name of project.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
 
         Returns:
@@ -3095,7 +3095,7 @@ class ServerAPI(object):
                 settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
             use_site (bool): To force disable option of using site overrides
                 set to 'False'. In that case won't be applied any site
@@ -3157,7 +3157,7 @@ class ServerAPI(object):
                 settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
-            site_id (Optional[str]): Id of site for which want to receive
+            site_id (Optional[str]): Site id for which want to receive
                 site overrides.
             use_site (bool): To force disable option of using site overrides
                 set to 'False'. In that case won't be applied any site
@@ -3302,7 +3302,6 @@ class ServerAPI(object):
         )
         response.raise_for_status()
         return response.data
-
 
     def delete_secret(self, secret_name):
         """Delete secret by name.
@@ -4287,7 +4286,7 @@ class ServerAPI(object):
                 entities.
             folder_id (str): Folder id.
             task_name (str): Task name
-            fields (Optional[Iterable[str]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -4320,7 +4319,7 @@ class ServerAPI(object):
             project_name (str): Name of project where to look for queried
                 entities.
             task_id (str): Task id.
-            fields (Optional[Iterable[str]): Fields that should be returned.
+            fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -5610,7 +5609,7 @@ class ServerAPI(object):
             folder_id (str): Folder id.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
-            fields (Optional[Iterable[str]): fields to be queried
+            fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
             own_attributes (Optional[bool]): Attribute values that are
                 not explicitly set on entity will have 'None' value.
@@ -6132,7 +6131,8 @@ class ServerAPI(object):
 
         Context filters have defined structure. To define filter of nested
             subfield use dot '.' as delimiter (For example 'task.name').
-        Filter values can be regex filters. String or 're.Pattern' can be used.
+        Filter values can be regex filters. String or ``re.Pattern`` can
+            be used.
 
         Args:
             project_name (str): Project where to look for representations.
@@ -6182,7 +6182,6 @@ class ServerAPI(object):
                 raise TypeError(
                     "Expected 'set', 'list', 'tuple' got {}".format(
                         str(type(filters))))
-
 
             new_filters = set()
             for filter_value in filters:
@@ -6740,7 +6739,7 @@ class ServerAPI(object):
         library_project=False,
         preset_name=None
     ):
-        """Create project using Ayon settings.
+        """Create project using AYON settings.
 
         This project creation function is not validating project entity on
         creation. It is because project entity is created blindly with only
@@ -7057,9 +7056,9 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where the link is created.
             link_type_name (str): Type of link.
-            input_id (str): Id of input entity.
+            input_id (str): Input entity id.
             input_type (str): Entity type of input entity.
-            output_id (str): Id of output entity.
+            output_id (str): Output entity id.
             output_type (str): Entity type of output entity.
             link_name (Optional[str]): Name of link.
                 Available from server version '1.0.0-rc.6'.
