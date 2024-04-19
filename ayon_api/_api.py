@@ -2038,7 +2038,8 @@ def get_folders_rest(*args, **kwargs):
 
     Get all project folders in single REST call. This can be faster than
         using 'get_folders' method which is using GraphQl, but does not
-        allow any filtering, and set of fileds is defined.
+        allow any filtering, and set of fields is defined
+        by server backend.
 
     Example::
 
