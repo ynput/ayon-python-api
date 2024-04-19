@@ -3645,7 +3645,7 @@ class ServerAPI(object):
         Args:
             project_name (str): Project name.
             include_attrib (Optional[bool]): Inclue attribute values
-                in output. Slower the query.
+                in output. Slower to query.
 
         Returns:
             list[dict[str, Any]]: List of folder entities.
