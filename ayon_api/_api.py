@@ -2033,11 +2033,12 @@ def get_folders_hierarchy(*args, **kwargs):
     return con.get_folders_hierarchy(*args, **kwargs)
 
 
-def get_folders_flat_hierarchy(*args, **kwargs):
+def get_folders_rest(*args, **kwargs):
     """Get simplified flat list of all project folders.
 
-    Similar to 'get_folders_hierarchy' but returns flat list and
-        is technically faster to retrieve.
+    Get all project folders in single REST call. This can be faster than
+        using 'get_folders' method which is using GraphQl, but does not
+        allow any filtering, and set of fileds is defined.
 
     Example::
 
@@ -2073,7 +2074,7 @@ def get_folders_flat_hierarchy(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folders_flat_hierarchy(*args, **kwargs)
+    return con.get_folders_rest(*args, **kwargs)
 
 
 def get_folders(*args, **kwargs):
