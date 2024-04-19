@@ -30,6 +30,17 @@ DEFAULT_USER_FIELDS = {
     "attrib.fullName",
 }
 
+# --- Folder types ---
+DEFAULT_FOLDER_TYPE_FIELDS = {
+    "name",
+    "icon",
+}
+
+# --- Task types ---
+DEFAULT_TASK_TYPE_FIELDS = {
+    "name",
+}
+
 # --- Product types ---
 DEFAULT_PRODUCT_TYPE_FIELDS = {
     "name",
@@ -45,6 +56,9 @@ DEFAULT_PROJECT_FIELDS = {
     "config",
     "createdAt",
     "data",
+    "folderTypes",
+    "taskTypes",
+    "productTypes",
 }
 
 # --- Folders ---

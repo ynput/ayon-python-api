@@ -785,6 +785,11 @@ def get_folders_hierarchy(*args, **kwargs):
     return con.get_folders_hierarchy(*args, **kwargs)
 
 
+def get_folders_flat_hierarchy(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_folders_flat_hierarchy(*args, **kwargs)
+
+
 def get_tasks(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_tasks(*args, **kwargs)
@@ -798,6 +803,21 @@ def get_task_by_id(*args, **kwargs):
 def get_task_by_name(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_task_by_name(*args, **kwargs)
+
+
+def get_tasks_by_folder_paths(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_paths(*args, **kwargs)
+
+
+def get_tasks_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_path(*args, **kwargs)
+
+
+def get_task_by_folder_path(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.get_task_by_folder_path(*args, **kwargs)
 
 
 def get_folder_by_id(*args, **kwargs):
@@ -968,6 +988,81 @@ def update_project(project_name, *args, **kwargs):
 def delete_project(project_name):
     con = get_server_api_connection()
     return con.delete_project(project_name)
+
+
+def create_folder(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_folder(*args, **kwargs)
+
+
+def update_folder(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_folder(*args, **kwargs)
+
+
+def delete_folder(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_folder(*args, **kwargs)
+
+
+def create_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_task(*args, **kwargs)
+
+
+def update_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_task(*args, **kwargs)
+
+
+def delete_task(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_task(*args, **kwargs)
+
+
+def create_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_product(*args, **kwargs)
+
+
+def update_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_product(*args, **kwargs)
+
+
+def delete_product(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_product(*args, **kwargs)
+
+
+def create_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_version(*args, **kwargs)
+
+
+def update_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_version(*args, **kwargs)
+
+
+def delete_version(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_version(*args, **kwargs)
+
+
+def create_representation(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.create_representation(*args, **kwargs)
+
+
+def update_representation(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.update_representation(*args, **kwargs)
+
+
+def delete_representation(*args, **kwargs):
+    con = get_server_api_connection()
+    return con.delete_representation(*args, **kwargs)
 
 
 def get_thumbnail_by_id(project_name, thumbnail_id):

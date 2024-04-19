@@ -262,6 +262,52 @@ def tasks_graphql_query(fields):
     return query
 
 
+def tasks_by_folder_paths_graphql_query(fields):
+    query = GraphQlQuery("TasksByFolderPathQuery")
+    project_name_var = query.add_variable("projectName", "String!")
+    task_names_var = query.add_variable("taskNames", "[String!]")
+    task_types_var = query.add_variable("taskTypes", "[String!]")
+    folder_paths_var = query.add_variable("folderPaths", "[String!]")
+    assignees_any_var = query.add_variable("taskAssigneesAny", "[String!]")
+    assignees_all_var = query.add_variable("taskAssigneesAll", "[String!]")
+    statuses_var = query.add_variable("taskStatuses", "[String!]")
+    tags_var = query.add_variable("taskTags", "[String!]")
+
+    project_field = query.add_field("project")
+    project_field.set_filter("name", project_name_var)
+
+    folders_field = project_field.add_field_with_edges("folders")
+    folders_field.add_field("path")
+    folders_field.set_filter("paths", folder_paths_var)
+
+    tasks_field = folders_field.add_field_with_edges("tasks")
+    # WARNING: At moment when this been created 'names' filter is not supported
+    tasks_field.set_filter("names", task_names_var)
+    tasks_field.set_filter("taskTypes", task_types_var)
+    tasks_field.set_filter("assigneesAny", assignees_any_var)
+    tasks_field.set_filter("assignees", assignees_all_var)
+    tasks_field.set_filter("statuses", statuses_var)
+    tasks_field.set_filter("tags", tags_var)
+
+    nested_fields = fields_to_dict(fields)
+    add_links_fields(tasks_field, nested_fields)
+
+    query_queue = collections.deque()
+    for key, value in nested_fields.items():
+        query_queue.append((key, value, tasks_field))
+
+    while query_queue:
+        item = query_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            query_queue.append((k, v, field))
+    return query
+
+
 def products_graphql_query(fields):
     query = GraphQlQuery("ProductsQuery")
 

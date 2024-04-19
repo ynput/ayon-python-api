@@ -205,6 +205,7 @@ class EntityHub(object):
         if not entity_types:
             return None
 
+        entity_type = None
         entity_data = None
         for entity_type in entity_types:
             if entity_type == "folder":
@@ -457,6 +458,7 @@ class EntityHub(object):
 
     def _query_entity_children(self, entity):
         folder_fields = self._get_folder_fields()
+        task_fields = self._get_task_fields()
         tasks = []
         folders = []
         if entity.entity_type == "project":
@@ -464,7 +466,7 @@ class EntityHub(object):
                 entity["name"],
                 parent_ids=[entity.id],
                 fields=folder_fields,
-                own_attributes=True
+                own_attributes=True,
             ))
 
         elif entity.entity_type == "folder":
@@ -472,13 +474,14 @@ class EntityHub(object):
                 self.project_entity["name"],
                 parent_ids=[entity.id],
                 fields=folder_fields,
-                own_attributes=True
+                own_attributes=True,
             ))
 
             tasks = list(self._connection.get_tasks(
                 self.project_entity["name"],
                 folder_ids=[entity.id],
-                own_attributes=True
+                fields=task_fields,
+                own_attributes=True,
             ))
 
         children_ids = {
@@ -601,22 +604,32 @@ class EntityHub(object):
         folder_fields.add("hasProducts")
         if self._allow_data_changes:
             folder_fields.add("data")
+        folder_fields |= {"status", "tags"}
         return folder_fields
+
+    def _get_task_fields(self):
+        task_fields = set(
+            self._connection.get_default_fields_for_type("task")
+        )
+        task_fields |= {"status", "tags"}
+        return task_fields
 
     def query_entities_from_server(self):
         """Query whole project at once."""
         project_entity = self.fill_project_from_server()
 
         folder_fields = self._get_folder_fields()
+        task_fields = self._get_task_fields()
 
         folders = self._connection.get_folders(
             project_entity.name,
             fields=folder_fields,
-            own_attributes=True
+            own_attributes=True,
         )
         tasks = self._connection.get_tasks(
             project_entity.name,
-            own_attributes=True
+            fields=task_fields,
+            own_attributes=True,
         )
         folders_by_parent_id = collections.defaultdict(list)
         for folder in folders:
@@ -2351,6 +2364,19 @@ class ProjectEntity(BaseEntity):
     task_types = property(get_task_types, set_task_types)
     statuses = property(get_statuses, set_statuses)
 
+    def get_status_by_slugified_name(self, name):
+        """Find status by name.
+
+        Args:
+            name (str): Status name.
+
+
+        Returns:
+            Union[ProjectStatus, None]: Status object or None.
+
+        """
+        return self._statuses_obj.get_status_by_slugified_name(name)
+
     def lock(self):
         super(ProjectEntity, self).lock()
         self._orig_folder_types = copy.deepcopy(self._folder_types)
@@ -2419,18 +2445,36 @@ class FolderEntity(BaseEntity):
     entity_type = "folder"
     parent_entity_types = ["folder", "project"]
 
-    def __init__(self, folder_type, *args, label=None, path=None, **kwargs):
+    def __init__(
+        self,
+        folder_type,
+        *args,
+        label=None,
+        path=None,
+        tags=None,
+        status=UNKNOWN_VALUE,
+        **kwargs
+    ):
         super(FolderEntity, self).__init__(*args, **kwargs)
         # Autofill project as parent of folder if is not yet set
         # - this can be guessed only if folder was just created
         if self.created and self._parent_id is UNKNOWN_VALUE:
             self._parent_id = self.project_name
 
+        if tags is None:
+            tags = []
+        else:
+            tags = list(tags)
+
         self._folder_type = folder_type
         self._label = label
+        self._tags = copy.deepcopy(tags)
+        self._status = status
 
         self._orig_folder_type = folder_type
         self._orig_label = label
+        self._orig_status = status
+        self._orig_tags = copy.deepcopy(tags)
         # Know if folder has any products
         # - is used to know if folder allows hierarchy changes
         self._has_published_content = False
@@ -2451,6 +2495,52 @@ class FolderEntity(BaseEntity):
         self._label = label
 
     label = property(get_label, set_label)
+
+    def get_status(self):
+        """Folder status.
+
+        Returns:
+            Union[str, UNKNOWN_VALUE]: Folder status or 'UNKNOWN_VALUE'.
+
+        """
+        return self._status
+
+    def set_status(self, status_name):
+        """Set folder status.
+
+        Args:
+            status_name (str): Status name.
+
+        """
+        project_entity = self._entity_hub.project_entity
+        status = project_entity.get_status_by_slugified_name(status_name)
+        if status is None:
+            raise ValueError(
+                f"Status {status_name} is not available on project."
+            )
+        self._status = status_name
+
+    status = property(get_status, set_status)
+
+    def get_tags(self):
+        """Folder tags.
+
+        Returns:
+            list[str]: Folder tags.
+
+        """
+        return self._tags
+
+    def set_tags(self, tags):
+        """Change tags.
+
+        Args:
+            tags (Iterable[str]): Tags.
+
+        """
+        self._tags = list(tags)
+
+    tags = property(get_tags, set_tags)
 
     def get_path(self, dynamic_value=True):
         if not dynamic_value:
@@ -2498,6 +2588,8 @@ class FolderEntity(BaseEntity):
     def lock(self):
         super(FolderEntity, self).lock()
         self._orig_folder_type = self._folder_type
+        self._orig_status = self._status
+        self._orig_tags = copy.deepcopy(self._tags)
 
     @property
     def changes(self):
@@ -2511,6 +2603,12 @@ class FolderEntity(BaseEntity):
 
         if self._orig_folder_type != self._folder_type:
             changes["folderType"] = self._folder_type
+
+        if self._orig_status != self._status:
+            changes["status"] = self._status
+
+        if self._orig_tags != self._tags:
+            changes["tags"] = self._tags
 
         label = self._label
         if self._name == label:
@@ -2530,6 +2628,8 @@ class FolderEntity(BaseEntity):
             folder["folderType"],
             label=folder["label"],
             path=folder["path"],
+            status=folder["status"],
+            tags=folder["tags"],
             entity_id=folder["id"],
             parent_id=parent_id,
             name=folder["name"],
@@ -2560,6 +2660,13 @@ class FolderEntity(BaseEntity):
         attrib = self.attribs.to_dict()
         if attrib:
             output["attrib"] = attrib
+
+        # Add tags only if are available
+        if self.tags:
+            output["tags"] = list(self.tags)
+
+        if self.status is not UNKNOWN_VALUE:
+            output["status"] = self.status
 
         if self.active is not UNKNOWN_VALUE:
             output["active"] = self.active
@@ -2599,20 +2706,39 @@ class TaskEntity(BaseEntity):
     entity_type = "task"
     parent_entity_types = ["folder"]
 
-    def __init__(self, task_type, *args, label=None, **kwargs):
+    def __init__(
+        self,
+        task_type,
+        *args,
+        label=None,
+        tags=None,
+        status=UNKNOWN_VALUE,
+        **kwargs
+    ):
         super(TaskEntity, self).__init__(*args, **kwargs)
+
+        if tags is None:
+            tags = []
+        else:
+            tags = list(tags)
 
         self._task_type = task_type
         self._label = label
+        self._status = status
+        self._tags = tags
 
         self._orig_task_type = task_type
         self._orig_label = label
+        self._orig_status = status
+        self._orig_tags = copy.deepcopy(tags)
 
         self._children_ids = set()
 
     def lock(self):
         super(TaskEntity, self).lock()
         self._orig_task_type = self._task_type
+        self._orig_status = self._status
+        self._orig_tags = copy.deepcopy(self._tags)
 
     def get_task_type(self):
         return self._task_type
@@ -2630,6 +2756,52 @@ class TaskEntity(BaseEntity):
 
     label = property(get_label, set_label)
 
+    def get_status(self):
+        """Folder status.
+
+        Returns:
+            Union[str, UNKNOWN_VALUE]: Folder status or 'UNKNOWN_VALUE'.
+
+        """
+        return self._status
+
+    def set_status(self, status_name):
+        """Set folder status.
+
+        Args:
+            status_name (str): Status name.
+
+        """
+        project_entity = self._entity_hub.project_entity
+        status = project_entity.get_status_by_slugified_name(status_name)
+        if status is None:
+            raise ValueError(
+                f"Status {status_name} is not available on project."
+            )
+        self._status = status_name
+
+    status = property(get_status, set_status)
+
+    def get_tags(self):
+        """Folder tags.
+
+        Returns:
+            list[str]: Folder tags.
+
+        """
+        return self._tags
+
+    def set_tags(self, tags):
+        """Change tags.
+
+        Args:
+            tags (Iterable[str]): Tags.
+
+        """
+        self._tags = list(tags)
+
+    tags = property(get_tags, set_tags)
+
     def add_child(self, child):
         raise ValueError("Task does not support to add children")
 
@@ -2642,6 +2814,12 @@ class TaskEntity(BaseEntity):
 
         if self._orig_task_type != self._task_type:
             changes["taskType"] = self._task_type
+
+        if self._orig_status != self._status:
+            changes["status"] = self._status
+
+        if self._orig_tags != self._tags:
+            changes["tags"] = self._tags
 
         label = self._label
         if self._name == label:
@@ -2658,6 +2836,8 @@ class TaskEntity(BaseEntity):
             task["taskType"],
             entity_id=task["id"],
             label=task["label"],
+            status=task["status"],
+            tags=task["tags"],
             parent_id=task["folderId"],
             name=task["name"],
             data=task.get("data"),
@@ -2683,6 +2863,12 @@ class TaskEntity(BaseEntity):
 
         if self.active is not UNKNOWN_VALUE:
             output["active"] = self.active
+
+        if self.status is not UNKNOWN_VALUE:
+            output["status"] = self.status
+
+        if self.tags:
+            output["tags"] = self.tags
 
         if (
             self._entity_hub.allow_data_changes
