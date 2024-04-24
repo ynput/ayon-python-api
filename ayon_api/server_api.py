@@ -3536,7 +3536,10 @@ class ServerAPI(object):
 
         use_rest = self._should_use_rest_project(fields)
         if use_rest:
-            return self.get_rest_project(project_name)
+            project = self.get_rest_project(project_name)
+            if own_attributes:
+                fill_own_attribs(project)
+            return project
 
         self._prepare_project_fields(fields, own_attributes)
 
