@@ -605,15 +605,12 @@ class EntityHub(object):
         folder_fields.add("hasProducts")
         if self._allow_data_changes:
             folder_fields.add("data")
-        folder_fields |= {"status", "tags"}
         return folder_fields
 
     def _get_task_fields(self):
-        task_fields = set(
+        return set(
             self._connection.get_default_fields_for_type("task")
         )
-        task_fields |= {"status", "tags"}
-        return task_fields
 
     def query_entities_from_server(self):
         """Query whole project at once."""
