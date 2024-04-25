@@ -219,6 +219,7 @@ class EntityHub(object):
                 entity_data = self._connection.get_task_by_id(
                     self.project_name,
                     entity_id,
+                    fields=self._get_task_fields(),
                     own_attributes=True
                 )
             else:
