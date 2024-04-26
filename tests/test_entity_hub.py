@@ -1,12 +1,7 @@
 import os
 import pytest
-from dotenv import load_dotenv
 
 from ayon_api.entity_hub import EntityHub
-from ayon_api._api import (
-    get_folder_by_id,
-    get_folders
-)
 from ayon_api.exceptions import HTTPRequestError
 
 
@@ -23,7 +18,7 @@ def test_simple_operations(
     folder_name,
     subfolder_name,
     folders_count
-    ):
+):
     """Test of simple operations with folders - create, move, delete.
     """
     e = EntityHub(PROJECT_NAME)
@@ -60,13 +55,13 @@ def test_simple_operations(
                 subfolder["id"]
             )["parent_id"] == new_parent_id
 
-    # delete subfolders
+    # delete subfolders
     for subfolder in subfolders:
         e.delete_entity(e.get_entity_by_id(subfolder["id"]))
         e.commit_changes()
         assert e.get_entity_by_id(subfolder["id"]) is None
 
-    # delete folders
+    # delete folders
     for folder in folders:
         e.delete_entity(e.get_entity_by_id(folder["id"]))
         e.commit_changes()
@@ -83,7 +78,7 @@ def test_create_delete_with_duplicated_names(
     folder_name,
     subfolder_name,
     num_of_subfolders
-    ):
+):
     """Creates two folders with duplicated names 
     and delete one of them before commit.
     Exception should not be raised.
