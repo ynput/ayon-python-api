@@ -118,6 +118,33 @@ def test_create_delete_with_duplicated_names(
     e.commit_changes()
 
 
+def test_rename_status():
+    e = EntityHub(PROJECT_NAME)
+
+    status_mapping = {}
+    for status in e.project_entity.statuses:
+        orig_name = status.name
+        new_name = f"new_{orig_name}"
+        status_mapping[new_name] = orig_name
+        status.name = new_name
+
+    e.commit_changes()
+
+    e = EntityHub(PROJECT_NAME)
+
+    statuses_by_name = {
+        status.name: status
+        for status in e.project_entity.statuses
+    }
+    if set(statuses_by_name) != set(status_mapping.keys()):
+        raise AssertionError("Statuses were not renamed correctly.")
+
+    # Change statuse back
+    for status in e.project_entity.statuses:
+        status.name = status_mapping[status.name]
+    e.commit_changes()
+
+
 # @pytest.mark.parametrize(
 #     "folder_name",
 #     [
@@ -313,10 +340,6 @@ def test_create_delete_with_duplicated_names(
 #     for status in e.project_entity.statuses:
 #         print(status.name)
 #
-#
-# def test_change_name():
-#     # test if all relations didnt change
-#     raise NotImplementedError()
 #
 # def test_task_types():
 #     raise NotImplementedError()
