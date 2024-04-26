@@ -119,19 +119,19 @@ def test_create_delete_with_duplicated_names(
 
 
 def test_rename_status():
+    # Change statuses - add prefix 'new_'
     e = EntityHub(PROJECT_NAME)
-
     status_mapping = {}
     for status in e.project_entity.statuses:
         orig_name = status.name
         new_name = f"new_{orig_name}"
         status_mapping[new_name] = orig_name
         status.name = new_name
-
     e.commit_changes()
 
+    # Create new entity hub for same project and validate the changes
+    #   are propagated
     e = EntityHub(PROJECT_NAME)
-
     statuses_by_name = {
         status.name: status
         for status in e.project_entity.statuses
@@ -139,7 +139,7 @@ def test_rename_status():
     if set(statuses_by_name) != set(status_mapping.keys()):
         raise AssertionError("Statuses were not renamed correctly.")
 
-    # Change statuse back
+    # Change statuses back
     for status in e.project_entity.statuses:
         status.name = status_mapping[status.name]
     e.commit_changes()
