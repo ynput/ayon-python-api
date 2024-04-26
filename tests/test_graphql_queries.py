@@ -65,15 +65,19 @@ def make_expected_get_variables_values(keys, values):
 @pytest.mark.parametrize(
     "keys, values, types",
     [
-        (["projectName", "projectId", "numOf"], 
-         ["kuba_v4_sync", "0x23", 3], 
-         ["[String!]", "[String!]", "Int"]),
-        (["projectName", "testStrInt"],
-         ["my_name", 42],
-         ["[String!]", "[String!]"]),
-        (["projectName", "testIntStr"],
-         ["my_name", "test_123"],
-         ["[String!]", "Int"]),
+        (
+            ["projectName", "projectId", "numOf"],
+            ["kuba_v4_sync", "0x23", 3],
+            ["[String!]", "[String!]", "Int"]
+        ), (
+            ["projectName", "testStrInt"],
+            ["my_name", 42],
+            ["[String!]", "[String!]"]
+        ), (
+            ["projectName", "testIntStr"],
+            ["my_name", "test_123"],
+            ["[String!]", "Int"]
+        ),
     ])
 def test_get_variables_values(keys, values, types):
     query = make_project_query(keys, values, types)

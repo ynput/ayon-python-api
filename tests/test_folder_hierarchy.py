@@ -5,9 +5,8 @@ To run use: pytest --envfile {environment path}.
 Make sure you have set AYON_TOKEN in your environment. 
 """
 
-import pytest
 import os
-from dotenv import load_dotenv
+import pytest
 
 from ayon_api.operations import (
     OperationsSession,
@@ -23,12 +22,10 @@ from ayon_api import (
     get_folders,
     get_products,
     get_representations,
-    get_folder_by_name
 )
 from ayon_api.exceptions import (
     FailedOperations
 )
-
 
 PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
 
@@ -49,7 +46,9 @@ def test_operations_with_folder(folder_name):
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
-    folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
+    folder_id = s.create_entity(
+        PROJECT_NAME, "folder", folder
+    ).entity_id
     s.commit()
 
     folder_entity = get_folder_by_id(PROJECT_NAME, folder_id)
@@ -108,7 +107,9 @@ def test_folder_duplicated_names(folder_name):
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
-    folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
+    folder_id = s.create_entity(
+        PROJECT_NAME, "folder", folder
+    ).entity_id
     s.commit()
 
     assert list(get_folders(
@@ -129,7 +130,10 @@ def test_folder_duplicated_names(folder_name):
 @pytest.mark.parametrize(
     "folder_name, product_names",
     [
-        ("product_duplicated_names", ["modelMain", "modelProxy", "modelSculpt"]),
+        (
+            "product_duplicated_names",
+            ["modelMain", "modelProxy", "modelSculpt"]
+        ),
     ]
 )
 def test_product_duplicated_names(
@@ -142,16 +146,20 @@ def test_product_duplicated_names(
 
     s = OperationsSession()
 
-    # create folder
+    # create folder
     folder = new_folder_entity(folder_name, "Folder")
-    folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
+    folder_id = s.create_entity(
+        PROJECT_NAME, "folder", folder
+    ).entity_id
     s.commit()
 
     # create products inside the folder
     product_ids = []
     for name in product_names:
         product = new_product_entity(name, "model", folder_id)
-        product_id = s.create_entity(PROJECT_NAME, "product", product)["id"]   
+        product_id = s.create_entity(
+            PROJECT_NAME, "product", product
+        ).entity_id
         s.commit()
 
         assert list(get_products(
@@ -203,28 +211,36 @@ def test_whole_hierarchy(
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
-    folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]   
+    folder_id = s.create_entity(
+        PROJECT_NAME, "folder", folder
+    ).entity_id
     s.commit()
 
     assert list(get_folders(
         PROJECT_NAME, 
-        folder_ids=[folder_id])) != []
+        folder_ids=[folder_id]
+    )) != []
 
     # create product
     product = new_product_entity(product_name, "model", folder_id)
-    product_id = s.create_entity(PROJECT_NAME, "product", product)["id"]   
+    product_id = s.create_entity(
+        PROJECT_NAME, "product", product
+    ).entity_id
     s.commit()
 
     assert list(get_products(
         PROJECT_NAME, 
         product_ids=[product_id],
-        folder_ids=[folder_id])) != []
+        folder_ids=[folder_id]
+    )) != []
 
     # create versions
     my_version_ids = []
     for i in range(num_of_versions):
         version = new_version_entity(i, product_id)
-        version_id = s.create_entity(PROJECT_NAME, "version", version)["id"]   
+        version_id = s.create_entity(
+            PROJECT_NAME, "version", version
+        ).entity_id
         s.commit()
 
         assert list(get_versions(
@@ -237,38 +253,60 @@ def test_whole_hierarchy(
         # test duplicate name
         with pytest.raises(FailedOperations):
             version = new_version_entity(i, product_id)
-            _ = s.create_entity(PROJECT_NAME, "version", version)
+            s.create_entity(
+                PROJECT_NAME, "version", version
+            )
             s.commit()
 
     # create representations
     for i, version_id in enumerate(my_version_ids):
         for j in range(num_of_representations):
             unique_name = str(i) + "v" + str(j)  # unique in this version
-            representation = new_representation_entity(unique_name, version_id)
-            representation_id = s.create_entity(PROJECT_NAME, "representation", representation)["id"]
+            representation = new_representation_entity(
+                unique_name, version_id, []
+            )
+            representation_id = s.create_entity(
+                PROJECT_NAME,
+                "representation",
+                representation
+            ).entity_id
             s.commit()
 
             assert list(get_representations(
                 PROJECT_NAME, 
                 representation_ids=[representation_id],
-                version_ids=[version_id])) != []
+                version_ids=[version_id])
+            ) != []
 
             # not unique under this version
             with pytest.raises(FailedOperations):
-                representation = new_representation_entity(unique_name, version_id)
-                _ = s.create_entity(PROJECT_NAME, "representation", representation)
+                representation = new_representation_entity(
+                    unique_name, version_id, []
+                )
+                s.create_entity(
+                    PROJECT_NAME,
+                    "representation",
+                    representation
+                )
                 s.commit()
 
             # under different version will be created
             if i > 0:
-                representation = new_representation_entity(unique_name, my_version_ids[i-1])
-                representation_id = s.create_entity(PROJECT_NAME, "representation", representation)["id"]
+                representation = new_representation_entity(
+                    unique_name, my_version_ids[i-1], []
+                )
+                representation_id = s.create_entity(
+                    PROJECT_NAME,
+                    "representation",
+                    representation
+                ).entity_id
                 s.commit()
 
                 assert list(get_representations(
                     PROJECT_NAME, 
                     representation_ids=[representation_id],
-                    version_ids=my_version_ids)) != []
+                    version_ids=my_version_ids
+                )) != []
 
     s.delete_entity(PROJECT_NAME, "product", product_id)
     s.commit()
@@ -295,7 +333,9 @@ def test_delete_folder_with_product(
 
     # create parent folder
     folder = new_folder_entity(folder_name, "Folder")
-    folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]   
+    folder_id = s.create_entity(
+        PROJECT_NAME, "folder", folder
+    ).entity_id
     s.commit()
 
     assert list(get_folders(
@@ -304,7 +344,9 @@ def test_delete_folder_with_product(
 
     # create product
     product = new_product_entity(product_name, "model", folder_id)
-    product_id = s.create_entity(PROJECT_NAME, "product", product)["id"]  
+    product_id = s.create_entity(
+        PROJECT_NAME, "product", product
+    ).entity_id
     s.commit()
 
     assert list(get_products(
@@ -314,7 +356,9 @@ def test_delete_folder_with_product(
 
     # delete folder with product
     with pytest.raises(FailedOperations):
-        s.delete_entity(PROJECT_NAME, "folder", folder_id)
+        s.delete_entity(
+            PROJECT_NAME, "folder", folder_id
+        )
         s.commit()
 
     # check if wasn't deleted
@@ -362,55 +406,90 @@ def test_subfolder_hierarchy(
 
     # create parent folder
     folder = new_folder_entity(folder_name, "Folder")
-    parent_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]   
+    parent_id = s.create_entity(
+        PROJECT_NAME, "folder", folder
+    ).entity_id
     s.commit()
 
     # create subfolder with subfolders in each iteration
     folder_with_product = []
     for folder_number in range(count_level1):
-        folder = new_folder_entity(f"{subfolder_name1}{folder_number:03}", "Folder", parent_id=parent_id)
-        folder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
+        folder = new_folder_entity(
+            f"{subfolder_name1}{folder_number:03}",
+            "Folder",
+            parent_id=parent_id
+        )
+        folder_id = s.create_entity(
+            PROJECT_NAME, "folder", folder
+        ).entity_id
         s.commit()
 
         assert list(get_folders(
             PROJECT_NAME, 
             folder_ids=[folder_id],
-            parent_ids=[parent_id])) != []
+            parent_ids=[parent_id])
+        ) != []
 
-        # subfolder with same name
+        # subfolder with same name
         with pytest.raises(FailedOperations):
-            folder = new_folder_entity(f"{subfolder_name1}{folder_number:03}", "Folder", parent_id=parent_id)
+            folder = new_folder_entity(
+                f"{subfolder_name1}{folder_number:03}",
+                "Folder",
+                parent_id=parent_id
+            )
             _ = s.create_entity(PROJECT_NAME, "folder", folder)
             s.commit()
         
-        # subfolder with same name but different type
+        # subfolder with same name but different type
         with pytest.raises(FailedOperations):
-            folder = new_folder_entity(f"{subfolder_name1}{folder_number:03}", "Shot", parent_id=parent_id)
+            folder = new_folder_entity(
+                f"{subfolder_name1}{folder_number:03}",
+                "Shot",
+                parent_id=parent_id
+            )
             _ = s.create_entity(PROJECT_NAME, "folder", folder)
             s.commit()
 
         # create subfolder with products in each iteration
         for subfolder_number in range(count_level2):
-            folder = new_folder_entity(f"{subfolder_name2}{subfolder_number:03}", "Shot", parent_id=folder_id)
-            subfolder_id = s.create_entity(PROJECT_NAME, "folder", folder)["id"]
+            folder = new_folder_entity(
+                f"{subfolder_name2}{subfolder_number:03}",
+                "Shot",
+                parent_id=folder_id
+            )
+            subfolder_id = s.create_entity(
+                PROJECT_NAME, "folder", folder
+            ).entity_id
             s.commit()
             folder_with_product.append(subfolder_id)
-            # folder_with_product.append(f"{subfolder_name2}{subfolder_number:03}")
+            # folder_with_product.append(
+            #     f"{subfolder_name2}{subfolder_number:03}"
+            # )
 
             assert list(get_folders(
                 PROJECT_NAME, 
                 folder_ids=[subfolder_id],
                 parent_ids=[folder_id])) != []
 
-            # subfolder with same name
+            # subfolder with same name
             with pytest.raises(FailedOperations):
-                folder = new_folder_entity(f"{subfolder_name2}{subfolder_number:03}", "Shot", parent_id=folder_id)
-                _ = s.create_entity(PROJECT_NAME, "folder", folder)
+                folder = new_folder_entity(
+                    f"{subfolder_name2}{subfolder_number:03}",
+                    "Shot",
+                    parent_id=folder_id
+                )
+                s.create_entity(PROJECT_NAME, "folder", folder)
                 s.commit()
 
             # products in subfolder
-            product = new_product_entity("modelMain", "model", subfolder_id)
-            product_id = s.create_entity(PROJECT_NAME, "product", product)["id"]   
+            product = new_product_entity(
+                "modelMain",
+                "model",
+                subfolder_id
+            )
+            product_id = s.create_entity(
+                PROJECT_NAME, "product", product
+            ).entity_id
             s.commit()
 
             assert list(get_products(
@@ -418,8 +497,12 @@ def test_subfolder_hierarchy(
                 product_ids=[product_id],
                 folder_ids=[subfolder_id])) != []
 
-            product = new_product_entity("modelProxy", "model", subfolder_id)
-            product_id = s.create_entity(PROJECT_NAME, "product", product)["id"]   
+            product = new_product_entity(
+                "modelProxy", "model", subfolder_id
+            )
+            product_id = s.create_entity(
+                PROJECT_NAME, "product", product
+            ).entity_id
             s.commit()
 
             assert list(get_products(
