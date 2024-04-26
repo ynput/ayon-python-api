@@ -55,6 +55,7 @@ def make_project_query(keys, values, types):
                 query.set_variable_value(key, value)
 
         inserted.add(key)
+    return query
 
 
 def make_expected_get_variables_values(keys, values):
