@@ -113,10 +113,10 @@ def test_create_delete_with_duplicated_names(
 
     assert e.get_folder_by_id(PROJECT_NAME, folder1["id"]) is not None
 
-    for subfolder_id in subfolder_ids:
+    for subfolder in subfolders:
         assert e.get_folder_by_id(
             PROJECT_NAME, 
-            subfolder_id) is not None
+            subfolder["id"]) is not None
 
     # clean up
     e.delete_entity(folder1)
