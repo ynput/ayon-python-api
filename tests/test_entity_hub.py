@@ -1,11 +1,8 @@
-import os
 import pytest
 
 from ayon_api.entity_hub import EntityHub
-from ayon_api.exceptions import HTTPRequestError
 
-
-PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
+from .conftest import project_entity_fixture
 
 
 @pytest.mark.parametrize(
@@ -15,13 +12,15 @@ PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
     ]
 )
 def test_simple_operations(
+    project_entity_fixture,
     folder_name,
     subfolder_name,
     folders_count
 ):
     """Test of simple operations with folders - create, move, delete.
     """
-    e = EntityHub(PROJECT_NAME)
+    project_name = project_entity_fixture["name"]
+    e = EntityHub(project_name)
 
     folders = []
     subfolders = []
@@ -75,6 +74,7 @@ def test_simple_operations(
     ]
 )
 def test_create_delete_with_duplicated_names(
+    project_entity_fixture,
     folder_name,
     subfolder_name,
     num_of_subfolders
@@ -83,7 +83,8 @@ def test_create_delete_with_duplicated_names(
     and delete one of them before commit.
     Exception should not be raised.
     """
-    e = EntityHub(PROJECT_NAME)
+    project_name = project_entity_fixture["name"]
+    e = EntityHub(project_name)
 
     folder1 = e.add_new_folder("Folder", name=folder_name)
 
@@ -106,11 +107,11 @@ def test_create_delete_with_duplicated_names(
         e.delete_entity(subfolder)
         e.commit_changes()
 
-    assert e.get_folder_by_id(PROJECT_NAME, folder1["id"]) is not None
+    assert e.get_folder_by_id(project_name, folder1["id"]) is not None
 
     for subfolder in subfolders:
         assert e.get_folder_by_id(
-            PROJECT_NAME, 
+            project_name,
             subfolder["id"]) is not None
 
     # clean up

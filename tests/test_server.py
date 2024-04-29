@@ -16,9 +16,9 @@ from ayon_api import (
     get_rest_url,
 )
 
-PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
 AYON_BASE_URL = os.getenv("AYON_SERVER_URL")
 AYON_REST_URL = "{}/api".format(AYON_BASE_URL)
+
 
 def test_close_connection():
     con = get_server_api_connection()
@@ -39,12 +39,7 @@ def test_get_rest_url():
     assert res == AYON_REST_URL
 
 
-@pytest.mark.parametrize(
-    "entity_type, name",
-    [("projects", PROJECT_NAME)]
-)
-def test_get(entity_type, name):
-    entrypoint = entity_type + "/" + name
-    res = get(entrypoint)
+def test_get():
+    res = get("info")
     assert res.status_code == 200
     assert isinstance(res.data, dict)

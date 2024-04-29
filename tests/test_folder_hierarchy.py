@@ -2,7 +2,7 @@
 folders, products, versions, etc.
 
 To run use: pytest --envfile {environment path}.
-Make sure you have set AYON_TOKEN in your environment. 
+Make sure you have set AYON_TOKEN in your environment.
 """
 
 import os
@@ -27,7 +27,7 @@ from ayon_api.exceptions import (
     FailedOperations
 )
 
-PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
+from .conftest import project_entity_fixture
 
 
 @pytest.mark.parametrize(
@@ -38,36 +38,36 @@ PROJECT_NAME = os.getenv("AYON_PROJECT_NAME")
         ("operations_with_folder3")
     ]
 )
-def test_operations_with_folder(folder_name):
+def test_operations_with_folder(project_entity_fixture, folder_name):
     """Test of attributes updates - folder.
     """
-
+    project_name = project_entity_fixture["name"]
     s = OperationsSession()
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
     folder_id = s.create_entity(
-        PROJECT_NAME, "folder", folder
+        project_name, "folder", folder
     ).entity_id
     s.commit()
 
-    folder_entity = get_folder_by_id(PROJECT_NAME, folder_id)
-    
+    folder_entity = get_folder_by_id(project_name, folder_id)
+
     # update entity attributes
     s.update_entity(
-        PROJECT_NAME,
+        project_name,
         "folder",
         folder_entity["id"],
         {"attrib": {"frameStart": 1002}}
     )
     s.commit()
 
-    folder_entity = get_folder_by_id(PROJECT_NAME, folder_id)
+    folder_entity = get_folder_by_id(project_name, folder_id)
     assert folder_entity["attrib"]["frameStart"] == 1002
 
-    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.delete_entity(project_name, "folder", folder_id)
     s.commit()
-    assert get_folder_by_id(PROJECT_NAME, folder_id) is None
+    assert get_folder_by_id(project_name, folder_id) is None
 
 
 @pytest.mark.parametrize(
@@ -78,17 +78,17 @@ def test_operations_with_folder(folder_name):
         ("in~valid")
     ]
 )
-def test_folder_name_invalid_characters(folder_name):
+def test_folder_name_invalid_characters(project_entity_fixture, folder_name):
     """Tries to create folders with invalid
     names and checks if exception was raised.
     """
-
+    project_name = project_entity_fixture["name"]
     s = OperationsSession()
 
     # create folder with invalid name
     with pytest.raises(FailedOperations):
         folder = new_folder_entity(folder_name, "Folder")
-        _ = s.create_entity(PROJECT_NAME, "folder", folder)
+        _ = s.create_entity(project_name, "folder", folder)
         s.commit()
 
 
@@ -98,33 +98,33 @@ def test_folder_name_invalid_characters(folder_name):
         ("folder_duplicated_names"),
     ]
 )
-def test_folder_duplicated_names(folder_name):
-    """Tries to create folders with duplicated 
+def test_folder_duplicated_names(project_entity_fixture, folder_name):
+    """Tries to create folders with duplicated
     names and checks if exception was raised.
     """
-
+    project_name = project_entity_fixture["name"]
     s = OperationsSession()
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
     folder_id = s.create_entity(
-        PROJECT_NAME, "folder", folder
+        project_name, "folder", folder
     ).entity_id
     s.commit()
 
     assert list(get_folders(
-            PROJECT_NAME, 
+            project_name,
             folder_ids=[folder_id])) != []
 
     # create folder with duplicated names
     with pytest.raises(FailedOperations):
         folder = new_folder_entity(folder_name, "Folder")
-        _ = s.create_entity(PROJECT_NAME, "folder", folder)
+        _ = s.create_entity(project_name, "folder", folder)
         s.commit()
 
-    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.delete_entity(project_name, "folder", folder_id)
     s.commit()
-    assert get_folder_by_id(PROJECT_NAME, folder_id) is None
+    assert get_folder_by_id(project_name, folder_id) is None
 
 
 @pytest.mark.parametrize(
@@ -137,19 +137,20 @@ def test_folder_duplicated_names(folder_name):
     ]
 )
 def test_product_duplicated_names(
+    project_entity_fixture,
     folder_name,
     product_names
-    ):
-    """Tries to create products with duplicated 
+):
+    """Tries to create products with duplicated
     names and checks if exception was raised.
     """
-
+    project_name = project_entity_fixture["name"]
     s = OperationsSession()
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
     folder_id = s.create_entity(
-        PROJECT_NAME, "folder", folder
+        project_name, "folder", folder
     ).entity_id
     s.commit()
 
@@ -158,12 +159,12 @@ def test_product_duplicated_names(
     for name in product_names:
         product = new_product_entity(name, "model", folder_id)
         product_id = s.create_entity(
-            PROJECT_NAME, "product", product
+            project_name, "product", product
         ).entity_id
         s.commit()
 
         assert list(get_products(
-            PROJECT_NAME, 
+            project_name,
             product_ids=[product_id],
             folder_ids=[folder_id])) != []
 
@@ -173,19 +174,19 @@ def test_product_duplicated_names(
     for name in product_names:
         with pytest.raises(FailedOperations):
             product = new_product_entity(name, "model", folder_id)
-            _ = s.create_entity(PROJECT_NAME, "product", product)    
+            _ = s.create_entity(project_name, "product", product)
             s.commit()
 
     # delete products
     for product_id in product_ids:
-        s.delete_entity(PROJECT_NAME, "product", product_id)
+        s.delete_entity(project_name, "product", product_id)
         s.commit()
-        assert get_product_by_id(PROJECT_NAME, product_id) is None
+        assert get_product_by_id(project_name, product_id) is None
 
     # delete folder
-    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.delete_entity(project_name, "folder", folder_id)
     s.commit()
-    assert get_folder_by_id(PROJECT_NAME, folder_id) is None
+    assert get_folder_by_id(project_name, folder_id) is None
 
 
 @pytest.mark.parametrize(
@@ -195,41 +196,42 @@ def test_product_duplicated_names(
     ]
 )
 def test_whole_hierarchy(
-    folder_name, 
-    product_name, 
-    version_name, 
+    project_entity_fixture,
+    folder_name,
+    product_name,
+    version_name,
     representation_name,
     num_of_versions,
     num_of_representations
 ):
     """Creates the whole hierarchy (folder, product, version, representation).
-    Tries to create versions and representations with duplicated 
+    Tries to create versions and representations with duplicated
     names and checks if exceptions are raised.
     """
-
+    project_name = project_entity_fixture["name"]
     s = OperationsSession()
 
     # create folder
     folder = new_folder_entity(folder_name, "Folder")
     folder_id = s.create_entity(
-        PROJECT_NAME, "folder", folder
+        project_name, "folder", folder
     ).entity_id
     s.commit()
 
     assert list(get_folders(
-        PROJECT_NAME, 
+        project_name,
         folder_ids=[folder_id]
     )) != []
 
     # create product
     product = new_product_entity(product_name, "model", folder_id)
     product_id = s.create_entity(
-        PROJECT_NAME, "product", product
+        project_name, "product", product
     ).entity_id
     s.commit()
 
     assert list(get_products(
-        PROJECT_NAME, 
+        project_name,
         product_ids=[product_id],
         folder_ids=[folder_id]
     )) != []
@@ -239,12 +241,12 @@ def test_whole_hierarchy(
     for i in range(num_of_versions):
         version = new_version_entity(i, product_id)
         version_id = s.create_entity(
-            PROJECT_NAME, "version", version
+            project_name, "version", version
         ).entity_id
         s.commit()
 
         assert list(get_versions(
-            PROJECT_NAME, 
+            project_name,
             version_ids=[version_id],
             product_ids=[product_id])) != []
 
@@ -254,7 +256,7 @@ def test_whole_hierarchy(
         with pytest.raises(FailedOperations):
             version = new_version_entity(i, product_id)
             s.create_entity(
-                PROJECT_NAME, "version", version
+                project_name, "version", version
             )
             s.commit()
 
@@ -266,14 +268,14 @@ def test_whole_hierarchy(
                 unique_name, version_id, []
             )
             representation_id = s.create_entity(
-                PROJECT_NAME,
+                project_name,
                 "representation",
                 representation
             ).entity_id
             s.commit()
 
             assert list(get_representations(
-                PROJECT_NAME, 
+                project_name,
                 representation_ids=[representation_id],
                 version_ids=[version_id])
             ) != []
@@ -284,7 +286,7 @@ def test_whole_hierarchy(
                     unique_name, version_id, []
                 )
                 s.create_entity(
-                    PROJECT_NAME,
+                    project_name,
                     "representation",
                     representation
                 )
@@ -296,22 +298,22 @@ def test_whole_hierarchy(
                     unique_name, my_version_ids[i-1], []
                 )
                 representation_id = s.create_entity(
-                    PROJECT_NAME,
+                    project_name,
                     "representation",
                     representation
                 ).entity_id
                 s.commit()
 
                 assert list(get_representations(
-                    PROJECT_NAME, 
+                    project_name,
                     representation_ids=[representation_id],
                     version_ids=my_version_ids
                 )) != []
 
-    s.delete_entity(PROJECT_NAME, "product", product_id)
+    s.delete_entity(project_name, "product", product_id)
     s.commit()
 
-    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.delete_entity(project_name, "folder", folder_id)
     s.commit()
 
 
@@ -322,64 +324,65 @@ def test_whole_hierarchy(
     ]
 )
 def test_delete_folder_with_product(
+    project_entity_fixture,
     folder_name,
     product_name
-    ):
+):
     """Creates product in folder and tries to delete the folder.
     Checks if exception was raised.
     """
-
+    project_name = project_entity_fixture["name"]
     s = OperationsSession()
 
     # create parent folder
     folder = new_folder_entity(folder_name, "Folder")
     folder_id = s.create_entity(
-        PROJECT_NAME, "folder", folder
+        project_name, "folder", folder
     ).entity_id
     s.commit()
 
     assert list(get_folders(
-        PROJECT_NAME, 
+        project_name,
         folder_ids=[folder_id])) != []
 
     # create product
     product = new_product_entity(product_name, "model", folder_id)
     product_id = s.create_entity(
-        PROJECT_NAME, "product", product
+        project_name, "product", product
     ).entity_id
     s.commit()
 
     assert list(get_products(
-        PROJECT_NAME,
+        project_name,
         product_ids=[product_id],
         folder_ids=[folder_id])) != []
 
     # delete folder with product
     with pytest.raises(FailedOperations):
         s.delete_entity(
-            PROJECT_NAME, "folder", folder_id
+            project_name, "folder", folder_id
         )
         s.commit()
 
     # check if wasn't deleted
     assert list(get_folders(
-        PROJECT_NAME,
+        project_name,
         folder_ids=[folder_id])) != []
 
     # delete in the right order
-    s.delete_entity(PROJECT_NAME, "product", product_id)
+    s.delete_entity(project_name, "product", product_id)
     s.commit()
 
     assert list(get_products(
-        PROJECT_NAME,
+        project_name,
         product_ids=[product_id],
         folder_ids=[folder_id])) == []
 
-    s.delete_entity(PROJECT_NAME, "folder", folder_id)
+    s.delete_entity(project_name, "folder", folder_id)
     s.commit()
 
     assert list(get_folders(
-        PROJECT_NAME, 
+        project_name,
         folder_ids=[folder_id])) == []
 
 
@@ -391,23 +394,24 @@ def test_delete_folder_with_product(
     ]
 )
 def test_subfolder_hierarchy(
+    project_entity_fixture,
     folder_name,
     subfolder_name1,
     subfolder_name2,
     count_level1,
     count_level2
-    ):
-    """Creates three levels of folder hierarchy and product in the last one. 
+):
+    """Creates three levels of folder hierarchy and product in the last one.
     Tries creating products with duplicated names and checks raising exceptions.
     After creation of every product is checked if the product was really created.
     """
-
+    project_name = project_entity_fixture["name"]
     s = OperationsSession()
 
     # create parent folder
     folder = new_folder_entity(folder_name, "Folder")
     parent_id = s.create_entity(
-        PROJECT_NAME, "folder", folder
+        project_name, "folder", folder
     ).entity_id
     s.commit()
 
@@ -420,12 +424,12 @@ def test_subfolder_hierarchy(
             parent_id=parent_id
         )
         folder_id = s.create_entity(
-            PROJECT_NAME, "folder", folder
+            project_name, "folder", folder
         ).entity_id
         s.commit()
 
         assert list(get_folders(
-            PROJECT_NAME, 
+            project_name,
             folder_ids=[folder_id],
             parent_ids=[parent_id])
         ) != []
@@ -437,9 +441,9 @@ def test_subfolder_hierarchy(
                 "Folder",
                 parent_id=parent_id
             )
-            _ = s.create_entity(PROJECT_NAME, "folder", folder)
+            _ = s.create_entity(project_name, "folder", folder)
             s.commit()
-        
+
         # subfolder with same name but different type
         with pytest.raises(FailedOperations):
             folder = new_folder_entity(
@@ -447,7 +451,7 @@ def test_subfolder_hierarchy(
                 "Shot",
                 parent_id=parent_id
             )
-            _ = s.create_entity(PROJECT_NAME, "folder", folder)
+            _ = s.create_entity(project_name, "folder", folder)
             s.commit()
 
         # create subfolder with products in each iteration
@@ -458,7 +462,7 @@ def test_subfolder_hierarchy(
                 parent_id=folder_id
             )
             subfolder_id = s.create_entity(
-                PROJECT_NAME, "folder", folder
+                project_name, "folder", folder
             ).entity_id
             s.commit()
             folder_with_product.append(subfolder_id)
@@ -467,7 +471,7 @@ def test_subfolder_hierarchy(
             # )
 
             assert list(get_folders(
-                PROJECT_NAME, 
+                project_name,
                 folder_ids=[subfolder_id],
                 parent_ids=[folder_id])) != []
 
@@ -478,7 +482,7 @@ def test_subfolder_hierarchy(
                     "Shot",
                     parent_id=folder_id
                 )
-                s.create_entity(PROJECT_NAME, "folder", folder)
+                s.create_entity(project_name, "folder", folder)
                 s.commit()
 
             # products in subfolder
@@ -488,12 +492,12 @@ def test_subfolder_hierarchy(
                 subfolder_id
             )
             product_id = s.create_entity(
-                PROJECT_NAME, "product", product
+                project_name, "product", product
             ).entity_id
             s.commit()
 
             assert list(get_products(
-                PROJECT_NAME, 
+                project_name,
                 product_ids=[product_id],
                 folder_ids=[subfolder_id])) != []
 
@@ -501,35 +505,35 @@ def test_subfolder_hierarchy(
                 "modelProxy", "model", subfolder_id
             )
             product_id = s.create_entity(
-                PROJECT_NAME, "product", product
+                project_name, "product", product
             ).entity_id
             s.commit()
 
             assert list(get_products(
-                PROJECT_NAME, 
+                project_name,
                 product_ids=[product_id],
                 folder_ids=[subfolder_id])) != []
 
             # delete folders with products
             with pytest.raises(FailedOperations):
-                s.delete_entity(PROJECT_NAME, "folder", parent_id)
+                s.delete_entity(project_name, "folder", parent_id)
                 s.commit()
 
             for f_id in folder_with_product:
                 with pytest.raises(FailedOperations):
-                    s.delete_entity(PROJECT_NAME, "folder", f_id)
+                    s.delete_entity(project_name, "folder", f_id)
                     s.commit()
-    
+
     # delete everything correctly
     for folder_id in folder_with_product:
         products = list(
             get_products(
-                PROJECT_NAME,
+                project_name,
                 folder_ids=[folder_id]
             )
         )
         for product in products:
-            s.delete_entity(PROJECT_NAME, "product", product["id"])
+            s.delete_entity(project_name, "product", product["id"])
 
-    s.delete_entity(PROJECT_NAME, "folder", parent_id)
+    s.delete_entity(project_name, "folder", parent_id)
     s.commit()
