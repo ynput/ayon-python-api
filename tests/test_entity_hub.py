@@ -5,6 +5,34 @@ from ayon_api.entity_hub import EntityHub
 from .conftest import project_entity_fixture
 
 
+def test_rename_status(project_entity_fixture):
+    # Change statuses - add prefix 'new_'
+    project_name = project_entity_fixture["name"]
+    e = EntityHub(project_name)
+    status_mapping = {}
+    for status in e.project_entity.statuses:
+        orig_name = status.name
+        new_name = f"new_{orig_name}"
+        status_mapping[new_name] = orig_name
+        status.name = new_name
+    e.commit_changes()
+
+    # Create new entity hub for same project and validate the changes
+    #   are propagated
+    e = EntityHub(project_name)
+    statuses_by_name = {
+        status.name: status
+        for status in e.project_entity.statuses
+    }
+    if set(statuses_by_name) != set(status_mapping.keys()):
+        raise AssertionError("Statuses were not renamed correctly.")
+
+    # Change statuses back
+    for status in e.project_entity.statuses:
+        status.name = status_mapping[status.name]
+    e.commit_changes()
+
+
 @pytest.mark.parametrize(
     "folder_name, subfolder_name, folders_count",
     [
@@ -116,33 +144,6 @@ def test_create_delete_with_duplicated_names(
 
     # clean up
     e.delete_entity(folder1)
-    e.commit_changes()
-
-
-def test_rename_status():
-    # Change statuses - add prefix 'new_'
-    e = EntityHub(PROJECT_NAME)
-    status_mapping = {}
-    for status in e.project_entity.statuses:
-        orig_name = status.name
-        new_name = f"new_{orig_name}"
-        status_mapping[new_name] = orig_name
-        status.name = new_name
-    e.commit_changes()
-
-    # Create new entity hub for same project and validate the changes
-    #   are propagated
-    e = EntityHub(PROJECT_NAME)
-    statuses_by_name = {
-        status.name: status
-        for status in e.project_entity.statuses
-    }
-    if set(statuses_by_name) != set(status_mapping.keys()):
-        raise AssertionError("Statuses were not renamed correctly.")
-
-    # Change statuses back
-    for status in e.project_entity.statuses:
-        status.name = status_mapping[status.name]
     e.commit_changes()
 
 
