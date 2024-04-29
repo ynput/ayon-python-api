@@ -1,4 +1,3 @@
-import os
 import pytest
 
 from ayon_api.graphql import GraphQlQuery
@@ -6,6 +5,7 @@ from ayon_api.graphql_queries import (
     project_graphql_query,
     folders_graphql_query,
 )
+from .conftest import project_name_fixture
 
 
 @pytest.fixture
@@ -21,8 +21,10 @@ def folder_query():
     return folders_graphql_query(["name"])
 
 
-def test_simple_duplicate_add_variable_exception(empty_query):
-    key, value_type, value = "projectName", "[String!]", "kuba_v4_sync"
+def test_simple_duplicate_add_variable_exception(
+    project_name_fixture, empty_query
+):
+    key, value_type, value = "projectName", "[String!]", project_name_fixture
     empty_query.add_variable(key, value_type, value)
     with pytest.raises(KeyError):
         empty_query.add_variable(key, value_type)
@@ -67,7 +69,7 @@ def make_expected_get_variables_values(keys, values):
     [
         (
             ["projectName", "projectId", "numOf"],
-            ["kuba_v4_sync", "0x23", 3],
+            ["my_name", "0x23", 3],
             ["[String!]", "[String!]", "Int"]
         ), (
             ["projectName", "testStrInt"],
@@ -109,7 +111,7 @@ def print_rec_filters(field):
 
 def test_folders_graphql_query(folder_query):
     print(folder_query.calculate_query())
-    
+
 
 def test_filters(folder_query):
     print(folder_query._children[0]._children[0].get_filters())
