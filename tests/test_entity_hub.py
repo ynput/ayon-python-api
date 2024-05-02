@@ -99,11 +99,15 @@ def test_simple_operations(
 
 
 def test_custom_values_on_entities(project_entity_fixture):
-    """Test of simple operations with folders - create, move, delete.
+    """Test of entity hub create/update with all custom values.
+
+    Define custom entity id, name, label, attrib and data of folder/task
+    which are created and then updated.
     """
     project_name = project_entity_fixture["name"]
     hub = EntityHub(project_name)
 
+    # --- CREATE ---
     folder_type = project_entity_fixture["folderTypes"][-1]["name"]
     root_folder = hub.add_new_folder(
         folder_type, name="custom_values_root_folder"
@@ -151,7 +155,7 @@ def test_custom_values_on_entities(project_entity_fixture):
     )
     hub.commit_changes()
 
-    # Fetch entities for value check
+    # Fetch entities for value check after CREATE
     fetched_folder = ayon_api.get_folder_by_id(project_name, folder_id)
     fetched_task = ayon_api.get_task_by_id(project_name, task_id)
 
@@ -181,6 +185,66 @@ def test_custom_values_on_entities(project_entity_fixture):
             fetched_value = fetched_value[key]
         assert fetched_value == value
 
+    # --- UPDATE ---
+    # Validate update of entities
+    folder_name = "b_folder"
+    folder_label = "B Folder"
+    folder_frame_start = 334
+    folder_type = project_entity_fixture["folderTypes"][0]["name"]
+    folder_data["MyKey2"] = "MyValue2"
+
+    folder.name = folder_name
+    folder.folder_type = folder_type
+    folder.label = folder_label
+    folder.attribs["frameStart"] = folder_frame_start
+    folder.data["MyKey2"] = "MyValue2"
+
+    task_name = "your_task"
+    task_label = "Your Task"
+    task_frame_start = 112
+    task_data = {"MyTaskKey2": "MyTaskValue2"}
+    task.name = task_name
+    task.label = task_label
+    task.attribs["frameStart"] = task_frame_start
+    for key in tuple(task.data):
+        task.data.pop(key)
+
+    for key, value in task_data.items():
+        task.data[key] = value
+
+    hub.commit_changes()
+
+    # Fetch entities for value check on UPDATE
+    fetched_folder = ayon_api.get_folder_by_id(project_name, folder_id)
+    fetched_task = ayon_api.get_task_by_id(project_name, task_id)
+
+    for keys, value in (
+        (["id"], folder_id),
+        (["name"], folder_name),
+        (["label"], folder_label),
+        (["attrib", "frameStart"], folder_frame_start),
+        (["data"], folder_data),
+        (["active"], False),
+    ):
+        fetched_value = fetched_folder
+        for key in keys:
+            fetched_value = fetched_value[key]
+        assert fetched_value == value
+
+    for keys, value in (
+        (["id"], task_id),
+        (["name"], task_name),
+        (["label"], task_label),
+        (["attrib", "frameStart"], task_frame_start),
+        (["data"], task_data),
+        (["active"], False),
+    ):
+        fetched_value = fetched_task
+        for key in keys:
+            fetched_value = fetched_value[key]
+        assert fetched_value == value
+
+    # --- CLEANUP ---
     hub.delete_entity(root_folder)
     hub.delete_entity(folder)
     hub.delete_entity(task)
