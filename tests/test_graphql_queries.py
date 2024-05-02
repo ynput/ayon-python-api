@@ -5,6 +5,7 @@ from ayon_api.graphql_queries import (
     project_graphql_query,
     folders_graphql_query,
 )
+
 from .conftest import project_name_fixture
 
 
@@ -12,9 +13,6 @@ from .conftest import project_name_fixture
 def empty_query():
     return GraphQlQuery("ProjectQuery")
 
-@pytest.fixture
-def project_query():
-    return project_graphql_query(["name"])
 
 @pytest.fixture
 def folder_query():
@@ -35,9 +33,16 @@ def test_exception_empty_query(empty_query):
         out = empty_query.calculate_query()
 
 
-def test_simple_output(project_query):
+def test_simple_project_query():
+    project_query = project_graphql_query(["name"])
     result = project_query.calculate_query()
-    expected = "query ProjectQuery {\n  project {\n    name\n  }\n}"
+    expected = "\n".join([
+        "query ProjectQuery {",
+        "  project {",
+        "    name",
+        "  }",
+        "}"
+    ])
     assert result == expected
 
 
@@ -80,7 +85,8 @@ def make_expected_get_variables_values(keys, values):
             ["my_name", "test_123"],
             ["[String!]", "Int"]
         ),
-    ])
+    ]
+)
 def test_get_variables_values(keys, values, types):
     query = make_project_query(keys, values, types)
     # None means: unexpected exception thrown while adding variables
