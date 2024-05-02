@@ -2585,7 +2585,7 @@ class FolderEntity(BaseEntity):
 
     def lock(self):
         super(FolderEntity, self).lock()
-        self._orig_label = self._get_output_label()
+        self._orig_label = self._get_label_value()
         self._orig_folder_type = self._folder_type
         self._orig_status = self._status
         self._orig_tags = copy.deepcopy(self._tags)
@@ -2609,7 +2609,7 @@ class FolderEntity(BaseEntity):
         if self._orig_tags != self._tags:
             changes["tags"] = self._tags
 
-        label = self._get_output_label()
+        label = self._get_label_value()
         if label != self._orig_label:
             changes["label"] = label
 
@@ -2653,7 +2653,7 @@ class FolderEntity(BaseEntity):
             "folderType": self.folder_type,
             "parentId": parent_id,
         }
-        label = self._get_output_label()
+        label = self._get_label_value()
         if label:
             output["label"] = label
 
@@ -2681,7 +2681,7 @@ class FolderEntity(BaseEntity):
             output["data"] = self._data
         return output
 
-    def _get_output_label(self):
+    def _get_label_value(self):
         """Get label value that will be used for operations.
 
         Returns:
@@ -2748,7 +2748,7 @@ class TaskEntity(BaseEntity):
 
     def lock(self):
         super(TaskEntity, self).lock()
-        self._orig_label = self._get_output_label()
+        self._orig_label = self._get_label_value()
         self._orig_task_type = self._task_type
         self._orig_status = self._status
         self._orig_tags = copy.deepcopy(self._tags)
@@ -2834,7 +2834,7 @@ class TaskEntity(BaseEntity):
         if self._orig_tags != self._tags:
             changes["tags"] = self._tags
 
-        label = self._get_output_label()
+        label = self._get_label_value()
         if label != self._orig_label:
             changes["label"] = label
 
@@ -2867,7 +2867,7 @@ class TaskEntity(BaseEntity):
             "folderId": self.parent_id,
             "attrib": self.attribs.to_dict(),
         }
-        label = self._get_output_label()
+        label = self._get_label_value()
         if label:
             output["label"] = label
 
@@ -2891,7 +2891,7 @@ class TaskEntity(BaseEntity):
             output["data"] = self._data
         return output
 
-    def _get_output_label(self):
+    def _get_label_value(self):
         """Get label value that will be used for operations.
 
         Returns:
