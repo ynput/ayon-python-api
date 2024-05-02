@@ -2689,7 +2689,7 @@ class FolderEntity(BaseEntity):
 
         """
         label = self._label
-        if self._name == label:
+        if not label or self._name == label:
             return None
         return label
 
@@ -2899,6 +2899,6 @@ class TaskEntity(BaseEntity):
 
         """
         label = self._label
-        if self._name == label:
+        if not label or self._name == label:
             return None
         return label
