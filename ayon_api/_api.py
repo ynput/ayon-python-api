@@ -1917,6 +1917,51 @@ def get_rest_folder(*args, **kwargs):
     return con.get_rest_folder(*args, **kwargs)
 
 
+def get_rest_folders(*args, **kwargs):
+    """Get simplified flat list of all project folders.
+
+    Get all project folders in single REST call. This can be faster than
+        using 'get_folders' method which is using GraphQl, but does not
+        allow any filtering, and set of fields is defined
+        by server backend.
+
+    Example::
+
+        [
+            {
+                "id": "112233445566",
+                "parentId": "112233445567",
+                "path": "/root/parent/child",
+                "parents": ["root", "parent"],
+                "name": "child",
+                "label": "Child",
+                "folderType": "Folder",
+                "hasTasks": False,
+                "hasChildren": False,
+                "taskNames": [
+                    "Compositing",
+                ],
+                "status": "In Progress",
+                "attrib": {},
+                "ownAttrib": [],
+                "updatedAt": "2023-06-12T15:37:02.420260",
+            },
+            ...
+        ]
+
+    Args:
+        project_name (str): Project name.
+        include_attrib (Optional[bool]): Include attribute values
+            in output. Slower to query.
+
+    Returns:
+        list[dict[str, Any]]: List of folder entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_rest_folders(*args, **kwargs)
+
+
 def get_rest_task(*args, **kwargs):
     con = get_server_api_connection()
     return con.get_rest_task(*args, **kwargs)
@@ -2064,6 +2109,12 @@ def get_folders_rest(*args, **kwargs):
             },
             ...
         ]
+
+    Deprecated:
+        Use 'get_rest_folders' instead. Function was renamed to match
+            other rest functions, like 'get_rest_folder',
+            'get_rest_project' etc. .
+        Will be removed in '1.0.7' or '1.1.0'.
 
     Args:
         project_name (str): Project name.

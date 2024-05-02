@@ -3383,6 +3383,62 @@ class ServerAPI(object):
     def get_rest_folder(self, project_name, folder_id):
         return self.get_rest_entity_by_id(project_name, "folder", folder_id)
 
+    def get_rest_folders(self, project_name, include_attrib=False):
+        """Get simplified flat list of all project folders.
+
+        Get all project folders in single REST call. This can be faster than
+            using 'get_folders' method which is using GraphQl, but does not
+            allow any filtering, and set of fields is defined
+            by server backend.
+
+        Example::
+
+            [
+                {
+                    "id": "112233445566",
+                    "parentId": "112233445567",
+                    "path": "/root/parent/child",
+                    "parents": ["root", "parent"],
+                    "name": "child",
+                    "label": "Child",
+                    "folderType": "Folder",
+                    "hasTasks": False,
+                    "hasChildren": False,
+                    "taskNames": [
+                        "Compositing",
+                    ],
+                    "status": "In Progress",
+                    "attrib": {},
+                    "ownAttrib": [],
+                    "updatedAt": "2023-06-12T15:37:02.420260",
+                },
+                ...
+            ]
+
+        Args:
+            project_name (str): Project name.
+            include_attrib (Optional[bool]): Include attribute values
+                in output. Slower to query.
+
+        Returns:
+            list[dict[str, Any]]: List of folder entities.
+
+        """
+        major, minor, patch, _, _ = self.server_version_tuple
+        if (major, minor, patch) < (1, 0, 8):
+            raise UnsupportedServerVersion(
+                "Function 'get_folders_rest' is supported"
+                " for AYON server 1.0.8 and above."
+            )
+        query = "?attrib={}".format(
+            "true" if include_attrib else "false"
+        )
+        response = self.get(
+            "projects/{}/folders{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data["folders"]
+
     def get_rest_task(self, project_name, task_id):
         return self.get_rest_entity_by_id(project_name, "task", task_id)
 
@@ -3647,6 +3703,12 @@ class ServerAPI(object):
                 ...
             ]
 
+        Deprecated:
+            Use 'get_rest_folders' instead. Function was renamed to match
+                other rest functions, like 'get_rest_folder',
+                'get_rest_project' etc. .
+            Will be removed in '1.0.7' or '1.1.0'.
+
         Args:
             project_name (str): Project name.
             include_attrib (Optional[bool]): Include attribute values
@@ -3656,20 +3718,7 @@ class ServerAPI(object):
             list[dict[str, Any]]: List of folder entities.
 
         """
-        major, minor, patch, _, _ = self.server_version_tuple
-        if (major, minor, patch) < (1, 0, 8):
-            raise UnsupportedServerVersion(
-                "Function 'get_folders_rest' is supported"
-                " for AYON server 1.0.8 and above."
-            )
-        query = "?attrib={}".format(
-            "true" if include_attrib else "false"
-        )
-        response = self.get(
-            "projects/{}/folders{}".format(project_name, query)
-        )
-        response.raise_for_status()
-        return response.data["folders"]
+        return self.get_rest_folders(project_name, include_attrib)
 
     def get_folders(
         self,
