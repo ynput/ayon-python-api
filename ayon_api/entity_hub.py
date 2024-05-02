@@ -2655,6 +2655,13 @@ class FolderEntity(BaseEntity):
             "folderType": self.folder_type,
             "parentId": parent_id,
         }
+        label = self._label
+        if self._name == label:
+            label = None
+
+        if label:
+            output["label"] = label
+
         attrib = self.attribs.to_dict()
         if attrib:
             output["attrib"] = attrib
@@ -2855,6 +2862,13 @@ class TaskEntity(BaseEntity):
             "folderId": self.parent_id,
             "attrib": self.attribs.to_dict(),
         }
+        label = self._label
+        if self._name == label:
+            label = None
+
+        if label:
+            output["label"] = label
+
         attrib = self.attribs.to_dict()
         if attrib:
             output["attrib"] = attrib
