@@ -1,5 +1,8 @@
+import uuid
+
 import pytest
 
+import ayon_api
 from ayon_api.entity_hub import EntityHub
 
 from .conftest import project_entity_fixture
@@ -93,6 +96,93 @@ def test_simple_operations(
         e.delete_entity(e.get_entity_by_id(folder["id"]))
         e.commit_changes()
         assert e.get_entity_by_id(folder["id"]) is None
+
+
+def test_custom_values_on_entities(project_entity_fixture):
+    """Test of simple operations with folders - create, move, delete.
+    """
+    project_name = project_entity_fixture["name"]
+    hub = EntityHub(project_name)
+
+    folder_type = project_entity_fixture["folderTypes"][-1]["name"]
+    root_folder = hub.add_new_folder(folder_type, name="root_folder")
+
+    folder_id = uuid.uuid1().hex
+    folder_name = "a_folder"
+    folder_label = "A Folder"
+    folder_frame_start = 333
+    folder_attrib = {
+        "frameStart": folder_frame_start
+    }
+    folder_data = {"MyKey": "MyValue"}
+
+    task_id = uuid.uuid1().hex
+    task_name = "my_task"
+    task_label = "My Task"
+    task_frame_start = 111
+    task_attrib = {
+        "frameStart": task_frame_start
+    }
+    task_data = {"MyTaskKey": "MyTaskValue"}
+
+    folder = hub.add_new_folder(
+        folder_type,
+        name=folder_name,
+        label=folder_label,
+        parent_id=root_folder.id,
+        entity_id=folder_id,
+        active=False,
+        attribs=folder_attrib,
+        data=folder_data,
+    )
+
+    task_type = project_entity_fixture["taskTypes"][-1]["name"]
+    task = hub.add_new_task(
+        task_type,
+        name=task_name,
+        label=task_label,
+        parent_id=folder.id,
+        data=task_data,
+        attribs=task_attrib,
+        entity_id=task_id,
+        active=False,
+    )
+    hub.commit_changes()
+
+    # Fetch entities for value check
+    fetched_folder = ayon_api.get_folder_by_id(project_name, folder_id)
+    fetched_task = ayon_api.get_task_by_id(project_name, task_id)
+
+    for keys, value in (
+        (["id"], folder_id),
+        (["name"], folder_name),
+        (["label"], folder_label),
+        (["attrib", "frameStart"], folder_frame_start),
+        (["data"], folder_data),
+        (["active"], False),
+    ):
+        fetched_value = fetched_folder
+        for key in keys:
+            fetched_value = fetched_value[key]
+        assert fetched_value == value
+
+    for keys, value in (
+        (["id"], task_id),
+        (["name"], task_name),
+        (["label"], task_label),
+        (["attrib", "frameStart"], task_frame_start),
+        (["data"], task_data),
+        (["active"], False),
+    ):
+        fetched_value = fetched_task
+        for key in keys:
+            fetched_value = fetched_value[key]
+        assert fetched_value == value
+
+    hub.delete_entity(root_folder)
+    hub.delete_entity(folder)
+    hub.delete_entity(task)
+    hub.commit_changes()
 
 
 @pytest.mark.parametrize(
