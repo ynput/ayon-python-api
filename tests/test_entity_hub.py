@@ -105,7 +105,9 @@ def test_custom_values_on_entities(project_entity_fixture):
     hub = EntityHub(project_name)
 
     folder_type = project_entity_fixture["folderTypes"][-1]["name"]
-    root_folder = hub.add_new_folder(folder_type, name="root_folder")
+    root_folder = hub.add_new_folder(
+        folder_type, name="custom_values_root_folder"
+    )
 
     folder_id = uuid.uuid1().hex
     folder_name = "a_folder"
