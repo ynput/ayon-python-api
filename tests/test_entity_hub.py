@@ -260,6 +260,61 @@ def test_custom_values_on_entities(project_entity_fixture):
     hub.commit_changes()
 
 
+def test_label_eq_name_on_entities(project_entity_fixture):
+    """Test label that have same values as name on folder and task.
+
+    When the entity has same name and label, the label should be set to None.
+    """
+    project_name = project_entity_fixture["name"]
+    hub = EntityHub(project_name)
+
+    folder_type = project_entity_fixture["folderTypes"][-1]["name"]
+    root_folder = hub.add_new_folder(
+        folder_type, name="label_eq_name_root_folder"
+    )
+
+    folder_id = uuid.uuid1().hex
+    folder_name = "a_folder"
+    folder_label = "a_folder"
+
+    task_id = uuid.uuid1().hex
+    task_name = "my_task"
+    task_label = "my_task"
+
+    folder = hub.add_new_folder(
+        folder_type,
+        name=folder_name,
+        label=folder_label,
+        parent_id=root_folder.id,
+        entity_id=folder_id,
+    )
+
+    task_type = project_entity_fixture["taskTypes"][-1]["name"]
+    task = hub.add_new_task(
+        task_type,
+        name=task_name,
+        label=task_label,
+        parent_id=folder.id,
+        entity_id=task_id,
+    )
+    hub.commit_changes()
+
+    folder_entity = ayon_api.get_folder_by_id(
+        project_name, folder_id, fields={"label"}
+    )
+    task_entity = ayon_api.get_task_by_id(
+        project_name, task_id, fields={"label"}
+    )
+    # Label should be 'None'
+    assert folder_entity["label"] is None
+    assert task_entity["label"] is None
+
+    hub.delete_entity(root_folder)
+    hub.delete_entity(folder)
+    hub.delete_entity(task)
+    hub.commit_changes()
+
+
 @pytest.mark.parametrize(
     "folder_name, subfolder_name, num_of_subfolders",
     [
