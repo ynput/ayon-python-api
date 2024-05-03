@@ -155,6 +155,10 @@ def test_custom_values_on_entities(project_entity_fixture):
     )
     hub.commit_changes()
 
+    # Validate that entity objects don't have any changes after commit
+    assert not folder.changes
+    assert not task.changes
+
     # Fetch entities for value check after CREATE
     fetched_folder = ayon_api.get_folder_by_id(project_name, folder_id)
     fetched_task = ayon_api.get_task_by_id(project_name, task_id)
@@ -206,6 +210,7 @@ def test_custom_values_on_entities(project_entity_fixture):
     task.name = task_name
     task.label = task_label
     task.attribs["frameStart"] = task_frame_start
+
     for key in tuple(task.data):
         task.data.pop(key)
 
@@ -213,6 +218,10 @@ def test_custom_values_on_entities(project_entity_fixture):
         task.data[key] = value
 
     hub.commit_changes()
+
+    # Validate that entity objects don't have any changes after commit
+    assert not folder.changes
+    assert not task.changes
 
     # Fetch entities for value check on UPDATE
     fetched_folder = ayon_api.get_folder_by_id(project_name, folder_id)
