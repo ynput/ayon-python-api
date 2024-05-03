@@ -1032,6 +1032,70 @@ class Attributes(object):
         return output
 
 
+class EntityData(dict):
+    """Wrapper for 'data' key on entity.
+
+    Data on entity are arbitrary data that are not stored in any deterministic
+    model. It is possible to store any data that can be parsed to json.
+
+    It is not possible to store 'None' to root key. In that case the key is
+    not stored, and removed if existed on entity.
+
+    To be able to store 'None' value use nested data structure:
+    {
+        "sceneInfo": {
+             "description": None,
+             "camera": "camera1"
+        }
+    }
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orig_data = copy.deepcopy(self)
+
+    def get_changes(self):
+        """Changes in entity data.
+
+        Removed keys have value set to 'None'.
+
+        Returns:
+            dict[str, Any]: Key mapping with changed values.
+
+        """
+        keys = set(self.keys()) | set(self._orig_data.keys())
+        output = {}
+        for key in keys:
+            if key not in self:
+                # Key was removed
+                output[key] = None
+            elif key not in self._orig_data:
+                # New value was set
+                output[key] = self[key]
+            elif self[key] != self._orig_data[key]:
+                # Value was changed
+                output[key] = self[key]
+        return output
+
+    def get_new_entity_value(self):
+        """Value of data for new entity.
+
+        Returns:
+            dict[str, Any]: Data without None values.
+
+        """
+        return {
+            key: value
+            for key, value in self.items()
+            if value is not None
+        }
+
+    def lock(self):
+        """Lock changes of entity data."""
+
+        self._orig_data = copy.deepcopy(self)
+
+
 @six.add_metaclass(ABCMeta)
 class BaseEntity(object):
     """Object representation of entity from server which is capturing changes.
