@@ -1,4 +1,3 @@
-import os
 import pytest
 
 from ayon_api.graphql import GraphQlQuery
@@ -7,22 +6,23 @@ from ayon_api.graphql_queries import (
     folders_graphql_query,
 )
 
+from .conftest import project_name_fixture
+
 
 @pytest.fixture
 def empty_query():
     return GraphQlQuery("ProjectQuery")
 
-@pytest.fixture
-def project_query():
-    return project_graphql_query(["name"])
 
 @pytest.fixture
 def folder_query():
     return folders_graphql_query(["name"])
 
 
-def test_simple_duplicate_add_variable_exception(empty_query):
-    key, value_type, value = "projectName", "[String!]", "kuba_v4_sync"
+def test_simple_duplicate_add_variable_exception(
+    project_name_fixture, empty_query
+):
+    key, value_type, value = "projectName", "[String!]", project_name_fixture
     empty_query.add_variable(key, value_type, value)
     with pytest.raises(KeyError):
         empty_query.add_variable(key, value_type)
@@ -33,9 +33,16 @@ def test_exception_empty_query(empty_query):
         out = empty_query.calculate_query()
 
 
-def test_simple_output(project_query):
+def test_simple_project_query():
+    project_query = project_graphql_query(["name"])
     result = project_query.calculate_query()
-    expected = "query ProjectQuery {\n  project {\n    name\n  }\n}"
+    expected = "\n".join([
+        "query ProjectQuery {",
+        "  project {",
+        "    name",
+        "  }",
+        "}"
+    ])
     assert result == expected
 
 
@@ -55,6 +62,7 @@ def make_project_query(keys, values, types):
                 query.set_variable_value(key, value)
 
         inserted.add(key)
+    return query
 
 
 def make_expected_get_variables_values(keys, values):
@@ -64,16 +72,21 @@ def make_expected_get_variables_values(keys, values):
 @pytest.mark.parametrize(
     "keys, values, types",
     [
-        (["projectName", "projectId", "numOf"], 
-         ["kuba_v4_sync", "0x23", 3], 
-         ["[String!]", "[String!]", "Int"]),
-        (["projectName", "testStrInt"],
-         ["my_name", 42],
-         ["[String!]", "[String!]"]),
-        (["projectName", "testIntStr"],
-         ["my_name", "test_123"],
-         ["[String!]", "Int"]),
-    ])
+        (
+            ["projectName", "projectId", "numOf"],
+            ["my_name", "0x23", 3],
+            ["[String!]", "[String!]", "Int"]
+        ), (
+            ["projectName", "testStrInt"],
+            ["my_name", 42],
+            ["[String!]", "[String!]"]
+        ), (
+            ["projectName", "testIntStr"],
+            ["my_name", "test_123"],
+            ["[String!]", "Int"]
+        ),
+    ]
+)
 def test_get_variables_values(keys, values, types):
     query = make_project_query(keys, values, types)
     # None means: unexpected exception thrown while adding variables
@@ -104,7 +117,7 @@ def print_rec_filters(field):
 
 def test_folders_graphql_query(folder_query):
     print(folder_query.calculate_query())
-    
+
 
 def test_filters(folder_query):
     print(folder_query._children[0]._children[0].get_filters())
