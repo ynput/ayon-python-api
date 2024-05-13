@@ -2387,7 +2387,7 @@ class ServerAPI(object):
                 dependency package created::
 
                     {"<addon name>": "<addon version>", ...}
-                    
+
             installer_version (str): Version of installer for which was
                 package created.
             checksum (str): Checksum of archive file where dependencies are.
