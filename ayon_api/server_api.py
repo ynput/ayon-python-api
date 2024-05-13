@@ -2763,11 +2763,11 @@ class ServerAPI(object):
             preset_name = "_"
         return self.get_project_anatomy_preset(preset_name)
 
-    def get_project_roots_by_site(self, project_name):
+    def get_project_root_overrides(self, project_name):
         """Root overrides per site name.
 
         Method is based on logged user and can't be received for any other
-        user on server.
+            user on server.
 
         Output will contain only roots per site id used by logged user.
 
@@ -2781,6 +2781,34 @@ class ServerAPI(object):
         result = self.get("projects/{}/roots".format(project_name))
         result.raise_for_status()
         return result.data
+
+    def get_project_roots_by_site(self, project_name):
+        """Root overrides per site name.
+
+        Method is based on logged user and can't be received for any other
+        user on server.
+
+        Output will contain only roots per site id used by logged user.
+
+        Deprecated:
+            Use 'get_project_root_overrides' instead. Function
+                deprecated since 1.0.6
+
+        Args:
+            project_name (str): Name of project.
+
+        Returns:
+             dict[str, dict[str, str]]: Root values by root name by site id.
+
+        """
+        warnings.warn(
+            (
+                "Method 'get_project_roots_by_site' is deprecated."
+                " Please use 'get_project_root_overrides' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_project_root_overrides(project_name)
 
     def get_project_roots_for_site(self, project_name, site_id=None):
         """Root overrides for site.
