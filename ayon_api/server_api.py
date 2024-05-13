@@ -2810,7 +2810,9 @@ class ServerAPI(object):
         )
         return self.get_project_root_overrides(project_name)
 
-    def get_project_roots_for_site(self, project_name, site_id=None):
+    def get_project_root_overrides_by_site_id(
+        self, project_name, site_id=None
+    ):
         """Root overrides for site.
 
         If site id is not passed a site set in current api object is used
@@ -2833,6 +2835,34 @@ class ServerAPI(object):
             return {}
         roots = self.get_project_roots_by_site(project_name)
         return roots.get(site_id, {})
+
+    def get_project_roots_for_site(self, project_name, site_id=None):
+        """Root overrides for site.
+
+        If site id is not passed a site set in current api object is used
+        instead.
+
+        Deprecated:
+            Use 'get_project_root_overrides_by_site_id' instead. Function
+                deprecated since 1.0.6
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Site id for which want to receive
+                site overrides.
+
+        Returns:
+            dict[str, str]: Root values by root name, root name is not
+                available if it does not have overrides.
+
+        """
+        warnings.warn(
+            (
+                "Method 'get_project_roots_for_site' is deprecated."
+                " Please use 'get_project_root_overrides_by_site_id' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_project_root_overrides_by_site_id(project_name)
 
     def get_addon_settings_schema(
         self, addon_name, addon_version, project_name=None
