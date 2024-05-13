@@ -2864,6 +2864,94 @@ class ServerAPI(object):
         )
         return self.get_project_root_overrides_by_site_id(project_name)
 
+    def _get_project_roots_values(
+        self, project_name, site_id=None, platform_name=None
+    ):
+        """Root values for site or platform.
+
+        Helper function that treats 'siteRoots' endpoint. The endpoint
+            requires to pass exactly one query value of site id
+            or platform name.
+
+        When using platform name, it does return default project roots without
+            any site overrides.
+
+        Output should contain all project roots with all filled values. If
+            value does not have override on a site, it should be filled with
+            project default value.
+
+        Args:
+            project_name (str): Project name.
+            site_id (Optional[str]): Site id for which want to receive
+                site overrides.
+            platform_name (Optional[str]): Platform for which want to receive
+                roots.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        query_data = {}
+        if site_id is not None:
+            query_data["site_id"] = site_id
+        else:
+            if platform_name is None:
+                platform_name = platform.system()
+            query_data["platform"] = platform_name.lower()
+
+        query = "?{}".format(",".join([
+            "{}={}".format(key, value)
+            for key, value in query_data.items()
+        ]))
+        response = self.get(
+            "projects/{}/siteRoots{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data
+
+    def get_project_roots_by_site_id(self, project_name, site_id=None):
+        """Root values for a site.
+
+        If site id is not passed a site set in current api object is used
+        instead. If site id is not available, default roots are returned
+        for current platform.
+
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Site id for which want to receive
+                root values.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        if site_id is None:
+            site_id = self.site_id
+
+        return self._get_project_roots_values(project_name, site_id=site_id)
+
+    def get_project_roots_by_platform(self, project_name, platform_name=None):
+        """Root values for a site.
+
+        If platform name is not passed current platform name is used instead.
+
+        This function does return root values without site overrides. It is
+            possible to use the function to receive default root values.
+
+        Args:
+            project_name (str): Name of project.
+            platform_name (Optional[Literal["windows", "linux", "darwin"]]):
+                Platform name for which want to receive root values. Current
+                platform name is used if not passed.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        return self._get_project_roots_values(
+            project_name, platform_name=platform_name
+        )
+
     def get_addon_settings_schema(
         self, addon_name, addon_version, project_name=None
     ):
