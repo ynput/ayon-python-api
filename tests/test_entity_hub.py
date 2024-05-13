@@ -315,6 +315,82 @@ def test_label_eq_name_on_entities(project_entity_fixture):
     hub.commit_changes()
 
 
+def test_data_changes_on_entities(project_entity_fixture):
+    """Test label that have same values as name on folder and task.
+
+    When the entity has same name and label, the label should be set to None.
+    """
+    project_name = project_entity_fixture["name"]
+    hub = EntityHub(project_name)
+
+    folder_type = project_entity_fixture["folderTypes"][-1]["name"]
+    root_folder = hub.add_new_folder(
+        folder_type, name="data_changes_on_entities"
+    )
+
+    folder_id = uuid.uuid1().hex
+    folder_name = "a_folder"
+    folder_data = {"key1": "value1"}
+
+    task_id = uuid.uuid1().hex
+    task_name = "my_task"
+    task_data = {"key2": "value2"}
+
+    folder = hub.add_new_folder(
+        folder_type,
+        name=folder_name,
+        data=folder_data,
+        parent_id=root_folder.id,
+        entity_id=folder_id,
+    )
+
+    task_type = project_entity_fixture["taskTypes"][-1]["name"]
+    task = hub.add_new_task(
+        task_type,
+        name=task_name,
+        data=task_data,
+        parent_id=folder.id,
+        entity_id=task_id,
+    )
+    hub.commit_changes()
+
+    folder_entity = ayon_api.get_folder_by_id(
+        project_name, folder_id, fields={"data"}
+    )
+    task_entity = ayon_api.get_task_by_id(
+        project_name, task_id, fields={"data"}
+    )
+    # Label should be 'None'
+    assert folder_entity["data"] == folder_data
+    assert task_entity["data"] == task_data
+
+    hub = EntityHub(project_name)
+
+    folder = hub.get_or_query_entity_by_id(folder_id, {"folder"})
+    folder.data["key3"] = "value3"
+    folder.data.pop("key1")
+
+    task = hub.get_or_query_entity_by_id(task_id, {"task"})
+    task.data["key4"] = "value4"
+    task.data.pop("key2")
+    hub.commit_changes()
+
+    folder_entity = ayon_api.get_folder_by_id(
+        project_name, folder_id, fields={"data"}
+    )
+    task_entity = ayon_api.get_task_by_id(
+        project_name, task_id, fields={"data"}
+    )
+    # Label should be 'None'
+    assert folder_entity["data"] == {"key3": "value3"}
+    assert task_entity["data"] == {"key4": "value4"}
+
+    hub.delete_entity(root_folder)
+    hub.delete_entity(folder)
+    hub.delete_entity(task)
+    hub.commit_changes()
+
+
 @pytest.mark.parametrize(
     "folder_name, subfolder_name, num_of_subfolders",
     [
