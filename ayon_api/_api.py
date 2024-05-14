@@ -1475,6 +1475,25 @@ def get_build_in_anatomy_preset():
     return con.get_build_in_anatomy_preset()
 
 
+def get_project_root_overrides(*args, **kwargs):
+    """Root overrides per site name.
+
+    Method is based on logged user and can't be received for any other
+        user on server.
+
+    Output will contain only roots per site id used by logged user.
+
+    Args:
+        project_name (str): Name of project.
+
+    Returns:
+         dict[str, dict[str, str]]: Root values by root name by site id.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_root_overrides(*args, **kwargs)
+
+
 def get_project_roots_by_site(*args, **kwargs):
     """Root overrides per site name.
 
@@ -1482,6 +1501,10 @@ def get_project_roots_by_site(*args, **kwargs):
     user on server.
 
     Output will contain only roots per site id used by logged user.
+
+    Deprecated:
+        Use 'get_project_root_overrides' instead. Function
+            deprecated since 1.0.6
 
     Args:
         project_name (str): Name of project.
@@ -1494,7 +1517,7 @@ def get_project_roots_by_site(*args, **kwargs):
     return con.get_project_roots_by_site(*args, **kwargs)
 
 
-def get_project_roots_for_site(*args, **kwargs):
+def get_project_root_overrides_by_site_id(*args, **kwargs):
     """Root overrides for site.
 
     If site id is not passed a site set in current api object is used
@@ -1511,7 +1534,72 @@ def get_project_roots_for_site(*args, **kwargs):
 
     """
     con = get_server_api_connection()
+    return con.get_project_root_overrides_by_site_id(*args, **kwargs)
+
+
+def get_project_roots_for_site(*args, **kwargs):
+    """Root overrides for site.
+
+    If site id is not passed a site set in current api object is used
+    instead.
+
+    Deprecated:
+        Use 'get_project_root_overrides_by_site_id' instead. Function
+            deprecated since 1.0.6
+    Args:
+        project_name (str): Name of project.
+        site_id (Optional[str]): Site id for which want to receive
+            site overrides.
+
+    Returns:
+        dict[str, str]: Root values by root name, root name is not
+            available if it does not have overrides.
+
+    """
+    con = get_server_api_connection()
     return con.get_project_roots_for_site(*args, **kwargs)
+
+
+def get_project_roots_by_site_id(*args, **kwargs):
+    """Root values for a site.
+
+    If site id is not passed a site set in current api object is used
+    instead. If site id is not available, default roots are returned
+    for current platform.
+
+    Args:
+        project_name (str): Name of project.
+        site_id (Optional[str]): Site id for which want to receive
+            root values.
+
+    Returns:
+        dict[str, str]: Root values.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_roots_by_site_id(*args, **kwargs)
+
+
+def get_project_roots_by_platform(*args, **kwargs):
+    """Root values for a site.
+
+    If platform name is not passed current platform name is used instead.
+
+    This function does return root values without site overrides. It is
+        possible to use the function to receive default root values.
+
+    Args:
+        project_name (str): Name of project.
+        platform_name (Optional[Literal["windows", "linux", "darwin"]]):
+            Platform name for which want to receive root values. Current
+            platform name is used if not passed.
+
+    Returns:
+        dict[str, str]: Root values.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_roots_by_platform(*args, **kwargs)
 
 
 def get_addon_settings_schema(*args, **kwargs):
