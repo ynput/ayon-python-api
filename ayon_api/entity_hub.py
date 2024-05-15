@@ -1032,6 +1032,71 @@ class Attributes(object):
         return output
 
 
+class EntityData(dict):
+    """Wrapper for 'data' key on entity.
+
+    Data on entity are arbitrary data that are not stored in any deterministic
+    model. It is possible to store any data that can be parsed to json.
+
+    It is not possible to store 'None' to root key. In that case the key is
+    not stored, and removed if existed on entity.
+
+    To be able to store 'None' value use nested data structure:
+    {
+        "sceneInfo": {
+             "description": None,
+             "camera": "camera1"
+        }
+    }
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orig_data = copy.deepcopy(self)
+
+    def get_changes(self):
+        """Changes in entity data.
+
+        Removed keys have value set to 'None'.
+
+        Returns:
+            dict[str, Any]: Key mapping with changed values.
+
+        """
+        keys = set(self.keys()) | set(self._orig_data.keys())
+        output = {}
+        for key in keys:
+            if key not in self:
+                # Key was removed
+                output[key] = None
+            elif key not in self._orig_data:
+                # New value was set
+                output[key] = self[key]
+            elif self[key] != self._orig_data[key]:
+                # Value was changed
+                output[key] = self[key]
+        return output
+
+    def get_new_entity_value(self):
+        """Value of data for new entity.
+
+        Returns:
+            dict[str, Any]: Data without None values.
+
+        """
+        return {
+            key: value
+            for key, value in self.items()
+            # Ignore 'None' values
+            if value is not None
+        }
+
+    def lock(self):
+        """Lock changes of entity data."""
+
+        self._orig_data = copy.deepcopy(self)
+
+
 @six.add_metaclass(ABCMeta)
 class BaseEntity(object):
     """Object representation of entity from server which is capturing changes.
@@ -1083,7 +1148,10 @@ class BaseEntity(object):
         entity_id = self._prepare_entity_id(entity_id)
 
         if data is None:
-            data = {}
+            data = EntityData()
+
+        elif data is not UNKNOWN_VALUE:
+            data = EntityData(data)
 
         children_ids = UNKNOWN_VALUE
         if created:
@@ -1110,7 +1178,6 @@ class BaseEntity(object):
 
         self._orig_parent_id = parent_id
         self._orig_name = name
-        self._orig_data = copy.deepcopy(data)
         self._orig_thumbnail_id = thumbnail_id
         self._orig_active = active
 
@@ -1168,7 +1235,7 @@ class BaseEntity(object):
             updated partially.
 
         Returns:
-            Dict[str, Any]: Custom data on entity.
+            EntityData: Custom data on entity.
 
         """
         return self._data
@@ -1312,12 +1379,13 @@ class BaseEntity(object):
         if self._orig_name != self._name:
             changes["name"] = self._name
 
-        if self._entity_hub.allow_data_changes:
-            if (
-                self._data is not UNKNOWN_VALUE
-                and self._orig_data != self._data
-            ):
-                changes["data"] = self._data
+        if (
+            self._entity_hub.allow_data_changes
+            and self._data is not UNKNOWN_VALUE
+        ):
+            data_changes = self._data.get_changes()
+            if data_changes:
+                changes["data"] = data_changes
 
         if self._orig_thumbnail_id != self._thumbnail_id:
             changes["thumbnailId"] = self._thumbnail_id
@@ -1337,8 +1405,9 @@ class BaseEntity(object):
         """Lock entity as 'saved' so all changes are discarded."""
         self._orig_parent_id = self._parent_id
         self._orig_name = self._name
-        self._orig_data = copy.deepcopy(self._data)
         self._orig_thumbnail_id = self.thumbnail_id
+        if isinstance(self._data, EntityData):
+            self._data.lock()
         self._attribs.lock()
 
         self._immutable_for_hierarchy_cache = None
@@ -2678,7 +2747,7 @@ class FolderEntity(BaseEntity):
             self._entity_hub.allow_data_changes
             and self._data is not UNKNOWN_VALUE
         ):
-            output["data"] = self._data
+            output["data"] = self._data.get_new_entity_value()
         return output
 
     def _get_label_value(self):
@@ -2888,7 +2957,7 @@ class TaskEntity(BaseEntity):
             self._entity_hub.allow_data_changes
             and self._data is not UNKNOWN_VALUE
         ):
-            output["data"] = self._data
+            output["data"] = self._data.get_new_entity_value()
         return output
 
     def _get_label_value(self):
