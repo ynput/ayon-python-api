@@ -1,8 +1,6 @@
 import copy
 import numbers
-from abc import ABCMeta, abstractmethod
-
-import six
+from abc import ABC, abstractmethod
 
 from .exceptions import GraphQlQueryFailed
 
@@ -386,8 +384,7 @@ class GraphQlQuery:
                 yield output
 
 
-@six.add_metaclass(ABCMeta)
-class BaseGraphQlQueryField(object):
+class BaseGraphQlQueryField(ABC):
     """Field in GraphQl query.
 
     Args:
@@ -596,7 +593,7 @@ class BaseGraphQlQueryField(object):
         if isinstance(value, numbers.Number):
             return str(value)
 
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             return '"{}"'.format(value)
 
         if isinstance(value, (list, set, tuple)):
