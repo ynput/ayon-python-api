@@ -1,29 +1,7 @@
 import collections
 
 from .constants import DEFAULT_LINK_FIELDS
-from .graphql import FIELD_VALUE, GraphQlQuery
-
-
-def fields_to_dict(fields):
-    if not fields:
-        return None
-
-    output = {}
-    for field in fields:
-        hierarchy = field.split(".")
-        last = hierarchy.pop(-1)
-        value = output
-        for part in hierarchy:
-            if value is FIELD_VALUE:
-                break
-
-            if part not in value:
-                value[part] = {}
-            value = value[part]
-
-        if value is not FIELD_VALUE:
-            value[last] = FIELD_VALUE
-    return output
+from .graphql import FIELD_VALUE, GraphQlQuery, fields_to_dict
 
 
 def add_links_fields(entity_field, nested_fields):
