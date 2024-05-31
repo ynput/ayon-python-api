@@ -1702,7 +1702,7 @@ class ServerAPI(object):
 
         dst_directory = os.path.dirname(filepath)
         if not os.path.exists(dst_directory):
-            os.makedirs(dst_directory)
+            os.makedirs(dst_directory, exist_ok=True)
 
         try:
             with open(filepath, "wb") as stream:
@@ -2196,7 +2196,7 @@ class ServerAPI(object):
         # Filename can contain "subfolders"
         dst_dirpath = os.path.dirname(dst_filepath)
         if not os.path.exists(dst_dirpath):
-            os.makedirs(dst_dirpath)
+            os.makedirs(dst_dirpath, exist_ok=True)
 
         url = self.get_addon_url(
             addon_name,
