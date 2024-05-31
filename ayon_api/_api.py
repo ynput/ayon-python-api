@@ -788,6 +788,32 @@ def enroll_event_job(*args, **kwargs):
     return con.enroll_event_job(*args, **kwargs)
 
 
+def download_file_to_stream(*args, **kwargs):
+    """Download file from AYON server to IOStream.
+
+    Endpoint can be full url (must start with 'base_url' of api object).
+
+    Progress object can be used to track download. Can be used when
+    download happens in thread and other thread want to catch changes over
+    time.
+
+    Todos:
+        Use retries and timeout.
+        Return RestApiResponse.
+
+    Args:
+        endpoint (str): Endpoint or URL to file that should be downloaded.
+        stream (Union[io.BytesIO, BinaryIO]): Stream where output will be stored.
+        chunk_size (Optional[int]): Size of chunks that are received
+            in single loop.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track download progress.
+
+    """
+    con = get_server_api_connection()
+    return con.download_file_to_stream(*args, **kwargs)
+
+
 def download_file(*args, **kwargs):
     """Download file from AYON server.
 
