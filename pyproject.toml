@@ -16,7 +16,6 @@ classifiers = [
 ]
 dependencies = [
     "requests >= 2.27.1",
-    "six >= 1.15",
     "Unidecode >= 1.2.0",
     "appdirs >=1, <2",
 ]
@@ -40,7 +39,6 @@ authors = [
 [tool.poetry.dependencies]
 python = ">=2.7,>=3.6.5"
 requests = "^2.27"
-six = "^1.15"
 Unidecode = "1.2.0" # Python 2 support
 appdirs = "^1.4"
 
