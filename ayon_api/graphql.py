@@ -10,10 +10,10 @@ FIELD_VALUE = object()
 
 
 def fields_to_dict(fields):
-    if not fields:
-        return None
-
     output = {}
+    if not fields:
+        return output
+
     for field in fields:
         hierarchy = field.split(".")
         last = hierarchy.pop(-1)
