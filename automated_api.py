@@ -62,15 +62,12 @@ def prepare_init_without_api(init_filepath):
         "\n".join(filtered_lines).rstrip(") \n") + "\n\n{all_content}\n)"
     )
 
-    formatting_content = (
+    return (
         content
         .replace(api_imports_text, "{api_imports}")
         .replace(all_content_text, new_all_content_text)
     ).rstrip("\n")
-    tmp_init = formatting_content.format(all_content="", api_imports="")
-    with open(init_filepath, "w") as stream:
-        print(tmp_init, file=stream)
-    return formatting_content
+
 
 # Creation of _api.py content
 def indent_lines(src_str, indent=1):
