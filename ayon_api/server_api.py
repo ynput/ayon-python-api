@@ -1602,11 +1602,7 @@ class ServerAPI(object):
 
         return response.data
 
-    def _download_file(self, url, filepath, chunk_size, progress):
-        dst_directory = os.path.dirname(filepath)
-        if not os.path.exists(dst_directory):
-            os.makedirs(dst_directory)
-
+    def _download_file_to_stream(self, url, stream, chunk_size, progress):
         kwargs = {"stream": True}
         if self._session is None:
             kwargs["headers"] = self.get_headers()
@@ -1614,13 +1610,64 @@ class ServerAPI(object):
         else:
             get_func = self._session_functions_mapping[RequestTypes.get]
 
-        with open(filepath, "wb") as f_stream:
-            with get_func(url, **kwargs) as response:
-                response.raise_for_status()
-                progress.set_content_size(response.headers["Content-length"])
-                for chunk in response.iter_content(chunk_size=chunk_size):
-                    f_stream.write(chunk)
-                    progress.add_transferred_chunk(len(chunk))
+        with get_func(url, **kwargs) as response:
+            response.raise_for_status()
+            progress.set_content_size(response.headers["Content-length"])
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                stream.write(chunk)
+                progress.add_transferred_chunk(len(chunk))
+
+    def download_file_to_stream(
+        self, endpoint, stream, chunk_size=None, progress=None
+    ):
+        """Download file from AYON server to IOStream.
+
+        Endpoint can be full url (must start with 'base_url' of api object).
+
+        Progress object can be used to track download. Can be used when
+        download happens in thread and other thread want to catch changes over
+        time.
+
+        Todos:
+            Use retries and timeout.
+            Return RestApiResponse.
+
+        Args:
+            endpoint (str): Endpoint or URL to file that should be downloaded.
+            stream (Union[io.BytesIO, BinaryIO]): Stream where output will be stored.
+            chunk_size (Optional[int]): Size of chunks that are received
+                in single loop.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
+
+        """
+        if not chunk_size:
+            chunk_size = self.default_download_chunk_size
+
+        if endpoint.startswith(self._base_url):
+            url = endpoint
+        else:
+            endpoint = endpoint.lstrip("/").rstrip("/")
+            url = "{}/{}".format(self._rest_url, endpoint)
+
+        if progress is None:
+            progress = TransferProgress()
+
+        progress.set_source_url(url)
+        progress.set_started()
+
+        try:
+            self._download_file_to_stream(
+                endpoint, stream, chunk_size, progress
+            )
+
+        except Exception as exc:
+            progress.set_failed(str(exc))
+            raise
+
+        finally:
+            progress.set_transfer_done()
+        return progress
 
     def download_file(
         self, endpoint, filepath, chunk_size=None, progress=None
@@ -1646,32 +1693,27 @@ class ServerAPI(object):
                 to track download progress.
 
         """
-        if not chunk_size:
-            chunk_size = self.default_download_chunk_size
-
-        if endpoint.startswith(self._base_url):
-            url = endpoint
-        else:
-            endpoint = endpoint.lstrip("/").rstrip("/")
-            url = "{}/{}".format(self._rest_url, endpoint)
-
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
         if progress is None:
             progress = TransferProgress()
 
-        progress.set_source_url(url)
         progress.set_destination_url(filepath)
-        progress.set_started()
+
+        dst_directory = os.path.dirname(filepath)
+        if not os.path.exists(dst_directory):
+            os.makedirs(dst_directory)
+
         try:
-            self._download_file(url, filepath, chunk_size, progress)
+            with open(filepath, "wb") as stream:
+                self.download_file_to_stream(
+                    endpoint, stream, chunk_size, progress
+                )
 
         except Exception as exc:
             progress.set_failed(str(exc))
             raise
 
-        finally:
-            progress.set_transfer_done()
         return progress
 
     @staticmethod
