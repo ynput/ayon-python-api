@@ -1701,8 +1701,7 @@ class ServerAPI(object):
         progress.set_destination_url(filepath)
 
         dst_directory = os.path.dirname(filepath)
-        if not os.path.exists(dst_directory):
-            os.makedirs(dst_directory, exist_ok=True)
+        os.makedirs(dst_directory, exist_ok=True)
 
         try:
             with open(filepath, "wb") as stream:
@@ -2195,8 +2194,7 @@ class ServerAPI(object):
         dst_filepath = os.path.join(destination_dir, destination_filename)
         # Filename can contain "subfolders"
         dst_dirpath = os.path.dirname(dst_filepath)
-        if not os.path.exists(dst_dirpath):
-            os.makedirs(dst_dirpath, exist_ok=True)
+        os.makedirs(dst_dirpath, exist_ok=True)
 
         url = self.get_addon_url(
             addon_name,
