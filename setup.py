@@ -30,7 +30,7 @@ setup(
     ],
     install_requires=[
         "requests >= 2.27.1",
-        "Unidecode >= 1.2.0",
+        "Unidecode >= 1.3.0",
         "appdirs >=1, <2",
     ],
     keywords=["AYON", "ynput", "OpenPype", "vfx"],
