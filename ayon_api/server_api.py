@@ -64,7 +64,6 @@ from .graphql_queries import (
     products_graphql_query,
     versions_graphql_query,
     representations_graphql_query,
-    representations_parents_qraphql_query,
     representations_hierarchy_qraphql_query,
     workfiles_info_graphql_query,
     events_graphql_query,
@@ -6246,76 +6245,6 @@ class ServerAPI(object):
             return representation
         return None
 
-    def get_representations_parents(self, project_name, representation_ids):
-        """Find representations parents by representation id.
-
-        Representation parent entities up to project.
-
-        Args:
-             project_name (str): Project where to look for entities.
-             representation_ids (Iterable[str]): Representation ids.
-
-        Returns:
-            dict[str, RepresentationParents]: Parent entities by
-                representation id.
-
-        """
-        if not representation_ids:
-            return {}
-
-        project = self.get_project(project_name)
-        repre_ids = set(representation_ids)
-        output = {
-            repre_id: RepresentationParents(None, None, None, None)
-            for repre_id in representation_ids
-        }
-
-        version_fields = self.get_default_fields_for_type("version")
-        product_fields = self.get_default_fields_for_type("product")
-        folder_fields = self.get_default_fields_for_type("folder")
-
-        query = representations_parents_qraphql_query(
-            version_fields, product_fields, folder_fields
-        )
-        query.set_variable_value("projectName", project_name)
-        query.set_variable_value("representationIds", list(repre_ids))
-
-        parsed_data = query.query(self)
-        for repre in parsed_data["project"]["representations"]:
-            repre_id = repre["id"]
-            version = repre.pop("version")
-            product = version.pop("product")
-            folder = product.pop("folder")
-            self._convert_entity_data(version)
-            self._convert_entity_data(product)
-            self._convert_entity_data(folder)
-            output[repre_id] = RepresentationParents(
-                version, product, folder, project
-            )
-
-        return output
-
-    def get_representation_parents(self, project_name, representation_id):
-        """Find representation parents by representation id.
-
-        Representation parent entities up to project.
-
-        Args:
-             project_name (str): Project where to look for entities.
-             representation_id (str): Representation id.
-
-        Returns:
-            RepresentationParents: Representation parent entities.
-
-        """
-        if not representation_id:
-            return None
-
-        parents_by_repre_id = self.get_representations_parents(
-            project_name, [representation_id]
-        )
-        return parents_by_repre_id[representation_id]
-
     def get_representations_hierarchy(
         self,
         project_name,
@@ -6461,6 +6390,89 @@ class ServerAPI(object):
             product_fields=product_fields,
             version_fields=version_fields,
             representation_fields=representation_fields,
+        )
+        return parents_by_repre_id[representation_id]
+
+    def get_representations_parents(
+        self,
+        project_name,
+        representation_ids,
+        project_fields=None,
+        folder_fields=None,
+        product_fields=None,
+        version_fields=None,
+    ):
+        """Find representations parents by representation id.
+
+        Representation parent entities up to project.
+
+        Args:
+            project_name (str): Project where to look for entities.
+            representation_ids (Iterable[str]): Representation ids.
+            project_fields (Optional[Iterable[str]]): Project fields.
+            folder_fields (Optional[Iterable[str]]): Folder fields.
+            product_fields (Optional[Iterable[str]]): Product fields.
+            version_fields (Optional[Iterable[str]]): Version fields.
+
+        Returns:
+            dict[str, RepresentationParents]: Parent entities by
+                representation id.
+
+        """
+        hierarchy_by_repre_id = self.get_representations_hierarchy(
+            project_name,
+            representation_ids,
+            project_fields=project_fields,
+            folder_fields=folder_fields,
+            product_fields=product_fields,
+            version_fields=version_fields,
+            representation_fields={"id"},
+        )
+        return {
+            repre_id: RepresentationParents(
+                hierarchy.version,
+                hierarchy.product,
+                hierarchy.folder,
+                hierarchy.project,
+            )
+            for repre_id, hierarchy in hierarchy_by_repre_id.items()
+        }
+
+    def get_representation_parents(
+        self,
+        project_name, 
+        representation_id,
+        project_fields=None,
+        folder_fields=None,
+        product_fields=None,
+        version_fields=None,
+    ):
+        """Find representation parents by representation id.
+
+        Representation parent entities up to project.
+
+        Args:
+            project_name (str): Project where to look for entities.
+            representation_id (str): Representation id.
+            project_fields (Optional[Iterable[str]]): Project fields.
+            folder_fields (Optional[Iterable[str]]): Folder fields.
+            product_fields (Optional[Iterable[str]]): Product fields.
+            version_fields (Optional[Iterable[str]]): Version fields.
+
+        Returns:
+            RepresentationParents: Representation parent entities.
+
+        """
+        if not representation_id:
+            return None
+
+        parents_by_repre_id = self.get_representations_parents(
+            project_name,
+            [representation_id],
+            project_fields=project_fields,
+            folder_fields=folder_fields,
+            product_fields=product_fields,
+            version_fields=version_fields,
         )
         return parents_by_repre_id[representation_id]
 
