@@ -65,6 +65,7 @@ from .graphql_queries import (
     versions_graphql_query,
     representations_graphql_query,
     representations_parents_qraphql_query,
+    representations_hierarchy_qraphql_query,
     workfiles_info_graphql_query,
     events_graphql_query,
     users_graphql_query,
@@ -80,6 +81,7 @@ from .exceptions import (
 )
 from .utils import (
     RepresentationParents,
+    RepresentationHierarchy,
     prepare_query_string,
     logout_from_server,
     create_entity_id,
@@ -6311,6 +6313,154 @@ class ServerAPI(object):
 
         parents_by_repre_id = self.get_representations_parents(
             project_name, [representation_id]
+        )
+        return parents_by_repre_id[representation_id]
+
+    def get_representations_hierarchy(
+        self,
+        project_name,
+        representation_ids,
+        project_fields=None,
+        folder_fields=None,
+        product_fields=None,
+        version_fields=None,
+        representation_fields=None,
+    ):
+        """Find representation with parents by representation id.
+
+        Representation entity with parent entities up to project.
+
+        Default fields are used when any fields are set to `None`. But it is
+            possible to pass in empty iterable (list, set, tuple) to skip
+            entity.
+
+        Args:
+            project_name (str): Project where to look for entities.
+            representation_ids (Iterable[str]): Representation ids.
+            project_fields (Optional[Iterable[str]]): Project fields.
+            folder_fields (Optional[Iterable[str]]): Folder fields.
+            product_fields (Optional[Iterable[str]]): Product fields.
+            version_fields (Optional[Iterable[str]]): Version fields.
+            representation_fields (Optional[Iterable[str]]): Representation
+                fields.
+
+        Returns:
+            dict[str, RepresentationHierarchy]: Parent entities by
+                representation id.
+
+        """
+        if not representation_ids:
+            return {}
+
+        if project_fields is not None:
+            project_fields = set(project_fields)
+
+        project = {}
+        if project_fields is None:
+            project = self.get_project(project_name)
+
+        elif project_fields:
+            # Keep project as empty dictionary if does not have
+            #   filled any fields
+            project = self.get_project(
+                project_name, fields=project_fields
+            )
+
+        repre_ids = set(representation_ids)
+        output = {
+            repre_id: RepresentationHierarchy(
+                project, None, None, None, None
+            )
+            for repre_id in representation_ids
+        }
+
+        if folder_fields is None:
+            folder_fields = self.get_default_fields_for_type("folder")
+        else:
+            folder_fields = set(folder_fields)
+
+        if product_fields is None:
+            product_fields = self.get_default_fields_for_type("product")
+        else:
+            product_fields = set(product_fields)
+
+        if version_fields is None:
+            version_fields = self.get_default_fields_for_type("version")
+        else:
+            version_fields = set(version_fields)
+
+        if representation_fields is None:
+            representation_fields = self.get_default_fields_for_type(
+                "representation"
+            )
+        else:
+            representation_fields = set(representation_fields)
+
+        representation_fields.add("id")
+
+        query = representations_hierarchy_qraphql_query(
+            folder_fields,
+            product_fields,
+            version_fields,
+            representation_fields,
+        )
+        query.set_variable_value("projectName", project_name)
+        query.set_variable_value("representationIds", list(repre_ids))
+
+        parsed_data = query.query(self)
+        for repre in parsed_data["project"]["representations"]:
+            repre_id = repre["id"]
+            version = repre.pop("version", {})
+            product = version.pop("product", {})
+            folder = product.pop("folder", {})
+            self._convert_entity_data(version)
+            self._convert_entity_data(product)
+            self._convert_entity_data(folder)
+            output[repre_id] = RepresentationHierarchy(
+                project, folder, product, version, repre
+            )
+
+        return output
+
+    def get_representation_hierarchy(
+        self,
+        project_name,
+        representation_id,
+        project_fields=None,
+        folder_fields=None,
+        product_fields=None,
+        version_fields=None,
+        representation_fields=None,
+    ):
+        """Find representation parents by representation id.
+
+        Representation parent entities up to project.
+
+        Args:
+            project_name (str): Project where to look for entities.
+            representation_id (str): Representation id.
+            project_fields (Optional[Iterable[str]]): Project fields.
+            folder_fields (Optional[Iterable[str]]): Folder fields.
+            product_fields (Optional[Iterable[str]]): Product fields.
+            version_fields (Optional[Iterable[str]]): Version fields.
+            representation_fields (Optional[Iterable[str]]): Representation
+                fields.
+
+        Returns:
+            RepresentationHierarchy: Representation hierarchy entities.
+
+        """
+        if not representation_id:
+            return None
+
+        parents_by_repre_id = self.get_representations_hierarchy(
+            project_name,
+            [representation_id],
+            project_fields=project_fields,
+            folder_fields=folder_fields,
+            product_fields=product_fields,
+            version_fields=version_fields,
+            representation_fields=representation_fields,
         )
         return parents_by_repre_id[representation_id]
 
