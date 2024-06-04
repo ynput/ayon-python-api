@@ -222,9 +222,18 @@ class EntityHub(object):
                     fields=self._get_task_fields(),
                     own_attributes=True
                 )
+            elif entity_type == "version":
+                entity_data = self._connection.get_version_by_id(
+                    self.project_name,
+                    entity_id,
+                    fields=self._get_version_fields(),
+                    own_attributes=False
+                    # setting it to True errors out with
+                    # GraphQl query Failed: Cannot query field 'ownAttrib' on type 'VersionNode'. Did you mean 'attrib'?
+                )
             else:
                 raise ValueError(
-                    "Unknonwn entity type \"{}\"".format(entity_type)
+                    "Unknown entity type \"{}\"".format(entity_type)
                 )
 
             if entity_data:
@@ -240,6 +249,10 @@ class EntityHub(object):
 
         elif entity_type == "task":
             return self.add_task(entity_data)
+
+        # TODO: ?        
+        # elif entity_type == "version":
+        #     return self.add_version(entity_data)
 
         return None
 
@@ -611,7 +624,12 @@ class EntityHub(object):
         return set(
             self._connection.get_default_fields_for_type("task")
         )
-
+    
+    def _get_version_fields(self):
+        return set(
+            self._connection.get_default_fields_for_type("version")
+        )
+    
     def query_entities_from_server(self):
         """Query whole project at once."""
         project_entity = self.fill_project_from_server()
