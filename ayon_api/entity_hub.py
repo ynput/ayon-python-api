@@ -2848,16 +2848,16 @@ class TaskEntity(BaseEntity):
     label = property(get_label, set_label)
 
     def get_status(self):
-        """Folder status.
+        """Task status.
 
         Returns:
-            Union[str, UNKNOWN_VALUE]: Folder status or 'UNKNOWN_VALUE'.
+            Union[str, UNKNOWN_VALUE]: Task status or 'UNKNOWN_VALUE'.
 
         """
         return self._status
 
     def set_status(self, status_name):
-        """Set folder status.
+        """Set Task status.
 
         Args:
             status_name (str): Status name.
@@ -2874,10 +2874,10 @@ class TaskEntity(BaseEntity):
     status = property(get_status, set_status)
 
     def get_tags(self):
-        """Folder tags.
+        """Task tags.
 
         Returns:
-            list[str]: Folder tags.
+            list[str]: Task tags.
 
         """
         return self._tags
@@ -2894,10 +2894,10 @@ class TaskEntity(BaseEntity):
     tags = property(get_tags, set_tags)
 
     def get_assignees(self):
-        """Folder assignees.
+        """Task assignees.
 
         Returns:
-            list[str]: Folder assignees.
+            list[str]: Task assignees.
 
         """
         return self._assignees
