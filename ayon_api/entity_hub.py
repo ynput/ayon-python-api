@@ -3029,7 +3029,6 @@ class VersionEntity(BaseEntity):
         self,
         *args,
         tags=None,
-        assignees=None,
         status=UNKNOWN_VALUE,
         **kwargs
     ):
@@ -3039,11 +3038,6 @@ class VersionEntity(BaseEntity):
             tags = []
         else:
             tags = list(tags)
-        
-        if assignees is None:
-            assignees = []
-        else:
-            assignees = list(assignees)
 
         self._status = status
         self._tags = tags
