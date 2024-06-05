@@ -3004,6 +3004,7 @@ class TaskEntity(BaseEntity):
             return None
         return label
 
+
 class VersionEntity(BaseEntity):
     """Entity representing a version on AYON server.
 
