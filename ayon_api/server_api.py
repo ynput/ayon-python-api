@@ -1720,7 +1720,7 @@ class ServerAPI(object):
         """Generator that yields chunks of file.
 
         Args:
-            file_stream (io.BinaryIO): Byte stream.
+            file_stream (Union[io.BytesIO, BinaryIO]): Byte stream.
             progress (TransferProgress): Object to track upload progress.
             chunk_size (int): Size of chunks that are uploaded at once.
 
@@ -1745,7 +1745,7 @@ class ServerAPI(object):
     def _upload_file(
         self,
         url,
-        filepath,
+        stream,
         progress,
         request_type=None,
         chunk_size=None,
@@ -1755,7 +1755,7 @@ class ServerAPI(object):
 
         Args:
             url (str): Url where file will be uploaded.
-            filepath (str): Source filepath.
+            stream (Union[io.BytesIO, BinaryIO]): File stream.
             progress (TransferProgress): Object that gives ability to track
                 progress.
             request_type (Optional[RequestType]): Type of request that will
@@ -1784,15 +1784,63 @@ class ServerAPI(object):
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
 
-        with open(filepath, "rb") as stream:
-            response = post_func(
-                url,
-                data=self._upload_chunks_iter(stream, progress, chunk_size),
-                **kwargs
-            )
+        response = post_func(
+            url,
+            data=self._upload_chunks_iter(stream, progress, chunk_size),
+            **kwargs
+        )
 
         response.raise_for_status()
         return response
+
+    def upload_file_from_stream(
+        self, endpoint, stream, progress, request_type, **kwargs
+    ):
+        """Upload file to server.
+
+        Todos:
+            Use retries and timeout.
+            Return RestApiResponse.
+
+        Args:
+            endpoint (str): Endpoint or url where file will be uploaded.
+            stream (Union[io.BytesIO, BinaryIO]): File stream.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track upload progress.
+            request_type (Optional[RequestType]): Type of request that will
+                be used to upload file.
+            **kwargs (Any): Additional arguments that will be passed
+                to request function.
+
+        Returns:
+            requests.Response: Response object
+
+        """
+        if endpoint.startswith(self._base_url):
+            url = endpoint
+        else:
+            endpoint = endpoint.lstrip("/").rstrip("/")
+            url = "{}/{}".format(self._rest_url, endpoint)
+
+        # Create dummy object so the function does not have to check
+        #   'progress' variable everywhere
+        if progress is None:
+            progress = TransferProgress()
+
+        progress.set_destination_url(url)
+        progress.set_started()
+
+        try:
+            return self._upload_file(
+                url, stream, progress, request_type, **kwargs
+            )
+
+        except Exception as exc:
+            progress.set_failed(str(exc))
+            raise
+
+        finally:
+            progress.set_transfer_done()
 
     def upload_file(
         self, endpoint, filepath, progress=None, request_type=None, **kwargs
@@ -1817,32 +1865,15 @@ class ServerAPI(object):
             requests.Response: Response object
         
         """
-        if endpoint.startswith(self._base_url):
-            url = endpoint
-        else:
-            endpoint = endpoint.lstrip("/").rstrip("/")
-            url = "{}/{}".format(self._rest_url, endpoint)
-
-        # Create dummy object so the function does not have to check
-        #   'progress' variable everywhere
         if progress is None:
             progress = TransferProgress()
 
         progress.set_source_url(filepath)
-        progress.set_destination_url(url)
-        progress.set_started()
 
-        try:
-            return self._upload_file(
-                url, filepath, progress, request_type, **kwargs
+        with open(filepath, "rb") as stream:
+            return self.upload_file_from_stream(
+                endpoint, stream, progress, request_type, **kwargs
             )
-
-        except Exception as exc:
-            progress.set_failed(str(exc))
-            raise
-
-        finally:
-            progress.set_transfer_done()
 
     def trigger_server_restart(self):
         """Trigger server restart.

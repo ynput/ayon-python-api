@@ -5,6 +5,7 @@ from .utils import (
     create_dependency_package_basename,
 )
 from .server_api import (
+    RequestTypes,
     ServerAPI,
 )
 
@@ -224,6 +225,7 @@ __all__ = (
     "slugify_string",
     "create_dependency_package_basename",
 
+    "RequestTypes",
     "ServerAPI",
 
     "GlobalServerAPI",
