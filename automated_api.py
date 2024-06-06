@@ -149,6 +149,7 @@ def prepare_api_functions():
         if base_sig_str == "(self)":
             sig_str = "()"
         else:
+            # TODO copy signature from method so IDEs can use it
             sig_str = "(*args, **kwargs)"
 
         func_def = prepare_func_def_line(attr_name, sig_str)
@@ -167,6 +168,7 @@ def prepare_api_functions():
 
 
 def main():
+    print("Creating public API functions based on ServerAPI methods")
     # TODO order methods in some order
     dirpath = os.path.dirname(os.path.dirname(
         os.path.abspath(ayon_api.__file__)
@@ -174,9 +176,8 @@ def main():
     ayon_api_root = os.path.join(dirpath, "ayon_api")
     init_filepath = os.path.join(ayon_api_root, "__init__.py")
     api_filepath = os.path.join(ayon_api_root, "_api.py")
-    formatting_init_content = prepare_init_without_api(init_filepath)
 
-    result = prepare_api_functions()
+    print("(1/5) Reading current content of '_api.py'")
     with open(api_filepath, "r") as stream:
         old_content = stream.read()
 
@@ -190,6 +191,13 @@ def main():
             "Automated comment found multiple times in '_api.py'"
         )
 
+    print("(2/5) Parsing current '__init__.py' content")
+    formatting_init_content = prepare_init_without_api(init_filepath)
+
+    print("(3/5) Preparing functions body based on 'ServerAPI' class")
+    result = prepare_api_functions()
+
+    print("(4/5) Store new functions body to '_api.py'")
     new_content = f"{parts[0]}{AUTOMATED_COMMENT}\n{result}"
     with open(api_filepath, "w") as stream:
         print(new_content, file=stream)
@@ -205,6 +213,7 @@ def main():
                 continue
             func_names.append(name)
 
+    print("(5/5) Updating imports in '__init__.py'")
     import_lines = ["from ._api import ("]
     for name in func_names:
         import_lines.append(f"    {name},")
@@ -221,6 +230,8 @@ def main():
 
     with open(init_filepath, "w") as stream:
         print(new_init_content, file=stream)
+
+    print("Public API functions created successfully")
 
 
 if __name__ == "__main__":
