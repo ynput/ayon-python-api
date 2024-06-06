@@ -19,11 +19,11 @@ EXCLUDED_METHODS = {
     "set_default_service_username",
 }
 EXCLUDED_IMPORT_NAMES = {"GlobalContext"}
-AUTOMATED_COMMENT = "\n".join((
-    "# ------------------------------------------------",
-    "#     This content is generated automatically.",
-    "# ------------------------------------------------",
-))
+AUTOMATED_COMMENT = """
+# ------------------------------------------------
+#     This content is generated automatically.
+# ------------------------------------------------
+""".strip()
 
 
 # Read init file and remove ._api imports
