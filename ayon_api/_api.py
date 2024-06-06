@@ -840,6 +840,31 @@ def download_file(*args, **kwargs):
     return con.download_file(*args, **kwargs)
 
 
+def upload_file_from_stream(*args, **kwargs):
+    """Upload file to server from bytes.
+
+    Todos:
+        Use retries and timeout.
+        Return RestApiResponse.
+
+    Args:
+        endpoint (str): Endpoint or url where file will be uploaded.
+        stream (Union[io.BytesIO, BinaryIO]): File content stream.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track upload progress.
+        request_type (Optional[RequestType]): Type of request that will
+            be used to upload file.
+        **kwargs (Any): Additional arguments that will be passed
+            to request function.
+
+    Returns:
+        requests.Response: Response object
+
+    """
+    con = get_server_api_connection()
+    return con.upload_file_from_stream(*args, **kwargs)
+
+
 def upload_file(*args, **kwargs):
     """Upload file to server.
 

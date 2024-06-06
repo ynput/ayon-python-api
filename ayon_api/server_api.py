@@ -1796,7 +1796,7 @@ class ServerAPI(object):
     def upload_file_from_stream(
         self, endpoint, stream, progress, request_type, **kwargs
     ):
-        """Upload file to server.
+        """Upload file to server from bytes.
 
         Todos:
             Use retries and timeout.
@@ -1804,7 +1804,7 @@ class ServerAPI(object):
 
         Args:
             endpoint (str): Endpoint or url where file will be uploaded.
-            stream (Union[io.BytesIO, BinaryIO]): File stream.
+            stream (Union[io.BytesIO, BinaryIO]): File content stream.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
