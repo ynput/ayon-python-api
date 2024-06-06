@@ -3017,6 +3017,9 @@ class VersionEntity(BaseEntity):
         data (Dict[str, Any]): Entity data (custom data).
         thumbnail_id (Union[str, None]): Id of entity's thumbnail.
         active (bool): Is entity active.
+        task_id (str): Id of task assigned to version.
+        status (ProjectStatus): Status to set to version.
+        tags (Iterable[str]): Tags to add to version.
         entity_hub (EntityHub): Object of entity hub which created object of
             the entity.
         created (Optional[bool]): Entity is new. When 'None' is passed the
@@ -3029,8 +3032,9 @@ class VersionEntity(BaseEntity):
     def __init__(
         self,
         *args,
-        tags=None,
+        task_id=None,
         status=UNKNOWN_VALUE,
+        tags=None,
         **kwargs
     ):
         super(VersionEntity, self).__init__(*args, **kwargs)
@@ -3040,16 +3044,39 @@ class VersionEntity(BaseEntity):
         else:
             tags = list(tags)
 
+        self._task_id = task_id
         self._status = status
         self._tags = tags
 
+        self._orig_task_id = task_id
         self._orig_status = status
         self._orig_tags = copy.deepcopy(tags)
 
     def lock(self):
         super(VersionEntity, self).lock()
+        self._orig_task_id = self._task_id
         self._orig_status = self._status
         self._orig_tags = copy.deepcopy(self._tags)
+
+    def get_task_id(self):
+        """Task id.
+
+        Returns:
+            str: Id of task assigned to version.
+
+        """
+        return self._task_id
+
+    def set_task_id(self, task_id):
+        """Set task id.
+
+        Args:
+            task_id (str): Id of task to assign to version.
+
+        """
+        self._task_id = task_id
+
+    task_id = property(get_task_id, set_task_id)
 
     def get_status(self):
         """Version status.
@@ -3103,7 +3130,10 @@ class VersionEntity(BaseEntity):
 
         if self._orig_parent_id != self._parent_id:
             changes["folderId"] = self._parent_id
-    
+
+        if self._orig_task_id != self._task_id:
+            changes["task_id"] = self._task_id
+
         if self._orig_status != self._status:
             changes["status"] = self._status
 
@@ -3116,6 +3146,7 @@ class VersionEntity(BaseEntity):
     def from_entity_data(cls, version, entity_hub):
         return cls(
             entity_id=version["id"],
+            task_id=version["task_id"],
             status=version["status"],
             tags=version["tags"],
             parent_id=version["productId"],
@@ -3143,6 +3174,9 @@ class VersionEntity(BaseEntity):
 
         if self.active is not UNKNOWN_VALUE:
             output["active"] = self.active
+
+        if self.task_id is not UNKNOWN_VALUE:
+            output["task_id"] = self.task_id
 
         if self.status is not UNKNOWN_VALUE:
             output["status"] = self.status
