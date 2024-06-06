@@ -1,9 +1,8 @@
 import re
 import copy
 import collections
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
-import six
 from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
 
@@ -1128,8 +1127,7 @@ class EntityData(dict):
         self._orig_data = copy.deepcopy(self)
 
 
-@six.add_metaclass(ABCMeta)
-class BaseEntity(object):
+class BaseEntity(ABC):
     """Object representation of entity from server which is capturing changes.
 
     All data on created object are expected as "current data" on server entity
@@ -1836,7 +1834,7 @@ class ProjectStatus:
             name (str): New status name.
 
         """
-        if not isinstance(name, six.string_types):
+        if not isinstance(name, str):
             raise TypeError("Name must be a string.")
         if name == self._name:
             return
@@ -1859,7 +1857,7 @@ class ProjectStatus:
             short_name (str): New status short name. 3 letters tops.
 
         """
-        if not isinstance(short_name, six.string_types):
+        if not isinstance(short_name, str):
             raise TypeError("Short name must be a string.")
         self._short_name = short_name
 
@@ -1881,7 +1879,7 @@ class ProjectStatus:
         """
         if icon is None:
             icon = ""
-        if not isinstance(icon, six.string_types):
+        if not isinstance(icon, str):
             raise TypeError("Icon name must be a string.")
         self._icon = icon
 
@@ -1938,7 +1936,7 @@ class ProjectStatus:
             color (str): Color in hex format. Example: '#ff0000'.
 
         """
-        if not isinstance(color, six.string_types):
+        if not isinstance(color, str):
             raise TypeError(
                 "Color must be string got '{}'".format(type(color)))
         color = color.lower()
@@ -2871,16 +2869,16 @@ class TaskEntity(BaseEntity):
     label = property(get_label, set_label)
 
     def get_status(self):
-        """Folder status.
+        """Task status.
 
         Returns:
-            Union[str, UNKNOWN_VALUE]: Folder status or 'UNKNOWN_VALUE'.
+            Union[str, UNKNOWN_VALUE]: Task status or 'UNKNOWN_VALUE'.
 
         """
         return self._status
 
     def set_status(self, status_name):
-        """Set folder status.
+        """Set Task status.
 
         Args:
             status_name (str): Status name.
@@ -2897,10 +2895,10 @@ class TaskEntity(BaseEntity):
     status = property(get_status, set_status)
 
     def get_tags(self):
-        """Folder tags.
+        """Task tags.
 
         Returns:
-            list[str]: Folder tags.
+            list[str]: Task tags.
 
         """
         return self._tags
@@ -2915,6 +2913,26 @@ class TaskEntity(BaseEntity):
         self._tags = list(tags)
 
     tags = property(get_tags, set_tags)
+
+    def get_assignees(self):
+        """Task assignees.
+
+        Returns:
+            list[str]: Task assignees.
+
+        """
+        return self._assignees
+
+    def set_assignees(self, assignees):
+        """Change assignees.
+
+        Args:
+            assignees (Iterable[str]): assignees.
+
+        """
+        self._assignees = list(assignees)
+
+    assignees = property(get_assignees, set_assignees)
 
     def add_child(self, child):
         raise ValueError("Task does not support to add children")

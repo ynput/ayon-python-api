@@ -16,8 +16,6 @@ import uuid
 import warnings
 from contextlib import contextmanager
 
-import six
-
 try:
     from http import HTTPStatus
 except ImportError:
@@ -100,6 +98,7 @@ PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
 PROJECT_NAME_REGEX = re.compile(
     "^[{}]+$".format(PROJECT_NAME_ALLOWED_SYMBOLS)
 )
+_PLACEHOLDER = object()
 
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
@@ -4911,7 +4910,7 @@ class ServerAPI(object):
         response.raise_for_status()
 
     def _filter_product(
-        self, project_name, product, active, own_attributes, use_rest
+        self, project_name, product, active, use_rest
     ):
         if active is not None and product["active"] is not active:
             return None
@@ -4920,9 +4919,6 @@ class ServerAPI(object):
             product = self.get_rest_product(project_name, product["id"])
         else:
             self._convert_entity_data(product)
-
-        if own_attributes:
-            fill_own_attribs(product)
 
         return product
 
@@ -4940,7 +4936,7 @@ class ServerAPI(object):
         tags=None,
         active=True,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query products from server.
 
@@ -4971,8 +4967,8 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                products.
 
         Returns:
             Generator[dict[str, Any]]: Queried product entities.
@@ -5025,8 +5021,12 @@ class ServerAPI(object):
         if active is not None:
             fields.add("active")
 
-        if own_attributes:
-            fields.add("ownAttrib")
+        if own_attributes is not _PLACEHOLDER:
+            warnings.warn(
+                "'own_attributes' is not supported for products. The argument"
+                " will be removed form function signature in future"
+                " (apx. version 1.0.10 or 1.1.0)."
+            )
 
         # Add 'name' and 'folderId' if 'names_by_folder_ids' filter is entered
         if names_by_folder_ids:
@@ -5086,7 +5086,7 @@ class ServerAPI(object):
             products_by_folder_id = collections.defaultdict(list)
             for product in products:
                 filtered_product = self._filter_product(
-                    project_name, product, active, own_attributes, use_rest
+                    project_name, product, active, use_rest
                 )
                 if filtered_product is not None:
                     folder_id = filtered_product["folderId"]
@@ -5100,7 +5100,7 @@ class ServerAPI(object):
         else:
             for product in products:
                 filtered_product = self._filter_product(
-                    project_name, product, active, own_attributes, use_rest
+                    project_name, product, active, use_rest
                 )
                 if filtered_product is not None:
                     yield filtered_product
@@ -5110,7 +5110,7 @@ class ServerAPI(object):
         project_name,
         product_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query product entity by id.
 
@@ -5120,8 +5120,8 @@ class ServerAPI(object):
             product_id (str): Product id.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                products.
 
         Returns:
             Union[dict, None]: Product entity data or None if was not found.
@@ -5144,7 +5144,7 @@ class ServerAPI(object):
         product_name,
         folder_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query product entity by name and folder id.
 
@@ -5155,8 +5155,8 @@ class ServerAPI(object):
             folder_id (str): Folder id (Folder is a parent of products).
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                products.
 
         Returns:
             Union[dict, None]: Product entity data or None if was not found.
@@ -5392,7 +5392,7 @@ class ServerAPI(object):
         tags=None,
         active=True,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Get version entities based on passed filters from server.
 
@@ -5418,8 +5418,8 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Fields to be queried
                 for version. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             Generator[dict[str, Any]]: Queried version entities.
@@ -5444,8 +5444,12 @@ class ServerAPI(object):
         if active is not None:
             fields.add("active")
 
-        if own_attributes:
-            fields.add("ownAttrib")
+        if own_attributes is not _PLACEHOLDER:
+            warnings.warn(
+                "'own_attributes' is not supported for versions. The argument"
+                " will be removed form function signature in future"
+                " (apx. version 1.0.10 or 1.1.0)."
+            )
 
         filters = {
             "projectName": project_name
@@ -5532,9 +5536,6 @@ class ServerAPI(object):
                     else:
                         self._convert_entity_data(version)
 
-                    if own_attributes:
-                        fill_own_attribs(version)
-
                     yield version
 
     def get_version_by_id(
@@ -5542,7 +5543,7 @@ class ServerAPI(object):
         project_name,
         version_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query version entity by id.
 
@@ -5552,8 +5553,8 @@ class ServerAPI(object):
             version_id (str): Version id.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -5577,7 +5578,7 @@ class ServerAPI(object):
         version,
         product_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query version entity by version and product id.
 
@@ -5588,8 +5589,8 @@ class ServerAPI(object):
             product_id (str): Product id. Product is a parent of version.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -5612,7 +5613,7 @@ class ServerAPI(object):
         project_name,
         version_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query hero version entity by id.
 
@@ -5622,8 +5623,8 @@ class ServerAPI(object):
             version_id (int): Hero version id.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -5644,7 +5645,7 @@ class ServerAPI(object):
         project_name,
         product_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query hero version entity by product id.
 
@@ -5656,8 +5657,8 @@ class ServerAPI(object):
             product_id (int): Product id.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -5680,7 +5681,7 @@ class ServerAPI(object):
         version_ids=None,
         active=True,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query hero versions by multiple filters.
 
@@ -5695,8 +5696,8 @@ class ServerAPI(object):
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             Union[dict, None]: Version entity data or None if was not found.
@@ -5719,7 +5720,7 @@ class ServerAPI(object):
         product_ids,
         active=True,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query last version entities by product ids.
 
@@ -5730,8 +5731,8 @@ class ServerAPI(object):
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             dict[str, dict[str, Any]]: Last versions by product id.
@@ -5761,7 +5762,7 @@ class ServerAPI(object):
         product_id,
         active=True,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query last version entity by product id.
 
@@ -5772,8 +5773,8 @@ class ServerAPI(object):
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                versions.
 
         Returns:
             Union[dict[str, Any], None]: Queried version entity or None.
@@ -5799,7 +5800,7 @@ class ServerAPI(object):
         folder_id,
         active=True,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query last version entity by product name and folder id.
 
@@ -5811,8 +5812,8 @@ class ServerAPI(object):
                 Both are returned when 'None' is passed.
             fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                representations.
 
         Returns:
             Union[dict[str, Any], None]: Queried version entity or None.
@@ -6037,7 +6038,7 @@ class ServerAPI(object):
         active=True,
         has_links=None,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Get representation entities based on passed filters from server.
 
@@ -6068,8 +6069,8 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                representations.
 
         Returns:
             Generator[dict[str, Any]]: Queried representation entities.
@@ -6093,8 +6094,12 @@ class ServerAPI(object):
         if active is not None:
             fields.add("active")
 
-        if own_attributes:
-            fields.add("ownAttrib")
+        if own_attributes is not _PLACEHOLDER:
+            warnings.warn(
+                "'own_attributes' is not supported for representations. "
+                "The argument will be removed form function signature in "
+                "future (apx. version 1.0.10 or 1.1.0)."
+            )
 
         if "files" in fields:
             fields.discard("files")
@@ -6173,8 +6178,6 @@ class ServerAPI(object):
 
                 self._representation_conversion(repre)
 
-                if own_attributes:
-                    fill_own_attribs(repre)
                 yield repre
 
     def get_representation_by_id(
@@ -6182,7 +6185,7 @@ class ServerAPI(object):
         project_name,
         representation_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query representation entity from server based on id filter.
 
@@ -6191,8 +6194,8 @@ class ServerAPI(object):
             representation_id (str): Id of representation.
             fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                representations.
 
         Returns:
             Union[dict[str, Any], None]: Queried representation entity or None.
@@ -6215,7 +6218,7 @@ class ServerAPI(object):
         representation_name,
         version_id,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Query representation entity by name and version id.
 
@@ -6225,8 +6228,8 @@ class ServerAPI(object):
             version_id (str): Version id.
             fields (Optional[Iterable[str]]): fields to be queried
                 for representations.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                representations.
 
         Returns:
             Union[dict[str, Any], None]: Queried representation entity or None.
@@ -6541,7 +6544,7 @@ class ServerAPI(object):
         tags=None,
         has_links=None,
         fields=None,
-        own_attributes=False
+        own_attributes=_PLACEHOLDER
     ):
         """Workfile info entities by passed filters.
 
@@ -6560,8 +6563,8 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                workfiles.
 
         Returns:
             Generator[dict[str, Any]]: Queried workfile info entites.
@@ -6614,8 +6617,13 @@ class ServerAPI(object):
                 "attrib.{}".format(attr)
                 for attr in self.get_attributes_for_type("workfile")
             }
-        if own_attributes:
-            fields.add("ownAttrib")
+        
+        if own_attributes is not _PLACEHOLDER:
+            warnings.warn(
+                "'own_attributes' is not supported for workfiles. The argument"
+                " will be removed form function signature in future"
+                " (apx. version 1.0.10 or 1.1.0)."
+            )
 
         query = workfiles_info_graphql_query(fields)
 
@@ -6624,12 +6632,15 @@ class ServerAPI(object):
 
         for parsed_data in query.continuous_query(self):
             for workfile_info in parsed_data["project"]["workfiles"]:
-                if own_attributes:
-                    fill_own_attribs(workfile_info)
                 yield workfile_info
 
     def get_workfile_info(
-        self, project_name, task_id, path, fields=None, own_attributes=False
+        self,
+        project_name,
+        task_id,
+        path,
+        fields=None,
+        own_attributes=_PLACEHOLDER
     ):
         """Workfile info entity by task id and workfile path.
 
@@ -6640,8 +6651,8 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                workfiles.
 
         Returns:
             Union[dict[str, Any], None]: Workfile info entity or None.
@@ -6661,7 +6672,11 @@ class ServerAPI(object):
         return None
 
     def get_workfile_info_by_id(
-        self, project_name, workfile_id, fields=None, own_attributes=False
+        self,
+        project_name,
+        workfile_id,
+        fields=None,
+        own_attributes=_PLACEHOLDER
     ):
         """Workfile info entity by id.
 
@@ -6671,8 +6686,8 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                workfiles.
 
         Returns:
             Union[dict[str, Any], None]: Workfile info entity or None.
@@ -7819,6 +7834,6 @@ class ServerAPI(object):
         entity_data = entity.get("data")
         if (
             entity_data is not None
-            and isinstance(entity_data, six.string_types)
+            and isinstance(entity_data, str)
         ):
             entity["data"] = json.loads(entity_data)
