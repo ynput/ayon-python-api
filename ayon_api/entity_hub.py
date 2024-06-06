@@ -2823,6 +2823,7 @@ class TaskEntity(BaseEntity):
         *args,
         label=None,
         tags=None,
+        assignees=None,
         status=UNKNOWN_VALUE,
         **kwargs
     ):
@@ -2832,16 +2833,23 @@ class TaskEntity(BaseEntity):
             tags = []
         else:
             tags = list(tags)
+        
+        if assignees is None:
+            assignees = []
+        else:
+            assignees = list(assignees)
 
         self._task_type = task_type
         self._label = label
         self._status = status
         self._tags = tags
+        self._assignees = assignees
 
         self._orig_task_type = task_type
         self._orig_label = label
         self._orig_status = status
         self._orig_tags = copy.deepcopy(tags)
+        self._orig_assignees = copy.deepcopy(assignees)
 
         self._children_ids = set()
 
@@ -2851,6 +2859,7 @@ class TaskEntity(BaseEntity):
         self._orig_task_type = self._task_type
         self._orig_status = self._status
         self._orig_tags = copy.deepcopy(self._tags)
+        self._orig_assignees = copy.deepcopy(self._assignees)
 
     def get_task_type(self):
         return self._task_type
@@ -2953,6 +2962,9 @@ class TaskEntity(BaseEntity):
         if self._orig_tags != self._tags:
             changes["tags"] = self._tags
 
+        if self._orig_assignees != self._assignees:
+            changes["assignees"] = self._assignees
+
         label = self._get_label_value()
         if label != self._orig_label:
             changes["label"] = label
@@ -2967,6 +2979,7 @@ class TaskEntity(BaseEntity):
             label=task["label"],
             status=task["status"],
             tags=task["tags"],
+            assignees=task["assignees"],
             parent_id=task["folderId"],
             name=task["name"],
             data=task.get("data"),
@@ -3002,6 +3015,9 @@ class TaskEntity(BaseEntity):
 
         if self.tags:
             output["tags"] = self.tags
+
+        if self.assignees:
+            output["assignees"] = self.assignees
 
         if (
             self._entity_hub.allow_data_changes
