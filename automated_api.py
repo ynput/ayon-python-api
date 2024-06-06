@@ -1,3 +1,18 @@
+"""Create public API functions based on ServerAPI methods.
+
+Public functions are created in '_api.py' file and imported in '__init_.py'.
+The script reads the 'ServerAPI' class and creates functions with the same
+signature and docstring in '_api.py' and '__init__.py' with new/removed
+functions.
+
+The script is executed by running 'python automated_api.py' in the terminal.
+
+TODOs:
+    Use same signature in api functions as is used in 'ServerAPI' methods.
+        Right now is used only '(*args, **kwargs)' signature.
+    Prepare CI or pre-commit hook to run the script automatically.
+"""
+
 import os
 import re
 import inspect
