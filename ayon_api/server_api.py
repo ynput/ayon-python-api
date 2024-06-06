@@ -2387,7 +2387,7 @@ class ServerAPI(object):
                 dependency package created::
 
                     {"<addon name>": "<addon version>", ...}
-                    
+
             installer_version (str): Version of installer for which was
                 package created.
             checksum (str): Checksum of archive file where dependencies are.
@@ -2763,11 +2763,11 @@ class ServerAPI(object):
             preset_name = "_"
         return self.get_project_anatomy_preset(preset_name)
 
-    def get_project_roots_by_site(self, project_name):
+    def get_project_root_overrides(self, project_name):
         """Root overrides per site name.
 
         Method is based on logged user and can't be received for any other
-        user on server.
+            user on server.
 
         Output will contain only roots per site id used by logged user.
 
@@ -2782,7 +2782,37 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data
 
-    def get_project_roots_for_site(self, project_name, site_id=None):
+    def get_project_roots_by_site(self, project_name):
+        """Root overrides per site name.
+
+        Method is based on logged user and can't be received for any other
+        user on server.
+
+        Output will contain only roots per site id used by logged user.
+
+        Deprecated:
+            Use 'get_project_root_overrides' instead. Function
+                deprecated since 1.0.6
+
+        Args:
+            project_name (str): Name of project.
+
+        Returns:
+             dict[str, dict[str, str]]: Root values by root name by site id.
+
+        """
+        warnings.warn(
+            (
+                "Method 'get_project_roots_by_site' is deprecated."
+                " Please use 'get_project_root_overrides' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_project_root_overrides(project_name)
+
+    def get_project_root_overrides_by_site_id(
+        self, project_name, site_id=None
+    ):
         """Root overrides for site.
 
         If site id is not passed a site set in current api object is used
@@ -2805,6 +2835,122 @@ class ServerAPI(object):
             return {}
         roots = self.get_project_roots_by_site(project_name)
         return roots.get(site_id, {})
+
+    def get_project_roots_for_site(self, project_name, site_id=None):
+        """Root overrides for site.
+
+        If site id is not passed a site set in current api object is used
+        instead.
+
+        Deprecated:
+            Use 'get_project_root_overrides_by_site_id' instead. Function
+                deprecated since 1.0.6
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Site id for which want to receive
+                site overrides.
+
+        Returns:
+            dict[str, str]: Root values by root name, root name is not
+                available if it does not have overrides.
+
+        """
+        warnings.warn(
+            (
+                "Method 'get_project_roots_for_site' is deprecated."
+                " Please use 'get_project_root_overrides_by_site_id' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_project_root_overrides_by_site_id(project_name)
+
+    def _get_project_roots_values(
+        self, project_name, site_id=None, platform_name=None
+    ):
+        """Root values for site or platform.
+
+        Helper function that treats 'siteRoots' endpoint. The endpoint
+            requires to pass exactly one query value of site id
+            or platform name.
+
+        When using platform name, it does return default project roots without
+            any site overrides.
+
+        Output should contain all project roots with all filled values. If
+            value does not have override on a site, it should be filled with
+            project default value.
+
+        Args:
+            project_name (str): Project name.
+            site_id (Optional[str]): Site id for which want to receive
+                site overrides.
+            platform_name (Optional[str]): Platform for which want to receive
+                roots.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        query_data = {}
+        if site_id is not None:
+            query_data["site_id"] = site_id
+        else:
+            if platform_name is None:
+                platform_name = platform.system()
+            query_data["platform"] = platform_name.lower()
+
+        query = "?{}".format(",".join([
+            "{}={}".format(key, value)
+            for key, value in query_data.items()
+        ]))
+        response = self.get(
+            "projects/{}/siteRoots{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data
+
+    def get_project_roots_by_site_id(self, project_name, site_id=None):
+        """Root values for a site.
+
+        If site id is not passed a site set in current api object is used
+        instead. If site id is not available, default roots are returned
+        for current platform.
+
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Site id for which want to receive
+                root values.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        if site_id is None:
+            site_id = self.site_id
+
+        return self._get_project_roots_values(project_name, site_id=site_id)
+
+    def get_project_roots_by_platform(self, project_name, platform_name=None):
+        """Root values for a site.
+
+        If platform name is not passed current platform name is used instead.
+
+        This function does return root values without site overrides. It is
+            possible to use the function to receive default root values.
+
+        Args:
+            project_name (str): Name of project.
+            platform_name (Optional[Literal["windows", "linux", "darwin"]]):
+                Platform name for which want to receive root values. Current
+                platform name is used if not passed.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        return self._get_project_roots_values(
+            project_name, platform_name=platform_name
+        )
 
     def get_addon_settings_schema(
         self, addon_name, addon_version, project_name=None
@@ -3383,6 +3529,62 @@ class ServerAPI(object):
     def get_rest_folder(self, project_name, folder_id):
         return self.get_rest_entity_by_id(project_name, "folder", folder_id)
 
+    def get_rest_folders(self, project_name, include_attrib=False):
+        """Get simplified flat list of all project folders.
+
+        Get all project folders in single REST call. This can be faster than
+            using 'get_folders' method which is using GraphQl, but does not
+            allow any filtering, and set of fields is defined
+            by server backend.
+
+        Example::
+
+            [
+                {
+                    "id": "112233445566",
+                    "parentId": "112233445567",
+                    "path": "/root/parent/child",
+                    "parents": ["root", "parent"],
+                    "name": "child",
+                    "label": "Child",
+                    "folderType": "Folder",
+                    "hasTasks": False,
+                    "hasChildren": False,
+                    "taskNames": [
+                        "Compositing",
+                    ],
+                    "status": "In Progress",
+                    "attrib": {},
+                    "ownAttrib": [],
+                    "updatedAt": "2023-06-12T15:37:02.420260",
+                },
+                ...
+            ]
+
+        Args:
+            project_name (str): Project name.
+            include_attrib (Optional[bool]): Include attribute values
+                in output. Slower to query.
+
+        Returns:
+            list[dict[str, Any]]: List of folder entities.
+
+        """
+        major, minor, patch, _, _ = self.server_version_tuple
+        if (major, minor, patch) < (1, 0, 8):
+            raise UnsupportedServerVersion(
+                "Function 'get_folders_rest' is supported"
+                " for AYON server 1.0.8 and above."
+            )
+        query = "?attrib={}".format(
+            "true" if include_attrib else "false"
+        )
+        response = self.get(
+            "projects/{}/folders{}".format(project_name, query)
+        )
+        response.raise_for_status()
+        return response.data["folders"]
+
     def get_rest_task(self, project_name, task_id):
         return self.get_rest_entity_by_id(project_name, "task", task_id)
 
@@ -3536,7 +3738,10 @@ class ServerAPI(object):
 
         use_rest = self._should_use_rest_project(fields)
         if use_rest:
-            return self.get_rest_project(project_name)
+            project = self.get_rest_project(project_name)
+            if own_attributes:
+                fill_own_attribs(project)
+            return project
 
         self._prepare_project_fields(fields, own_attributes)
 
@@ -3612,11 +3817,13 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_folders_flat_hierarchy(self, project_name, include_attrib=False):
+    def get_folders_rest(self, project_name, include_attrib=False):
         """Get simplified flat list of all project folders.
 
-        Similar to 'get_folders_hierarchy' but returns flat list and
-            is technically faster to retrieve.
+        Get all project folders in single REST call. This can be faster than
+            using 'get_folders' method which is using GraphQl, but does not
+            allow any filtering, and set of fields is defined
+            by server backend.
 
         Example::
 
@@ -3642,6 +3849,12 @@ class ServerAPI(object):
                 ...
             ]
 
+        Deprecated:
+            Use 'get_rest_folders' instead. Function was renamed to match
+                other rest functions, like 'get_rest_folder',
+                'get_rest_project' etc. .
+            Will be removed in '1.0.7' or '1.1.0'.
+
         Args:
             project_name (str): Project name.
             include_attrib (Optional[bool]): Include attribute values
@@ -3651,20 +3864,7 @@ class ServerAPI(object):
             list[dict[str, Any]]: List of folder entities.
 
         """
-        major, minor, patch, _, _ = self.server_version_tuple
-        if (major, minor, patch) < (1, 0, 8):
-            raise UnsupportedServerVersion(
-                "Function 'get_folders_flat_hierarchy' is supported"
-                " for AYON server 1.0.8 and above."
-            )
-        query = "?attrib={}".format(
-            "true" if include_attrib else "false"
-        )
-        response = self.get(
-            "projects/{}/folders{}".format(project_name, query)
-        )
-        response.raise_for_status()
-        return response.data["folders"]
+        return self.get_rest_folders(project_name, include_attrib)
 
     def get_folders(
         self,

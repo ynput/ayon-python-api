@@ -72,6 +72,8 @@ DEFAULT_FOLDER_FIELDS = {
     "active",
     "thumbnailId",
     "data",
+    "status",
+    "tags",
 }
 
 # --- Tasks ---
@@ -84,6 +86,8 @@ DEFAULT_TASK_FIELDS = {
     "active",
     "assignees",
     "data",
+    "status",
+    "tags",
 }
 
 # --- Products ---
@@ -94,6 +98,8 @@ DEFAULT_PRODUCT_FIELDS = {
     "active",
     "productType",
     "data",
+    "status",
+    "tags",
 }
 
 # --- Versions ---
@@ -109,6 +115,8 @@ DEFAULT_VERSION_FIELDS = {
     "createdAt",
     "updatedAt",
     "data",
+    "status",
+    "tags",
 }
 
 # --- Representations ---
@@ -120,6 +128,8 @@ DEFAULT_REPRESENTATION_FIELDS = {
     "active",
     "versionId",
     "data",
+    "status",
+    "tags",
 }
 
 REPRESENTATION_FILES_FIELDS = {
@@ -144,6 +154,8 @@ DEFAULT_WORKFILE_INFO_FIELDS = {
     "updatedAt",
     "updatedBy",
     "data",
+    "status",
+    "tags",
 }
 
 DEFAULT_EVENT_FIELDS = {

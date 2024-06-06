@@ -219,6 +219,7 @@ class EntityHub(object):
                 entity_data = self._connection.get_task_by_id(
                     self.project_name,
                     entity_id,
+                    fields=self._get_task_fields(),
                     own_attributes=True
                 )
             else:
@@ -604,15 +605,12 @@ class EntityHub(object):
         folder_fields.add("hasProducts")
         if self._allow_data_changes:
             folder_fields.add("data")
-        folder_fields |= {"status", "tags"}
         return folder_fields
 
     def _get_task_fields(self):
-        task_fields = set(
+        return set(
             self._connection.get_default_fields_for_type("task")
         )
-        task_fields |= {"status", "tags"}
-        return task_fields
 
     def query_entities_from_server(self):
         """Query whole project at once."""
@@ -1034,6 +1032,71 @@ class Attributes(object):
         return output
 
 
+class EntityData(dict):
+    """Wrapper for 'data' key on entity.
+
+    Data on entity are arbitrary data that are not stored in any deterministic
+    model. It is possible to store any data that can be parsed to json.
+
+    It is not possible to store 'None' to root key. In that case the key is
+    not stored, and removed if existed on entity.
+
+    To be able to store 'None' value use nested data structure:
+    {
+        "sceneInfo": {
+             "description": None,
+             "camera": "camera1"
+        }
+    }
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orig_data = copy.deepcopy(self)
+
+    def get_changes(self):
+        """Changes in entity data.
+
+        Removed keys have value set to 'None'.
+
+        Returns:
+            dict[str, Any]: Key mapping with changed values.
+
+        """
+        keys = set(self.keys()) | set(self._orig_data.keys())
+        output = {}
+        for key in keys:
+            if key not in self:
+                # Key was removed
+                output[key] = None
+            elif key not in self._orig_data:
+                # New value was set
+                output[key] = self[key]
+            elif self[key] != self._orig_data[key]:
+                # Value was changed
+                output[key] = self[key]
+        return output
+
+    def get_new_entity_value(self):
+        """Value of data for new entity.
+
+        Returns:
+            dict[str, Any]: Data without None values.
+
+        """
+        return {
+            key: value
+            for key, value in self.items()
+            # Ignore 'None' values
+            if value is not None
+        }
+
+    def lock(self):
+        """Lock changes of entity data."""
+
+        self._orig_data = copy.deepcopy(self)
+
+
 @six.add_metaclass(ABCMeta)
 class BaseEntity(object):
     """Object representation of entity from server which is capturing changes.
@@ -1085,7 +1148,10 @@ class BaseEntity(object):
         entity_id = self._prepare_entity_id(entity_id)
 
         if data is None:
-            data = {}
+            data = EntityData()
+
+        elif data is not UNKNOWN_VALUE:
+            data = EntityData(data)
 
         children_ids = UNKNOWN_VALUE
         if created:
@@ -1112,7 +1178,6 @@ class BaseEntity(object):
 
         self._orig_parent_id = parent_id
         self._orig_name = name
-        self._orig_data = copy.deepcopy(data)
         self._orig_thumbnail_id = thumbnail_id
         self._orig_active = active
 
@@ -1170,7 +1235,7 @@ class BaseEntity(object):
             updated partially.
 
         Returns:
-            Dict[str, Any]: Custom data on entity.
+            EntityData: Custom data on entity.
 
         """
         return self._data
@@ -1314,12 +1379,13 @@ class BaseEntity(object):
         if self._orig_name != self._name:
             changes["name"] = self._name
 
-        if self._entity_hub.allow_data_changes:
-            if (
-                self._data is not UNKNOWN_VALUE
-                and self._orig_data != self._data
-            ):
-                changes["data"] = self._data
+        if (
+            self._entity_hub.allow_data_changes
+            and self._data is not UNKNOWN_VALUE
+        ):
+            data_changes = self._data.get_changes()
+            if data_changes:
+                changes["data"] = data_changes
 
         if self._orig_thumbnail_id != self._thumbnail_id:
             changes["thumbnailId"] = self._thumbnail_id
@@ -1339,8 +1405,9 @@ class BaseEntity(object):
         """Lock entity as 'saved' so all changes are discarded."""
         self._orig_parent_id = self._parent_id
         self._orig_name = self._name
-        self._orig_data = copy.deepcopy(self._data)
         self._orig_thumbnail_id = self.thumbnail_id
+        if isinstance(self._data, EntityData):
+            self._data.lock()
         self._attribs.lock()
 
         self._immutable_for_hierarchy_cache = None
@@ -2587,6 +2654,7 @@ class FolderEntity(BaseEntity):
 
     def lock(self):
         super(FolderEntity, self).lock()
+        self._orig_label = self._get_label_value()
         self._orig_folder_type = self._folder_type
         self._orig_status = self._status
         self._orig_tags = copy.deepcopy(self._tags)
@@ -2610,10 +2678,7 @@ class FolderEntity(BaseEntity):
         if self._orig_tags != self._tags:
             changes["tags"] = self._tags
 
-        label = self._label
-        if self._name == label:
-            label = None
-
+        label = self._get_label_value()
         if label != self._orig_label:
             changes["label"] = label
 
@@ -2657,6 +2722,10 @@ class FolderEntity(BaseEntity):
             "folderType": self.folder_type,
             "parentId": parent_id,
         }
+        label = self._get_label_value()
+        if label:
+            output["label"] = label
+
         attrib = self.attribs.to_dict()
         if attrib:
             output["attrib"] = attrib
@@ -2678,8 +2747,20 @@ class FolderEntity(BaseEntity):
             self._entity_hub.allow_data_changes
             and self._data is not UNKNOWN_VALUE
         ):
-            output["data"] = self._data
+            output["data"] = self._data.get_new_entity_value()
         return output
+
+    def _get_label_value(self):
+        """Get label value that will be used for operations.
+
+        Returns:
+            Union[str, None]: Label value.
+
+        """
+        label = self._label
+        if not label or self._name == label:
+            return None
+        return label
 
 
 class TaskEntity(BaseEntity):
@@ -2712,6 +2793,7 @@ class TaskEntity(BaseEntity):
         *args,
         label=None,
         tags=None,
+        assignees=None,
         status=UNKNOWN_VALUE,
         **kwargs
     ):
@@ -2721,24 +2803,33 @@ class TaskEntity(BaseEntity):
             tags = []
         else:
             tags = list(tags)
+        
+        if assignees is None:
+            assignees = []
+        else:
+            assignees = list(assignees)
 
         self._task_type = task_type
         self._label = label
         self._status = status
         self._tags = tags
+        self._assignees = assignees
 
         self._orig_task_type = task_type
         self._orig_label = label
         self._orig_status = status
         self._orig_tags = copy.deepcopy(tags)
+        self._orig_assignees = copy.deepcopy(assignees)
 
         self._children_ids = set()
 
     def lock(self):
         super(TaskEntity, self).lock()
+        self._orig_label = self._get_label_value()
         self._orig_task_type = self._task_type
         self._orig_status = self._status
         self._orig_tags = copy.deepcopy(self._tags)
+        self._orig_assignees = copy.deepcopy(self._assignees)
 
     def get_task_type(self):
         return self._task_type
@@ -2757,16 +2848,16 @@ class TaskEntity(BaseEntity):
     label = property(get_label, set_label)
 
     def get_status(self):
-        """Folder status.
+        """Task status.
 
         Returns:
-            Union[str, UNKNOWN_VALUE]: Folder status or 'UNKNOWN_VALUE'.
+            Union[str, UNKNOWN_VALUE]: Task status or 'UNKNOWN_VALUE'.
 
         """
         return self._status
 
     def set_status(self, status_name):
-        """Set folder status.
+        """Set Task status.
 
         Args:
             status_name (str): Status name.
@@ -2783,10 +2874,10 @@ class TaskEntity(BaseEntity):
     status = property(get_status, set_status)
 
     def get_tags(self):
-        """Folder tags.
+        """Task tags.
 
         Returns:
-            list[str]: Folder tags.
+            list[str]: Task tags.
 
         """
         return self._tags
@@ -2801,6 +2892,26 @@ class TaskEntity(BaseEntity):
         self._tags = list(tags)
 
     tags = property(get_tags, set_tags)
+
+    def get_assignees(self):
+        """Task assignees.
+
+        Returns:
+            list[str]: Task assignees.
+
+        """
+        return self._assignees
+
+    def set_assignees(self, assignees):
+        """Change assignees.
+
+        Args:
+            assignees (Iterable[str]): assignees.
+
+        """
+        self._assignees = list(assignees)
+
+    assignees = property(get_assignees, set_assignees)
 
     def add_child(self, child):
         raise ValueError("Task does not support to add children")
@@ -2821,10 +2932,10 @@ class TaskEntity(BaseEntity):
         if self._orig_tags != self._tags:
             changes["tags"] = self._tags
 
-        label = self._label
-        if self._name == label:
-            label = None
+        if self._orig_assignees != self._assignees:
+            changes["assignees"] = self._assignees
 
+        label = self._get_label_value()
         if label != self._orig_label:
             changes["label"] = label
 
@@ -2838,6 +2949,7 @@ class TaskEntity(BaseEntity):
             label=task["label"],
             status=task["status"],
             tags=task["tags"],
+            assignees=task["assignees"],
             parent_id=task["folderId"],
             name=task["name"],
             data=task.get("data"),
@@ -2857,6 +2969,10 @@ class TaskEntity(BaseEntity):
             "folderId": self.parent_id,
             "attrib": self.attribs.to_dict(),
         }
+        label = self._get_label_value()
+        if label:
+            output["label"] = label
+
         attrib = self.attribs.to_dict()
         if attrib:
             output["attrib"] = attrib
@@ -2870,9 +2986,24 @@ class TaskEntity(BaseEntity):
         if self.tags:
             output["tags"] = self.tags
 
+        if self.assignees:
+            output["assignees"] = self.assignees
+
         if (
             self._entity_hub.allow_data_changes
             and self._data is not UNKNOWN_VALUE
         ):
-            output["data"] = self._data
+            output["data"] = self._data.get_new_entity_value()
         return output
+
+    def _get_label_value(self):
+        """Get label value that will be used for operations.
+
+        Returns:
+            Union[str, None]: Label value.
+
+        """
+        label = self._label
+        if not label or self._name == label:
+            return None
+        return label
