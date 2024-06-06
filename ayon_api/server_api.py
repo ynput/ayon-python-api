@@ -16,8 +16,6 @@ import uuid
 import warnings
 from contextlib import contextmanager
 
-import six
-
 try:
     from http import HTTPStatus
 except ImportError:
@@ -7836,6 +7834,6 @@ class ServerAPI(object):
         entity_data = entity.get("data")
         if (
             entity_data is not None
-            and isinstance(entity_data, six.string_types)
+            and isinstance(entity_data, str)
         ):
             entity["data"] = json.loads(entity_data)

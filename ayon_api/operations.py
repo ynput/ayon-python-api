@@ -2,9 +2,7 @@ import os
 import copy
 import collections
 import uuid
-from abc import ABCMeta, abstractmethod
-
-import six
+from abc import ABC, abstractmethod
 
 from ._api import get_server_api_connection
 from .utils import create_entity_id, REMOVED_VALUE, NOT_SET
@@ -376,8 +374,7 @@ def new_workfile_info(
     return output
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractOperation(object):
+class AbstractOperation(ABC):
     """Base operation class.
 
     Opration represent a call into database. The call can create, change or

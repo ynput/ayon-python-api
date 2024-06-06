@@ -1,5 +1,5 @@
 # AYON server API
-Python client for connection server. Client must be (at least for some time) Python 2 compatible because will be used in DCC that are "older".
+Python client for connection server. The client is using REST and GraphQl to communicate with server with `requests` module.
 
 AYON Python api should support connection to server with raw REST functions and prepared functionality for work with entities. Must not contain only functionality that can be used with core server functionality.
 

@@ -1,9 +1,8 @@
 import re
 import copy
 import collections
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
-import six
 from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
 
@@ -1097,8 +1096,7 @@ class EntityData(dict):
         self._orig_data = copy.deepcopy(self)
 
 
-@six.add_metaclass(ABCMeta)
-class BaseEntity(object):
+class BaseEntity(ABC):
     """Object representation of entity from server which is capturing changes.
 
     All data on created object are expected as "current data" on server entity
@@ -1805,7 +1803,7 @@ class ProjectStatus:
             name (str): New status name.
 
         """
-        if not isinstance(name, six.string_types):
+        if not isinstance(name, str):
             raise TypeError("Name must be a string.")
         if name == self._name:
             return
@@ -1828,7 +1826,7 @@ class ProjectStatus:
             short_name (str): New status short name. 3 letters tops.
 
         """
-        if not isinstance(short_name, six.string_types):
+        if not isinstance(short_name, str):
             raise TypeError("Short name must be a string.")
         self._short_name = short_name
 
@@ -1850,7 +1848,7 @@ class ProjectStatus:
         """
         if icon is None:
             icon = ""
-        if not isinstance(icon, six.string_types):
+        if not isinstance(icon, str):
             raise TypeError("Icon name must be a string.")
         self._icon = icon
 
@@ -1907,7 +1905,7 @@ class ProjectStatus:
             color (str): Color in hex format. Example: '#ff0000'.
 
         """
-        if not isinstance(color, six.string_types):
+        if not isinstance(color, str):
             raise TypeError(
                 "Color must be string got '{}'".format(type(color)))
         color = color.lower()
