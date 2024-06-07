@@ -1658,7 +1658,7 @@ class ServerAPI(object):
 
         try:
             self._download_file_to_stream(
-                endpoint, stream, chunk_size, progress
+                url, stream, chunk_size, progress
             )
 
         except Exception as exc:
