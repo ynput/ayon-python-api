@@ -580,20 +580,10 @@ class EntityHub(object):
                 "Project \"{}\" was not found.".format(project_name)
             )
 
-        self._project_entity = ProjectEntity(
-            project["code"],
-            parent_id=PROJECT_PARENT_ID,
-            entity_id=project["name"],
-            library=project["library"],
-            folder_types=project["folderTypes"],
-            task_types=project["taskTypes"],
-            statuses=project["statuses"],
-            name=project["name"],
-            attribs=project["ownAttrib"],
-            data=project["data"],
-            active=project["active"],
-            entity_hub=self
+        self._project_entity = ProjectEntity.from_entity_data(
+            project, self
         )
+
         self.add_entity(self._project_entity)
         return self._project_entity
 
@@ -2471,6 +2461,7 @@ class ProjectEntity(BaseEntity):
             library=project["library"],
             folder_types=project["folderTypes"],
             task_types=project["taskTypes"],
+            statuses=project["statuses"],
             name=project["name"],
             attribs=project["ownAttrib"],
             data=project["data"],
