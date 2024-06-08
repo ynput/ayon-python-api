@@ -14,8 +14,14 @@ TODOs:
 """
 
 import os
+import sys
 import re
 import inspect
+
+# Fake modules to avoid import errors
+for module_name in ("requests", "unidecode"):
+    sys.modules[module_name] = object()
+
 import ayon_api
 from ayon_api import ServerAPI
 
