@@ -428,6 +428,17 @@ def set_max_retries(*args, **kwargs):
     return con.set_max_retries(*args, **kwargs)
 
 
+def is_service_user():
+    """Check if connection is using service API key.
+
+    Returns:
+        bool: Used api key belongs to service user.
+
+    """
+    con = get_server_api_connection()
+    return con.is_service_user()
+
+
 def get_site_id():
     """Site id used for connection.
 
