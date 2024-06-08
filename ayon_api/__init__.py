@@ -5,6 +5,7 @@ from .utils import (
     create_dependency_package_basename,
 )
 from .server_api import (
+    RequestTypes,
     ServerAPI,
 )
 
@@ -60,7 +61,9 @@ from ._api import (
     update_event,
     dispatch_event,
     enroll_event_job,
+    download_file_to_stream,
     download_file,
+    upload_file_from_stream,
     upload_file,
     trigger_server_restart,
     query_graphql,
@@ -223,6 +226,7 @@ __all__ = (
     "slugify_string",
     "create_dependency_package_basename",
 
+    "RequestTypes",
     "ServerAPI",
 
     "GlobalServerAPI",
@@ -276,7 +280,9 @@ __all__ = (
     "update_event",
     "dispatch_event",
     "enroll_event_job",
+    "download_file_to_stream",
     "download_file",
+    "upload_file_from_stream",
     "upload_file",
     "trigger_server_restart",
     "query_graphql",

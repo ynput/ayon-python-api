@@ -5,13 +5,7 @@ import uuid
 import string
 import platform
 import collections
-try:
-    # Python 3
-    from urllib.parse import urlparse, urlencode
-except ImportError:
-    # Python 2
-    from urlparse import urlparse
-    from urllib import urlencode
+from urllib.parse import urlparse, urlencode
 
 import requests
 import unidecode
