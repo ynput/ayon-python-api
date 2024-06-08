@@ -616,6 +616,17 @@ class ServerAPI(object):
         """
         return self._access_token
 
+    def is_service_user(self):
+        """Check if connection is using service API key.
+
+        Returns:
+            bool: Used api key belongs to service user.
+
+        """
+        if not self.has_valid_token:
+            raise ValueError("User is not logged in.")
+        return bool(self._access_token_is_service)
+
     def get_site_id(self):
         """Site id used for connection.
 
