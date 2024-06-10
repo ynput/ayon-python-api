@@ -328,7 +328,9 @@ def get_server_api_connection():
     """
     return GlobalContext.get_server_api_connection()
 
-
+# ------------------------------------------------
+#     This content is generated automatically.
+# ------------------------------------------------
 def get_base_url():
     con = get_server_api_connection()
     return con.get_base_url()
