@@ -1,29 +1,7 @@
 import collections
 
 from .constants import DEFAULT_LINK_FIELDS
-from .graphql import FIELD_VALUE, GraphQlQuery
-
-
-def fields_to_dict(fields):
-    if not fields:
-        return None
-
-    output = {}
-    for field in fields:
-        hierarchy = field.split(".")
-        last = hierarchy.pop(-1)
-        value = output
-        for part in hierarchy:
-            if value is FIELD_VALUE:
-                break
-
-            if part not in value:
-                value[part] = {}
-            value = value[part]
-
-        if value is not FIELD_VALUE:
-            value[last] = FIELD_VALUE
-    return output
+from .graphql import FIELD_VALUE, GraphQlQuery, fields_to_dict
 
 
 def add_links_fields(entity_field, nested_fields):
@@ -472,6 +450,58 @@ def representations_parents_qraphql_query(
     folder_field = product_field.add_field("folder")
     for key, value in fields_to_dict(folder_fields).items():
         fields_queue.append((key, value, folder_field))
+
+    while fields_queue:
+        item = fields_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            fields_queue.append((k, v, field))
+
+    return query
+
+
+def representations_hierarchy_qraphql_query(
+    folder_fields,
+    product_fields,
+    version_fields,
+    representation_fields,
+):
+    query = GraphQlQuery("RepresentationsParentsQuery")
+
+    project_name_var = query.add_variable("projectName", "String!")
+    repre_ids_var = query.add_variable("representationIds", "[String!]")
+
+    project_field = query.add_field("project")
+    project_field.set_filter("name", project_name_var)
+
+    fields_queue = collections.deque()
+
+    repres_field = project_field.add_field_with_edges("representations")
+    for key, value in fields_to_dict(representation_fields).items():
+        fields_queue.append((key, value, repres_field))
+
+    repres_field.set_filter("ids", repre_ids_var)
+    version_field = None
+    if folder_fields or product_fields or version_fields:
+        version_field = repres_field.add_field("version")
+        if version_fields:
+            for key, value in fields_to_dict(version_fields).items():
+                fields_queue.append((key, value, version_field))
+
+    product_field = None
+    if folder_fields or product_fields:
+        product_field = version_field.add_field("product")
+        for key, value in fields_to_dict(product_fields).items():
+            fields_queue.append((key, value, product_field))
+
+    if folder_fields:
+        folder_field = product_field.add_field("folder")
+        for key, value in fields_to_dict(folder_fields).items():
+            fields_queue.append((key, value, folder_field))
 
     while fields_queue:
         item = fields_queue.popleft()

@@ -27,6 +27,11 @@ RepresentationParents = collections.namedtuple(
     ("version", "product", "folder", "project")
 )
 
+RepresentationHierarchy = collections.namedtuple(
+    "RepresentationHierarchy",
+    ("project", "folder", "product", "version", "representation")
+)
+
 
 def get_default_timeout():
     """Default value for requests timeout.

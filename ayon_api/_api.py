@@ -3296,14 +3296,69 @@ def get_representation_by_name(*args, **kwargs):
     return con.get_representation_by_name(*args, **kwargs)
 
 
+def get_representations_hierarchy(*args, **kwargs):
+    """Find representation with parents by representation id.
+
+    Representation entity with parent entities up to project.
+
+    Default fields are used when any fields are set to `None`. But it is
+        possible to pass in empty iterable (list, set, tuple) to skip
+        entity.
+
+    Args:
+        project_name (str): Project where to look for entities.
+        representation_ids (Iterable[str]): Representation ids.
+        project_fields (Optional[Iterable[str]]): Project fields.
+        folder_fields (Optional[Iterable[str]]): Folder fields.
+        product_fields (Optional[Iterable[str]]): Product fields.
+        version_fields (Optional[Iterable[str]]): Version fields.
+        representation_fields (Optional[Iterable[str]]): Representation
+            fields.
+
+    Returns:
+        dict[str, RepresentationHierarchy]: Parent entities by
+            representation id.
+
+    """
+    con = get_server_api_connection()
+    return con.get_representations_hierarchy(*args, **kwargs)
+
+
+def get_representation_hierarchy(*args, **kwargs):
+    """Find representation parents by representation id.
+
+    Representation parent entities up to project.
+
+    Args:
+        project_name (str): Project where to look for entities.
+        representation_id (str): Representation id.
+        project_fields (Optional[Iterable[str]]): Project fields.
+        folder_fields (Optional[Iterable[str]]): Folder fields.
+        product_fields (Optional[Iterable[str]]): Product fields.
+        version_fields (Optional[Iterable[str]]): Version fields.
+        representation_fields (Optional[Iterable[str]]): Representation
+            fields.
+
+    Returns:
+        RepresentationHierarchy: Representation hierarchy entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_representation_hierarchy(*args, **kwargs)
+
+
 def get_representations_parents(*args, **kwargs):
     """Find representations parents by representation id.
 
     Representation parent entities up to project.
 
     Args:
-         project_name (str): Project where to look for entities.
-         representation_ids (Iterable[str]): Representation ids.
+        project_name (str): Project where to look for entities.
+        representation_ids (Iterable[str]): Representation ids.
+        project_fields (Optional[Iterable[str]]): Project fields.
+        folder_fields (Optional[Iterable[str]]): Folder fields.
+        product_fields (Optional[Iterable[str]]): Product fields.
+        version_fields (Optional[Iterable[str]]): Version fields.
 
     Returns:
         dict[str, RepresentationParents]: Parent entities by
@@ -3320,8 +3375,12 @@ def get_representation_parents(*args, **kwargs):
     Representation parent entities up to project.
 
     Args:
-         project_name (str): Project where to look for entities.
-         representation_id (str): Representation id.
+        project_name (str): Project where to look for entities.
+        representation_id (str): Representation id.
+        project_fields (Optional[Iterable[str]]): Project fields.
+        folder_fields (Optional[Iterable[str]]): Folder fields.
+        product_fields (Optional[Iterable[str]]): Product fields.
+        version_fields (Optional[Iterable[str]]): Version fields.
 
     Returns:
         RepresentationParents: Representation parent entities.
