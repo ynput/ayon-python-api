@@ -594,9 +594,13 @@ def get_server_version_tuple():
 def get_users(*args, **kwargs):
     """Get Users.
 
+    Only administrators and managers can fetch all users. For other users
+        it is required to pass in 'project_name' filter.
+
     Args:
+        project_name (Optional[str]): Project name.
         usernames (Optional[Iterable[str]]): Filter by usernames.
-        fields (Optional[Iterable[str]]): fields to be queried
+        fields (Optional[Iterable[str]]): Fields to be queried
             for users.
 
     Returns:
