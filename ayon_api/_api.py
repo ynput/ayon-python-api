@@ -611,7 +611,38 @@ def get_users(*args, **kwargs):
     return con.get_users(*args, **kwargs)
 
 
+def get_user_by_name(*args, **kwargs):
+    """Get user by name using GraphQl.
+
+    Only administrators and managers can fetch all users. For other users
+        it is required to pass in 'project_name' filter.
+
+    Args:
+        username (str): Username.
+        project_name (Optional[str]): Define scope of project.
+        fields (Optional[Iterable[str]]): Fields to be queried
+            for users.
+
+    Returns:
+        Union[dict[str, Any], None]: User info or None if user is not
+            found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_user_by_name(*args, **kwargs)
+
+
 def get_user(*args, **kwargs):
+    """Get user info using REST endpoit.
+
+    Args:
+        username (Optional[str]): Username.
+
+    Returns:
+        Union[dict[str, Any], None]: User info or None if user is not
+            found.
+
+    """
     con = get_server_api_connection()
     return con.get_user(*args, **kwargs)
 
