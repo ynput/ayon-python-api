@@ -1028,12 +1028,16 @@ class ServerAPI(object):
         self._access_token_is_service = None
         return None
 
-    def get_users(self, usernames=None, fields=None):
+    def get_users(self, project_name=None, usernames=None, fields=None):
         """Get Users.
 
+        Only administrators and managers can fetch all users. For other users
+            it is required to pass in 'project_name' filter.
+
         Args:
+            project_name (Optional[str]): Project name.
             usernames (Optional[Iterable[str]]): Filter by usernames.
-            fields (Optional[Iterable[str]]): fields to be queried
+            fields (Optional[Iterable[str]]): Fields to be queried
                 for users.
 
         Returns:
@@ -1046,6 +1050,9 @@ class ServerAPI(object):
             if not usernames:
                 return
             filters["userNames"] = list(usernames)
+
+        if project_name is not None:
+            filters["projectName"] = project_name
 
         if not fields:
             fields = self.get_default_fields_for_type("user")
@@ -1060,7 +1067,45 @@ class ServerAPI(object):
                     user["accessGroups"])
                 yield user
 
+    def get_user_by_name(self, username, project_name=None, fields=None):
+        """Get user by name using GraphQl.
+
+        Only administrators and managers can fetch all users. For other users
+            it is required to pass in 'project_name' filter.
+
+        Args:
+            username (str): Username.
+            project_name (Optional[str]): Define scope of project.
+            fields (Optional[Iterable[str]]): Fields to be queried
+                for users.
+
+        Returns:
+            Union[dict[str, Any], None]: User info or None if user is not
+                found.
+
+        """
+        if not username:
+            return None
+
+        for user in self.get_users(
+            project_name=project_name,
+            usernames={username},
+            fields=fields,
+        ):
+            return user
+        return None
+
     def get_user(self, username=None):
+        """Get user info using REST endpoit.
+
+        Args:
+            username (Optional[str]): Username.
+
+        Returns:
+            Union[dict[str, Any], None]: User info or None if user is not
+                found.
+
+        """
         if username is None:
             output = self._get_user_info()
             if output is None:
