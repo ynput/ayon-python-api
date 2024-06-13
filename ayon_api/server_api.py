@@ -6569,6 +6569,7 @@ class ServerAPI(object):
             representation_ids,
             project_fields=project_fields,
             folder_fields=folder_fields,
+            task_fields=set(),
             product_fields=product_fields,
             version_fields=version_fields,
             representation_fields={"id"},
