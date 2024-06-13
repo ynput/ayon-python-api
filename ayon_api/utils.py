@@ -29,7 +29,14 @@ RepresentationParents = collections.namedtuple(
 
 RepresentationHierarchy = collections.namedtuple(
     "RepresentationHierarchy",
-    ("project", "folder", "product", "version", "representation")
+    (
+        "project",
+        "folder",
+        "task",
+        "product",
+        "version",
+        "representation",
+    )
 )
 
 
