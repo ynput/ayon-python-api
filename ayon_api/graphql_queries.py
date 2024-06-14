@@ -466,6 +466,7 @@ def representations_parents_qraphql_query(
 
 def representations_hierarchy_qraphql_query(
     folder_fields,
+    task_fields,
     product_fields,
     version_fields,
     representation_fields,
@@ -486,11 +487,16 @@ def representations_hierarchy_qraphql_query(
 
     repres_field.set_filter("ids", repre_ids_var)
     version_field = None
-    if folder_fields or product_fields or version_fields:
+    if folder_fields or task_fields or product_fields or version_fields:
         version_field = repres_field.add_field("version")
         if version_fields:
             for key, value in fields_to_dict(version_fields).items():
                 fields_queue.append((key, value, version_field))
+
+    if task_fields:
+        task_field = version_field.add_field("task")
+        for key, value in fields_to_dict(task_fields).items():
+            fields_queue.append((key, value, task_field))
 
     product_field = None
     if folder_fields or product_fields:

@@ -6381,6 +6381,7 @@ class ServerAPI(object):
         representation_ids,
         project_fields=None,
         folder_fields=None,
+        task_fields=None,
         product_fields=None,
         version_fields=None,
         representation_fields=None,
@@ -6398,6 +6399,7 @@ class ServerAPI(object):
             representation_ids (Iterable[str]): Representation ids.
             project_fields (Optional[Iterable[str]]): Project fields.
             folder_fields (Optional[Iterable[str]]): Folder fields.
+            task_fields (Optional[Iterable[str]]): Task fields.
             product_fields (Optional[Iterable[str]]): Product fields.
             version_fields (Optional[Iterable[str]]): Version fields.
             representation_fields (Optional[Iterable[str]]): Representation
@@ -6428,7 +6430,7 @@ class ServerAPI(object):
         repre_ids = set(representation_ids)
         output = {
             repre_id: RepresentationHierarchy(
-                project, None, None, None, None
+                project, None, None, None, None, None
             )
             for repre_id in representation_ids
         }
@@ -6437,6 +6439,11 @@ class ServerAPI(object):
             folder_fields = self.get_default_fields_for_type("folder")
         else:
             folder_fields = set(folder_fields)
+
+        if task_fields is None:
+            task_fields = self.get_default_fields_for_type("task")
+        else:
+            task_fields = set(task_fields)
 
         if product_fields is None:
             product_fields = self.get_default_fields_for_type("product")
@@ -6459,6 +6466,7 @@ class ServerAPI(object):
 
         query = representations_hierarchy_qraphql_query(
             folder_fields,
+            task_fields,
             product_fields,
             version_fields,
             representation_fields,
@@ -6471,12 +6479,16 @@ class ServerAPI(object):
             repre_id = repre["id"]
             version = repre.pop("version", {})
             product = version.pop("product", {})
+            task = version.pop("task", None)
             folder = product.pop("folder", {})
             self._convert_entity_data(version)
             self._convert_entity_data(product)
             self._convert_entity_data(folder)
+            if task:
+                self._convert_entity_data(task)
+
             output[repre_id] = RepresentationHierarchy(
-                project, folder, product, version, repre
+                project, folder, task, product, version, repre
             )
 
         return output
@@ -6487,6 +6499,7 @@ class ServerAPI(object):
         representation_id,
         project_fields=None,
         folder_fields=None,
+        task_fields=None,
         product_fields=None,
         version_fields=None,
         representation_fields=None,
@@ -6500,6 +6513,7 @@ class ServerAPI(object):
             representation_id (str): Representation id.
             project_fields (Optional[Iterable[str]]): Project fields.
             folder_fields (Optional[Iterable[str]]): Folder fields.
+            task_fields (Optional[Iterable[str]]): Task fields.
             product_fields (Optional[Iterable[str]]): Product fields.
             version_fields (Optional[Iterable[str]]): Version fields.
             representation_fields (Optional[Iterable[str]]): Representation
@@ -6517,6 +6531,7 @@ class ServerAPI(object):
             [representation_id],
             project_fields=project_fields,
             folder_fields=folder_fields,
+            task_fields=task_fields,
             product_fields=product_fields,
             version_fields=version_fields,
             representation_fields=representation_fields,
@@ -6554,6 +6569,7 @@ class ServerAPI(object):
             representation_ids,
             project_fields=project_fields,
             folder_fields=folder_fields,
+            task_fields=set(),
             product_fields=product_fields,
             version_fields=version_fields,
             representation_fields={"id"},

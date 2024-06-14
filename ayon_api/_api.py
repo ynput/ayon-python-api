@@ -3345,6 +3345,7 @@ def get_representations_hierarchy(*args, **kwargs):
         representation_ids (Iterable[str]): Representation ids.
         project_fields (Optional[Iterable[str]]): Project fields.
         folder_fields (Optional[Iterable[str]]): Folder fields.
+        task_fields (Optional[Iterable[str]]): Task fields.
         product_fields (Optional[Iterable[str]]): Product fields.
         version_fields (Optional[Iterable[str]]): Version fields.
         representation_fields (Optional[Iterable[str]]): Representation
@@ -3369,6 +3370,7 @@ def get_representation_hierarchy(*args, **kwargs):
         representation_id (str): Representation id.
         project_fields (Optional[Iterable[str]]): Project fields.
         folder_fields (Optional[Iterable[str]]): Folder fields.
+        task_fields (Optional[Iterable[str]]): Task fields.
         product_fields (Optional[Iterable[str]]): Product fields.
         version_fields (Optional[Iterable[str]]): Version fields.
         representation_fields (Optional[Iterable[str]]): Representation
