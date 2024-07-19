@@ -938,6 +938,29 @@ def upload_file(*args, **kwargs):
     return con.upload_file(*args, **kwargs)
 
 
+def upload_reviewable(*args, **kwargs):
+    """Upload reviewable file to server.
+
+    Args:
+        project_name (str): Project name.
+        version_id (str): Version id.
+        filepath (str): Reviewable file path to upload.
+        label (Optional[str]): Reviewable label. Filled automatically
+            server side with filename.
+        content_type (Optional[str]): MIME type of the file.
+        filename (Optional[str]): User as original filename. Filename from
+            'filepath' is used when not filled.
+        progress (Optional[TransferProgress]): Progress.
+        headers (Optional[Dict[str, Any]]): Headers.
+
+    Returns:
+        RestApiResponse: Server response.
+
+    """
+    con = get_server_api_connection()
+    return con.upload_reviewable(*args, **kwargs)
+
+
 def trigger_server_restart():
     """Trigger server restart.
 
