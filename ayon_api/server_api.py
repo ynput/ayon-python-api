@@ -8134,11 +8134,14 @@ class ServerAPI(object):
         return op_results
 
     def _convert_entity_data(self, entity):
-        if not entity:
+        if not entity or "data" not in entity:
             return
-        entity_data = entity.get("data")
-        if (
-            entity_data is not None
-            and isinstance(entity_data, str)
-        ):
-            entity["data"] = json.loads(entity_data)
+
+        entity_data = entity["data"]
+        if entity_data is None:
+            entity_data = {}
+
+        elif isinstance(entity_data, str):
+            entity_data = json.loads(entity_data)
+
+        entity["data"] = entity_data
