@@ -1652,7 +1652,13 @@ class ServerAPI(object):
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
             return None
-        elif response.status_code >= 400:
+
+        if response.status_code == 503:
+            # Server is busy
+            self.log.info("Server is busy. Can't enroll event now.")
+            return None
+
+        if response.status_code >= 400:
             self.log.error(response.text)
             return None
 
