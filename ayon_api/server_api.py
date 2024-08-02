@@ -90,6 +90,7 @@ from .utils import (
     get_default_settings_variant,
     get_default_site_id,
     NOT_SET,
+    get_media_mime_type,
 )
 
 PatternType = type(re.compile(""))
@@ -1936,6 +1937,77 @@ class ServerAPI(object):
             return self.upload_file_from_stream(
                 endpoint, stream, progress, request_type, **kwargs
             )
+
+    def upload_reviewable(
+        self,
+        project_name,
+        version_id,
+        filepath,
+        label=None,
+        content_type=None,
+        filename=None,
+        progress=None,
+        headers=None,
+        **kwargs
+    ):
+        """Upload reviewable file to server.
+
+        Args:
+            project_name (str): Project name.
+            version_id (str): Version id.
+            filepath (str): Reviewable file path to upload.
+            label (Optional[str]): Reviewable label. Filled automatically
+                server side with filename.
+            content_type (Optional[str]): MIME type of the file.
+            filename (Optional[str]): User as original filename. Filename from
+                'filepath' is used when not filled.
+            progress (Optional[TransferProgress]): Progress.
+            headers (Optional[Dict[str, Any]]): Headers.
+
+        Returns:
+            RestApiResponse: Server response.
+
+        """
+        if not content_type:
+            content_type = get_media_mime_type(filepath)
+
+        if not content_type:
+            raise ValueError(
+                f"Could not determine MIME type of file '{filepath}'"
+            )
+
+        if headers is None:
+            headers = self.get_headers(content_type)
+        else:
+            # Make sure content-type is filled with file content type
+            content_type_key = next(
+                (
+                    key
+                    for key in headers
+                    if key.lower() == "content-type"
+                ),
+                "Content-Type"
+            )
+            headers[content_type_key] = content_type
+
+        # Fill original filename if not explicitly defined
+        if not filename:
+            filename = os.path.basename(filepath)
+        headers["x-file-name"] = filename
+
+        query = f"?label={label}" if label else ""
+        endpoint = (
+            f"/projects/{project_name}"
+            f"/versions/{version_id}/reviewables{query}"
+        )
+        return self.upload_file(
+            endpoint,
+            filepath,
+            progress=progress,
+            headers=headers,
+            request_type=RequestTypes.post,
+            **kwargs
+        )
 
     def trigger_server_restart(self):
         """Trigger server restart.

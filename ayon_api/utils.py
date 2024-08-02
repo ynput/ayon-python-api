@@ -6,6 +6,7 @@ import string
 import platform
 import collections
 from urllib.parse import urlparse, urlencode
+from typing import Optional
 
 import requests
 import unidecode
@@ -704,3 +705,116 @@ def create_dependency_package_basename(platform_name=None):
     now_date = datetime.datetime.now()
     time_stamp = now_date.strftime("%y%m%d%H%M")
     return "ayon_{}_{}".format(time_stamp, platform_name)
+
+
+
+def _get_media_mime_type_from_ftyp(content):
+    if content[8:10] == b"qt" or content[8:12] == b"MSNV":
+        return "video/quicktime"
+
+    if content[8:12] in (b"3g2a", b"3g2b", b"3g2c", b"KDDI"):
+        return "video/3gpp2"
+
+    if content[8:12] in (
+        b"isom", b"iso2", b"avc1", b"F4V", b"F4P", b"F4A", b"F4B", b"mmp4",
+        # These might be "video/mp4v"
+        b"mp41", b"mp42",
+        # Nero
+        b"NDSC", b"NDSH", b"NDSM", b"NDSP", b"NDSS", b"NDXC", b"NDXH",
+        b"NDXM", b"NDXP", b"NDXS",
+    ):
+        return "video/mp4"
+
+    if content[8:12] in (
+        b"3ge6", b"3ge7", b"3gg6",
+        b"3gp1", b"3gp2", b"3gp3", b"3gp4", b"3gp5", b"3gp6", b"3gs7",
+    ):
+        return "video/3gpp"
+
+    if content[8:11] == b"JP2":
+        return "image/jp2"
+
+    if content[8:11] == b"jpm":
+        return "image/jpm"
+
+    if content[8:11] == b"jpx":
+        return "image/jpx"
+
+    if content[8:12] in (b"M4V\x20", b"M4VH", b"M4VP"):
+        return "video/x-m4v"
+
+    if content[8:12] in (b"mj2s", b"mjp2"):
+        return "video/mj2"
+    return None
+
+
+def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
+    content_len = len(content)
+    # Pre-validation (largest definition check)
+    # - hopefully there cannot be media defined in less than 12 bytes
+    if content_len < 12:
+        return None
+
+    # FTYP
+    if content[4:8] == b"ftyp":
+        return _get_media_mime_type_from_ftyp(content)
+
+    # BMP
+    if content[0:2] == b"BM":
+        return "image/bmp"
+
+    # Tiff
+    if content[0:2] in (b"MM", b"II"):
+        return "tiff"
+
+    # PNG
+    if content[0:4] == b"\211PNG":
+        return "image/png"
+
+    # SVG
+    if b'xmlns="http://www.w3.org/2000/svg"' in content:
+        return "image/svg+xml"
+
+    # JPEG, JFIF or Exif
+    if (
+        content[0:4] == b"\xff\xd8\xff\xdb"
+        or content[6:10] in (b"JFIF", b"Exif")
+    ):
+        return "image/jpeg"
+
+    # Webp
+    if content[0:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "image/webp"
+
+    # Gif
+    if content[0:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+
+    # Adobe PhotoShop file (8B > Adobe, PS > PhotoShop)
+    if content[0:4] == b"8BPS":
+        return "image/vnd.adobe.photoshop"
+
+    # Windows ICO > this might be wild guess as multiple files can start
+    #   with this header
+    if content[0:4] == b"\x00\x00\x01\x00":
+        return "image/x-icon"
+    return None
+
+
+def get_media_mime_type(filepath: str) -> Optional[str]:
+    """Determine Mime-Type of a file.
+
+    Args:
+        filepath (str): Path to file.
+
+    Returns:
+        Optional[str]: Mime type or None if is unknown mime type.
+
+    """
+    if not filepath or not os.path.exists(filepath):
+        return None
+
+    with open(filepath, "rb") as stream:
+        content = stream.read()
+
+    return get_media_mime_type_for_content(content)
