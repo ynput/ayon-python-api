@@ -8137,11 +8137,8 @@ class ServerAPI(object):
         if not entity or "data" not in entity:
             return
 
-        entity_data = entity["data"]
-        if entity_data is None:
-            entity_data = {}
-
-        elif isinstance(entity_data, str):
+        entity_data = entity["data"] or {}
+        if isinstance(entity_data, str):
             entity_data = json.loads(entity_data)
 
         entity["data"] = entity_data
