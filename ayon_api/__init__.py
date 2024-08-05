@@ -3,6 +3,10 @@ from .utils import (
     TransferProgress,
     slugify_string,
     create_dependency_package_basename,
+    get_user_by_token,
+    is_token_valid,
+    validate_url,
+    login_to_server,
 )
 from .server_api import (
     RequestTypes,
@@ -230,6 +234,10 @@ __all__ = (
     "TransferProgress",
     "slugify_string",
     "create_dependency_package_basename",
+    "get_user_by_token",
+    "is_token_valid",
+    "validate_url",
+    "login_to_server",
 
     "RequestTypes",
     "ServerAPI",
