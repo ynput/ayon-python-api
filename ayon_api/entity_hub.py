@@ -221,9 +221,18 @@ class EntityHub(object):
                     fields=self._get_task_fields(),
                     own_attributes=True
                 )
+            elif entity_type == "version":
+                entity_data = self._connection.get_version_by_id(
+                    self.project_name,
+                    entity_id,
+                    fields=self._get_version_fields(),
+                    own_attributes=False
+                    # setting it to True errors out with
+                    # GraphQl query Failed: Cannot query field 'ownAttrib' on type 'VersionNode'. Did you mean 'attrib'?
+                )
             else:
                 raise ValueError(
-                    "Unknonwn entity type \"{}\"".format(entity_type)
+                    "Unknown entity type \"{}\"".format(entity_type)
                 )
 
             if entity_data:
@@ -239,6 +248,9 @@ class EntityHub(object):
 
         elif entity_type == "task":
             return self.add_task(entity_data)
+
+        elif entity_type == "version":
+            return self.add_version(entity_data)
 
         return None
 
@@ -339,6 +351,20 @@ class EntityHub(object):
         self.add_entity(task_entity)
         return task_entity
 
+    def add_version(self, version):
+        """Create version object and add it to entity hub.
+
+        Args:
+            version (Dict[str, Any]): Version entity data.
+
+        Returns:
+            versionEntity: Added version entity.
+
+        """
+        version_entity = VersionEntity.from_entity_data(version, entity_hub=self)
+        self.add_entity(version_entity)
+        return version_entity
+    
     def add_entity(self, entity):
         """Add entity to hub cache.
 
@@ -601,6 +627,11 @@ class EntityHub(object):
             self._connection.get_default_fields_for_type("task")
         )
 
+    def _get_version_fields(self):
+        return set(
+            self._connection.get_default_fields_for_type("version")
+        )
+    
     def query_entities_from_server(self):
         """Query whole project at once."""
         project_entity = self.fill_project_from_server()
@@ -2463,6 +2494,7 @@ class ProjectEntity(BaseEntity):
             task_types=project["taskTypes"],
             statuses=project["statuses"],
             name=project["name"],
+            statuses=project["statuses"],
             attribs=project["ownAttrib"],
             data=project["data"],
             active=project["active"],
@@ -2996,3 +3028,190 @@ class TaskEntity(BaseEntity):
         if not label or self._name == label:
             return None
         return label
+
+
+class VersionEntity(BaseEntity):
+    """Entity representing a version on AYON server.
+
+    Args:
+        entity_id (Union[str, None]): Id of the entity. New id is created if
+            not passed.
+        parent_id (Union[str, None]): Id of parent entity.
+        name (str): Name of entity.
+        attribs (Dict[str, Any]): Attribute values.
+        data (Dict[str, Any]): Entity data (custom data).
+        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+        active (bool): Is entity active.
+        task_id (str): Id of task assigned to version.
+        status (ProjectStatus): Status to set to version.
+        tags (Iterable[str]): Tags to add to version.
+        entity_hub (EntityHub): Object of entity hub which created object of
+            the entity.
+        created (Optional[bool]): Entity is new. When 'None' is passed the
+            value is defined based on value of 'entity_id'.
+    """
+
+    entity_type = "version"
+    parent_entity_types = ["product"]
+
+    def __init__(
+        self,
+        *args,
+        task_id=None,
+        status=UNKNOWN_VALUE,
+        tags=None,
+        **kwargs
+    ):
+        super(VersionEntity, self).__init__(*args, **kwargs)
+
+        if tags is None:
+            tags = []
+        else:
+            tags = list(tags)
+
+        self._task_id = task_id
+        self._status = status
+        self._tags = tags
+
+        self._orig_task_id = task_id
+        self._orig_status = status
+        self._orig_tags = copy.deepcopy(tags)
+
+    def lock(self):
+        super(VersionEntity, self).lock()
+        self._orig_task_id = self._task_id
+        self._orig_status = self._status
+        self._orig_tags = copy.deepcopy(self._tags)
+
+    def get_task_id(self):
+        """Task id.
+
+        Returns:
+            str: Id of task assigned to version.
+
+        """
+        return self._task_id
+
+    def set_task_id(self, task_id):
+        """Set task id.
+
+        Args:
+            task_id (str): Id of task to assign to version.
+
+        """
+        self._task_id = task_id
+
+    task_id = property(get_task_id, set_task_id)
+
+    def get_status(self):
+        """Version status.
+
+        Returns:
+            Union[str, UNKNOWN_VALUE]: Version status or 'UNKNOWN_VALUE'.
+
+        """
+        return self._status
+
+    def set_status(self, status_name):
+        """Set Version status.
+
+        Args:
+            status_name (str): Status name.
+
+        """
+        project_entity = self._entity_hub.project_entity
+        status = project_entity.get_status_by_slugified_name(status_name)
+        if status is None:
+            raise ValueError(
+                f"Status {status_name} is not available on project."
+            )
+        self._status = status_name
+
+    status = property(get_status, set_status)
+
+    def get_tags(self):
+        """Version tags.
+
+        Returns:
+            list[str]: Version tags.
+
+        """
+        return self._tags
+
+    def set_tags(self, tags):
+        """Change tags.
+
+        Args:
+            tags (Iterable[str]): Tags.
+
+        """
+        self._tags = list(tags)
+
+    tags = property(get_tags, set_tags)
+
+    @property
+    def changes(self):
+        changes = self._get_default_changes()
+
+        if self._orig_parent_id != self._parent_id:
+            changes["folderId"] = self._parent_id
+
+        if self._orig_task_id != self._task_id:
+            changes["task_id"] = self._task_id
+
+        if self._orig_status != self._status:
+            changes["status"] = self._status
+
+        if self._orig_tags != self._tags:
+            changes["tags"] = self._tags
+
+        return changes
+
+    @classmethod
+    def from_entity_data(cls, version, entity_hub):
+        return cls(
+            entity_id=version["id"],
+            task_id=version["task_id"],
+            status=version["status"],
+            tags=version["tags"],
+            parent_id=version["productId"],
+            name=version["name"],
+            data=version.get("data"),
+            attribs=version["attrib"],
+            active=version["active"],
+            created=False,
+            entity_hub=entity_hub
+        )
+
+    def to_create_body_data(self):
+        if self.parent_id is UNKNOWN_VALUE:
+            raise ValueError("Version does not have set 'parent_id'")
+
+        output = {
+            "name": self.name,
+            "productId": self.parent_id,
+            "attrib": self.attribs.to_dict(),
+        }
+
+        attrib = self.attribs.to_dict()
+        if attrib:
+            output["attrib"] = attrib
+
+        if self.active is not UNKNOWN_VALUE:
+            output["active"] = self.active
+
+        if self.task_id is not UNKNOWN_VALUE:
+            output["task_id"] = self.task_id
+
+        if self.status is not UNKNOWN_VALUE:
+            output["status"] = self.status
+
+        if self.tags:
+            output["tags"] = self.tags
+
+        if (
+            self._entity_hub.allow_data_changes
+            and self._data is not UNKNOWN_VALUE
+        ):
+            output["data"] = self._data.get_new_entity_value()
+        return output
