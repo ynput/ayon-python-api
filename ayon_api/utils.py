@@ -349,10 +349,8 @@ def logout_from_server(url, token, timeout=None):
     )
 
 
-def is_token_valid(url, token, timeout=None):
-    """Check if token is valid.
-
-    Token can be a user token or service api key.
+def get_user_by_token(url, token, timeout=None):
+    """Get user information by url and token.
 
     Args:
         url (str): Server url.
@@ -361,7 +359,7 @@ def is_token_valid(url, token, timeout=None):
             'get_default_timeout' is used if not specified.
 
     Returns:
-        bool: True if token is valid.
+        Optional[Dict[str, Any]]: User information if url and token are valid.
 
     """
     if timeout is None:
@@ -382,7 +380,27 @@ def is_token_valid(url, token, timeout=None):
             timeout=timeout,
         )
         if response.status_code == 200:
-            return True
+            return response.json()
+    return None
+
+
+def is_token_valid(url, token, timeout=None):
+    """Check if token is valid.
+
+    Token can be a user token or service api key.
+
+    Args:
+        url (str): Server url.
+        token (str): User's token.
+        timeout (Optional[float]): Timeout for request. Value from
+            'get_default_timeout' is used if not specified.
+
+    Returns:
+        bool: True if token is valid.
+
+    """
+    if get_user_by_token(url, token, timeout=timeout):
+        return True
     return False
 
 
