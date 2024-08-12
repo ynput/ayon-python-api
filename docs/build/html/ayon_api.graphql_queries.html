@@ -1,0 +1,286 @@
+
+	
+
+<!DOCTYPE html>
+<html class="writer-html5 " lang="en" >
+<head>
+	<meta charset="utf-8">
+	<meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+		<title>ayon_api.graphql_queries module &mdash; ayon-python-api 1.0.9-dev.1 documentation</title>
+	
+	
+	
+	<link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+	<link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+	
+	
+	
+	
+		<link rel="canonical" href="https://github.com/ynput/ayon-python-apiayon_api.graphql_queries.html"/>
+	
+
+	
+	<!--[if lt IE 9]>
+		<script src="_static/js/html5shiv.min.js"></script>
+	<![endif]-->
+	
+		
+			<script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+				<script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+				<script src="_static/jquery.js"></script>
+				<script src="_static/underscore.js"></script>
+				<script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+				<script src="_static/doctools.js"></script>
+				<script src="_static/sphinx_highlight.js"></script>
+		
+		<script type="text/javascript" src="_static/js/theme.js"></script>
+
+		
+		<link rel="index" title="Index" href="genindex.html" />
+		<link rel="search" title="Search" href="search.html" /> 
+</head>
+<body class="wy-body-for-nav">
+
+
+	 
+	<div class="wy-grid-for-nav">
+		
+		<nav data-toggle="wy-nav-shift" class="wy-nav-side">
+			<div class="wy-side-scroll">
+				<div class="wy-side-nav-search">
+					
+						<div class="brand">
+							<a href="index.html">
+							
+								<img src="_static/AYON_blackG_dot.svg" class="logo" alt="Logo"/>
+							
+							</a>
+						</div>
+						
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+					
+				</div>
+				
+				<div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+					
+						
+						
+							
+						
+						
+							<!-- Local TOC -->
+							<div class="local-toc"><ul>
+<li><a class="reference internal" href="#">ayon_api.graphql_queries module</a><ul>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.add_links_fields"><code class="docutils literal notranslate"><span class="pre">add_links_fields()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.events_graphql_query"><code class="docutils literal notranslate"><span class="pre">events_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.folders_graphql_query"><code class="docutils literal notranslate"><span class="pre">folders_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.product_types_query"><code class="docutils literal notranslate"><span class="pre">product_types_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.products_graphql_query"><code class="docutils literal notranslate"><span class="pre">products_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.project_graphql_query"><code class="docutils literal notranslate"><span class="pre">project_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.project_product_types_query"><code class="docutils literal notranslate"><span class="pre">project_product_types_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.projects_graphql_query"><code class="docutils literal notranslate"><span class="pre">projects_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.representations_graphql_query"><code class="docutils literal notranslate"><span class="pre">representations_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.representations_hierarchy_qraphql_query"><code class="docutils literal notranslate"><span class="pre">representations_hierarchy_qraphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.representations_parents_qraphql_query"><code class="docutils literal notranslate"><span class="pre">representations_parents_qraphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.tasks_by_folder_paths_graphql_query"><code class="docutils literal notranslate"><span class="pre">tasks_by_folder_paths_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.tasks_graphql_query"><code class="docutils literal notranslate"><span class="pre">tasks_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.users_graphql_query"><code class="docutils literal notranslate"><span class="pre">users_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.versions_graphql_query"><code class="docutils literal notranslate"><span class="pre">versions_graphql_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql_queries.workfiles_info_graphql_query"><code class="docutils literal notranslate"><span class="pre">workfiles_info_graphql_query()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+						
+					
+				</div>
+				
+			</div>
+		</nav>
+
+		<section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+			
+			<nav class="wy-nav-top" aria-label="top navigation">
+			
+				<i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+				<a href="index.html">
+					
+						<img src="_static/AYON_blackG_dot.svg" class="logo" alt="Logo"/>
+					
+				</a>
+			
+			</nav>
+
+
+			<div class="wy-nav-content">
+				
+				<div class="rst-content">
+				
+					<div role="navigation" aria-label="breadcrumbs navigation">
+
+	<ul class="wy-breadcrumbs">
+		
+			
+				<li><a href="index.html">ayon-python-api</a> ⁄&nbsp;</li>
+				
+				<li><a href="">ayon_api.graphql_queries module</a></li>
+			
+		
+		
+			<li class="wy-breadcrumbs-aside">
+			
+				<a href="https://github.com/ynput/ayon-python-api" class="fa fa-github-alt"></a>
+			
+			</li>
+		
+	</ul>
+
+</div>
+					<div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+					 <div itemprop="articleBody">
+						
+  <section id="module-ayon_api.graphql_queries">
+<span id="ayon-api-graphql-queries-module"></span><h1>ayon_api.graphql_queries module<a class="headerlink" href="#module-ayon_api.graphql_queries" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.add_links_fields">
+<span class="sig-name descname"><span class="pre">add_links_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entity_field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nested_fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#add_links_fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.add_links_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.events_graphql_query">
+<span class="sig-name descname"><span class="pre">events_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#events_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.events_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.folders_graphql_query">
+<span class="sig-name descname"><span class="pre">folders_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#folders_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.folders_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.product_types_query">
+<span class="sig-name descname"><span class="pre">product_types_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#product_types_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.product_types_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.products_graphql_query">
+<span class="sig-name descname"><span class="pre">products_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#products_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.products_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.project_graphql_query">
+<span class="sig-name descname"><span class="pre">project_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#project_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.project_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.project_product_types_query">
+<span class="sig-name descname"><span class="pre">project_product_types_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#project_product_types_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.project_product_types_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.projects_graphql_query">
+<span class="sig-name descname"><span class="pre">projects_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#projects_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.projects_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.representations_graphql_query">
+<span class="sig-name descname"><span class="pre">representations_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#representations_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.representations_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.representations_hierarchy_qraphql_query">
+<span class="sig-name descname"><span class="pre">representations_hierarchy_qraphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">product_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#representations_hierarchy_qraphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.representations_hierarchy_qraphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.representations_parents_qraphql_query">
+<span class="sig-name descname"><span class="pre">representations_parents_qraphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">product_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder_fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#representations_parents_qraphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.representations_parents_qraphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.tasks_by_folder_paths_graphql_query">
+<span class="sig-name descname"><span class="pre">tasks_by_folder_paths_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#tasks_by_folder_paths_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.tasks_by_folder_paths_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.tasks_graphql_query">
+<span class="sig-name descname"><span class="pre">tasks_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#tasks_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.tasks_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.users_graphql_query">
+<span class="sig-name descname"><span class="pre">users_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#users_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.users_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.versions_graphql_query">
+<span class="sig-name descname"><span class="pre">versions_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#versions_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.versions_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql_queries.workfiles_info_graphql_query">
+<span class="sig-name descname"><span class="pre">workfiles_info_graphql_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql_queries.html#workfiles_info_graphql_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql_queries.workfiles_info_graphql_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+					 </div>
+					 
+					</div>
+					<footer>
+  
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2024, ynput.io <info@ynput.io>
+	  <br>
+      
+      
+      
+      Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+      
+      <a href="https://github.com/revitron/revitron-sphinx-theme">theme</a>
+      
+      provided by <a href="https://github.com/revitron">Revitron</a>.
+
+    </p>
+  </div> 
+
+</footer>
+
+				</div>
+			</div>
+
+		</section>
+
+	</div>
+	
+
+	<script type="text/javascript">
+			jQuery(function () {
+					SphinxRtdTheme.Navigation.enable(true);
+			});
+	</script>
+
+	
+	
+		
+	 
+
+ 
+</body>	
+</html>

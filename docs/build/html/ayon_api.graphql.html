@@ -1,0 +1,879 @@
+
+	
+
+<!DOCTYPE html>
+<html class="writer-html5 " lang="en" >
+<head>
+	<meta charset="utf-8">
+	<meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+		<title>ayon_api.graphql module &mdash; ayon-python-api 1.0.9-dev.1 documentation</title>
+	
+	
+	
+	<link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+	<link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+	
+	
+	
+	
+		<link rel="canonical" href="https://github.com/ynput/ayon-python-apiayon_api.graphql.html"/>
+	
+
+	
+	<!--[if lt IE 9]>
+		<script src="_static/js/html5shiv.min.js"></script>
+	<![endif]-->
+	
+		
+			<script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+				<script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+				<script src="_static/jquery.js"></script>
+				<script src="_static/underscore.js"></script>
+				<script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+				<script src="_static/doctools.js"></script>
+				<script src="_static/sphinx_highlight.js"></script>
+		
+		<script type="text/javascript" src="_static/js/theme.js"></script>
+
+		
+		<link rel="index" title="Index" href="genindex.html" />
+		<link rel="search" title="Search" href="search.html" /> 
+</head>
+<body class="wy-body-for-nav">
+
+
+	 
+	<div class="wy-grid-for-nav">
+		
+		<nav data-toggle="wy-nav-shift" class="wy-nav-side">
+			<div class="wy-side-scroll">
+				<div class="wy-side-nav-search">
+					
+						<div class="brand">
+							<a href="index.html">
+							
+								<img src="_static/AYON_blackG_dot.svg" class="logo" alt="Logo"/>
+							
+							</a>
+						</div>
+						
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+					
+				</div>
+				
+				<div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+					
+						
+						
+							
+						
+						
+							<!-- Local TOC -->
+							<div class="local-toc"><ul>
+<li><a class="reference internal" href="#">ayon_api.graphql module</a><ul>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField</span></code></a><ul>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.add_field"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.add_field()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.add_field_with_edges"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.add_field_with_edges()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.add_obj_field"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.add_obj_field()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.add_variable"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.add_variable()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.calculate_query"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.calculate_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.child_has_edges"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.child_has_edges</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.child_indent"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.child_indent</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.get_filters"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.get_filters()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.get_variable"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.get_variable()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.get_variable_value"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.get_variable_value()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.has_edges"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.has_edges</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.has_filter"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.has_filter()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.indent"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.indent</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.need_query"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.need_query</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.offset"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.offset</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.parse_result"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.parse_result()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.path"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.path</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.query_item"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.query_item</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.remove_filter"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.remove_filter()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.reset_cursor"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.reset_cursor()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.set_filter"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.set_filter()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.set_parent"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.set_parent()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.set_variable_value"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.set_variable_value()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField.sum_edge_fields"><code class="docutils literal notranslate"><span class="pre">BaseGraphQlQueryField.sum_edge_fields()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery</span></code></a><ul>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.add_field"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.add_field()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.add_field_with_edges"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.add_field_with_edges()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.add_obj_field"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.add_obj_field()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.add_variable"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.add_variable()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.calculate_query"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.calculate_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.child_indent"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.child_indent</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.continuous_query"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.continuous_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.get_variable"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.get_variable()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.get_variable_keys"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.get_variable_keys()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.get_variable_value"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.get_variable_value()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.get_variables_values"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.get_variables_values()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.has_multiple_edge_fields"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.has_multiple_edge_fields</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.indent"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.indent</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.need_query"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.need_query</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.offset"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.offset</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.parse_result"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.parse_result()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.query"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQuery.set_variable_value"><code class="docutils literal notranslate"><span class="pre">GraphQlQuery.set_variable_value()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField</span></code></a><ul>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.add_edge_field"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.add_edge_field()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.add_obj_edge_field"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.add_obj_edge_field()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.add_obj_field"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.add_obj_field()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.calculate_query"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.calculate_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.child_indent"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.child_indent</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.get_filters"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.get_filters()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.has_edges"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.has_edges</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.parse_result"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.parse_result()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField.reset_cursor"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryEdgeField.reset_cursor()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryField"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryField</span></code></a><ul>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryField.calculate_query"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryField.calculate_query()</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryField.child_indent"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryField.child_indent</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryField.has_edges"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryField.has_edges</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryField.parse_result"><code class="docutils literal notranslate"><span class="pre">GraphQlQueryField.parse_result()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ayon_api.graphql.QueryVariable"><code class="docutils literal notranslate"><span class="pre">QueryVariable</span></code></a><ul>
+<li><a class="reference internal" href="#ayon_api.graphql.QueryVariable.name"><code class="docutils literal notranslate"><span class="pre">QueryVariable.name</span></code></a></li>
+<li><a class="reference internal" href="#ayon_api.graphql.QueryVariable.variable_name"><code class="docutils literal notranslate"><span class="pre">QueryVariable.variable_name</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ayon_api.graphql.fields_to_dict"><code class="docutils literal notranslate"><span class="pre">fields_to_dict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+						
+					
+				</div>
+				
+			</div>
+		</nav>
+
+		<section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+			
+			<nav class="wy-nav-top" aria-label="top navigation">
+			
+				<i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+				<a href="index.html">
+					
+						<img src="_static/AYON_blackG_dot.svg" class="logo" alt="Logo"/>
+					
+				</a>
+			
+			</nav>
+
+
+			<div class="wy-nav-content">
+				
+				<div class="rst-content">
+				
+					<div role="navigation" aria-label="breadcrumbs navigation">
+
+	<ul class="wy-breadcrumbs">
+		
+			
+				<li><a href="index.html">ayon-python-api</a> ⁄&nbsp;</li>
+				
+				<li><a href="">ayon_api.graphql module</a></li>
+			
+		
+		
+			<li class="wy-breadcrumbs-aside">
+			
+				<a href="https://github.com/ynput/ayon-python-api" class="fa fa-github-alt"></a>
+			
+			</li>
+		
+	</ul>
+
+</div>
+					<div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+					 <div itemprop="articleBody">
+						
+  <section id="module-ayon_api.graphql">
+<span id="ayon-api-graphql-module"></span><h1>ayon_api.graphql module<a class="headerlink" href="#module-ayon_api.graphql" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BaseGraphQlQueryField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Field in GraphQl query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of field.</p></li>
+<li><p><strong>parent</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Union[BaseGraphQlQueryField,</span> <span class="pre">GraphQlQuery]</span></code>) – Parent object of a
+field.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.add_field">
+<span class="sig-name descname"><span class="pre">add_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.add_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.add_field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.add_field_with_edges">
+<span class="sig-name descname"><span class="pre">add_field_with_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.add_field_with_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.add_field_with_edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.add_obj_field">
+<span class="sig-name descname"><span class="pre">add_obj_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.add_obj_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.add_obj_field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.add_variable">
+<span class="sig-name descname"><span class="pre">add_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.add_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.add_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add variable to query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Variable name.</p></li>
+<li><p><strong>value_type</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Type of expected value in variables. This is
+graphql type e.g. “[String!]”, “Int”, “Boolean”, etc.</p></li>
+<li><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – Default value for variable. Can be changed later.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Created variable object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ayon_api.graphql.QueryVariable" title="ayon_api.graphql.QueryVariable">QueryVariable</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If variable was already added before.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.calculate_query">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calculate_query</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.calculate_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.calculate_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.child_has_edges">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">child_has_edges</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.child_has_edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.child_indent">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">child_indent</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.child_indent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.get_filters">
+<span class="sig-name descname"><span class="pre">get_filters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.get_filters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.get_filters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receive filters for item.</p>
+<p>By default just use copy of set filters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Fields filters.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.get_variable">
+<span class="sig-name descname"><span class="pre">get_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.get_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.get_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Variable object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Variable name added to headers.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Variable object used in query string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ayon_api.graphql.QueryVariable" title="ayon_api.graphql.QueryVariable">QueryVariable</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.get_variable_value">
+<span class="sig-name descname"><span class="pre">get_variable_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.get_variable_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.get_variable_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.has_edges">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_edges</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.has_edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.has_filter">
+<span class="sig-name descname"><span class="pre">has_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.has_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.has_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.indent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indent</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.indent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.need_query">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">need_query</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.need_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Still need query from server.</p>
+<p>Needed for edges which use pagination. Look into children values too.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If still need query from server.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.offset">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">offset</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.offset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.parse_result">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.parse_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.parse_result" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field path for debugging purposes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Field path in query.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.query_item">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">query_item</span></span><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.query_item" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.remove_filter">
+<span class="sig-name descname"><span class="pre">remove_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.remove_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.remove_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.reset_cursor">
+<span class="sig-name descname"><span class="pre">reset_cursor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.reset_cursor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.reset_cursor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.set_filter">
+<span class="sig-name descname"><span class="pre">set_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.set_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.set_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.set_parent">
+<span class="sig-name descname"><span class="pre">set_parent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.set_parent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.set_parent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.set_variable_value">
+<span class="sig-name descname"><span class="pre">set_variable_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.set_variable_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.set_variable_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.BaseGraphQlQueryField.sum_edge_fields">
+<span class="sig-name descname"><span class="pre">sum_edge_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#BaseGraphQlQueryField.sum_edge_fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.BaseGraphQlQueryField.sum_edge_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check how many edge fields query has.</p>
+<p>In case there are multiple edge fields or are nested the query can’t
+yield mid cursor results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>max_limit</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Skip rest of counting if counter is bigger then
+entered number.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Counter edge fields</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GraphQlQuery</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>GraphQl query which can have fields to query.</p>
+<p>Single use object which can be used only for one query. Object and children
+objects keep track about paging and progress.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of query.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.add_field">
+<span class="sig-name descname"><span class="pre">add_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.add_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.add_field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add field to query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Field name e.g. ‘id’.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Created field object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryField" title="ayon_api.graphql.GraphQlQueryField">GraphQlQueryField</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.add_field_with_edges">
+<span class="sig-name descname"><span class="pre">add_field_with_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.add_field_with_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.add_field_with_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add field with edges to query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Field name e.g. ‘tasks’.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Created field object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ayon_api.graphql.GraphQlQueryEdgeField" title="ayon_api.graphql.GraphQlQueryEdgeField">GraphQlQueryEdgeField</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.add_obj_field">
+<span class="sig-name descname"><span class="pre">add_obj_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.add_obj_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.add_obj_field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add field object to children.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>field</strong> (<a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField" title="ayon_api.graphql.BaseGraphQlQueryField"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseGraphQlQueryField</span></code></a>) – Add field to query children.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.add_variable">
+<span class="sig-name descname"><span class="pre">add_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.add_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.add_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add variable to query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Variable name.</p></li>
+<li><p><strong>value_type</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Type of expected value in variables. This is
+graphql type e.g. “[String!]”, “Int”, “Boolean”, etc.</p></li>
+<li><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – Default value for variable. Can be changed later.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Created variable object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ayon_api.graphql.QueryVariable" title="ayon_api.graphql.QueryVariable">QueryVariable</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If variable was already added before.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.calculate_query">
+<span class="sig-name descname"><span class="pre">calculate_query</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.calculate_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.calculate_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate query string which is sent to server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>GraphQl string with variables and headers.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – Query has no fiels.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.child_indent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">child_indent</span></span><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.child_indent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indentation for preparation of query string used by children.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Ident spaces for children.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.continuous_query">
+<span class="sig-name descname"><span class="pre">continuous_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">con</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.continuous_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.continuous_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do a query from server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>con</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ServerAPI</span></code>) – Connection to server with ‘query’ method.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Parsed output from GraphQl query.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.get_variable">
+<span class="sig-name descname"><span class="pre">get_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.get_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.get_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Variable object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Variable name added to headers.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Variable object used in query string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ayon_api.graphql.QueryVariable" title="ayon_api.graphql.QueryVariable">QueryVariable</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.get_variable_keys">
+<span class="sig-name descname"><span class="pre">get_variable_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.get_variable_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.get_variable_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all variable keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Variable keys.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>set[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.get_variable_value">
+<span class="sig-name descname"><span class="pre">get_variable_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.get_variable_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.get_variable_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Current value of variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Variable name.</p></li>
+<li><p><strong>default</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – Default value if variable is available.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Variable value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.get_variables_values">
+<span class="sig-name descname"><span class="pre">get_variables_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.get_variables_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.get_variables_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate variable values used that should be used in query.</p>
+<p>Variables with value set to ‘None’ are skipped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Variable values by their name.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.has_multiple_edge_fields">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_multiple_edge_fields</span></span><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.has_multiple_edge_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.indent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indent</span></span><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.indent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indentation for preparation of query string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Ident spaces.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.need_query">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">need_query</span></span><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.need_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Still need query from server.</p>
+<p>Needed for edges which use pagination.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If still need query from server.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.offset">
+<span class="sig-name descname"><span class="pre">offset</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.offset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.parse_result">
+<span class="sig-name descname"><span class="pre">parse_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.parse_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.parse_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse data from response for output.</p>
+<p>Output is stored to passed ‘output’ variable. That’s because of paging
+during which objects must have access to both new and previous values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code>) – Data received using calculated query.</p></li>
+<li><p><strong>output</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code>) – Where parsed data are stored.</p></li>
+<li><p><strong>progress_data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code>) – Data used for paging.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.query">
+<span class="sig-name descname"><span class="pre">query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">con</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do a query from server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>con</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ServerAPI</span></code>) – Connection to server with ‘query’ method.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Parsed output from GraphQl query.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQuery.set_variable_value">
+<span class="sig-name descname"><span class="pre">set_variable_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQuery.set_variable_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQuery.set_variable_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set value for variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Variable name under which the value is stored.</p></li>
+<li><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – Variable value used in query. Variable is not used
+if value is ‘None’.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GraphQlQueryEdgeField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField" title="ayon_api.graphql.BaseGraphQlQueryField"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseGraphQlQueryField</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.add_edge_field">
+<span class="sig-name descname"><span class="pre">add_edge_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField.add_edge_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.add_edge_field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.add_obj_edge_field">
+<span class="sig-name descname"><span class="pre">add_obj_edge_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField.add_obj_edge_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.add_obj_edge_field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.add_obj_field">
+<span class="sig-name descname"><span class="pre">add_obj_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField.add_obj_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.add_obj_field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.calculate_query">
+<span class="sig-name descname"><span class="pre">calculate_query</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField.calculate_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.calculate_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.child_indent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">child_indent</span></span><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.child_indent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.get_filters">
+<span class="sig-name descname"><span class="pre">get_filters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField.get_filters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.get_filters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receive filters for item.</p>
+<p>By default just use copy of set filters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Fields filters.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.has_edges">
+<span class="sig-name descname"><span class="pre">has_edges</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.has_edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.parse_result">
+<span class="sig-name descname"><span class="pre">parse_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField.parse_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.parse_result" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryEdgeField.reset_cursor">
+<span class="sig-name descname"><span class="pre">reset_cursor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryEdgeField.reset_cursor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryEdgeField.reset_cursor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryField">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GraphQlQueryField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ayon_api.graphql.BaseGraphQlQueryField" title="ayon_api.graphql.BaseGraphQlQueryField"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseGraphQlQueryField</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryField.calculate_query">
+<span class="sig-name descname"><span class="pre">calculate_query</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryField.calculate_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryField.calculate_query" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryField.child_indent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">child_indent</span></span><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryField.child_indent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryField.has_edges">
+<span class="sig-name descname"><span class="pre">has_edges</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryField.has_edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ayon_api.graphql.GraphQlQueryField.parse_result">
+<span class="sig-name descname"><span class="pre">parse_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#GraphQlQueryField.parse_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.GraphQlQueryField.parse_result" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ayon_api.graphql.QueryVariable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">QueryVariable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#QueryVariable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.QueryVariable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Object representing single varible used in GraphQlQuery.</p>
+<p>Variable definition is in GraphQl query header but it’s value is used
+in fields.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>variable_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of variable in query.</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.QueryVariable.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#ayon_api.graphql.QueryVariable.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name used in field filter.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ayon_api.graphql.QueryVariable.variable_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variable_name</span></span><a class="headerlink" href="#ayon_api.graphql.QueryVariable.variable_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of variable in query definition.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ayon_api.graphql.fields_to_dict">
+<span class="sig-name descname"><span class="pre">fields_to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ayon_api/graphql.html#fields_to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ayon_api.graphql.fields_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+					 </div>
+					 
+					</div>
+					<footer>
+  
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2024, ynput.io <info@ynput.io>
+	  <br>
+      
+      
+      
+      Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+      
+      <a href="https://github.com/revitron/revitron-sphinx-theme">theme</a>
+      
+      provided by <a href="https://github.com/revitron">Revitron</a>.
+
+    </p>
+  </div> 
+
+</footer>
+
+				</div>
+			</div>
+
+		</section>
+
+	</div>
+	
+
+	<script type="text/javascript">
+			jQuery(function () {
+					SphinxRtdTheme.Navigation.enable(true);
+			});
+	</script>
+
+	
+	
+		
+	 
+
+ 
+</body>	
+</html>
