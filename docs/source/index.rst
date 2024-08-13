@@ -57,3 +57,12 @@ Miscellaneous
 
 * :ref:`search`
 ---------------
+
+
+Summary 
+=======
+
+.. toctree::
+   :maxdepth: 4
+
+   modules

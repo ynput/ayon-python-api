@@ -1,7 +1,0 @@
-ayon_api
-========
-
-.. toctree::
-   :maxdepth: 4
-
-   ayon_api

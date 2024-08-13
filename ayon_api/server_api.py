@@ -6248,9 +6248,10 @@ class ServerAPI(object):
     ):
         """Get representation entities based on passed filters from server.
 
-        Todos:
+        .. todo::
+
             Add separated function for 'names_by_version_ids' filtering.
-                Because can't be combined with others.
+            Because can't be combined with others.
 
         Args:
             project_name (str): Name of project where to look for versions.
@@ -6260,7 +6261,7 @@ class ServerAPI(object):
                 names used for representation filtering.
             version_ids (Optional[Iterable[str]]): Version ids used for
                 representation filtering. Versions are parents of
-                    representations.
+                representations.
             names_by_version_ids (Optional[bool]): Find representations
                 by names and version ids. This filter discard all
                 other filters.
@@ -7765,7 +7766,10 @@ class ServerAPI(object):
     ):
         """Helper method to get links from server for entity types.
 
-        Example output::
+        .. highlight:: text
+        .. code-block:: text
+
+            Example output:
             {
                 "59a212c0d2e211eda0e20242ac120001": [
                     {
@@ -7785,13 +7789,10 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            entity_type (Literal["folder", "task", "product",
-                "version", "representations"]): Entity type.
-            entity_ids (Optional[Iterable[str]]): Ids of entities for which
-                links should be received.
+            entity_type (Literal["folder", "task", "product", "version", "representations"]): Entity type.
+            entity_ids (Optional[Iterable[str]]): Ids of entities for which links should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
-            link_direction (Optional[Literal["in", "out"]]): Link direction
-                filter.
+            link_direction (Optional[Literal["in", "out"]]): Link direction filter.
             link_names (Optional[Iterable[str]]): Link name filters.
             link_name_regex (Optional[str]): Regex filter for link name.
 

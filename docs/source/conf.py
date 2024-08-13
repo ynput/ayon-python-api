@@ -68,11 +68,13 @@ exclude_patterns = ['tests', 'venv', 'build', 'Thumbs.db', '.DS_Store']
 html_theme = "revitron_sphinx_theme"
 html_static_path = ['_static']
 html_logo = './_static/AYON_blackG_dot.svg'
+html_favicon = './_static/favicon.ico'
 
 html_context = {
     'landing_page': {
     }
 }
+myst_footnote_transition = False
 html_sidebars = {}
 
 html_theme_options = {
