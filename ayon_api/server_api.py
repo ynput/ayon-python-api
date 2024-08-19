@@ -7789,10 +7789,13 @@ class ServerAPI(object):
 
         Args:
             project_name (str): Project where links are.
-            entity_type (Literal["folder", "task", "product", "version", "representations"]): Entity type.
-            entity_ids (Optional[Iterable[str]]): Ids of entities for which links should be received.
+            entity_type (Literal["folder", "task", "product",
+            |    "version", "representations"]): Entity type.
+            entity_ids (Optional[Iterable[str]]): Ids of entities for which
+            |    links should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
-            link_direction (Optional[Literal["in", "out"]]): Link direction filter.
+            link_direction (Optional[Literal["in", "out"]]): Link direction
+            |    filter.
             link_names (Optional[Iterable[str]]): Link name filters.
             link_name_regex (Optional[str]): Regex filter for link name.
 
