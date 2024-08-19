@@ -4032,7 +4032,7 @@ def get_entities_links(*args, **kwargs):
     .. highlight:: text
     .. code-block:: text
 
-        Example output
+        Example output:
         {
             "59a212c0d2e211eda0e20242ac120001": [
                 {
