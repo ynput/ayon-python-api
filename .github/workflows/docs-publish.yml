@@ -1,0 +1,38 @@
+name: Build sphinx documentation
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main", "develop"]
+
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10.x"
+      - uses: abatilo/actions-poetry@v2
+      - name: Install dependencies
+        run: |
+          poetry install
+      - name: Sphinx build HTML
+        run: |
+          poetry run sphinx-apidoc -f -e -M -o ./docs/source/ ./ayon_api/         
+      - name: Sphinx build HTML
+        run: |
+          poetry run sphinx-build -M html ./docs/source ./docs/build
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html/
+          force_orphan: true

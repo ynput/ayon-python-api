@@ -1029,14 +1029,17 @@ class EntityData(dict):
 
     It is not possible to store 'None' to root key. In that case the key is
     not stored, and removed if existed on entity.
-
     To be able to store 'None' value use nested data structure:
-    {
-        "sceneInfo": {
-             "description": None,
-             "camera": "camera1"
+
+    .. highlight:: text
+    .. code-block:: text
+
+        {
+            "sceneInfo": {
+                "description": None,
+                "camera": "camera1"
+            }
         }
-    }
 
     """
     def __init__(self, *args, **kwargs):

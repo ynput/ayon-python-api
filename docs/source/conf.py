@@ -27,9 +27,9 @@ release = version_content["__version__"]
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc',
+extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
@@ -41,6 +41,7 @@ extensions = ['sphinx.ext.autodoc',
 ]
 
 # -- Napoleon settings -------------------------------------------------------
+add_module_names = False
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
@@ -49,9 +50,9 @@ napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
-napoleon_use_admonition_for_references = False
+napoleon_use_admonition_for_references = True
 napoleon_use_ivar = True
-napoleon_use_param = False
+napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_preprocess_types = True
 napoleon_attr_annotations = True
@@ -67,7 +68,14 @@ exclude_patterns = ['tests', 'venv', 'build', 'Thumbs.db', '.DS_Store']
 html_theme = "revitron_sphinx_theme"
 html_static_path = ['_static']
 html_logo = './_static/AYON_blackG_dot.svg'
+html_favicon = './_static/favicon.ico'
 
+html_context = {
+    'landing_page': {
+    }
+}
+myst_footnote_transition = False
+html_sidebars = {}
 
 html_theme_options = {
     'color_scheme': '',

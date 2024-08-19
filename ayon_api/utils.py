@@ -412,16 +412,17 @@ def validate_url(url, timeout=None):
     Function will try to autofix url thus will return modified url when
     connection to server works.
 
-    ```python
-    my_url = "my.server.url"
-    try:
-        # Store new url
-        validated_url = validate_url(my_url)
+    .. highlight:: python
+    .. code-block:: python
 
-    except UrlError:
-        # Handle invalid url
-        ...
-    ```
+        my_url = "my.server.url"
+        try:
+            # Store new url
+            validated_url = validate_url(my_url)
+
+        except UrlError:
+            # Handle invalid url
+            ...
 
     Args:
         url (str): Server url.
