@@ -4117,6 +4117,7 @@ class ServerAPI(object):
         has_tasks=None,
         has_children=None,
         statuses=None,
+        assignees_all=None,
         tags=None,
         active=True,
         has_links=None,
@@ -4153,6 +4154,8 @@ class ServerAPI(object):
                 children. Ignored when None, default behavior.
             statuses (Optional[Iterable[str]]): Folder statuses used
                 for filtering.
+            assignees_all (Optional[Iterable[str]]): Filter by assigness
+                on children tasks. Task must have all of passed assignees.
             tags (Optional[Iterable[str]]): Folder tags used
                 for filtering.
             active (Optional[bool]): Filter active/inactive folders.
@@ -4183,6 +4186,7 @@ class ServerAPI(object):
             ("folderTypes", folder_types),
             ("folderStatuses", statuses),
             ("folderTags", tags),
+            ("folderAssigneesAll", assignees_all),
         ):
             return
 
