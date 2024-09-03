@@ -775,8 +775,8 @@ def dispatch_event(*args, **kwargs):
         sender (Optional[str]): Sender of event.
         event_hash (Optional[str]): Event hash.
         project_name (Optional[str]): Project name.
-        depends_on (Optional[str]): Add dependency to another event.
         username (Optional[str]): Username which triggered event.
+        depends_on (Optional[str]): Add dependency to another event.
         description (Optional[str]): Description of event.
         summary (Optional[dict[str, Any]]): Summary of event that can be used
             for simple filtering on listeners.
