@@ -6064,6 +6064,7 @@ class ServerAPI(object):
         version=None,
         product_id=None,
         task_id=NOT_SET,
+        author=None,
         attrib=None,
         data=None,
         tags=None,
@@ -6088,6 +6089,7 @@ class ServerAPI(object):
             version (Optional[int]): New version.
             product_id (Optional[str]): New product id.
             task_id (Optional[Union[str, None]]): New task id.
+            author (Optional[str]): New author username.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
@@ -6106,6 +6108,7 @@ class ServerAPI(object):
             ("tags", tags),
             ("status", status),
             ("active", active),
+            ("author", author),
         ):
             if value is not None:
                 update_data[key] = value
