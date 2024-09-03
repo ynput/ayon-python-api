@@ -4092,6 +4092,13 @@ class ServerAPI(object):
             list[dict[str, Any]]: List of folder entities.
 
         """
+        warnings.warn(
+            (
+                "DEPRECATION: Used deprecated 'get_folders_rest',"
+                " use 'get_rest_folders' instead."
+            ),
+            DeprecationWarning
+        )
         return self.get_rest_folders(project_name, include_attrib)
 
     def get_folders(
@@ -5160,9 +5167,12 @@ class ServerAPI(object):
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for products. The argument"
-                " will be removed form function signature in future"
-                " (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for products. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
 
         # Add 'name' and 'folderId' if 'names_by_folder_ids' filter is entered
@@ -5569,9 +5579,12 @@ class ServerAPI(object):
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for versions. The argument"
-                " will be removed form function signature in future"
-                " (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for versions. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
 
         if not hero and not standard:
@@ -6200,9 +6213,12 @@ class ServerAPI(object):
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for representations. "
-                "The argument will be removed form function signature in "
-                "future (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for representations. "
+                    "The argument will be removed form function signature in "
+                    "future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
 
         if "files" in fields:
@@ -6901,9 +6917,12 @@ class ServerAPI(object):
         
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for workfiles. The argument"
-                " will be removed form function signature in future"
-                " (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for workfiles. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
 
         query = workfiles_info_graphql_query(fields)
