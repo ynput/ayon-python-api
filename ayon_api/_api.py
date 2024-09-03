@@ -18,6 +18,9 @@ from .constants import (
 )
 from .server_api import ServerAPI
 from .exceptions import FailedServiceInit
+from .utils import (
+    get_default_settings_variant as _get_default_settings_variant
+)
 
 
 class GlobalServerAPI(ServerAPI):
@@ -502,6 +505,8 @@ def get_default_settings_variant():
         Union[str, None]: name of variant or None.
 
     """
+    if not GlobalContext.is_connection_created():
+        return _get_default_settings_variant()
     con = get_server_api_connection()
     return con.get_default_settings_variant()
 
