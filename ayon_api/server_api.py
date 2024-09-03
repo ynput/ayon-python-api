@@ -5526,9 +5526,9 @@ class ServerAPI(object):
             product_ids (Optional[Iterable[str]]): Product ids used for
                 version filtering.
             versions (Optional[Iterable[int]]): Versions we're interested in.
-            hero (Optional[bool]): Receive also hero versions when set to true.
-            standard (Optional[bool]): Receive versions which are not hero when
-                set to true.
+            hero (Optional[bool]): Skip hero versions when set to False.
+            standard (Optional[bool]): Skip standard (non-hero) when
+                set to False.
             latest (Optional[bool]): Return only latest version of standard
                 versions. This can be combined only with 'standard' attribute
                 set to True.
