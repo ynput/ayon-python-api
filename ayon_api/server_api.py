@@ -14,6 +14,7 @@ import platform
 import copy
 import uuid
 import warnings
+import itertools
 from contextlib import contextmanager
 
 try:
