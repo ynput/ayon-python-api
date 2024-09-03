@@ -111,6 +111,29 @@ VERSION_REGEX = re.compile(
 )
 
 
+def _convert_list_filter_value(value):
+    if value is None:
+        return None
+
+    if isinstance(value, PatternType):
+        return [value.pattern]
+
+    if isinstance(value, (int, float, str, bool)):
+        return [value]
+    return list(set(value))
+
+
+def _prepare_list_filters(output, *args, **kwargs):
+    for key, value in itertools.chain(args, kwargs.items()):
+        value = _convert_list_filter_value(value)
+        if value is None:
+            continue
+        if not value:
+            return False
+        output[key] = value
+    return True
+
+
 def _get_description(response):
     if HTTPStatus is None:
         return str(response.orig_response)
@@ -1419,42 +1442,26 @@ class ServerAPI(object):
 
         """
         filters = {}
-        if topics is not None:
-            topics = set(topics)
-            if not topics:
-                return
-            filters["eventTopics"] = list(topics)
-
-        if project_names is not None:
-            project_names = set(project_names)
-            if not project_names:
-                return
-            filters["projectNames"] = list(project_names)
-
-        if states is not None:
-            states = set(states)
-            if not states:
-                return
-            filters["eventStates"] = list(states)
-
-        if users is not None:
-            users = set(users)
-            if not users:
-                return
-            filters["eventUsers"] = list(users)
+        if not _prepare_list_filters(
+            filters,
+            ("eventTopics", topics),
+            ("projectNames", project_names),
+            ("eventStates", states),
+            ("eventUsers", users),
+        ):
+            return
 
         if include_logs is None:
             include_logs = False
-        filters["includeLogsFilter"] = include_logs
 
-        if has_children is not None:
-            filters["hasChildrenFilter"] = has_children
-
-        if newer_than is not None:
-            filters["newerThanFilter"] = newer_than
-
-        if older_than is not None:
-            filters["olderThanFilter"] = older_than
+        for filter_key, filter_value in (
+            ("includeLogsFilter", include_logs),
+            ("hasChildrenFilter", has_children),
+            ("newerThanFilter", newer_than),
+            ("olderThanFilter", older_than),
+        ):
+            if filter_value is not None:
+                filters[filter_key] = filter_value
 
         if not fields:
             fields = self.get_default_fields_for_type("event")
@@ -4158,41 +4165,26 @@ class ServerAPI(object):
         filters = {
             "projectName": project_name
         }
-        if folder_ids is not None:
-            folder_ids = set(folder_ids)
-            if not folder_ids:
-                return
-            filters["folderIds"] = list(folder_ids)
+        if not _prepare_list_filters(
+            filters,
+            ("folderIds", folder_ids),
+            ("folderPaths", folder_paths),
+            ("folderNames", folder_names),
+            ("folderTypes", folder_types),
+            ("folderStatuses", statuses),
+            ("folderTags", tags),
+        ):
+            return
 
-        if folder_paths is not None:
-            folder_paths = set(folder_paths)
-            if not folder_paths:
-                return
-            filters["folderPaths"] = list(folder_paths)
-
-        if folder_names is not None:
-            folder_names = set(folder_names)
-            if not folder_names:
-                return
-            filters["folderNames"] = list(folder_names)
-
-        if folder_types is not None:
-            folder_types = set(folder_types)
-            if not folder_types:
-                return
-            filters["folderTypes"] = list(folder_types)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["folderStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["folderTags"] = list(tags)
+        for filter_key, filter_value in (
+            ("folderPathRegex", folder_path_regex),
+            ("folderHasProducts", has_products),
+            ("folderHasTasks", has_tasks),
+            ("folderHasLinks", has_links),
+            ("folderHasChildren", has_children),
+        ):
+            if filter_value is not None:
+                filters[filter_key] = filter_value
 
         if parent_ids is not None:
             parent_ids = set(parent_ids)
@@ -4213,21 +4205,6 @@ class ServerAPI(object):
                 parent_ids.add("root")
 
             filters["parentFolderIds"] = list(parent_ids)
-
-        if folder_path_regex is not None:
-            filters["folderPathRegex"] = folder_path_regex
-
-        if has_products is not None:
-            filters["folderHasProducts"] = has_products
-
-        if has_tasks is not None:
-            filters["folderHasTasks"] = has_tasks
-
-        if has_links is not None:
-            filters["folderHasLinks"] = has_links.upper()
-
-        if has_children is not None:
-            filters["folderHasChildren"] = has_children
 
         if not fields:
             fields = self.get_default_fields_for_type("folder")
@@ -4606,54 +4583,18 @@ class ServerAPI(object):
         filters = {
             "projectName": project_name
         }
-
-        if task_ids is not None:
-            task_ids = set(task_ids)
-            if not task_ids:
-                return
-            filters["taskIds"] = list(task_ids)
-
-        if task_names is not None:
-            task_names = set(task_names)
-            if not task_names:
-                return
-            filters["taskNames"] = list(task_names)
-
-        if task_types is not None:
-            task_types = set(task_types)
-            if not task_types:
-                return
-            filters["taskTypes"] = list(task_types)
-
-        if folder_ids is not None:
-            folder_ids = set(folder_ids)
-            if not folder_ids:
-                return
-            filters["folderIds"] = list(folder_ids)
-
-        if assignees is not None:
-            assignees = set(assignees)
-            if not assignees:
-                return
-            filters["taskAssigneesAny"] = list(assignees)
-
-        if assignees_all is not None:
-            assignees_all = set(assignees_all)
-            if not assignees_all:
-                return
-            filters["taskAssigneesAll"] = list(assignees_all)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["taskStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["taskTags"] = list(tags)
+        if not _prepare_list_filters(
+            filters,
+            ("taskIds", task_ids),
+            ("taskNames", task_names),
+            ("taskTypes", task_types),
+            ("folderIds", folder_ids),
+            ("taskAssigneesAny", assignees),
+            ("taskAssigneesAll", assignees_all),
+            ("taskStatuses", statuses),
+            ("taskTags", tags),
+        ):
+            return
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -4811,42 +4752,16 @@ class ServerAPI(object):
             "projectName": project_name,
             "folderPaths": list(folder_paths),
         }
-
-        if task_names is not None:
-            task_names = set(task_names)
-            if not task_names:
-                return
-            filters["taskNames"] = list(task_names)
-
-        if task_types is not None:
-            task_types = set(task_types)
-            if not task_types:
-                return
-            filters["taskTypes"] = list(task_types)
-
-        if assignees is not None:
-            assignees = set(assignees)
-            if not assignees:
-                return
-            filters["taskAssigneesAny"] = list(assignees)
-
-        if assignees_all is not None:
-            assignees_all = set(assignees_all)
-            if not assignees_all:
-                return
-            filters["taskAssigneesAll"] = list(assignees_all)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["taskStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["taskTags"] = list(tags)
+        if not _prepare_list_filters(
+            filters,
+            ("taskNames", task_names),
+            ("taskTypes", task_types),
+            ("taskAssigneesAny", assignees),
+            ("taskAssigneesAll", assignees_all),
+            ("taskStatuses", statuses),
+            ("taskTags", tags),
+        ):
+            return
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -5266,35 +5181,21 @@ class ServerAPI(object):
         if filter_product_names:
             filters["productNames"] = list(filter_product_names)
 
-        if product_ids is not None:
-            product_ids = set(product_ids)
-            if not product_ids:
-                return
-            filters["productIds"] = list(product_ids)
+        if not _prepare_list_filters(
+            filters,
+            ("productIds", product_ids),
+            ("productTypes", product_types),
+            ("productStatuses", statuses),
+            ("productTags", tags),
+        ):
+            return
 
-        if product_types is not None:
-            product_types = set(product_types)
-            if not product_types:
-                return
-            filters["productTypes"] = list(product_types)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["productStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["productTags"] = list(tags)
-
-        if product_name_regex:
-            filters["productNameRegex"] = product_name_regex
-
-        if product_path_regex:
-            filters["productPathRegex"] = product_path_regex
+        for filter_key, filter_value in (
+            ("productNameRegex", product_name_regex),
+            ("productPathRegex", product_path_regex),
+        ):
+            if filter_value:
+                filters[filter_key] = filter_value
 
         query = products_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -5673,41 +5574,21 @@ class ServerAPI(object):
                 " (apx. version 1.0.10 or 1.1.0)."
             )
 
+        if not hero and not standard:
+            return
+
         filters = {
             "projectName": project_name
         }
-        if version_ids is not None:
-            version_ids = set(version_ids)
-            if not version_ids:
-                return
-            filters["versionIds"] = list(version_ids)
-
-        if product_ids is not None:
-            product_ids = set(product_ids)
-            if not product_ids:
-                return
-            filters["productIds"] = list(product_ids)
-
-        # TODO versions can't be used as filter at this moment!
-        if versions is not None:
-            versions = set(versions)
-            if not versions:
-                return
-            filters["versions"] = list(versions)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["versionStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["versionTags"] = list(tags)
-
-        if not hero and not standard:
+        if not _prepare_list_filters(
+            filters,
+            ("taskIds", task_ids),
+            ("versionIds", version_ids),
+            ("productIds", product_ids),
+            ("versions", versions),
+            ("versionStatuses", statuses),
+            ("versionTags", tags),
+        ):
             return
 
         queries = []
