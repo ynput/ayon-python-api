@@ -1472,6 +1472,7 @@ class ServerAPI(object):
         event_id,
         sender=None,
         project_name=None,
+        username=None,
         status=None,
         description=None,
         summary=None,
@@ -1484,6 +1485,7 @@ class ServerAPI(object):
             for key, value in (
                 ("sender", sender),
                 ("project", project_name),
+                ("user", username),
                 ("status", status),
                 ("description", description),
                 ("summary", summary),
