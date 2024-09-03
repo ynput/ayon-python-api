@@ -1524,12 +1524,13 @@ class ServerAPI(object):
         event_hash=None,
         project_name=None,
         username=None,
-        dependencies=None,
+        depends_on=None,
         description=None,
         summary=None,
         payload=None,
         finished=True,
         store=True,
+        dependencies=None,
     ):
         """Dispatch event to server.
 
@@ -1538,8 +1539,8 @@ class ServerAPI(object):
             sender (Optional[str]): Sender of event.
             event_hash (Optional[str]): Event hash.
             project_name (Optional[str]): Project name.
+            depends_on (Optional[str]): Add dependency to another event.
             username (Optional[str]): Username which triggered event.
-            dependencies (Optional[list[str]]): List of event id dependencies.
             description (Optional[str]): Description of event.
             summary (Optional[dict[str, Any]]): Summary of event that can be used
                 for simple filtering on listeners.
@@ -1549,6 +1550,8 @@ class ServerAPI(object):
             store (Optional[bool]): Store event in event queue for possible
                 future processing otherwise is event send only
                 to active listeners.
+            dependencies (Optional[list[str]]): Deprecated.
+                List of event id dependencies.
 
         Returns:
             RestApiResponse: Response from server.
@@ -1564,13 +1567,23 @@ class ServerAPI(object):
             "hash": event_hash,
             "project": project_name,
             "user": username,
-            "dependencies": dependencies,
             "description": description,
             "summary": summary,
             "payload": payload,
             "finished": finished,
             "store": store,
         }
+        if depends_on:
+            event_data["dependsOn"] = depends_on
+
+        if dependencies:
+            warnings.warn(
+                (
+                    "Used deprecated argument 'dependencies' in"
+                    " 'dispatch_event'. Use 'depends_on' instead."
+                ),
+                DeprecationWarning
+            )
 
         response = self.post("events", **event_data)
         response.raise_for_status()
@@ -1652,6 +1665,7 @@ class ServerAPI(object):
             kwargs["description"] = description
         if events_filter is not None:
             kwargs["filter"] = events_filter
+
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
             return None
