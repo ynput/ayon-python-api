@@ -571,6 +571,7 @@ def workfiles_info_graphql_query(fields):
 def events_graphql_query(fields):
     query = GraphQlQuery("Events")
     topics_var = query.add_variable("eventTopics", "[String!]")
+    ids_var = query.add_variable("eventIds", "[String!]")
     projects_var = query.add_variable("projectNames", "[String!]")
     states_var = query.add_variable("eventStates", "[String!]")
     users_var = query.add_variable("eventUsers", "[String!]")
@@ -580,6 +581,7 @@ def events_graphql_query(fields):
     older_than_var = query.add_variable("olderThanFilter", "String!")
 
     events_field = query.add_field_with_edges("events")
+    events_field.set_filter("ids", ids_var)
     events_field.set_filter("topics", topics_var)
     events_field.set_filter("projects", projects_var)
     events_field.set_filter("states", states_var)
