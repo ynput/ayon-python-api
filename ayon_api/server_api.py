@@ -1490,6 +1490,22 @@ class ServerAPI(object):
         progress=None,
         retries=None
     ):
+        """Update event data.
+
+        Args:
+            event_id (str): Event id.
+            sender (Optional[str]): New sender of event.
+            project_name (Optional[str]): New project name.
+            username (Optional[str]): New username.
+            status (Optional[str]): New event status. Enum: "pending",
+                "in_progress", "finished", "failed", "aborted", "restarted"
+            description (Optional[str]): New description.
+            summary (Optional[dict[str, Any]]): New summary.
+            payload (Optional[dict[str, Any]]): New payload.
+            progress (Optional[int]): New progress. Range [0-100].
+            retries (Optional[int]): New retries.
+
+        """
         kwargs = {
             key: value
             for key, value in (
