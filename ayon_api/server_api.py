@@ -5524,6 +5524,7 @@ class ServerAPI(object):
         project_name,
         version_ids=None,
         product_ids=None,
+        task_ids=None,
         versions=None,
         hero=True,
         standard=True,
@@ -5541,6 +5542,8 @@ class ServerAPI(object):
             version_ids (Optional[Iterable[str]]): Version ids used for
                 version filtering.
             product_ids (Optional[Iterable[str]]): Product ids used for
+                version filtering.
+            task_ids (Optional[Iterable[str]]): Task ids used for
                 version filtering.
             versions (Optional[Iterable[int]]): Versions we're interested in.
             hero (Optional[bool]): Skip hero versions when set to False.
@@ -5605,6 +5608,7 @@ class ServerAPI(object):
             ("taskIds", task_ids),
             ("versionIds", version_ids),
             ("productIds", product_ids),
+            ("taskIds", task_ids),
             ("versions", versions),
             ("versionStatuses", statuses),
             ("versionTags", tags),
