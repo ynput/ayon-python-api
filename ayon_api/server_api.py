@@ -1406,6 +1406,7 @@ class ServerAPI(object):
     def get_events(
         self,
         topics=None,
+        event_ids=None,
         project_names=None,
         states=None,
         users=None,
@@ -1422,6 +1423,7 @@ class ServerAPI(object):
 
         Args:
             topics (Optional[Iterable[str]]): Name of topics.
+            event_ids (Optional[Iterable[str]]): Event ids.
             project_names (Optional[Iterable[str]]): Project on which
                 event happened.
             states (Optional[Iterable[str]]): Filtering by states.
@@ -1445,6 +1447,7 @@ class ServerAPI(object):
         if not _prepare_list_filters(
             filters,
             ("eventTopics", topics),
+            ("eventIds", event_ids),
             ("projectNames", project_names),
             ("eventStates", states),
             ("eventUsers", users),
