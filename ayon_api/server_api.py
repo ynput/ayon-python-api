@@ -14,6 +14,7 @@ import platform
 import copy
 import uuid
 import warnings
+import itertools
 from contextlib import contextmanager
 
 try:
@@ -109,6 +110,29 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
+
+
+def _convert_list_filter_value(value):
+    if value is None:
+        return None
+
+    if isinstance(value, PatternType):
+        return [value.pattern]
+
+    if isinstance(value, (int, float, str, bool)):
+        return [value]
+    return list(set(value))
+
+
+def _prepare_list_filters(output, *args, **kwargs):
+    for key, value in itertools.chain(args, kwargs.items()):
+        value = _convert_list_filter_value(value)
+        if value is None:
+            continue
+        if not value:
+            return False
+        output[key] = value
+    return True
 
 
 def _get_description(response):
@@ -1383,6 +1407,7 @@ class ServerAPI(object):
     def get_events(
         self,
         topics=None,
+        event_ids=None,
         project_names=None,
         states=None,
         users=None,
@@ -1399,6 +1424,7 @@ class ServerAPI(object):
 
         Args:
             topics (Optional[Iterable[str]]): Name of topics.
+            event_ids (Optional[Iterable[str]]): Event ids.
             project_names (Optional[Iterable[str]]): Project on which
                 event happened.
             states (Optional[Iterable[str]]): Filtering by states.
@@ -1419,42 +1445,27 @@ class ServerAPI(object):
 
         """
         filters = {}
-        if topics is not None:
-            topics = set(topics)
-            if not topics:
-                return
-            filters["eventTopics"] = list(topics)
-
-        if project_names is not None:
-            project_names = set(project_names)
-            if not project_names:
-                return
-            filters["projectNames"] = list(project_names)
-
-        if states is not None:
-            states = set(states)
-            if not states:
-                return
-            filters["eventStates"] = list(states)
-
-        if users is not None:
-            users = set(users)
-            if not users:
-                return
-            filters["eventUsers"] = list(users)
+        if not _prepare_list_filters(
+            filters,
+            ("eventTopics", topics),
+            ("eventIds", event_ids),
+            ("projectNames", project_names),
+            ("eventStates", states),
+            ("eventUsers", users),
+        ):
+            return
 
         if include_logs is None:
             include_logs = False
-        filters["includeLogsFilter"] = include_logs
 
-        if has_children is not None:
-            filters["hasChildrenFilter"] = has_children
-
-        if newer_than is not None:
-            filters["newerThanFilter"] = newer_than
-
-        if older_than is not None:
-            filters["olderThanFilter"] = older_than
+        for filter_key, filter_value in (
+            ("includeLogsFilter", include_logs),
+            ("hasChildrenFilter", has_children),
+            ("newerThanFilter", newer_than),
+            ("olderThanFilter", older_than),
+        ):
+            if filter_value is not None:
+                filters[filter_key] = filter_value
 
         if not fields:
             fields = self.get_default_fields_for_type("event")
@@ -1472,6 +1483,7 @@ class ServerAPI(object):
         event_id,
         sender=None,
         project_name=None,
+        username=None,
         status=None,
         description=None,
         summary=None,
@@ -1479,11 +1491,28 @@ class ServerAPI(object):
         progress=None,
         retries=None
     ):
+        """Update event data.
+
+        Args:
+            event_id (str): Event id.
+            sender (Optional[str]): New sender of event.
+            project_name (Optional[str]): New project name.
+            username (Optional[str]): New username.
+            status (Optional[str]): New event status. Enum: "pending",
+                "in_progress", "finished", "failed", "aborted", "restarted"
+            description (Optional[str]): New description.
+            summary (Optional[dict[str, Any]]): New summary.
+            payload (Optional[dict[str, Any]]): New payload.
+            progress (Optional[int]): New progress. Range [0-100].
+            retries (Optional[int]): New retries.
+
+        """
         kwargs = {
             key: value
             for key, value in (
                 ("sender", sender),
                 ("project", project_name),
+                ("user", username),
                 ("status", status),
                 ("description", description),
                 ("summary", summary),
@@ -1522,12 +1551,13 @@ class ServerAPI(object):
         event_hash=None,
         project_name=None,
         username=None,
-        dependencies=None,
+        depends_on=None,
         description=None,
         summary=None,
         payload=None,
         finished=True,
         store=True,
+        dependencies=None,
     ):
         """Dispatch event to server.
 
@@ -1536,8 +1566,8 @@ class ServerAPI(object):
             sender (Optional[str]): Sender of event.
             event_hash (Optional[str]): Event hash.
             project_name (Optional[str]): Project name.
+            depends_on (Optional[str]): Add dependency to another event.
             username (Optional[str]): Username which triggered event.
-            dependencies (Optional[list[str]]): List of event id dependencies.
             description (Optional[str]): Description of event.
             summary (Optional[dict[str, Any]]): Summary of event that can be used
                 for simple filtering on listeners.
@@ -1547,6 +1577,8 @@ class ServerAPI(object):
             store (Optional[bool]): Store event in event queue for possible
                 future processing otherwise is event send only
                 to active listeners.
+            dependencies (Optional[list[str]]): Deprecated.
+                List of event id dependencies.
 
         Returns:
             RestApiResponse: Response from server.
@@ -1562,13 +1594,23 @@ class ServerAPI(object):
             "hash": event_hash,
             "project": project_name,
             "user": username,
-            "dependencies": dependencies,
             "description": description,
             "summary": summary,
             "payload": payload,
             "finished": finished,
             "store": store,
         }
+        if depends_on:
+            event_data["dependsOn"] = depends_on
+
+        if dependencies:
+            warnings.warn(
+                (
+                    "Used deprecated argument 'dependencies' in"
+                    " 'dispatch_event'. Use 'depends_on' instead."
+                ),
+                DeprecationWarning
+            )
 
         response = self.post("events", **event_data)
         response.raise_for_status()
@@ -1650,6 +1692,7 @@ class ServerAPI(object):
             kwargs["description"] = description
         if events_filter is not None:
             kwargs["filter"] = events_filter
+
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
             return None
@@ -4069,6 +4112,13 @@ class ServerAPI(object):
             list[dict[str, Any]]: List of folder entities.
 
         """
+        warnings.warn(
+            (
+                "DEPRECATION: Used deprecated 'get_folders_rest',"
+                " use 'get_rest_folders' instead."
+            ),
+            DeprecationWarning
+        )
         return self.get_rest_folders(project_name, include_attrib)
 
     def get_folders(
@@ -4084,6 +4134,7 @@ class ServerAPI(object):
         has_tasks=None,
         has_children=None,
         statuses=None,
+        assignees_all=None,
         tags=None,
         active=True,
         has_links=None,
@@ -4120,6 +4171,8 @@ class ServerAPI(object):
                 children. Ignored when None, default behavior.
             statuses (Optional[Iterable[str]]): Folder statuses used
                 for filtering.
+            assignees_all (Optional[Iterable[str]]): Filter by assigness
+                on children tasks. Task must have all of passed assignees.
             tags (Optional[Iterable[str]]): Folder tags used
                 for filtering.
             active (Optional[bool]): Filter active/inactive folders.
@@ -4142,41 +4195,27 @@ class ServerAPI(object):
         filters = {
             "projectName": project_name
         }
-        if folder_ids is not None:
-            folder_ids = set(folder_ids)
-            if not folder_ids:
-                return
-            filters["folderIds"] = list(folder_ids)
+        if not _prepare_list_filters(
+            filters,
+            ("folderIds", folder_ids),
+            ("folderPaths", folder_paths),
+            ("folderNames", folder_names),
+            ("folderTypes", folder_types),
+            ("folderStatuses", statuses),
+            ("folderTags", tags),
+            ("folderAssigneesAll", assignees_all),
+        ):
+            return
 
-        if folder_paths is not None:
-            folder_paths = set(folder_paths)
-            if not folder_paths:
-                return
-            filters["folderPaths"] = list(folder_paths)
-
-        if folder_names is not None:
-            folder_names = set(folder_names)
-            if not folder_names:
-                return
-            filters["folderNames"] = list(folder_names)
-
-        if folder_types is not None:
-            folder_types = set(folder_types)
-            if not folder_types:
-                return
-            filters["folderTypes"] = list(folder_types)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["folderStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["folderTags"] = list(tags)
+        for filter_key, filter_value in (
+            ("folderPathRegex", folder_path_regex),
+            ("folderHasProducts", has_products),
+            ("folderHasTasks", has_tasks),
+            ("folderHasLinks", has_links),
+            ("folderHasChildren", has_children),
+        ):
+            if filter_value is not None:
+                filters[filter_key] = filter_value
 
         if parent_ids is not None:
             parent_ids = set(parent_ids)
@@ -4197,21 +4236,6 @@ class ServerAPI(object):
                 parent_ids.add("root")
 
             filters["parentFolderIds"] = list(parent_ids)
-
-        if folder_path_regex is not None:
-            filters["folderPathRegex"] = folder_path_regex
-
-        if has_products is not None:
-            filters["folderHasProducts"] = has_products
-
-        if has_tasks is not None:
-            filters["folderHasTasks"] = has_tasks
-
-        if has_links is not None:
-            filters["folderHasLinks"] = has_links.upper()
-
-        if has_children is not None:
-            filters["folderHasChildren"] = has_children
 
         if not fields:
             fields = self.get_default_fields_for_type("folder")
@@ -4590,54 +4614,18 @@ class ServerAPI(object):
         filters = {
             "projectName": project_name
         }
-
-        if task_ids is not None:
-            task_ids = set(task_ids)
-            if not task_ids:
-                return
-            filters["taskIds"] = list(task_ids)
-
-        if task_names is not None:
-            task_names = set(task_names)
-            if not task_names:
-                return
-            filters["taskNames"] = list(task_names)
-
-        if task_types is not None:
-            task_types = set(task_types)
-            if not task_types:
-                return
-            filters["taskTypes"] = list(task_types)
-
-        if folder_ids is not None:
-            folder_ids = set(folder_ids)
-            if not folder_ids:
-                return
-            filters["folderIds"] = list(folder_ids)
-
-        if assignees is not None:
-            assignees = set(assignees)
-            if not assignees:
-                return
-            filters["taskAssigneesAny"] = list(assignees)
-
-        if assignees_all is not None:
-            assignees_all = set(assignees_all)
-            if not assignees_all:
-                return
-            filters["taskAssigneesAll"] = list(assignees_all)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["taskStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["taskTags"] = list(tags)
+        if not _prepare_list_filters(
+            filters,
+            ("taskIds", task_ids),
+            ("taskNames", task_names),
+            ("taskTypes", task_types),
+            ("folderIds", folder_ids),
+            ("taskAssigneesAny", assignees),
+            ("taskAssigneesAll", assignees_all),
+            ("taskStatuses", statuses),
+            ("taskTags", tags),
+        ):
+            return
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -4795,42 +4783,16 @@ class ServerAPI(object):
             "projectName": project_name,
             "folderPaths": list(folder_paths),
         }
-
-        if task_names is not None:
-            task_names = set(task_names)
-            if not task_names:
-                return
-            filters["taskNames"] = list(task_names)
-
-        if task_types is not None:
-            task_types = set(task_types)
-            if not task_types:
-                return
-            filters["taskTypes"] = list(task_types)
-
-        if assignees is not None:
-            assignees = set(assignees)
-            if not assignees:
-                return
-            filters["taskAssigneesAny"] = list(assignees)
-
-        if assignees_all is not None:
-            assignees_all = set(assignees_all)
-            if not assignees_all:
-                return
-            filters["taskAssigneesAll"] = list(assignees_all)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["taskStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["taskTags"] = list(tags)
+        if not _prepare_list_filters(
+            filters,
+            ("taskNames", task_names),
+            ("taskTypes", task_types),
+            ("taskAssigneesAny", assignees),
+            ("taskAssigneesAll", assignees_all),
+            ("taskStatuses", statuses),
+            ("taskTags", tags),
+        ):
+            return
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -5229,9 +5191,12 @@ class ServerAPI(object):
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for products. The argument"
-                " will be removed form function signature in future"
-                " (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for products. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
 
         # Add 'name' and 'folderId' if 'names_by_folder_ids' filter is entered
@@ -5250,35 +5215,21 @@ class ServerAPI(object):
         if filter_product_names:
             filters["productNames"] = list(filter_product_names)
 
-        if product_ids is not None:
-            product_ids = set(product_ids)
-            if not product_ids:
-                return
-            filters["productIds"] = list(product_ids)
+        if not _prepare_list_filters(
+            filters,
+            ("productIds", product_ids),
+            ("productTypes", product_types),
+            ("productStatuses", statuses),
+            ("productTags", tags),
+        ):
+            return
 
-        if product_types is not None:
-            product_types = set(product_types)
-            if not product_types:
-                return
-            filters["productTypes"] = list(product_types)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["productStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["productTags"] = list(tags)
-
-        if product_name_regex:
-            filters["productNameRegex"] = product_name_regex
-
-        if product_path_regex:
-            filters["productPathRegex"] = product_path_regex
+        for filter_key, filter_value in (
+            ("productNameRegex", product_name_regex),
+            ("productPathRegex", product_path_regex),
+        ):
+            if filter_value:
+                filters[filter_key] = filter_value
 
         query = products_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -5590,6 +5541,7 @@ class ServerAPI(object):
         project_name,
         version_ids=None,
         product_ids=None,
+        task_ids=None,
         versions=None,
         hero=True,
         standard=True,
@@ -5608,10 +5560,12 @@ class ServerAPI(object):
                 version filtering.
             product_ids (Optional[Iterable[str]]): Product ids used for
                 version filtering.
+            task_ids (Optional[Iterable[str]]): Task ids used for
+                version filtering.
             versions (Optional[Iterable[int]]): Versions we're interested in.
-            hero (Optional[bool]): Receive also hero versions when set to true.
-            standard (Optional[bool]): Receive versions which are not hero when
-                set to true.
+            hero (Optional[bool]): Skip hero versions when set to False.
+            standard (Optional[bool]): Skip standard (non-hero) when
+                set to False.
             latest (Optional[bool]): Return only latest version of standard
                 versions. This can be combined only with 'standard' attribute
                 set to True.
@@ -5652,46 +5606,30 @@ class ServerAPI(object):
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for versions. The argument"
-                " will be removed form function signature in future"
-                " (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for versions. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
+
+        if not hero and not standard:
+            return
 
         filters = {
             "projectName": project_name
         }
-        if version_ids is not None:
-            version_ids = set(version_ids)
-            if not version_ids:
-                return
-            filters["versionIds"] = list(version_ids)
-
-        if product_ids is not None:
-            product_ids = set(product_ids)
-            if not product_ids:
-                return
-            filters["productIds"] = list(product_ids)
-
-        # TODO versions can't be used as filter at this moment!
-        if versions is not None:
-            versions = set(versions)
-            if not versions:
-                return
-            filters["versions"] = list(versions)
-
-        if statuses is not None:
-            statuses = set(statuses)
-            if not statuses:
-                return
-            filters["versionStatuses"] = list(statuses)
-
-        if tags is not None:
-            tags = set(tags)
-            if not tags:
-                return
-            filters["versionTags"] = list(tags)
-
-        if not hero and not standard:
+        if not _prepare_list_filters(
+            filters,
+            ("taskIds", task_ids),
+            ("versionIds", version_ids),
+            ("productIds", product_ids),
+            ("taskIds", task_ids),
+            ("versions", versions),
+            ("versionStatuses", statuses),
+            ("versionTags", tags),
+        ):
             return
 
         queries = []
@@ -6143,6 +6081,7 @@ class ServerAPI(object):
         version=None,
         product_id=None,
         task_id=NOT_SET,
+        author=None,
         attrib=None,
         data=None,
         tags=None,
@@ -6167,6 +6106,7 @@ class ServerAPI(object):
             version (Optional[int]): New version.
             product_id (Optional[str]): New product id.
             task_id (Optional[Union[str, None]]): New task id.
+            author (Optional[str]): New author username.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
@@ -6185,6 +6125,7 @@ class ServerAPI(object):
             ("tags", tags),
             ("status", status),
             ("active", active),
+            ("author", author),
         ):
             if value is not None:
                 update_data[key] = value
@@ -6303,9 +6244,12 @@ class ServerAPI(object):
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for representations. "
-                "The argument will be removed form function signature in "
-                "future (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for representations. "
+                    "The argument will be removed form function signature in "
+                    "future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
 
         if "files" in fields:
@@ -7004,9 +6948,12 @@ class ServerAPI(object):
         
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
-                "'own_attributes' is not supported for workfiles. The argument"
-                " will be removed form function signature in future"
-                " (apx. version 1.0.10 or 1.1.0)."
+                (
+                    "'own_attributes' is not supported for workfiles. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning
             )
 
         query = workfiles_info_graphql_query(fields)

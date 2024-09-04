@@ -157,6 +157,9 @@ def folders_graphql_query(fields):
     has_links_var = query.add_variable("folderHasLinks", "HasLinksFilter")
     has_children_var = query.add_variable("folderHasChildren", "Boolean!")
     statuses_var = query.add_variable("folderStatuses", "[String!]")
+    folder_assignees_all_var = query.add_variable(
+        "folderAssigneesAll", "[String!]"
+    )
     tags_var = query.add_variable("folderTags", "[String!]")
 
     project_field = query.add_field("project")
@@ -170,6 +173,7 @@ def folders_graphql_query(fields):
     folders_field.set_filter("pathEx", folder_path_regex_var)
     folders_field.set_filter("folderTypes", folder_types_var)
     folders_field.set_filter("statuses", statuses_var)
+    folders_field.set_filter("assignees", folder_assignees_all_var)
     folders_field.set_filter("tags", tags_var)
     folders_field.set_filter("hasProducts", has_products_var)
     folders_field.set_filter("hasTasks", has_tasks_var)
@@ -567,6 +571,7 @@ def workfiles_info_graphql_query(fields):
 def events_graphql_query(fields):
     query = GraphQlQuery("Events")
     topics_var = query.add_variable("eventTopics", "[String!]")
+    ids_var = query.add_variable("eventIds", "[String!]")
     projects_var = query.add_variable("projectNames", "[String!]")
     states_var = query.add_variable("eventStates", "[String!]")
     users_var = query.add_variable("eventUsers", "[String!]")
@@ -576,6 +581,7 @@ def events_graphql_query(fields):
     older_than_var = query.add_variable("olderThanFilter", "String!")
 
     events_field = query.add_field_with_edges("events")
+    events_field.set_filter("ids", ids_var)
     events_field.set_filter("topics", topics_var)
     events_field.set_filter("projects", projects_var)
     events_field.set_filter("states", states_var)

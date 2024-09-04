@@ -727,6 +727,7 @@ def get_events(*args, **kwargs):
 
     Args:
         topics (Optional[Iterable[str]]): Name of topics.
+        event_ids (Optional[Iterable[str]]): Event ids.
         project_names (Optional[Iterable[str]]): Project on which
             event happened.
         states (Optional[Iterable[str]]): Filtering by states.
@@ -751,6 +752,22 @@ def get_events(*args, **kwargs):
 
 
 def update_event(*args, **kwargs):
+    """Update event data.
+
+    Args:
+        event_id (str): Event id.
+        sender (Optional[str]): New sender of event.
+        project_name (Optional[str]): New project name.
+        username (Optional[str]): New username.
+        status (Optional[str]): New event status. Enum: "pending",
+            "in_progress", "finished", "failed", "aborted", "restarted"
+        description (Optional[str]): New description.
+        summary (Optional[dict[str, Any]]): New summary.
+        payload (Optional[dict[str, Any]]): New payload.
+        progress (Optional[int]): New progress. Range [0-100].
+        retries (Optional[int]): New retries.
+
+    """
     con = get_server_api_connection()
     return con.update_event(*args, **kwargs)
 
@@ -764,7 +781,7 @@ def dispatch_event(*args, **kwargs):
         event_hash (Optional[str]): Event hash.
         project_name (Optional[str]): Project name.
         username (Optional[str]): Username which triggered event.
-        dependencies (Optional[list[str]]): List of event id dependencies.
+        depends_on (Optional[str]): Add dependency to another event.
         description (Optional[str]): Description of event.
         summary (Optional[dict[str, Any]]): Summary of event that can be used
             for simple filtering on listeners.
@@ -774,6 +791,8 @@ def dispatch_event(*args, **kwargs):
         store (Optional[bool]): Store event in event queue for possible
             future processing otherwise is event send only
             to active listeners.
+        dependencies (Optional[list[str]]): Deprecated.
+            List of event id dependencies.
 
     Returns:
         RestApiResponse: Response from server.
@@ -2375,6 +2394,8 @@ def get_folders(*args, **kwargs):
             children. Ignored when None, default behavior.
         statuses (Optional[Iterable[str]]): Folder statuses used
             for filtering.
+        assignees_all (Optional[Iterable[str]]): Filter by assigness
+            on children tasks. Task must have all of passed assignees.
         tags (Optional[Iterable[str]]): Folder tags used
             for filtering.
         active (Optional[bool]): Filter active/inactive folders.
@@ -2997,10 +3018,12 @@ def get_versions(*args, **kwargs):
             version filtering.
         product_ids (Optional[Iterable[str]]): Product ids used for
             version filtering.
+        task_ids (Optional[Iterable[str]]): Task ids used for
+            version filtering.
         versions (Optional[Iterable[int]]): Versions we're interested in.
-        hero (Optional[bool]): Receive also hero versions when set to true.
-        standard (Optional[bool]): Receive versions which are not hero when
-            set to true.
+        hero (Optional[bool]): Skip hero versions when set to False.
+        standard (Optional[bool]): Skip standard (non-hero) when
+            set to False.
         latest (Optional[bool]): Return only latest version of standard
             versions. This can be combined only with 'standard' attribute
             set to True.
@@ -3255,6 +3278,7 @@ def update_version(*args, **kwargs):
         version (Optional[int]): New version.
         product_id (Optional[str]): New product id.
         task_id (Optional[Union[str, None]]): New task id.
+        author (Optional[str]): New author username.
         attrib (Optional[dict[str, Any]]): New attributes.
         data (Optional[dict[str, Any]]): New data.
         tags (Optional[Iterable[str]]): New tags.
