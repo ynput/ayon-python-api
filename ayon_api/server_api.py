@@ -6504,6 +6504,8 @@ class ServerAPI(object):
             product = version.pop("product", {})
             task = version.pop("task", None)
             folder = product.pop("folder", {})
+            self._convert_entity_data(repre)
+            self._representation_conversion(repre)
             self._convert_entity_data(version)
             self._convert_entity_data(product)
             self._convert_entity_data(folder)
