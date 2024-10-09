@@ -875,7 +875,8 @@ def download_file_to_stream(*args, **kwargs):
 
     Args:
         endpoint (str): Endpoint or URL to file that should be downloaded.
-        stream (Union[io.BytesIO, BinaryIO]): Stream where output will be stored.
+        stream (Union[io.BytesIO, BinaryIO]): Stream where output will
+            be stored.
         chunk_size (Optional[int]): Size of chunks that are received
             in single loop.
         progress (Optional[TransferProgress]): Object that gives ability
