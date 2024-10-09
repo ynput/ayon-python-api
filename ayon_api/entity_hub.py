@@ -44,7 +44,7 @@ class EntityHub(object):
             key on entities. This is not recommended as 'data' may be use for
             secure information and would also slow down server queries. Content
             of 'data' key can't be received only GraphQl.
-            
+
     """
 
     def __init__(
@@ -1479,7 +1479,7 @@ class BaseEntity(ABC):
 
         Raises:
             TypeError: If validation of parent does not pass.
-            
+
         """
         parent_id = None
         if parent is not None:
@@ -2871,7 +2871,7 @@ class TaskEntity(BaseEntity):
             tags = []
         else:
             tags = list(tags)
-        
+
         if assignees is None:
             assignees = []
         else:
