@@ -2337,15 +2337,15 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_addon_url(self, addon_name, addon_version, *subpaths):
-        """Calculate url to addon route.
+    def get_addon_endpoint(self, addon_name, addon_version, *subpaths):
+        """Calculate endpoint to addon route.
 
         Examples:
 
             >>> api = ServerAPI("https://your.url.com")
             >>> api.get_addon_url(
             ...     "example", "1.0.0", "private", "my.zip")
-            'https://your.url.com/addons/example/1.0.0/private/my.zip'
+            'addons/example/1.0.0/private/my.zip'
 
         Args:
             addon_name (str): Name of addon.
@@ -2360,12 +2360,36 @@ class ServerAPI(object):
         ending = ""
         if subpaths:
             ending = "/{}".format("/".join(subpaths))
-        return "{}/addons/{}/{}{}".format(
-            self._base_url,
+        return "addons/{}/{}{}".format(
             addon_name,
             addon_version,
             ending
         )
+
+    def get_addon_url(self, addon_name, addon_version, *subpaths):
+        """Calculate url to addon route.
+
+        Examples:
+
+            >>> api = ServerAPI("https://your.url.com")
+            >>> api.get_addon_url(
+            ...     "example", "1.0.0", "private", "my.zip")
+            'https://your.url.com/api/addons/example/1.0.0/private/my.zip'
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            *subpaths (str): Any amount of subpaths that are added to
+                addon url.
+
+        Returns:
+            str: Final url.
+
+        """
+        endpoint = self.get_addon_endpoint(
+            addon_name, addon_version, *subpaths
+        )
+        return f"{self._base_url}/{endpoint}"
 
     def download_addon_private_file(
         self,
