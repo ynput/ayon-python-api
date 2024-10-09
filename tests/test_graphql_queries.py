@@ -30,7 +30,7 @@ def test_simple_duplicate_add_variable_exception(
 
 def test_exception_empty_query(empty_query):
     with pytest.raises(ValueError, match="Missing fields to query"):
-        out = empty_query.calculate_query()
+        _out = empty_query.calculate_query()
 
 
 def test_simple_project_query():

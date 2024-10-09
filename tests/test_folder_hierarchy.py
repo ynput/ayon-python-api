@@ -5,7 +5,6 @@ To run use: pytest --envfile {environment path}.
 Make sure you have set AYON_TOKEN in your environment.
 """
 
-import os
 import pytest
 
 from ayon_api.operations import (
@@ -190,7 +189,10 @@ def test_product_duplicated_names(
 
 
 @pytest.mark.parametrize(
-    "folder_name, product_name, version_name, representation_name, num_of_versions, num_of_representations",
+    (
+        "folder_name, product_name, version_name, representation_name,"
+        " num_of_versions, num_of_representations"
+    ),
     [
         ("whole_hierarchy", "modelMain", "version", "representation", 2, 3)
     ]
@@ -387,7 +389,10 @@ def test_delete_folder_with_product(
 
 
 @pytest.mark.parametrize(
-    "folder_name, subfolder_name1, subfolder_name2, count_level1, count_level2",
+    (
+        "folder_name, subfolder_name1, subfolder_name2,"
+        " count_level1, count_level2"
+    ),
     [
         ("folder_with_subfolders1", "subfolder", "shot", 2, 3),
         ("folder_with_subfolders2", "subfolder", "shot", 3, 4),
@@ -402,8 +407,9 @@ def test_subfolder_hierarchy(
     count_level2
 ):
     """Creates three levels of folder hierarchy and product in the last one.
-    Tries creating products with duplicated names and checks raising exceptions.
-    After creation of every product is checked if the product was really created.
+    Tries creating products with duplicated names and checks raising
+    exceptions. After creation of every product is checked if the product
+    was really created.
     """
     project_name = project_entity_fixture["name"]
     s = OperationsSession()
