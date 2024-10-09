@@ -2428,12 +2428,13 @@ class ServerAPI(object):
         dst_dirpath = os.path.dirname(dst_filepath)
         os.makedirs(dst_dirpath, exist_ok=True)
 
-        url = self.get_addon_url(
+        endpoint = self.get_addon_endpoint(
             addon_name,
             addon_version,
             "private",
             filename
         )
+        url = f"{self._base_url}/{endpoint}"
         self.download_file(
             url, dst_filepath, chunk_size=chunk_size, progress=progress
         )
@@ -3246,7 +3247,7 @@ class ServerAPI(object):
         if project_name:
             args = (project_name, )
 
-        endpoint = self.get_addon_url(
+        endpoint = self.get_addon_endpoint(
             addon_name, addon_version, "schema", *args
         )
         result = self.get(endpoint)
