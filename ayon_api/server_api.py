@@ -8177,7 +8177,7 @@ class ServerAPI(object):
                 body = json.loads(
                     json.dumps(operation, default=entity_data_json_default)
                 )
-            except:
+            except (TypeError, ValueError):
                 raise ValueError("Couldn't json parse body: {}".format(
                     json.dumps(
                         operation, indent=4, default=failed_json_default
