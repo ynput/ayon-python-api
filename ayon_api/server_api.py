@@ -16,6 +16,7 @@ import uuid
 import warnings
 import itertools
 from contextlib import contextmanager
+from typing import Optional
 
 try:
     from http import HTTPStatus
@@ -1323,9 +1324,8 @@ class ServerAPI(object):
         return new_response
 
     def raw_post(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [POST] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [POST] {}".format(url))
         return self._do_rest_request(
             RequestTypes.post,
             url,
@@ -1333,9 +1333,8 @@ class ServerAPI(object):
         )
 
     def raw_put(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [PUT] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [PUT] {}".format(url))
         return self._do_rest_request(
             RequestTypes.put,
             url,
@@ -1343,9 +1342,8 @@ class ServerAPI(object):
         )
 
     def raw_patch(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [PATCH] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [PATCH] {}".format(url))
         return self._do_rest_request(
             RequestTypes.patch,
             url,
@@ -1353,9 +1351,8 @@ class ServerAPI(object):
         )
 
     def raw_get(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [GET] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [GET] {}".format(url))
         return self._do_rest_request(
             RequestTypes.get,
             url,
@@ -1363,9 +1360,8 @@ class ServerAPI(object):
         )
 
     def raw_delete(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [DELETE] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [DELETE] {}".format(url))
         return self._do_rest_request(
             RequestTypes.delete,
             url,
@@ -1708,6 +1704,30 @@ class ServerAPI(object):
 
         return response.data
 
+    def _endpoint_to_url(
+        self,
+        endpoint: str,
+        use_rest: Optional[bool] = True
+    ):
+        """Cleanup endpoint and return full url to AYON server.
+
+        If endpoint already starts with server url only slashes are removed.
+
+        Args:
+            endpoint (str): Endpoint to be cleaned.
+            use_rest (Optional[bool]): Use only base server url if set to
+                False, otherwise REST endpoint is used.
+
+        Returns:
+            str: Full url to AYON server.
+
+        """
+        endpoint = endpoint.lstrip("/").rstrip("/")
+        if endpoint.startswith(self._base_url):
+            return endpoint
+        base_url = self._rest_url if use_rest else self._graphql_url
+        return f"{base_url}/{endpoint}"
+
     def _download_file_to_stream(self, url, stream, chunk_size, progress):
         kwargs = {"stream": True}
         if self._session is None:
@@ -1752,9 +1772,8 @@ class ServerAPI(object):
 
         if endpoint.startswith(self._base_url):
             url = endpoint
-        else:
-            endpoint = endpoint.lstrip("/").rstrip("/")
-            url = "{}/{}".format(self._rest_url, endpoint)
+
+        url = self._endpoint_to_url(endpoint)
 
         if progress is None:
             progress = TransferProgress()
@@ -1922,11 +1941,7 @@ class ServerAPI(object):
             requests.Response: Response object
 
         """
-        if endpoint.startswith(self._base_url):
-            url = endpoint
-        else:
-            endpoint = endpoint.lstrip("/").rstrip("/")
-            url = "{}/{}".format(self._rest_url, endpoint)
+        url = self._endpoint_to_url(endpoint)
 
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
