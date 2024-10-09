@@ -16,6 +16,7 @@ import uuid
 import warnings
 import itertools
 from contextlib import contextmanager
+from typing import Optional
 
 try:
     from http import HTTPStatus
@@ -1323,9 +1324,8 @@ class ServerAPI(object):
         return new_response
 
     def raw_post(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [POST] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [POST] {}".format(url))
         return self._do_rest_request(
             RequestTypes.post,
             url,
@@ -1333,9 +1333,8 @@ class ServerAPI(object):
         )
 
     def raw_put(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [PUT] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [PUT] {}".format(url))
         return self._do_rest_request(
             RequestTypes.put,
             url,
@@ -1343,9 +1342,8 @@ class ServerAPI(object):
         )
 
     def raw_patch(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [PATCH] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [PATCH] {}".format(url))
         return self._do_rest_request(
             RequestTypes.patch,
             url,
@@ -1353,9 +1351,8 @@ class ServerAPI(object):
         )
 
     def raw_get(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [GET] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [GET] {}".format(url))
         return self._do_rest_request(
             RequestTypes.get,
             url,
@@ -1363,9 +1360,8 @@ class ServerAPI(object):
         )
 
     def raw_delete(self, entrypoint, **kwargs):
-        entrypoint = entrypoint.lstrip("/").rstrip("/")
-        self.log.debug("Executing [DELETE] {}".format(entrypoint))
-        url = "{}/{}".format(self._rest_url, entrypoint)
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug("Executing [DELETE] {}".format(url))
         return self._do_rest_request(
             RequestTypes.delete,
             url,
@@ -1708,6 +1704,30 @@ class ServerAPI(object):
 
         return response.data
 
+    def _endpoint_to_url(
+        self,
+        endpoint: str,
+        use_rest: Optional[bool] = True
+    ):
+        """Cleanup endpoint and return full url to AYON server.
+
+        If endpoint already starts with server url only slashes are removed.
+
+        Args:
+            endpoint (str): Endpoint to be cleaned.
+            use_rest (Optional[bool]): Use only base server url if set to
+                False, otherwise REST endpoint is used.
+
+        Returns:
+            str: Full url to AYON server.
+
+        """
+        endpoint = endpoint.lstrip("/").rstrip("/")
+        if endpoint.startswith(self._base_url):
+            return endpoint
+        base_url = self._rest_url if use_rest else self._graphql_url
+        return f"{base_url}/{endpoint}"
+
     def _download_file_to_stream(self, url, stream, chunk_size, progress):
         kwargs = {"stream": True}
         if self._session is None:
@@ -1752,9 +1772,8 @@ class ServerAPI(object):
 
         if endpoint.startswith(self._base_url):
             url = endpoint
-        else:
-            endpoint = endpoint.lstrip("/").rstrip("/")
-            url = "{}/{}".format(self._rest_url, endpoint)
+
+        url = self._endpoint_to_url(endpoint)
 
         if progress is None:
             progress = TransferProgress()
@@ -1922,11 +1941,7 @@ class ServerAPI(object):
             requests.Response: Response object
 
         """
-        if endpoint.startswith(self._base_url):
-            url = endpoint
-        else:
-            endpoint = endpoint.lstrip("/").rstrip("/")
-            url = "{}/{}".format(self._rest_url, endpoint)
+        url = self._endpoint_to_url(endpoint)
 
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
@@ -2337,15 +2352,15 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_addon_url(self, addon_name, addon_version, *subpaths):
-        """Calculate url to addon route.
+    def get_addon_endpoint(self, addon_name, addon_version, *subpaths):
+        """Calculate endpoint to addon route.
 
         Examples:
 
             >>> api = ServerAPI("https://your.url.com")
             >>> api.get_addon_url(
             ...     "example", "1.0.0", "private", "my.zip")
-            'https://your.url.com/addons/example/1.0.0/private/my.zip'
+            'addons/example/1.0.0/private/my.zip'
 
         Args:
             addon_name (str): Name of addon.
@@ -2360,12 +2375,40 @@ class ServerAPI(object):
         ending = ""
         if subpaths:
             ending = "/{}".format("/".join(subpaths))
-        return "{}/addons/{}/{}{}".format(
-            self._base_url,
+        return "addons/{}/{}{}".format(
             addon_name,
             addon_version,
             ending
         )
+
+    def get_addon_url(
+        self, addon_name, addon_version, *subpaths, use_rest=True
+    ):
+        """Calculate url to addon route.
+
+        Examples:
+
+            >>> api = ServerAPI("https://your.url.com")
+            >>> api.get_addon_url(
+            ...     "example", "1.0.0", "private", "my.zip")
+            'https://your.url.com/api/addons/example/1.0.0/private/my.zip'
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            *subpaths (str): Any amount of subpaths that are added to
+                addon url.
+            use_rest (Optional[bool]): Use rest endpoint.
+
+        Returns:
+            str: Final url.
+
+        """
+        endpoint = self.get_addon_endpoint(
+            addon_name, addon_version, *subpaths
+        )
+        url_base = self._base_url if use_rest else self._rest_url
+        return f"{url_base}/{endpoint}"
 
     def download_addon_private_file(
         self,
@@ -2404,12 +2447,13 @@ class ServerAPI(object):
         dst_dirpath = os.path.dirname(dst_filepath)
         os.makedirs(dst_dirpath, exist_ok=True)
 
-        url = self.get_addon_url(
+        endpoint = self.get_addon_endpoint(
             addon_name,
             addon_version,
             "private",
             filename
         )
+        url = f"{self._base_url}/{endpoint}"
         self.download_file(
             url, dst_filepath, chunk_size=chunk_size, progress=progress
         )
@@ -3222,7 +3266,7 @@ class ServerAPI(object):
         if project_name:
             args = (project_name, )
 
-        endpoint = self.get_addon_url(
+        endpoint = self.get_addon_endpoint(
             addon_name, addon_version, "schema", *args
         )
         result = self.get(endpoint)

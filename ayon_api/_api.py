@@ -780,8 +780,8 @@ def dispatch_event(*args, **kwargs):
         sender (Optional[str]): Sender of event.
         event_hash (Optional[str]): Event hash.
         project_name (Optional[str]): Project name.
-        username (Optional[str]): Username which triggered event.
         depends_on (Optional[str]): Add dependency to another event.
+        username (Optional[str]): Username which triggered event.
         description (Optional[str]): Description of event.
         summary (Optional[dict[str, Any]]): Summary of event that can be used
             for simple filtering on listeners.
@@ -1155,6 +1155,30 @@ def get_addons_info(*args, **kwargs):
     return con.get_addons_info(*args, **kwargs)
 
 
+def get_addon_endpoint(*args, **kwargs):
+    """Calculate endpoint to addon route.
+
+    Examples:
+
+        >>> api = ServerAPI("https://your.url.com")
+        >>> api.get_addon_url(
+        ...     "example", "1.0.0", "private", "my.zip")
+        'addons/example/1.0.0/private/my.zip'
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        *subpaths (str): Any amount of subpaths that are added to
+            addon url.
+
+    Returns:
+        str: Final url.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addon_endpoint(*args, **kwargs)
+
+
 def get_addon_url(*args, **kwargs):
     """Calculate url to addon route.
 
@@ -1163,13 +1187,14 @@ def get_addon_url(*args, **kwargs):
         >>> api = ServerAPI("https://your.url.com")
         >>> api.get_addon_url(
         ...     "example", "1.0.0", "private", "my.zip")
-        'https://your.url.com/addons/example/1.0.0/private/my.zip'
+        'https://your.url.com/api/addons/example/1.0.0/private/my.zip'
 
     Args:
         addon_name (str): Name of addon.
         addon_version (str): Version of addon.
         *subpaths (str): Any amount of subpaths that are added to
             addon url.
+        use_rest (Optional[bool]): Use rest endpoint.
 
     Returns:
         str: Final url.
