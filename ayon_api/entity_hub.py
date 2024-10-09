@@ -2,9 +2,16 @@ import re
 import copy
 import collections
 from abc import ABC, abstractmethod
+import typing
 
 from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
+
+if typing.TYPE_CHECKING:
+    from typing import Literal
+
+    StatusState = Literal["not_started", "in_progress", "done", "blocked"]
+    EntityType = Literal["project", "folder", "task"]
 
 
 class _CustomNone(object):
@@ -129,8 +136,8 @@ class EntityHub(object):
             Use attribute schema to validate values on entities.
 
         Args:
-            entity_type (Literal["project", "folder", "task"]): Entity type
-                for which should be attributes received.
+            entity_type (EntityType): Entity type for which should
+                be attributes received.
 
         Returns:
             Dict[str, Dict[str, Any]]: Attribute schemas that are available
@@ -1247,7 +1254,7 @@ class BaseEntity(ABC):
         """Entity type coresponding to server.
 
         Returns:
-            Literal[project, folder, task]: Entity type.
+            EntityType: Entity type.
 
         """
         pass
@@ -1604,8 +1611,7 @@ class ProjectStatus:
     Args:
         name (str): Name of the status. e.g. 'In progress'
         short_name (Optional[str]): Short name of the status. e.g. 'IP'
-        state (Optional[Literal[not_started, in_progress, done, blocked]]): A
-            state of the status.
+        state (Optional[StatusState]): A state of the status.
         icon (Optional[str]): Icon of the status. e.g. 'play_arrow'.
         color (Optional[str]): Color of the status. e.g. '#eeeeee'.
         index (Optional[int]): Index of the status.
@@ -1864,8 +1870,7 @@ class ProjectStatus:
         """Get state of project status.
 
         Return:
-            Literal[not_started, in_progress, done, blocked]: General
-                state of status.
+            StatusState: General state of status.
 
         """
         return self._state
@@ -1874,8 +1879,7 @@ class ProjectStatus:
         """Set color of project status.
 
         Args:
-            state (Literal[not_started, in_progress, done, blocked]): General
-                state of status.
+            state (StatusState): General state of status.
 
         """
         if state not in self.valid_states:
@@ -2055,8 +2059,7 @@ class _ProjectStatuses:
         Args:
             name (str): Name of the status. e.g. 'In progress'
             short_name (Optional[str]): Short name of the status. e.g. 'IP'
-            state (Optional[Literal[not_started, in_progress, done, blocked]]): A
-                state of the status.
+            state (Optional[StatusState]): A state of the status.
             icon (Optional[str]): Icon of the status. e.g. 'play_arrow'.
             color (Optional[str]): Color of the status. e.g. '#eeeeee'.
 
