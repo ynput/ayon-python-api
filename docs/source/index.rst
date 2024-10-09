@@ -43,7 +43,7 @@ Python API
 * `API Reference <./ayon_api.html>`_
 ------------------------------------
 
-* `Github Repository <https://github.com/ynput/ayon-python-api'>`_
+* `Github Repository <https://github.com/ynput/ayon-python-api>`_
 ------------------------------------------------------------------
 
 Miscellaneous
