@@ -1933,10 +1933,10 @@ class ProjectStatus:
         """Get scope of the status.
 
         Returns:
-            List[str]: Scope of the status.
+            Set[str]: Scope of the status.
 
         """
-        return list(self._scope)
+        return set(self._scope)
 
     def set_scope(self, scope):
         """Get scope of the status.
@@ -2031,7 +2031,7 @@ class ProjectStatus:
             "state": self.state,
             "icon": self.icon,
             "color": self.color,
-            "scope": list(self.scope),
+            "scope": list(self._scope),
         }
         if (
             not self._is_new
