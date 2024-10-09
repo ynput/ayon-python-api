@@ -2366,7 +2366,9 @@ class ServerAPI(object):
             ending
         )
 
-    def get_addon_url(self, addon_name, addon_version, *subpaths):
+    def get_addon_url(
+        self, addon_name, addon_version, *subpaths, use_rest=True
+    ):
         """Calculate url to addon route.
 
         Examples:
@@ -2381,6 +2383,7 @@ class ServerAPI(object):
             addon_version (str): Version of addon.
             *subpaths (str): Any amount of subpaths that are added to
                 addon url.
+            use_rest (Optional[bool]): Use rest endpoint.
 
         Returns:
             str: Final url.
@@ -2389,7 +2392,8 @@ class ServerAPI(object):
         endpoint = self.get_addon_endpoint(
             addon_name, addon_version, *subpaths
         )
-        return f"{self._base_url}/{endpoint}"
+        url_base = self._base_url if use_rest else self._rest_url
+        return f"{url_base}/{endpoint}"
 
     def download_addon_private_file(
         self,
