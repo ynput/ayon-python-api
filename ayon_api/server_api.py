@@ -7009,6 +7009,7 @@ class ServerAPI(object):
 
         for parsed_data in query.continuous_query(self):
             for workfile_info in parsed_data["project"]["workfiles"]:
+                self._convert_entity_data(workfile_info)
                 yield workfile_info
 
     def get_workfile_info(
