@@ -783,8 +783,8 @@ def dispatch_event(*args, **kwargs):
         depends_on (Optional[str]): Add dependency to another event.
         username (Optional[str]): Username which triggered event.
         description (Optional[str]): Description of event.
-        summary (Optional[dict[str, Any]]): Summary of event that can be used
-            for simple filtering on listeners.
+        summary (Optional[dict[str, Any]]): Summary of event that can
+            be used for simple filtering on listeners.
         payload (Optional[dict[str, Any]]): Full payload of event data with
             all details.
         finished (Optional[bool]): Mark event as finished on dispatch.
@@ -875,7 +875,8 @@ def download_file_to_stream(*args, **kwargs):
 
     Args:
         endpoint (str): Endpoint or URL to file that should be downloaded.
-        stream (Union[io.BytesIO, BinaryIO]): Stream where output will be stored.
+        stream (Union[io.BytesIO, BinaryIO]): Stream where output will
+            be stored.
         chunk_size (Optional[int]): Size of chunks that are received
             in single loop.
         progress (Optional[TransferProgress]): Object that gives ability
@@ -2392,8 +2393,8 @@ def get_folders(*args, **kwargs):
     """Query folders from server.
 
     Todos:
-        Folder name won't be unique identifier, so we should add folder path
-            filtering.
+        Folder name won't be unique identifier, so we should add
+            folder path filtering.
 
     Notes:
         Filter 'active' don't have direct filter in GraphQl.

@@ -44,7 +44,6 @@ class ServerEvent(object):
             "user": self.username,
             "dependencies": copy.deepcopy(self.dependencies),
             "description": self.description,
-            "description": self.description,
             "summary": copy.deepcopy(self.summary),
             "payload": self.payload,
             "finished": self.finished,

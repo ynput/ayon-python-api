@@ -22,8 +22,8 @@ import inspect
 for module_name in ("requests", "unidecode"):
     sys.modules[module_name] = object()
 
-import ayon_api
-from ayon_api import ServerAPI
+import ayon_api  # noqa: E402
+from ayon_api import ServerAPI  # noqa: E402
 
 EXCLUDED_METHODS = {
     "get_default_service_username",
@@ -52,7 +52,7 @@ def prepare_init_without_api(init_filepath):
     with open(init_filepath, "r") as stream:
         content = stream.read()
 
-    api_regex = re.compile("from \._api import \((?P<functions>[^\)]*)\)")
+    api_regex = re.compile(r"from \._api import \((?P<functions>[^\)]*)\)")
     api_imports = api_regex.search(content)
     start, end = api_imports.span()
     api_imports_text = content[start:end]
@@ -66,7 +66,7 @@ def prepare_init_without_api(init_filepath):
         f'"{name}"' for name in function_names
     }
 
-    all_regex = re.compile("__all__ = \([^\)]*\)")
+    all_regex = re.compile(r"__all__ = \([^\)]*\)")
     all_content = all_regex.search(content)
     start, end = all_content.span()
     all_content_text = content[start:end]
@@ -224,7 +224,7 @@ def main():
         print(new_content, file=stream)
 
     # find all functions and classes available in '_api.py'
-    func_regex = re.compile("^(def|class) (?P<name>[^\(]*)(\(|:).*")
+    func_regex = re.compile(r"^(def|class) (?P<name>[^\(]*)(\(|:).*")
     func_names = []
     for line in new_content.split("\n"):
         result = func_regex.search(line)

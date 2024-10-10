@@ -1277,7 +1277,11 @@ class ServerAPI(object):
                 # Server may be restarting
                 new_response = RestApiResponse(
                     None,
-                    {"detail": "Unable to connect the server. Connection refused"}
+                    {
+                        "detail": (
+                            "Unable to connect the server. Connection refused"
+                        )
+                    }
                 )
 
             except requests.exceptions.Timeout:
@@ -1296,7 +1300,11 @@ class ServerAPI(object):
 
                 new_response = RestApiResponse(
                     None,
-                    {"detail": "Unable to connect the server. Connection error"}
+                    {
+                        "detail": (
+                            "Unable to connect the server. Connection error"
+                        )
+                    }
                 )
 
             time.sleep(0.1)
@@ -1565,8 +1573,8 @@ class ServerAPI(object):
             depends_on (Optional[str]): Add dependency to another event.
             username (Optional[str]): Username which triggered event.
             description (Optional[str]): Description of event.
-            summary (Optional[dict[str, Any]]): Summary of event that can be used
-                for simple filtering on listeners.
+            summary (Optional[dict[str, Any]]): Summary of event that can
+                be used for simple filtering on listeners.
             payload (Optional[dict[str, Any]]): Full payload of event data with
                 all details.
             finished (Optional[bool]): Mark event as finished on dispatch.
@@ -1633,7 +1641,7 @@ class ServerAPI(object):
         at least one unfinished event with target topic, when set to 'True'.
         This helps when order of events matter and more than one process using
         the same target is running at the same time.
-        
+
         Make sure the new event has updated status to '"finished"' status
         when you're done with logic
 
@@ -1760,7 +1768,8 @@ class ServerAPI(object):
 
         Args:
             endpoint (str): Endpoint or URL to file that should be downloaded.
-            stream (Union[io.BytesIO, BinaryIO]): Stream where output will be stored.
+            stream (Union[io.BytesIO, BinaryIO]): Stream where output will
+                be stored.
             chunk_size (Optional[int]): Size of chunks that are received
                 in single loop.
             progress (Optional[TransferProgress]): Object that gives ability
@@ -1851,7 +1860,7 @@ class ServerAPI(object):
 
         Yields:
             bytes: Chunk of file.
-    
+
         """
         # Get size of file
         file_stream.seek(0, io.SEEK_END)
@@ -1984,7 +1993,7 @@ class ServerAPI(object):
 
         Returns:
             requests.Response: Response object
-        
+
         """
         if progress is None:
             progress = TransferProgress()
@@ -2204,7 +2213,7 @@ class ServerAPI(object):
         """Get attribute schemas available for an entity type.
 
         Example::
-        
+
             ```
             # Example attribute schema
             {
@@ -2855,7 +2864,7 @@ class ServerAPI(object):
         """Server bundles with basic information.
 
         This is example output::
-        
+
             {
                 "bundles": [
                     {
@@ -4188,8 +4197,8 @@ class ServerAPI(object):
         """Query folders from server.
 
         Todos:
-            Folder name won't be unique identifier, so we should add folder path
-                filtering.
+            Folder name won't be unique identifier, so we should add
+                folder path filtering.
 
         Notes:
             Filter 'active' don't have direct filter in GraphQl.
@@ -6655,7 +6664,7 @@ class ServerAPI(object):
 
     def get_representation_parents(
         self,
-        project_name, 
+        project_name,
         representation_id,
         project_fields=None,
         folder_fields=None,
@@ -6991,7 +7000,7 @@ class ServerAPI(object):
                 "attrib.{}".format(attr)
                 for attr in self.get_attributes_for_type("workfile")
             }
-        
+
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
                 (
@@ -8169,7 +8178,7 @@ class ServerAPI(object):
                 body = json.loads(
                     json.dumps(operation, default=entity_data_json_default)
                 )
-            except:
+            except (TypeError, ValueError):
                 raise ValueError("Couldn't json parse body: {}".format(
                     json.dumps(
                         operation, indent=4, default=failed_json_default

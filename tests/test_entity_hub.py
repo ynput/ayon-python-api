@@ -486,7 +486,7 @@ def test_create_delete_with_duplicated_names(
     subfolder_name,
     num_of_subfolders
 ):
-    """Creates two folders with duplicated names 
+    """Creates two folders with duplicated names
     and delete one of them before commit.
     Exception should not be raised.
     """
@@ -499,7 +499,7 @@ def test_create_delete_with_duplicated_names(
     for folder_number in range(num_of_subfolders):
         subfolder = e.add_new_folder(
             "Folder",
-            parent_id=folder1["id"], 
+            parent_id=folder1["id"],
             name=f"{subfolder_name}{folder_number:03}"
         )
         subfolders.append(subfolder)
@@ -508,7 +508,7 @@ def test_create_delete_with_duplicated_names(
         # create and delete folder with same name
         subfolder = e.add_new_folder(
             "Folder",
-            parent_id=folder1["id"], 
+            parent_id=folder1["id"],
             name=f"{subfolder_name}{folder_number:03}"
         )
         e.delete_entity(subfolder)
@@ -565,7 +565,8 @@ def test_create_delete_with_duplicated_names(
 #
 #     # raises an exception (duplicated names)
 #     """
-#     # switch the parent folders - duplicated names exception shouldn't be raised
+#     # switch the parent folders
+#     # - duplicated names exception shouldn't be raised
 #     e.set_entity_parent(subfolders[0]["id"], folders[1]["id"])
 #     e.set_entity_parent(subfolders[1]["id"], folders[0]["id"])
 #
@@ -598,7 +599,10 @@ def test_create_delete_with_duplicated_names(
 #
 #
 # @pytest.mark.parametrize(
-#     "parent_folder_name, folder_name, subfolder_name, num_of_folders, num_of_subfolders",
+#     (
+#         "parent_folder_name, folder_name, subfolder_name,"
+#         " num_of_folders, num_of_subfolders"
+#     ),
 #     [
 #         ("entity_hub_test", "folder", "subfolder", 2, 3),
 #     ]
@@ -648,7 +652,9 @@ def test_create_delete_with_duplicated_names(
 #     # move all subfolders from one folder to the next one
 #     for index, subfolder_id in enumerate(subfolder_ids):
 #         # next folder (for last folder -> first folder)
-#         new_parent_id = folder_ids[(index // num_of_subfolders + 1) % num_of_folders]
+#         new_parent_id = folder_ids[
+#             (index // num_of_subfolders + 1) % num_of_folders
+#         ]
 #
 #         # test for me, if new_parent_id is generated correctly
 #         subfolder = e.get_folder_by_id(subfolder_id)
@@ -673,9 +679,16 @@ def test_create_delete_with_duplicated_names(
 #         assert get_folders(
 #             PROJECT_NAME,
 #             folder_ids=subfolder_id,
-#             parent_ids=folder_ids[(index // num_of_subfolders + 1) % num_of_folders]) is not None
-#         # assert subfolder_id not in my_get_folder_ids(folder_ids[i // num_of_subfolders])
-#         # assert subfolder_id in my_get_folder_ids(folder_ids[(i // num_of_subfolders + 1) % num_of_folders])
+#             parent_ids=folder_ids[
+#                 (index // num_of_subfolders + 1) % num_of_folders
+#             ]
+#         ) is not None
+#         # assert subfolder_id not in my_get_folder_ids(
+#         #     folder_ids[i // num_of_subfolders]
+#         # )
+#         # assert subfolder_id in my_get_folder_ids(
+#         #     folder_ids[(i // num_of_subfolders + 1) % num_of_folders]
+#         # )
 #     """
 #
 #     # e.delete_entity(parent_folder)
