@@ -1,7 +1,7 @@
 """Tests of server API.
 
 To run use: pytest --envfile {environment path}.
-Make sure you have set AYON_TOKEN in your environment. 
+Make sure you have set AYON_TOKEN in your environment.
 """
 
 import os
@@ -21,7 +21,7 @@ AYON_REST_URL = "{}/api".format(AYON_BASE_URL)
 
 
 def test_close_connection():
-    con = get_server_api_connection()
+    _con = get_server_api_connection()
     assert is_connection_created() is True
     close_connection()
     assert is_connection_created() is False

@@ -72,7 +72,7 @@ class GraphQlQuery:
 
     Args:
         name (str): Name of query.
-        
+
     """
     offset = 2
 
