@@ -7,6 +7,8 @@ from .utils import (
     is_token_valid,
     validate_url,
     login_to_server,
+    take_web_action_event,
+    abort_web_action_event,
 )
 from .server_api import (
     RequestTypes,
@@ -104,6 +106,7 @@ from ._api import (
     get_bundles,
     create_bundle,
     update_bundle,
+    check_bundle_compatibility,
     delete_bundle,
     get_project_anatomy_presets,
     get_default_anatomy_preset_name,
@@ -239,6 +242,8 @@ __all__ = (
     "is_token_valid",
     "validate_url",
     "login_to_server",
+    "take_web_action_event",
+    "abort_web_action_event",
 
     "RequestTypes",
     "ServerAPI",
@@ -333,6 +338,7 @@ __all__ = (
     "get_bundles",
     "create_bundle",
     "update_bundle",
+    "check_bundle_compatibility",
     "delete_bundle",
     "get_project_anatomy_presets",
     "get_default_anatomy_preset_name",

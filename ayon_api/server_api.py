@@ -2902,12 +2902,31 @@ class ServerAPI(object):
         installer_version,
         dependency_packages=None,
         is_production=None,
-        is_staging=None
+        is_staging=None,
+        is_dev=None,
+        dev_active_user=None,
+        dev_addons_config=None,
     ):
         """Create bundle on server.
 
         Bundle cannot be changed once is created. Only isProduction, isStaging
-        and dependency packages can change after creation.
+        and dependency packages can change after creation. In case dev bundle
+        is created, it is possible to change anything, but it is not possible
+        to mark bundle as dev and production or staging at the same time.
+
+        Development addon config can define custom path to client code. It is
+        used only for dev bundles.
+
+        Example of 'dev_addons_config'::
+
+            ```json
+            {
+                "core": {
+                    "enabled": true,
+                    "path": "/path/to/ayon-core/client"
+                }
+            }
+            ```
 
         Args:
             name (str): Name of bundle.
@@ -2919,6 +2938,11 @@ class ServerAPI(object):
             is_production (Optional[bool]): Bundle will be marked as
                 production.
             is_staging (Optional[bool]): Bundle will be marked as staging.
+            is_dev (Optional[bool]): Bundle will be marked as dev.
+            dev_active_user (Optional[str]): Username that will be assigned
+                to dev bundle. Can be used only if 'is_dev' is set to 'True'.
+            dev_addons_config (Optional[dict[str, Any]]): Configuration for
+                dev addons. Can be used only if 'is_dev' is set to 'True'.
 
         """
         body = {
@@ -2926,10 +2950,14 @@ class ServerAPI(object):
             "installerVersion": installer_version,
             "addons": addon_versions,
         }
+
         for key, value in (
             ("dependencyPackages", dependency_packages),
             ("isProduction", is_production),
             ("isStaging", is_staging),
+            ("isDev", is_dev),
+            ("activeUser", dev_active_user),
+            ("addonDevelopment", dev_addons_config),
         ):
             if value is not None:
                 body[key] = value
@@ -2940,9 +2968,14 @@ class ServerAPI(object):
     def update_bundle(
         self,
         bundle_name,
+        addon_versions=None,
+        installer_version=None,
         dependency_packages=None,
         is_production=None,
-        is_staging=None
+        is_staging=None,
+        is_dev=None,
+        dev_active_user=None,
+        dev_addons_config=None,
     ):
         """Update bundle on server.
 
@@ -2952,19 +2985,33 @@ class ServerAPI(object):
 
         Args:
             bundle_name (str): Name of bundle.
+            addon_versions (Optional[dict[str, str]]): Addon versions,
+                possible only for dev bundles.
+            installer_version (Optional[str]): Installer version, possible
+                only for dev bundles.
             dependency_packages (Optional[dict[str, str]]): Dependency pacakge
                 names that should be used with the bundle.
             is_production (Optional[bool]): Bundle will be marked as
                 production.
             is_staging (Optional[bool]): Bundle will be marked as staging.
+            is_dev (Optional[bool]): Bundle will be marked as dev.
+            dev_active_user (Optional[str]): Username that will be assigned
+                to dev bundle. Can be used only for dev bundles.
+            dev_addons_config (Optional[dict[str, Any]]): Configuration for
+                dev addons. Can be used only for dev bundles.
 
         """
         body = {
             key: value
             for key, value in (
+                ("installerVersion", installer_version),
+                ("addons", addon_versions),
                 ("dependencyPackages", dependency_packages),
                 ("isProduction", is_production),
                 ("isStaging", is_staging),
+                ("isDev", is_dev),
+                ("activeUser", dev_active_user),
+                ("addonDevelopment", dev_addons_config),
             )
             if value is not None
         }
@@ -2973,6 +3020,63 @@ class ServerAPI(object):
             **body
         )
         response.raise_for_status()
+
+    def check_bundle_compatibility(
+        self,
+        name,
+        addon_versions,
+        installer_version,
+        dependency_packages=None,
+        is_production=None,
+        is_staging=None,
+        is_dev=None,
+        dev_active_user=None,
+        dev_addons_config=None,
+    ):
+        """Check bundle compatibility.
+
+        Can be used as per-flight validation before creating bundle.
+
+        Args:
+            name (str): Name of bundle.
+            addon_versions (dict[str, str]): Addon versions.
+            installer_version (Union[str, None]): Installer version.
+            dependency_packages (Optional[dict[str, str]]): Dependency
+                package names. Keys are platform names and values are name of
+                packages.
+            is_production (Optional[bool]): Bundle will be marked as
+                production.
+            is_staging (Optional[bool]): Bundle will be marked as staging.
+            is_dev (Optional[bool]): Bundle will be marked as dev.
+            dev_active_user (Optional[str]): Username that will be assigned
+                to dev bundle. Can be used only if 'is_dev' is set to 'True'.
+            dev_addons_config (Optional[dict[str, Any]]): Configuration for
+                dev addons. Can be used only if 'is_dev' is set to 'True'.
+
+        Returns:
+            Dict[str, Any]: Server response, with 'success' and 'issues'.
+
+        """
+        body = {
+            "name": name,
+            "installerVersion": installer_version,
+            "addons": addon_versions,
+        }
+
+        for key, value in (
+            ("dependencyPackages", dependency_packages),
+            ("isProduction", is_production),
+            ("isStaging", is_staging),
+            ("isDev", is_dev),
+            ("activeUser", dev_active_user),
+            ("addonDevelopment", dev_addons_config),
+        ):
+            if value is not None:
+                body[key] = value
+
+        response = self.post("bundles/check", **body)
+        response.raise_for_status()
+        return response.data
 
     def delete_bundle(self, bundle_name):
         """Delete bundle from server.
