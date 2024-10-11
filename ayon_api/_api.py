@@ -1530,7 +1530,23 @@ def create_bundle(*args, **kwargs):
     """Create bundle on server.
 
     Bundle cannot be changed once is created. Only isProduction, isStaging
-    and dependency packages can change after creation.
+    and dependency packages can change after creation. In case dev bundle
+    is created, it is possible to change anything, but it is not possible
+    to mark bundle as dev and production or staging at the same time.
+
+    Development addon config can define custom path to client code. It is
+    used only for dev bundles.
+
+    Example of 'dev_addons_config'::
+
+        ```json
+        {
+            "core": {
+                "enabled": true,
+                "path": "/path/to/ayon-core/client"
+            }
+        }
+        ```
 
     Args:
         name (str): Name of bundle.
@@ -1542,6 +1558,11 @@ def create_bundle(*args, **kwargs):
         is_production (Optional[bool]): Bundle will be marked as
             production.
         is_staging (Optional[bool]): Bundle will be marked as staging.
+        is_dev (Optional[bool]): Bundle will be marked as dev.
+        dev_active_user (Optional[str]): Username that will be assigned
+            to dev bundle. Can be used only if 'is_dev' is set to 'True'.
+        dev_addons_config (Optional[dict[str, Any]]): Configuration for
+            dev addons. Can be used only if 'is_dev' is set to 'True'.
 
     """
     con = get_server_api_connection()
@@ -1557,15 +1578,53 @@ def update_bundle(*args, **kwargs):
 
     Args:
         bundle_name (str): Name of bundle.
+        addon_versions (Optional[dict[str, str]]): Addon versions,
+            possible only for dev bundles.
+        installer_version (Optional[str]): Installer version, possible
+            only for dev bundles.
         dependency_packages (Optional[dict[str, str]]): Dependency pacakge
             names that should be used with the bundle.
         is_production (Optional[bool]): Bundle will be marked as
             production.
         is_staging (Optional[bool]): Bundle will be marked as staging.
+        is_dev (Optional[bool]): Bundle will be marked as dev.
+        dev_active_user (Optional[str]): Username that will be assigned
+            to dev bundle. Can be used only for dev bundles.
+        dev_addons_config (Optional[dict[str, Any]]): Configuration for
+            dev addons. Can be used only for dev bundles.
 
     """
     con = get_server_api_connection()
     return con.update_bundle(*args, **kwargs)
+
+
+def check_bundle_compatibility(*args, **kwargs):
+    """Check bundle compatibility.
+
+    Can be used as per-flight validation before creating bundle.
+
+    Args:
+        name (str): Name of bundle.
+        addon_versions (dict[str, str]): Addon versions.
+        installer_version (Union[str, None]): Installer version.
+        dependency_packages (Optional[dict[str, str]]): Dependency
+            package names. Keys are platform names and values are name of
+            packages.
+        is_production (Optional[bool]): Bundle will be marked as
+            production.
+        is_staging (Optional[bool]): Bundle will be marked as staging.
+        is_dev (Optional[bool]): Bundle will be marked as dev.
+        dev_active_user (Optional[str]): Username that will be assigned
+            to dev bundle. Can be used only if 'is_dev' is set to 'True'.
+        dev_addons_config (Optional[dict[str, Any]]): Configuration for
+            dev addons. Can be used only if 'is_dev' is set to 'True'.
+
+    Returns:
+        Dict[str, Any]: Server response, with 'success' and 'issues'.
+
+    """
+    con = get_server_api_connection()
+    return con.check_bundle_compatibility(*args, **kwargs)
 
 
 def delete_bundle(*args, **kwargs):
