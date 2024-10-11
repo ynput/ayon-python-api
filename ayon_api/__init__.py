@@ -7,6 +7,8 @@ from .utils import (
     is_token_valid,
     validate_url,
     login_to_server,
+    take_web_action_event,
+    abort_web_action_event,
 )
 from .server_api import (
     RequestTypes,
@@ -239,6 +241,8 @@ __all__ = (
     "is_token_valid",
     "validate_url",
     "login_to_server",
+    "take_web_action_event",
+    "abort_web_action_event",
 
     "RequestTypes",
     "ServerAPI",
