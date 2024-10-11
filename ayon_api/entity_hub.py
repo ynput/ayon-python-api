@@ -586,9 +586,9 @@ class EntityHub(object):
             raise ValueError(
                 "Project \"{}\" was not found.".format(project_name)
             )
-        server_version = self._connection.get_server_version_tuple()
+        major, minor, _, _, _ = self._connection.get_server_version_tuple()
         status_scope_supported = True
-        if server_version < (1, 5):
+        if (major, minor) < (1, 5):
             status_scope_supported = False
         self._project_entity = ProjectEntity.from_entity_data(
             project, self
