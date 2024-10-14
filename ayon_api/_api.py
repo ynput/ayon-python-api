@@ -331,6 +331,20 @@ def get_server_api_connection():
     """
     return GlobalContext.get_server_api_connection()
 
+
+def get_default_settings_variant():
+    """Default variant used for settings.
+
+    Returns:
+        Union[str, None]: name of variant or None.
+
+    """
+    if not GlobalContext.is_connection_created():
+        return _get_default_settings_variant()
+    con = get_server_api_connection()
+    return con.get_default_settings_variant()
+
+
 # ------------------------------------------------
 #     This content is generated automatically.
 # ------------------------------------------------
@@ -496,19 +510,6 @@ def set_client_version(*args, **kwargs):
     """
     con = get_server_api_connection()
     return con.set_client_version(*args, **kwargs)
-
-
-def get_default_settings_variant():
-    """Default variant used for settings.
-
-    Returns:
-        Union[str, None]: name of variant or None.
-
-    """
-    if not GlobalContext.is_connection_created():
-        return _get_default_settings_variant()
-    con = get_server_api_connection()
-    return con.get_default_settings_variant()
 
 
 def set_default_settings_variant(*args, **kwargs):
