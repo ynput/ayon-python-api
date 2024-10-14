@@ -27,6 +27,7 @@ from ayon_api import ServerAPI  # noqa: E402
 
 EXCLUDED_METHODS = {
     "get_default_service_username",
+    "get_default_settings_variant",
     "validate_token",
     "set_token",
     "reset_token",
