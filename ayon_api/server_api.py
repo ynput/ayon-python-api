@@ -6376,7 +6376,7 @@ class ServerAPI(object):
                 representations.
             names_by_version_ids (Optional[Dict[str, Iterable[str]]): Find
                 representations by names and version ids. This filter
-                discard all other filters.
+                discards all other filters.
             statuses (Optional[Iterable[str]]): Representation statuses used
                 for filtering.
             tags (Optional[Iterable[str]]): Representation tags used
