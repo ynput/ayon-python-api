@@ -881,7 +881,7 @@ def abort_web_action_event(
 
     """
     response = requests.post(
-        f"{server_url}/api/actions/take/{action_token}",
+        f"{server_url}/api/actions/abort/{action_token}",
         json={"message": reason},
     )
     response.raise_for_status()
