@@ -3883,9 +3883,23 @@ class ServerAPI(object):
             return None
 
         response = self.get("projects/{}".format(project_name))
-        if response.status == 200:
-            return response.data
-        return None
+        # TODO ignore only error about not existing project
+        if response.status != 200:
+            return None
+        project = response.data
+        # Add fake scope to statuses if not available
+        for status in project["statuses"]:
+            scope = status.get("scope")
+            if scope is None:
+                status["scope"] = [
+                    "folder",
+                    "task",
+                    "product",
+                    "version",
+                    "representation",
+                    "workfile"
+                ]
+        return project
 
     def get_rest_projects(self, active=True, library=None):
         """Query available project entities.

@@ -586,9 +586,15 @@ class EntityHub(object):
             raise ValueError(
                 "Project \"{}\" was not found.".format(project_name)
             )
-
+        major, minor, _, _, _ = self._connection.get_server_version_tuple()
+        status_scope_supported = True
+        if (major, minor) < (1, 5):
+            status_scope_supported = False
         self._project_entity = ProjectEntity.from_entity_data(
             project, self
+        )
+        self._project_entity.set_status_scope_supported(
+            status_scope_supported
         )
 
         self.add_entity(self._project_entity)
@@ -1614,12 +1620,16 @@ class ProjectStatus:
         state (Optional[StatusState]): A state of the status.
         icon (Optional[str]): Icon of the status. e.g. 'play_arrow'.
         color (Optional[str]): Color of the status. e.g. '#eeeeee'.
+        scope (Optional[Iterable[str]]): Scope of the status. e.g. ['folder'].
         index (Optional[int]): Index of the status.
         project_statuses (Optional[_ProjectStatuses]): Project statuses
             wrapper.
 
     """
-    valid_states = ("not_started", "in_progress", "done", "blocked")
+    valid_states = {"not_started", "in_progress", "done", "blocked"}
+    valid_scope = {
+        "folder", "task", "product", "version", "representation", "workfile"
+    }
     color_regex = re.compile(r"#([a-f0-9]{6})$")
     default_state = "in_progress"
     default_color = "#eeeeee"
@@ -1631,6 +1641,7 @@ class ProjectStatus:
         state=None,
         icon=None,
         color=None,
+        scope=None,
         index=None,
         project_statuses=None,
         is_new=None,
@@ -1639,12 +1650,16 @@ class ProjectStatus:
         icon = icon or ""
         state = state or self.default_state
         color = color or self.default_color
+        if scope is None:
+            scope = self.valid_scope
+        scope = set(scope)
         self._name = name
         self._short_name = short_name
         self._icon = icon
         self._slugified_name = None
         self._state = None
         self._color = None
+        self._scope = scope
         self.set_state(state)
         self.set_color(color)
 
@@ -1653,6 +1668,7 @@ class ProjectStatus:
         self._original_icon = icon
         self._original_state = state
         self._original_color = color
+        self._original_scope = set(scope)
         self._original_index = index
 
         self._index = index
@@ -1696,7 +1712,13 @@ class ProjectStatus:
         self._original_icon = self.icon
         self._original_state = self.state
         self._original_color = self.color
+        self._original_scope = self.scope
         self._original_index = self.index
+
+    def is_available_for_entity_type(self, entity_type):
+        if self._scope is None:
+            return True
+        return entity_type in self._scope
 
     @staticmethod
     def slugify_name(name):
@@ -1756,6 +1778,7 @@ class ProjectStatus:
             or self._original_state != self._state
             or self._original_icon != self._icon
             or self._original_color != self._color
+            or self._original_scope != self._scope
         )
 
     def delete(self):
@@ -1910,6 +1933,36 @@ class ProjectStatus:
             raise ValueError("Invalid color value '{}'".format(color))
         self._color = color
 
+    def get_scope(self):
+        """Get scope of the status.
+
+        Returns:
+            Set[str]: Scope of the status.
+
+        """
+        return set(self._scope)
+
+    def set_scope(self, scope):
+        """Get scope of the status.
+
+        Returns:
+            scope (Iterable[str]): Scope of the status.
+
+        """
+        if not isinstance(scope, (list, set, tuple)):
+            raise TypeError(
+                f"Scope must be a list, set, tuple. Got '{type(scope)}'."
+            )
+
+        scope = set(scope)
+        invalid_entity_types = scope - self.valid_scope
+        if invalid_entity_types:
+            raise ValueError("Invalid scope values '{}'".format(
+                ", ".join(invalid_entity_types)
+            ))
+
+        self._scope = scope
+
     name = property(get_name, set_name)
     short_name = property(get_short_name, set_short_name)
     project_statuses = property(get_project_statuses, set_project_statuses)
@@ -1917,6 +1970,7 @@ class ProjectStatus:
     state = property(get_state, set_state)
     color = property(get_color, set_color)
     icon = property(get_icon, set_icon)
+    scope = property(get_scope, set_scope)
 
     def _validate_other_p_statuses(self, other):
         """Validate if other status can be used for move.
@@ -1981,6 +2035,7 @@ class ProjectStatus:
             "state": self.state,
             "icon": self.icon,
             "color": self.color,
+            "scope": list(self._scope),
         }
         if (
             not self._is_new
@@ -2007,6 +2062,7 @@ class ProjectStatus:
             data.get("state"),
             data.get("icon"),
             data.get("color"),
+            data.get("scope"),
             index=index,
             project_statuses=project_statuses
         )
@@ -2030,6 +2086,7 @@ class _ProjectStatuses:
             ProjectStatus.from_data(status, idx, self)
             for idx, status in enumerate(statuses)
         ]
+        self._scope_supported = False
         self._orig_status_length = len(self._statuses)
         self._set_called = False
 
@@ -2053,6 +2110,7 @@ class _ProjectStatuses:
         state=None,
         icon=None,
         color=None,
+        scope=None,
     ):
         """Create project status.
 
@@ -2062,16 +2120,20 @@ class _ProjectStatuses:
             state (Optional[StatusState]): A state of the status.
             icon (Optional[str]): Icon of the status. e.g. 'play_arrow'.
             color (Optional[str]): Color of the status. e.g. '#eeeeee'.
+            scope (Optional[List[str]]): Scope of the status. e.g. ['folder'].
 
         Returns:
             ProjectStatus: Created project status.
 
         """
         status = ProjectStatus(
-            name, short_name, state, icon, color, is_new=True
+            name, short_name, state, icon, color, scope, is_new=True
         )
         self.append(status)
         return status
+
+    def set_status_scope_supported(self, supported: bool):
+        self._scope_supported = supported
 
     def lock(self):
         """Lock statuses.
@@ -2086,10 +2148,15 @@ class _ProjectStatuses:
 
     def to_data(self):
         """Convert to project statuses data."""
-        return [
+        output = [
             status.to_data()
             for status in self._statuses
         ]
+        # Remove scope if is not supported
+        if not self._scope_supported:
+            for item in output:
+                item.pop("scope")
+        return output
 
     def set(self, statuses):
         """Explicitly override statuses.
@@ -2351,9 +2418,9 @@ class ProjectEntity(BaseEntity):
         task_types,
         statuses,
         *args,
-        **kwargs
+        **kwargs,
     ):
-        super(ProjectEntity, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self._project_code = project_code
         self._library_project = library
@@ -2381,6 +2448,9 @@ class ProjectEntity(BaseEntity):
         raise ValueError(
             "Parent of project cannot be set to {}".format(parent)
         )
+
+    def set_status_scope_supported(self, supported: bool):
+        self._statuses_obj.set_status_scope_supported(supported)
 
     parent = property(get_parent, set_parent)
 
@@ -2439,7 +2509,7 @@ class ProjectEntity(BaseEntity):
         return self._statuses_obj.get_status_by_slugified_name(name)
 
     def lock(self):
-        super(ProjectEntity, self).lock()
+        super().lock()
         self._orig_folder_types = copy.deepcopy(self._folder_types)
         self._orig_task_types = copy.deepcopy(self._task_types)
         self._statuses_obj.lock()
@@ -2472,7 +2542,7 @@ class ProjectEntity(BaseEntity):
             attribs=project["ownAttrib"],
             data=project["data"],
             active=project["active"],
-            entity_hub=entity_hub
+            entity_hub=entity_hub,
         )
 
     def to_create_body_data(self):
@@ -2580,6 +2650,12 @@ class FolderEntity(BaseEntity):
             raise ValueError(
                 f"Status {status_name} is not available on project."
             )
+
+        if not status.is_available_for_entity_type("folder"):
+            raise ValueError(
+                f"Status {status_name} is not available for folder."
+            )
+
         self._status = status_name
 
     status = property(get_status, set_status)
@@ -2864,6 +2940,12 @@ class TaskEntity(BaseEntity):
             raise ValueError(
                 f"Status {status_name} is not available on project."
             )
+
+        if not status.is_available_for_entity_type("task"):
+            raise ValueError(
+                f"Status {status_name} is not available for task."
+            )
+
         self._status = status_name
 
     status = property(get_status, set_status)
