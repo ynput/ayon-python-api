@@ -2417,10 +2417,27 @@ class ProjectEntity(BaseEntity):
         folder_types,
         task_types,
         statuses,
-        *args,
-        **kwargs,
+        entity_id=None,
+        parent_id=UNKNOWN_VALUE,
+        name=UNKNOWN_VALUE,
+        attribs=UNKNOWN_VALUE,
+        data=UNKNOWN_VALUE,
+        thumbnail_id=UNKNOWN_VALUE,
+        active=UNKNOWN_VALUE,
+        entity_hub=None,
+        created=None,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            entity_id,
+            parent_id,
+            name,
+            attribs,
+            data,
+            thumbnail_id,
+            active,
+            entity_hub,
+            created
+        )
 
         self._project_code = project_code
         self._library_project = library
@@ -2580,14 +2597,31 @@ class FolderEntity(BaseEntity):
     def __init__(
         self,
         folder_type,
-        *args,
+        entity_id=None,
+        parent_id=UNKNOWN_VALUE,
+        name=UNKNOWN_VALUE,
+        attribs=UNKNOWN_VALUE,
+        data=UNKNOWN_VALUE,
+        thumbnail_id=UNKNOWN_VALUE,
+        active=UNKNOWN_VALUE,
+        entity_hub=None,
+        created=None,
         label=None,
         path=None,
         tags=None,
         status=UNKNOWN_VALUE,
-        **kwargs
     ):
-        super(FolderEntity, self).__init__(*args, **kwargs)
+        super().__init__(
+            entity_id,
+            parent_id,
+            name,
+            attribs,
+            data,
+            thumbnail_id,
+            active,
+            entity_hub,
+            created,
+        )
         # Autofill project as parent of folder if is not yet set
         # - this can be guessed only if folder was just created
         if self.created and self._parent_id is UNKNOWN_VALUE:
@@ -2861,14 +2895,31 @@ class TaskEntity(BaseEntity):
     def __init__(
         self,
         task_type,
-        *args,
+        entity_id=None,
+        parent_id=UNKNOWN_VALUE,
+        name=UNKNOWN_VALUE,
+        attribs=UNKNOWN_VALUE,
+        data=UNKNOWN_VALUE,
+        thumbnail_id=UNKNOWN_VALUE,
+        active=UNKNOWN_VALUE,
+        entity_hub=None,
+        created=None,
         label=None,
         tags=None,
         assignees=None,
         status=UNKNOWN_VALUE,
-        **kwargs
     ):
-        super(TaskEntity, self).__init__(*args, **kwargs)
+        super().__init__(
+            entity_id,
+            parent_id,
+            name,
+            attribs,
+            data,
+            thumbnail_id,
+            active,
+            entity_hub,
+            created,
+        )
 
         if tags is None:
             tags = []
