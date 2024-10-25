@@ -2963,16 +2963,16 @@ class FolderEntity(BaseEntity):
         return cls(
             name=folder["name"],
             folder_type=folder["folderType"],
+            parent_id=parent_id,
             label=folder["label"],
             path=folder["path"],
             status=folder["status"],
             tags=folder["tags"],
-            entity_id=folder["id"],
-            parent_id=parent_id,
-            data=folder.get("data"),
             attribs=folder["ownAttrib"],
-            active=folder["active"],
+            data=folder.get("data"),
             thumbnail_id=folder["thumbnailId"],
+            active=folder["active"],
+            entity_id=folder["id"],
             created=False,
             entity_hub=entity_hub
         )
