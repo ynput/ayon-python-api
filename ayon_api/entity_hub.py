@@ -349,7 +349,7 @@ class EntityHub(object):
         self,
         name: str,
         task_type: str,
-        parent_id: Optional[str] = UNKNOWN_VALUE,
+        folder_id: Optional[str] = UNKNOWN_VALUE,
         label: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
@@ -360,6 +360,7 @@ class EntityHub(object):
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
+        parent_id: Optional[str] = UNKNOWN_VALUE,
     ):
         """Create folder object and add it to entity hub.
 
@@ -367,7 +368,7 @@ class EntityHub(object):
             name (str): Name of entity.
             task_type (str): Type of task. Task type must be available in config
                 of project task types.
-            parent_id (Union[str, None]): Id of parent entity.
+            folder_id (Union[str, None]): Parent folder id.
             label (Optional[str]): Task label.
             status (Optional[str]): Task status.
             tags (Optional[Iterable[str]]): Folder tags.
@@ -380,15 +381,24 @@ class EntityHub(object):
                 not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
+            parent_id (Union[str, None]): DEPRECATED Parent folder id.
 
         Returns:
             TaskEntity: Added task entity.
 
         """
+        if parent_id is not UNKNOWN_VALUE:
+            warnings.warn(
+                "Used deprecated argument 'parent_id'."
+                " Use 'folder_id' instead.",
+                DeprecationWarning
+            )
+            folder_id = parent_id
+
         task_entity = TaskEntity(
             name=name,
             task_type=task_type,
-            parent_id=parent_id,
+            folder_id=folder_id,
             label=label,
             status=status,
             tags=tags,
@@ -3089,7 +3099,7 @@ class TaskEntity(BaseEntity):
         self,
         name: str,
         task_type: str,
-        parent_id: Optional[str] = UNKNOWN_VALUE,
+        folder_id: Optional[str] = UNKNOWN_VALUE,
         label: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
@@ -3104,7 +3114,7 @@ class TaskEntity(BaseEntity):
     ):
         super().__init__(
             name=name,
-            parent_id=parent_id,
+            parent_id=folder_id,
             label=label,
             status=status,
             tags=tags,
@@ -3193,7 +3203,7 @@ class TaskEntity(BaseEntity):
         return cls(
             name=task["name"],
             task_type=task["taskType"],
-            parent_id=task["folderId"],
+            folder_id=task["folderId"],
             label=task["label"],
             status=task["status"],
             tags=task["tags"],
