@@ -285,23 +285,39 @@ class EntityHub(object):
         for entity in self._entities_by_id.values():
             yield entity
 
-    def add_new_folder(self, *args, created=True, **kwargs):
+    def add_new_folder(
+        self,
+        name: str,
+        folder_type: str,
+        label: Optional[str] = None,
+        parent_id: Optional[str] = UNKNOWN_VALUE,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        path: Optional[str] = None,
+        status: Optional[str] = UNKNOWN_VALUE,
+        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
+        active: bool = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+        tags: Optional[List[str]] = None,
+    ):
         """Create folder object and add it to entity hub.
 
         Args:
+            name (str): Name of entity.
             folder_type (str): Type of folder. Folder type must be available in
                 config of project folder types.
-            entity_id (Union[str, None]): Id of the entity. New id is created
-                if not passed.
-            parent_id (Union[str, None]): Id of parent entity.
-            name (str): Name of entity.
             label (Optional[str]): Folder label.
-            path (Optional[str]): Folder path. Path consist of all parent names
-                with slash('/') used as separator.
+            parent_id (Union[str, None]): Id of parent entity.
             attribs (Dict[str, Any]): Attribute values.
             data (Dict[str, Any]): Entity data (custom data).
+            path (Optional[str]): Folder path. Path consist of all parent names
+                with slash('/') used as separator.
+            status (Optional[str]): Folder status.
             thumbnail_id (Union[str, None]): Id of entity's thumbnail.
             active (bool): Is entity active.
+            entity_id (Union[str, None]): Id of the entity. New id is created if
+                not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
 
@@ -310,7 +326,20 @@ class EntityHub(object):
 
         """
         folder_entity = FolderEntity(
-            *args, **kwargs, created=created, entity_hub=self
+            name=name,
+            folder_type=folder_type,
+            label=label,
+            parent_id=parent_id,
+            attribs=attribs,
+            data=data,
+            path=path,
+            status=status,
+            thumbnail_id=thumbnail_id,
+            active=active,
+            entity_id=entity_id,
+            created=created,
+            tags=tags,
+            entity_hub=self
         )
         self.add_entity(folder_entity)
         return folder_entity
@@ -2782,23 +2811,24 @@ class FolderEntity(BaseEntity):
     """Entity representing a folder on AYON server.
 
     Args:
+        name (str): Name of entity.
         folder_type (str): Type of folder. Folder type must be available in
             config of project folder types.
-        entity_id (Union[str, None]): Id of the entity. New id is created if
-            not passed.
+        label (Optional[str]): Folder label.
         parent_id (Union[str, None]): Id of parent entity.
-        name (str): Name of entity.
         attribs (Dict[str, Any]): Attribute values.
         data (Dict[str, Any]): Entity data (custom data).
-        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
-        active (bool): Is entity active.
-        label (Optional[str]): Folder label.
         path (Optional[str]): Folder path. Path consist of all parent names
             with slash('/') used as separator.
-        entity_hub (EntityHub): Object of entity hub which created object of
-            the entity.
+        status (Optional[str]): Folder status.
+        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+        active (bool): Is entity active.
+        entity_id (Union[str, None]): Id of the entity. New id is created if
+            not passed.
         created (Optional[bool]): Entity is new. When 'None' is passed the
             value is defined based on value of 'entity_id'.
+        entity_hub (EntityHub): Object of entity hub which created object of
+            the entity.
     """
     _supports_name = True
     _supports_label = True
@@ -2811,20 +2841,20 @@ class FolderEntity(BaseEntity):
 
     def __init__(
         self,
-        folder_type,
-        entity_id=None,
-        parent_id=UNKNOWN_VALUE,
-        name=UNKNOWN_VALUE,
-        attribs=UNKNOWN_VALUE,
-        data=UNKNOWN_VALUE,
-        thumbnail_id=UNKNOWN_VALUE,
-        active=UNKNOWN_VALUE,
-        entity_hub=None,
-        created=None,
-        label=None,
-        path=None,
-        tags=None,
-        status=UNKNOWN_VALUE,
+        name: str,
+        folder_type: str,
+        label: Optional[str] = None,
+        parent_id: Optional[str] = UNKNOWN_VALUE,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        path: Optional[str] = None,
+        status: Optional[str] = UNKNOWN_VALUE,
+        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
+        active: bool = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+        tags: Optional[List[str]] = None,
+        entity_hub: EntityHub = None,
     ):
         super().__init__(
             entity_id=entity_id,
@@ -2920,23 +2950,22 @@ class FolderEntity(BaseEntity):
         if self._orig_folder_type != self._folder_type:
             changes["folderType"] = self._folder_type
 
-
         return changes
 
     @classmethod
-    def from_entity_data(cls, folder, entity_hub):
+    def from_entity_data(cls, folder, entity_hub) -> "FolderEntity":
         parent_id = folder["parentId"]
         if parent_id is None:
             parent_id = entity_hub.project_entity.id
         return cls(
-            folder["folderType"],
+            name=folder["name"],
+            folder_type=folder["folderType"],
             label=folder["label"],
             path=folder["path"],
             status=folder["status"],
             tags=folder["tags"],
             entity_id=folder["id"],
             parent_id=parent_id,
-            name=folder["name"],
             data=folder.get("data"),
             attribs=folder["ownAttrib"],
             active=folder["active"],
