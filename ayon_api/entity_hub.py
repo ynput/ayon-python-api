@@ -3254,3 +3254,237 @@ class TaskEntity(BaseEntity):
         return output
 
 
+class ProductEntity(BaseEntity):
+    _supports_name = True
+    _supports_tags = True
+
+    def __init__(
+        self,
+        name: str,
+        product_type: str,
+        folder_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        tags: Optional[Iterable[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+        entity_hub: EntityHub = None,
+    ):
+        super().__init__(
+            name=name,
+            parent_id=folder_id,
+            tags=tags,
+            attribs=attribs,
+            data=data,
+            created=created,
+            entity_id=entity_id,
+            active=active,
+            entity_hub=entity_hub,
+        )
+        self._product_type = product_type
+
+        self._orig_product_type = product_type
+
+    def get_folder_id(self):
+        return self._parent_id
+
+    def set_folder_id(self, folder_id):
+        self.set_parent_id(folder_id)
+
+    folder_id = property(get_folder_id, set_folder_id)
+
+    def get_product_type(self):
+        return self._product_type
+
+    def set_product_type(self, product_type):
+        self._product_type = product_type
+
+    product_type = property(get_product_type, set_product_type)
+
+    def lock(self):
+        super().lock()
+        self._orig_product_type = self._product_type
+
+    @property
+    def changes(self):
+        changes = self._get_default_changes()
+
+        if self._orig_parent_id != self._parent_id:
+            changes["folderId"] = self._parent_id
+
+        if self._orig_product_type != self._product_type:
+            changes["productType"] = self._product_type
+
+        return changes
+
+    @classmethod
+    def from_entity_data(cls, product, entity_hub):
+        return cls(
+            name=product["name"],
+            product_type=product["productType"],
+            folder_id=product["folderId"],
+            tags=product["tags"],
+            attribs=product["ownAttrib"],
+            data=product.get("data"),
+            active=product["active"],
+            entity_id=product["id"],
+            created=False,
+            entity_hub=entity_hub
+        )
+
+    def to_create_body_data(self):
+        if self.parent_id is UNKNOWN_VALUE:
+            raise ValueError("Product does not have set 'folder_id'")
+
+        output = {
+            "name": self.name,
+            "productType": self.product_type,
+            "folderId": self.parent_id,
+        }
+
+        attrib = self.attribs.to_dict()
+        if attrib:
+            output["attrib"] = attrib
+
+        if self.active is not UNKNOWN_VALUE:
+            output["active"] = self.active
+
+        if self.tags:
+            output["tags"] = self.tags
+
+        if (
+            self._entity_hub.allow_data_changes
+            and self._data is not UNKNOWN_VALUE
+        ):
+            output["data"] = self._data.get_new_entity_value()
+        return output
+
+
+class VersionEntity(BaseEntity):
+    _supports_tags = True
+    _supports_status = True
+    _supports_thumbnail = True
+
+    def __init__(
+        self,
+        version: int,
+        product_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        task_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        status: Optional[str] = UNKNOWN_VALUE,
+        tags: Optional[Iterable[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+        entity_hub: EntityHub = None,
+    ):
+        super().__init__(
+            parent_id=product_id,
+            status=status,
+            tags=tags,
+            attribs=attribs,
+            data=data,
+            thumbnail_id=thumbnail_id,
+            active=active,
+            entity_id=entity_id,
+            created=created,
+            entity_hub=entity_hub,
+        )
+        self._version = version
+        self._task_id = task_id
+
+        self._orig_version = version
+        self._orig_task_id = task_id
+
+    def get_version(self):
+        return self._version
+
+    def set_version(self, version):
+        self._version = version
+
+    version = property(get_version, set_version)
+
+    def get_product_id(self):
+        return self._parent_id
+
+    def set_product_id(self, product_id):
+        self.set_parent_id(product_id)
+
+    product_id = property(get_product_id, set_product_id)
+
+    def get_task_id(self):
+        return self._task_id
+
+    def set_task_id(self, task_id):
+        self._task_id = task_id
+
+    task_id = property(get_task_id, set_task_id)
+
+    def lock(self):
+        super().lock()
+        self._orig_version = self._version
+        self._orig_task_id = self._task_id
+
+    @property
+    def changes(self):
+        changes = self._get_default_changes()
+
+        if self._orig_parent_id != self._parent_id:
+            changes["productId"] = self._parent_id
+
+        if self._orig_task_id != self._task_id:
+            changes["taskId"] = self._task_id
+
+        return changes
+
+    @classmethod
+    def from_entity_data(cls, version, entity_hub):
+        return cls(
+            version=version["version"],
+            product_id=version["productId"],
+            task_id=version["taskId"],
+            status=version["status"],
+            tags=version["tags"],
+            attribs=version["ownAttrib"],
+            data=version.get("data"),
+            thumbnail_id=version["thumbnailId"],
+            active=version["active"],
+            entity_id=version["id"],
+            created=False,
+            entity_hub=entity_hub
+        )
+
+    def to_create_body_data(self):
+        if self.parent_id is UNKNOWN_VALUE:
+            raise ValueError("Version does not have set 'product_id'")
+
+        output = {
+            "version": self.version,
+            "productId": self.parent_id,
+        }
+        task_id = self.task_id
+        if task_id:
+            output["taskId"] = task_id
+
+        attrib = self.attribs.to_dict()
+        if attrib:
+            output["attrib"] = attrib
+
+        if self.active is not UNKNOWN_VALUE:
+            output["active"] = self.active
+
+        if self.tags:
+            output["tags"] = self.tags
+
+        if self.status:
+            output["status"] = self.status
+
+        if (
+            self._entity_hub.allow_data_changes
+            and self._data is not UNKNOWN_VALUE
+        ):
+            output["data"] = self._data.get_new_entity_value()
+        return output
