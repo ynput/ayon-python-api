@@ -61,7 +61,7 @@ class EntityHub(object):
     ):
         if not connection:
             connection = get_server_api_connection()
-        major, minor, patch, _, _ = connection.server_version_tuple
+        major, minor, _, _, _ = connection.server_version_tuple
         path_start_with_slash = True
         if (major, minor) < (0, 6):
             path_start_with_slash = False
