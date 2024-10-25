@@ -129,7 +129,7 @@ class EntityHub(object):
             self.fill_project_from_server()
         return self._project_entity
 
-    def get_attributes_for_type(self, entity_type):
+    def get_attributes_for_type(self, entity_type: "EntityType"):
         """Get attributes available for a type.
 
         Attributes are based on entity types.
@@ -321,14 +321,14 @@ class EntityHub(object):
         Args:
             task_type (str): Type of task. Task type must be available in
                 config of project folder types.
-            entity_id (Union[str, None]): Id of the entity. New id is created
+            entity_id (Optional[str]): Id of the entity. New id is created
                 if not passed.
-            parent_id (Union[str, None]): Id of parent entity.
+            parent_id (Optional[str]): Id of parent entity.
             name (str): Name of entity.
             label (Optional[str]): Folder label.
             attribs (Dict[str, Any]): Attribute values.
             data (Dict[str, Any]): Entity data (custom data).
-            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+            thumbnail_id (Optional[str]): Id of entity's thumbnail.
             active (bool): Is entity active.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
@@ -565,7 +565,7 @@ class EntityHub(object):
             parent.remove_child(entity.id)
 
     def reset_immutable_for_hierarchy_cache(
-        self, entity_id, bottom_to_top=True
+        self, entity_id: Optional[str], bottom_to_top: Optional[bool] = True
     ):
         if bottom_to_top is None or entity_id is None:
             return
@@ -574,16 +574,20 @@ class EntityHub(object):
         reset_queue.append(entity_id)
         if bottom_to_top:
             while reset_queue:
-                entity_id = reset_queue.popleft()
-                entity = self.get_entity_by_id(entity_id)
+                entity_id: str = reset_queue.popleft()
+                entity: Optional["BaseEntity"] = self.get_entity_by_id(
+                    entity_id
+                )
                 if entity is None:
                     continue
                 entity.reset_immutable_for_hierarchy_cache(None)
                 reset_queue.append(entity.parent_id)
         else:
             while reset_queue:
-                entity_id = reset_queue.popleft()
-                entity = self.get_entity_by_id(entity_id)
+                entity_id: str = reset_queue.popleft()
+                entity: Optional["BaseEntity"] = self.get_entity_by_id(
+                    entity_id
+                )
                 if entity is None:
                     continue
                 entity.reset_immutable_for_hierarchy_cache(None)
@@ -625,7 +629,7 @@ class EntityHub(object):
         self.add_entity(self._project_entity)
         return self._project_entity
 
-    def _get_folder_fields(self):
+    def _get_folder_fields(self) -> Set[str]:
         folder_fields = set(
             self._connection.get_default_fields_for_type("folder")
         )
@@ -634,7 +638,7 @@ class EntityHub(object):
             folder_fields.add("data")
         return folder_fields
 
-    def _get_task_fields(self):
+    def _get_task_fields(self) -> Set[str]:
         return set(
             self._connection.get_default_fields_for_type("task")
         )
@@ -1251,14 +1255,14 @@ class BaseEntity(ABC):
     def __setitem__(self, item, value):
         return setattr(self, item, value)
 
-    def _prepare_entity_id(self, entity_id):
+    def _prepare_entity_id(self, entity_id: Any) -> str:
         entity_id = convert_entity_id(entity_id)
         if entity_id is None:
             entity_id = create_entity_id()
         return entity_id
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Access to entity id under which is entity available on server.
 
         Returns:
@@ -1268,7 +1272,7 @@ class BaseEntity(ABC):
         return self._entity_id
 
     @property
-    def removed(self):
+    def removed(self) -> bool:
         return self._parent_id is None
 
     @property
@@ -1300,7 +1304,7 @@ class BaseEntity(ABC):
         return self._data
 
     @property
-    def project_name(self):
+    def project_name(self) -> str:
         """Quick access to project from entity hub.
 
         Returns:
@@ -1311,8 +1315,8 @@ class BaseEntity(ABC):
 
     @property
     @abstractmethod
-    def entity_type(self):
-        """Entity type coresponding to server.
+    def entity_type(self) -> "EntityType":
+        """Entity type corresponding to server.
 
         Returns:
             EntityType: Entity type.
@@ -1322,22 +1326,22 @@ class BaseEntity(ABC):
 
     @property
     @abstractmethod
-    def parent_entity_types(self):
-        """Entity type coresponding to server.
+    def parent_entity_types(self) -> List[str]:
+        """Entity type corresponding to server.
 
         Returns:
-            Iterable[str]: Possible entity types of parent.
+            List[str]: Possible entity types of parent.
 
         """
         pass
 
     @property
     @abstractmethod
-    def changes(self):
+    def changes(self) -> Optional[Dict[str, Any]]:
         """Receive entity changes.
 
         Returns:
-            Union[Dict[str, Any], None]: All values that have changed on
+            Optional[Dict[str, Any]]: All values that have changed on
                 entity. New entity must return None.
 
         """
@@ -1345,7 +1349,9 @@ class BaseEntity(ABC):
 
     @classmethod
     @abstractmethod
-    def from_entity_data(cls, entity_data, entity_hub):
+    def from_entity_data(
+        cls, entity_data: Dict[str, Any], entity_hub: EntityHub
+    ) -> "BaseEntity":
         """Create entity based on queried data from server.
 
         Args:
@@ -1359,7 +1365,7 @@ class BaseEntity(ABC):
         pass
 
     @abstractmethod
-    def to_create_body_data(self):
+    def to_create_body_data(self) -> Dict[str, Any]:
         """Convert object of entity to data for server on creation.
 
         Returns:
@@ -1369,7 +1375,7 @@ class BaseEntity(ABC):
         pass
 
     @property
-    def immutable_for_hierarchy(self):
+    def immutable_for_hierarchy(self) -> bool:
         """Entity is immutable for hierarchy changes.
 
         Hierarchy changes can be considered as change of name or parents.
@@ -1402,17 +1408,19 @@ class BaseEntity(ABC):
         which is used in property 'immutable_for_hierarchy'.
 
         Returns:
-            Union[bool, None]: Bool to explicitly telling if is immutable or
+            Optional[bool]: Bool to explicitly telling if is immutable or
                 not otherwise None.
 
         """
         return None
 
     @property
-    def has_cached_immutable_hierarchy(self):
+    def has_cached_immutable_hierarchy(self) -> bool:
         return self._immutable_for_hierarchy_cache is not None
 
-    def reset_immutable_for_hierarchy_cache(self, bottom_to_top=True):
+    def reset_immutable_for_hierarchy_cache(
+        self, bottom_to_top: Optional[bool] = True
+    ):
         """Clear cache of immutable hierarchy property.
 
         This is used when entity changed parent or a child was added.
@@ -2598,11 +2606,8 @@ class ProjectEntity(BaseEntity):
         library (bool): Is project library project.
         folder_types (list[dict[str, Any]]): Folder types definition.
         task_types (list[dict[str, Any]]): Task types definition.
-        entity_id (Optional[str]): Id of the entity. New id is created if
-            not passed.
-        parent_id (Union[str, None]): Id of parent entity.
         name (str): Name of entity.
-        attribs (Dict[str, Any]): Attribute values.
+        attribs (Optional[Dict[str, Any]]): Attribute values.
         data (Dict[str, Any]): Entity data (custom data).
         thumbnail_id (Union[str, None]): Id of entity's thumbnail.
         active (bool): Is entity active.
