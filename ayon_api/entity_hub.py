@@ -171,7 +171,7 @@ class EntityHub(object):
 
         Args:
             entity_id (str): Folder entity id.
-            allow_fetch (bool): Try to query entity from server if is not
+            allow_fetch (bool): Try to fetch entity from server if is not
                 available in cache.
 
         Returns:
@@ -191,7 +191,7 @@ class EntityHub(object):
 
         Args:
            entity_id (str): Id of task entity.
-           allow_fetch (bool): Try to query entity from server if is not
+           allow_fetch (bool): Try to fetch entity from server if is not
                available in cache.
 
         Returns:
@@ -201,6 +201,47 @@ class EntityHub(object):
         if allow_fetch:
             return self.get_or_fetch_entity_by_id(entity_id, ["task"])
         return self._entities_by_id.get(entity_id)
+
+    def get_product_by_id(
+        self,
+        entity_id: str,
+        allow_fetch: Optional[bool] = True,
+    ) -> Optional["ProductEntity"]:
+        """Get product entity by id.
+
+        Args:
+           entity_id (str): Product id.
+           allow_fetch (bool): Try to fetch entity from server if is not
+               available in cache.
+
+        Returns:
+           Optional[ProductEntity]: Product entity object or None.
+
+        """
+        if allow_fetch:
+            return self.get_or_fetch_entity_by_id(entity_id, ["product"])
+        return self._entities_by_id.get(entity_id)
+
+    def get_version_by_id(
+        self,
+        entity_id: str,
+        allow_fetch: Optional[bool] = True,
+    ) -> Optional["VersionEntity"]:
+        """Get version entity by id.
+
+        Args:
+           entity_id (str): Version id.
+           allow_fetch (bool): Try to fetch entity from server if is not
+               available in cache.
+
+        Returns:
+           Optional[VersionEntity]: Version entity object or None.
+
+        """
+        if allow_fetch:
+            return self.get_or_fetch_entity_by_id(entity_id, ["version"])
+        return self._entities_by_id.get(entity_id)
+
     def get_or_fetch_entity_by_id(
         self,
         entity_id: str,
@@ -239,6 +280,20 @@ class EntityHub(object):
                     self.project_name,
                     entity_id,
                     fields=self._get_task_fields(),
+                    own_attributes=True
+                )
+            elif entity_type == "product":
+                entity_data = self._connection.get_product_by_id(
+                    self.project_name,
+                    entity_id,
+                    fields=self._get_product_fields(),
+                    own_attributes=True
+                )
+            elif entity_type == "version":
+                entity_data = self._connection.get_version_by_id(
+                    self.project_name,
+                    entity_id,
+                    fields=self._get_version_fields(),
                     own_attributes=True
                 )
             else:
@@ -712,6 +767,16 @@ class EntityHub(object):
     def _get_task_fields(self) -> Set[str]:
         return set(
             self._connection.get_default_fields_for_type("task")
+        )
+
+    def _get_product_fields(self) -> Set[str]:
+        return set(
+            self._connection.get_default_fields_for_type("product")
+        )
+
+    def _get_version_fields(self) -> Set[str]:
+        return set(
+            self._connection.get_default_fields_for_type("version")
         )
 
     def fetch_hierarchy_entities(self):
