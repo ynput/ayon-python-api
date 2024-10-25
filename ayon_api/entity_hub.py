@@ -345,21 +345,39 @@ class EntityHub(object):
         self.add_entity(folder_entity)
         return folder_entity
 
-    def add_new_task(self, *args, created=True, **kwargs):
+    def add_new_task(
+        self,
+        name: str,
+        task_type: str,
+        parent_id: Optional[str] = UNKNOWN_VALUE,
+        label: Optional[str] = None,
+        status: Optional[str] = UNKNOWN_VALUE,
+        tags: Optional[Iterable[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        assignees: Optional[Iterable[str]] = None,
+        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+    ):
         """Create folder object and add it to entity hub.
 
         Args:
-            task_type (str): Type of task. Task type must be available in
-                config of project folder types.
-            entity_id (Optional[str]): Id of the entity. New id is created
-                if not passed.
-            parent_id (Optional[str]): Id of parent entity.
             name (str): Name of entity.
-            label (Optional[str]): Folder label.
+            task_type (str): Type of task. Task type must be available in config
+                of project task types.
+            parent_id (Union[str, None]): Id of parent entity.
+            label (Optional[str]): Task label.
+            status (Optional[str]): Task status.
+            tags (Optional[Iterable[str]]): Folder tags.
             attribs (Dict[str, Any]): Attribute values.
             data (Dict[str, Any]): Entity data (custom data).
-            thumbnail_id (Optional[str]): Id of entity's thumbnail.
+            assignees (Optional[Iterable[str]]): User assignees to the task.
+            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
             active (bool): Is entity active.
+            entity_id (Union[str, None]): Id of the entity. New id is created if
+                not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
 
@@ -368,7 +386,20 @@ class EntityHub(object):
 
         """
         task_entity = TaskEntity(
-            *args, **kwargs, created=created, entity_hub=self
+            name=name,
+            task_type=task_type,
+            parent_id=parent_id,
+            label=label,
+            status=status,
+            tags=tags,
+            attribs=attribs,
+            data=data,
+            assignees=assignees,
+            thumbnail_id=thumbnail_id,
+            active=active,
+            entity_id=entity_id,
+            created=created,
+            entity_hub=self,
         )
         self.add_entity(task_entity)
         return task_entity
@@ -3029,19 +3060,22 @@ class TaskEntity(BaseEntity):
         name (str): Name of entity.
         task_type (str): Type of task. Task type must be available in config
             of project task types.
-        entity_id (Union[str, None]): Id of the entity. New id is created if
-            not passed.
         parent_id (Union[str, None]): Id of parent entity.
         label (Optional[str]): Task label.
+        status (Optional[str]): Task status.
+        tags (Optional[Iterable[str]]): Folder tags.
         attribs (Dict[str, Any]): Attribute values.
         data (Dict[str, Any]): Entity data (custom data).
+        assignees (Optional[Iterable[str]]): User assignees to the task.
         thumbnail_id (Union[str, None]): Id of entity's thumbnail.
         active (bool): Is entity active.
-        entity_hub (EntityHub): Object of entity hub which created object of
-            the entity.
+        entity_id (Union[str, None]): Id of the entity. New id is created if
+            not passed.
         created (Optional[bool]): Entity is new. When 'None' is passed the
             value is defined based on value of 'entity_id'.
-        status (Optional[str]): Task status.
+        entity_hub (EntityHub): Object of entity hub which created object of
+            the entity.
+
     """
     _supports_name = True
     _supports_label = True
@@ -3053,34 +3087,34 @@ class TaskEntity(BaseEntity):
 
     def __init__(
         self,
-        task_type,
-        entity_id=None,
-        parent_id=UNKNOWN_VALUE,
-        name=UNKNOWN_VALUE,
-        attribs=UNKNOWN_VALUE,
-        data=UNKNOWN_VALUE,
-        thumbnail_id=UNKNOWN_VALUE,
-        active=UNKNOWN_VALUE,
-        entity_hub=None,
-        created=None,
-        label=None,
-        tags=None,
-        assignees=None,
-        status=UNKNOWN_VALUE,
+        name: str,
+        task_type: str,
+        parent_id: Optional[str] = UNKNOWN_VALUE,
+        label: Optional[str] = None,
+        status: Optional[str] = UNKNOWN_VALUE,
+        tags: Optional[Iterable[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        assignees: Optional[Iterable[str]] = None,
+        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+        entity_hub: EntityHub = None,
     ):
         super().__init__(
-            entity_id=entity_id,
+            name=name,
             parent_id=parent_id,
+            label=label,
+            status=status,
+            tags=tags,
             attribs=attribs,
             data=data,
+            thumbnail_id=thumbnail_id,
             active=active,
+            entity_id=entity_id,
             created=created,
             entity_hub=entity_hub,
-            name=name,
-            label=label,
-            tags=tags,
-            status=status,
-            thumbnail_id=thumbnail_id,
         )
         if assignees is None:
             assignees = []
@@ -3155,19 +3189,20 @@ class TaskEntity(BaseEntity):
         return changes
 
     @classmethod
-    def from_entity_data(cls, task, entity_hub):
+    def from_entity_data(cls, task, entity_hub) -> "TaskEntity":
         return cls(
-            task["taskType"],
-            entity_id=task["id"],
+            name=task["name"],
+            task_type=task["taskType"],
+            parent_id=task["folderId"],
             label=task["label"],
             status=task["status"],
             tags=task["tags"],
-            assignees=task["assignees"],
-            parent_id=task["folderId"],
-            name=task["name"],
-            data=task.get("data"),
             attribs=task["ownAttrib"],
+            data=task.get("data"),
+            assignees=task["assignees"],
+            thumbnail_id=task["thumbnailId"],
             active=task["active"],
+            entity_id=task["id"],
             created=False,
             entity_hub=entity_hub
         )
