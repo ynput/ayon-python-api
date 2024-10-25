@@ -1,8 +1,10 @@
 import re
 import copy
 import collections
+import warnings
 from abc import ABC, abstractmethod
 import typing
+from typing import Optional, Union, Iterable, Dict, List, Set, Any
 
 from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
@@ -146,7 +148,7 @@ class EntityHub(object):
         """
         return self._connection.get_attributes_for_type(entity_type)
 
-    def get_entity_by_id(self, entity_id):
+    def get_entity_by_id(self, entity_id: str) -> Optional["BaseEntity"]:
         """Receive entity by its id without entity type.
 
         The entity must be already existing in cached objects.
@@ -155,44 +157,55 @@ class EntityHub(object):
             entity_id (str): Id of entity.
 
         Returns:
-            Union[BaseEntity, None]: Entity object or None.
+            Optional[BaseEntity]: Entity object or None.
 
         """
         return self._entities_by_id.get(entity_id)
 
-    def get_folder_by_id(self, entity_id, allow_query=True):
+    def get_folder_by_id(
+        self,
+        entity_id: str,
+        allow_fetch: Optional[bool] = True,
+    ) -> Optional["FolderEntity"]:
         """Get folder entity by id.
 
         Args:
-            entity_id (str): Id of folder entity.
-            allow_query (bool): Try to query entity from server if is not
+            entity_id (str): Folder entity id.
+            allow_fetch (bool): Try to query entity from server if is not
                 available in cache.
 
         Returns:
-            Union[FolderEntity, None]: Object of folder or 'None'.
+            Optional[FolderEntity]: Folder entity object.
 
         """
-        if allow_query:
-            return self.get_or_query_entity_by_id(entity_id, ["folder"])
+        if allow_fetch:
+            return self.get_or_fetch_entity_by_id(entity_id, ["folder"])
         return self._entities_by_id.get(entity_id)
 
-    def get_task_by_id(self, entity_id, allow_query=True):
+    def get_task_by_id(
+        self,
+        entity_id: str,
+        allow_fetch: Optional[bool] = True,
+    ) -> Optional["TaskEntity"]:
         """Get task entity by id.
 
         Args:
            entity_id (str): Id of task entity.
-           allow_query (bool): Try to query entity from server if is not
+           allow_fetch (bool): Try to query entity from server if is not
                available in cache.
 
         Returns:
-           Union[TaskEntity, None]: Object of folder or 'None'.
+           Optional[TaskEntity]: Task entity object or None.
 
         """
-        if allow_query:
-            return self.get_or_query_entity_by_id(entity_id, ["task"])
+        if allow_fetch:
+            return self.get_or_fetch_entity_by_id(entity_id, ["task"])
         return self._entities_by_id.get(entity_id)
-
-    def get_or_query_entity_by_id(self, entity_id, entity_types):
+    def get_or_fetch_entity_by_id(
+        self,
+        entity_id: str,
+        entity_types: List["EntityType"],
+    ):
         """Get or query entity based on it's id and possible entity types.
 
         This is a helper function when entity id is known but entity type may
@@ -248,6 +261,18 @@ class EntityHub(object):
             return self.add_task(entity_data)
 
         return None
+
+    def get_or_query_entity_by_id(
+        self,
+        entity_id: str,
+        entity_types: List["EntityType"],
+    ):
+        warnings.warn(
+            "Method 'get_or_query_entity_by_id' is deprecated. "
+            "Please use 'get_or_fetch_entity_by_id' instead.",
+            DeprecationWarning
+        )
+        return self.get_or_fetch_entity_by_id(entity_id, entity_types)
 
     @property
     def entities(self):
@@ -463,7 +488,7 @@ class EntityHub(object):
         parent.add_child(entity_id)
         self.reset_immutable_for_hierarchy_cache(parent_id)
 
-    def _query_entity_children(self, entity):
+    def _fetch_entity_children(self, entity):
         folder_fields = self._get_folder_fields()
         task_fields = self._get_task_fields()
         tasks = []
@@ -518,15 +543,15 @@ class EntityHub(object):
 
         entity.fill_children_ids(children_ids)
 
-    def get_entity_children(self, entity, allow_query=True):
-        children_ids = entity.get_children_ids(allow_query=False)
+    def get_entity_children(self, entity, allow_fetch=True):
+        children_ids = entity.get_children_ids(allow_fetch=False)
         if children_ids is not UNKNOWN_VALUE:
             return entity.get_children()
 
-        if children_ids is UNKNOWN_VALUE and not allow_query:
+        if children_ids is UNKNOWN_VALUE and not allow_fetch:
             return UNKNOWN_VALUE
 
-        self._query_entity_children(entity)
+        self._fetch_entity_children(entity)
 
         return entity.get_children()
 
@@ -614,7 +639,7 @@ class EntityHub(object):
             self._connection.get_default_fields_for_type("task")
         )
 
-    def query_entities_from_server(self):
+    def fetch_hierarchy_entities(self):
         """Query whole project at once."""
         project_entity = self.fill_project_from_server()
 
@@ -669,6 +694,14 @@ class EntityHub(object):
         while lock_queue:
             entity = lock_queue.popleft()
             entity.lock()
+
+    def query_entities_from_server(self):
+        warnings.warn(
+            "Method 'query_entities_from_server' is deprecated."
+            " Please use 'fetch_hierarchy_entities' instead.",
+            DeprecationWarning
+        )
+        return self.fetch_hierarchy_entities()
 
     def lock(self):
         if self._project_entity is None:
@@ -1499,7 +1532,7 @@ class BaseEntity(ABC):
 
     parent_id = property(get_parent_id, set_parent_id)
 
-    def get_parent(self, allow_query=True):
+    def get_parent(self, allow_fetch=True):
         """Parent entity.
 
         Returns:
@@ -1510,13 +1543,13 @@ class BaseEntity(ABC):
         if parent is not None:
             return parent
 
-        if not allow_query:
+        if not allow_fetch:
             return self._parent_id
 
         if self._parent_id is UNKNOWN_VALUE:
             return self._parent_id
 
-        return self._entity_hub.get_or_query_entity_by_id(
+        return self._entity_hub.get_or_fetch_entity_by_id(
             self._parent_id, self.parent_entity_types
         )
 
@@ -1537,7 +1570,7 @@ class BaseEntity(ABC):
 
     parent = property(get_parent, set_parent)
 
-    def get_children_ids(self, allow_query=True):
+    def get_children_ids(self, allow_fetch=True):
         """Access to children objects.
 
         Todos:
@@ -1551,14 +1584,14 @@ class BaseEntity(ABC):
 
         """
         if self._children_ids is UNKNOWN_VALUE:
-            if not allow_query:
+            if not allow_fetch:
                 return self._children_ids
             self._entity_hub.get_entity_children(self, True)
         return set(self._children_ids)
 
     children_ids = property(get_children_ids)
 
-    def get_children(self, allow_query=True):
+    def get_children(self, allow_fetch=True):
         """Access to children objects.
 
         Returns:
@@ -1566,7 +1599,7 @@ class BaseEntity(ABC):
 
         """
         if self._children_ids is UNKNOWN_VALUE:
-            if not allow_query:
+            if not allow_fetch:
                 return self._children_ids
             return self._entity_hub.get_entity_children(self, True)
 
