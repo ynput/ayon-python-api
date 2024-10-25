@@ -2602,19 +2602,17 @@ class ProjectEntity(BaseEntity):
     """Entity representing project on AYON server.
 
     Args:
+        name (str): Name of entity.
         project_code (str): Project code.
         library (bool): Is project library project.
         folder_types (list[dict[str, Any]]): Folder types definition.
         task_types (list[dict[str, Any]]): Task types definition.
-        name (str): Name of entity.
+        statuses: (list[dict[str, Any]]): Statuses definition.
         attribs (Optional[Dict[str, Any]]): Attribute values.
         data (Dict[str, Any]): Entity data (custom data).
-        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
         active (bool): Is entity active.
         entity_hub (EntityHub): Object of entity hub which created object of
             the entity.
-        created (Optional[bool]): Entity is new. When 'None' is passed the
-            value is defined based on value of 'entity_id'.
 
     """
     _supports_name = True
@@ -2626,20 +2624,16 @@ class ProjectEntity(BaseEntity):
 
     def __init__(
         self,
-        project_code,
-        library,
-        folder_types,
-        task_types,
-        statuses,
-        entity_id=None,
-        parent_id=UNKNOWN_VALUE,
-        name=UNKNOWN_VALUE,
-        attribs=UNKNOWN_VALUE,
-        data=UNKNOWN_VALUE,
-        thumbnail_id=UNKNOWN_VALUE,
-        active=UNKNOWN_VALUE,
-        entity_hub=None,
-        created=None,
+        name: str,
+        project_code: str,
+        library: bool,
+        folder_types: List[Dict[str, Any]],
+        task_types: List[Dict[str, Any]],
+        statuses: List[Dict[str, Any]],
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
+        entity_hub: EntityHub = None,
     ):
         super().__init__(
             entity_id=name,
@@ -2650,7 +2644,6 @@ class ProjectEntity(BaseEntity):
             created=False,
             entity_hub=entity_hub,
             name=name,
-            thumbnail_id=thumbnail_id,
         )
 
         self._project_code = project_code
@@ -2765,16 +2758,14 @@ class ProjectEntity(BaseEntity):
         return changes
 
     @classmethod
-    def from_entity_data(cls, project, entity_hub):
+    def from_entity_data(cls, project, entity_hub) -> "ProjectEntity":
         return cls(
+            project["name"],
             project["code"],
-            parent_id=PROJECT_PARENT_ID,
-            entity_id=project["name"],
             library=project["library"],
             folder_types=project["folderTypes"],
             task_types=project["taskTypes"],
             statuses=project["statuses"],
-            name=project["name"],
             attribs=project["ownAttrib"],
             data=project["data"],
             active=project["active"],
