@@ -3225,7 +3225,6 @@ class TaskEntity(BaseEntity):
             "name": self.name,
             "taskType": self.task_type,
             "folderId": self.parent_id,
-            "attrib": self.attribs.to_dict(),
         }
         label = self._get_label_value()
         if label:
