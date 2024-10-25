@@ -289,17 +289,17 @@ class EntityHub(object):
         self,
         name: str,
         folder_type: str,
-        label: Optional[str] = None,
         parent_id: Optional[str] = UNKNOWN_VALUE,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        label: Optional[str] = None,
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
+        tags: Optional[List[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: bool = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
-        tags: Optional[List[str]] = None,
     ):
         """Create folder object and add it to entity hub.
 
@@ -307,13 +307,14 @@ class EntityHub(object):
             name (str): Name of entity.
             folder_type (str): Type of folder. Folder type must be available in
                 config of project folder types.
-            label (Optional[str]): Folder label.
             parent_id (Union[str, None]): Id of parent entity.
-            attribs (Dict[str, Any]): Attribute values.
-            data (Dict[str, Any]): Entity data (custom data).
+            label (Optional[str]): Folder label.
             path (Optional[str]): Folder path. Path consist of all parent names
                 with slash('/') used as separator.
             status (Optional[str]): Folder status.
+            tags (Optional[List[str]]): Folder tags.
+            attribs (Dict[str, Any]): Attribute values.
+            data (Dict[str, Any]): Entity data (custom data).
             thumbnail_id (Union[str, None]): Id of entity's thumbnail.
             active (bool): Is entity active.
             entity_id (Union[str, None]): Id of the entity. New id is created if
@@ -328,17 +329,17 @@ class EntityHub(object):
         folder_entity = FolderEntity(
             name=name,
             folder_type=folder_type,
-            label=label,
             parent_id=parent_id,
-            attribs=attribs,
-            data=data,
+            label=label,
             path=path,
             status=status,
+            tags=tags,
+            attribs=attribs,
+            data=data,
             thumbnail_id=thumbnail_id,
             active=active,
             entity_id=entity_id,
             created=created,
-            tags=tags,
             entity_hub=self
         )
         self.add_entity(folder_entity)
@@ -2814,13 +2815,14 @@ class FolderEntity(BaseEntity):
         name (str): Name of entity.
         folder_type (str): Type of folder. Folder type must be available in
             config of project folder types.
-        label (Optional[str]): Folder label.
         parent_id (Union[str, None]): Id of parent entity.
-        attribs (Dict[str, Any]): Attribute values.
-        data (Dict[str, Any]): Entity data (custom data).
+        label (Optional[str]): Folder label.
         path (Optional[str]): Folder path. Path consist of all parent names
             with slash('/') used as separator.
         status (Optional[str]): Folder status.
+        tags (Optional[List[str]]): Folder tags.
+        attribs (Dict[str, Any]): Attribute values.
+        data (Dict[str, Any]): Entity data (custom data).
         thumbnail_id (Union[str, None]): Id of entity's thumbnail.
         active (bool): Is entity active.
         entity_id (Union[str, None]): Id of the entity. New id is created if
@@ -2829,6 +2831,7 @@ class FolderEntity(BaseEntity):
             value is defined based on value of 'entity_id'.
         entity_hub (EntityHub): Object of entity hub which created object of
             the entity.
+
     """
     _supports_name = True
     _supports_label = True
@@ -2843,17 +2846,17 @@ class FolderEntity(BaseEntity):
         self,
         name: str,
         folder_type: str,
-        label: Optional[str] = None,
         parent_id: Optional[str] = UNKNOWN_VALUE,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        label: Optional[str] = None,
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
+        tags: Optional[List[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: bool = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
-        tags: Optional[List[str]] = None,
         entity_hub: EntityHub = None,
     ):
         super().__init__(
