@@ -3258,6 +3258,9 @@ class ProductEntity(BaseEntity):
     _supports_name = True
     _supports_tags = True
 
+    entity_type = "product"
+    parent_entity_types = ["folder"]
+
     def __init__(
         self,
         name: str,
@@ -3365,6 +3368,9 @@ class VersionEntity(BaseEntity):
     _supports_tags = True
     _supports_status = True
     _supports_thumbnail = True
+
+    entity_type = "version"
+    parent_entity_types = ["product"]
 
     def __init__(
         self,
