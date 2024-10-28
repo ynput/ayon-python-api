@@ -474,6 +474,104 @@ class EntityHub(object):
         self.add_entity(task_entity)
         return task_entity
 
+    def add_new_product(
+        self,
+        name: str,
+        product_type: str,
+        folder_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        tags: Optional[Iterable[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+    ):
+        """Create task object and add it to entity hub.
+
+        Args:
+            name (str): Name of entity.
+            product_type (str): Type of product.
+            folder_id (Union[str, None]): Parent folder id.
+            tags (Optional[Iterable[str]]): Folder tags.
+            attribs (Dict[str, Any]): Attribute values.
+            data (Dict[str, Any]): Entity data (custom data).
+            active (bool): Is entity active.
+            entity_id (Union[str, None]): Id of the entity. New id is created if
+                not passed.
+            created (Optional[bool]): Entity is new. When 'None' is passed the
+                value is defined based on value of 'entity_id'.
+
+        Returns:
+            ProductEntity: Added product entity.
+
+        """
+        product_entity = ProductEntity(
+            name=name,
+            product_type=product_type,
+            folder_id=folder_id,
+            tags=tags,
+            attribs=attribs,
+            data=data,
+            active=active,
+            entity_id=entity_id,
+            created=created,
+            entity_hub=self,
+        )
+        self.add_entity(product_entity)
+        return product_entity
+
+    def add_new_version(
+        self,
+        version: int,
+        product_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        task_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        status: Optional[str] = UNKNOWN_VALUE,
+        tags: Optional[Iterable[str]] = None,
+        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
+        entity_id: Optional[str] = None,
+        created: Optional[bool] = None,
+    ):
+        """Create task object and add it to entity hub.
+
+        Args:
+            version (int): Version.
+            product_id (Union[str, None]): Parent product id.
+            task_id (Union[str, None]): Parent task id.
+            status (Optional[str]): Task status.
+            tags (Optional[Iterable[str]]): Folder tags.
+            attribs (Dict[str, Any]): Attribute values.
+            data (Dict[str, Any]): Entity data (custom data).
+            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+            active (bool): Is entity active.
+            entity_id (Union[str, None]): Id of the entity. New id is created if
+                not passed.
+            created (Optional[bool]): Entity is new. When 'None' is passed the
+                value is defined based on value of 'entity_id'.
+
+        Returns:
+            VersionEntity: Added version entity.
+
+        """
+        version_entity = VersionEntity(
+            version=version,
+            product_id=product_id,
+            task_id=task_id,
+            status=status,
+            tags=tags,
+            attribs=attribs,
+            data=data,
+            thumbnail_id=thumbnail_id,
+            active=active,
+            entity_id=entity_id,
+            created=created,
+            entity_hub=self,
+        )
+        self.add_entity(version_entity)
+        return version_entity
+
     def add_folder(self, folder):
         """Create folder object and add it to entity hub.
 
