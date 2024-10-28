@@ -4,13 +4,13 @@ import collections
 import warnings
 from abc import ABC, abstractmethod
 import typing
-from typing import Optional, Union, Iterable, Dict, List, Set, Any
+from typing import Optional, Iterable, Dict, List, Set, Any
 
 from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
 
 if typing.TYPE_CHECKING:
-    from typing import Literal
+    from typing import Literal, Union
 
     StatusState = Literal["not_started", "in_progress", "done", "blocked"]
     EntityType = Literal["project", "folder", "task", "product", "version"]
@@ -478,7 +478,7 @@ class EntityHub(object):
         self,
         name: str,
         product_type: str,
-        folder_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        folder_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
         data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
@@ -523,8 +523,8 @@ class EntityHub(object):
     def add_new_version(
         self,
         version: int,
-        product_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
-        task_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        product_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
+        task_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
@@ -1440,7 +1440,7 @@ class BaseEntity(ABC):
     def __init__(
         self,
         entity_id: Optional[str] = None,
-        parent_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        parent_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
         attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
         data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
@@ -2025,7 +2025,7 @@ class BaseEntity(ABC):
 
     thumbnail_id = property(get_thumbnail_id, set_thumbnail_id)
 
-    def get_status(self) -> Union[str, _CustomNone]:
+    def get_status(self) -> "Union[str, _CustomNone]":
         """Folder status.
 
         Returns:
@@ -3461,7 +3461,7 @@ class ProductEntity(BaseEntity):
         self,
         name: str,
         product_type: str,
-        folder_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        folder_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
         data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
@@ -3571,8 +3571,8 @@ class VersionEntity(BaseEntity):
     def __init__(
         self,
         version: int,
-        product_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
-        task_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        product_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
+        task_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
