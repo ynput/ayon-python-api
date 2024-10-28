@@ -297,7 +297,7 @@ class EntityHub(object):
                 )
             else:
                 raise ValueError(
-                    "Unknonwn entity type \"{}\"".format(entity_type)
+                    "Unknown entity type \"{}\"".format(entity_type)
                 )
 
             if entity_data:
