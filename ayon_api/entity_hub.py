@@ -416,7 +416,7 @@ class EntityHub(object):
         created: Optional[bool] = None,
         parent_id: Optional[str] = UNKNOWN_VALUE,
     ):
-        """Create folder object and add it to entity hub.
+        """Create task object and add it to entity hub.
 
         Args:
             name (str): Name of entity.
