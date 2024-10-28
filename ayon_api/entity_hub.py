@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     from typing import Literal
 
     StatusState = Literal["not_started", "in_progress", "done", "blocked"]
-    EntityType = Literal["project", "folder", "task"]
+    EntityType = Literal["project", "folder", "task", "product", "version"]
 
 
 class _CustomNone(object):
