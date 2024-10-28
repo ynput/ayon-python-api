@@ -294,7 +294,6 @@ class EntityHub(object):
                     self.project_name,
                     entity_id,
                     fields=self._get_version_fields(),
-                    own_attributes=True
                 )
             else:
                 raise ValueError(
@@ -3519,7 +3518,7 @@ class VersionEntity(BaseEntity):
             task_id=version["taskId"],
             status=version["status"],
             tags=version["tags"],
-            attribs=version["ownAttrib"],
+            attribs=version["attrib"],
             data=version.get("data"),
             thumbnail_id=version["thumbnailId"],
             active=version["active"],
