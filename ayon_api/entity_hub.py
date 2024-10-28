@@ -1618,7 +1618,7 @@ class BaseEntity(ABC):
         """Lock entity as 'saved' so all changes are discarded."""
         self._orig_parent_id = self._parent_id
         self._orig_name = self._name
-        self._orig_thumbnail_id = self.thumbnail_id
+        self._orig_thumbnail_id = self._thumbnail_id
         if isinstance(self._data, EntityData):
             self._data.lock()
         self._attribs.lock()
