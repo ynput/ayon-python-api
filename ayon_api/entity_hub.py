@@ -1893,7 +1893,7 @@ class BaseEntity(ABC):
 
     thumbnail_id = property(get_thumbnail_id, set_thumbnail_id)
 
-    def get_status(self) -> Union[str, UNKNOWN_VALUE]:
+    def get_status(self) -> Union[str, _CustomNone]:
         """Folder status.
 
         Returns:
