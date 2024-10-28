@@ -379,7 +379,7 @@ class EntityHub(object):
             data (Dict[str, Any]): Entity data (custom data).
             thumbnail_id (Union[str, None]): Id of entity's thumbnail.
             active (bool): Is entity active.
-            entity_id (Union[str, None]): Id of the entity. New id is created if
+            entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
@@ -430,8 +430,8 @@ class EntityHub(object):
 
         Args:
             name (str): Name of entity.
-            task_type (str): Type of task. Task type must be available in config
-                of project task types.
+            task_type (str): Type of task. Task type must be available in
+                config of project task types.
             folder_id (Union[str, None]): Parent folder id.
             label (Optional[str]): Task label.
             status (Optional[str]): Task status.
@@ -441,7 +441,7 @@ class EntityHub(object):
             assignees (Optional[Iterable[str]]): User assignees to the task.
             thumbnail_id (Union[str, None]): Id of entity's thumbnail.
             active (bool): Is entity active.
-            entity_id (Union[str, None]): Id of the entity. New id is created if
+            entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
@@ -500,7 +500,7 @@ class EntityHub(object):
             attribs (Dict[str, Any]): Attribute values.
             data (Dict[str, Any]): Entity data (custom data).
             active (bool): Is entity active.
-            entity_id (Union[str, None]): Id of the entity. New id is created if
+            entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
@@ -550,7 +550,7 @@ class EntityHub(object):
             data (Dict[str, Any]): Entity data (custom data).
             thumbnail_id (Union[str, None]): Id of entity's thumbnail.
             active (bool): Is entity active.
-            entity_id (Union[str, None]): Id of the entity. New id is created if
+            entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
@@ -614,7 +614,9 @@ class EntityHub(object):
             ProductEntity: Added version entity.
 
         """
-        product_entity = ProductEntity.from_entity_data(product, entity_hub=self)
+        product_entity = ProductEntity.from_entity_data(
+            product, entity_hub=self
+        )
         self.add_entity(product_entity)
         return product_entity
 
@@ -628,7 +630,9 @@ class EntityHub(object):
             VersionEntity: Added version entity.
 
         """
-        version_entity = VersionEntity.from_entity_data(version, entity_hub=self)
+        version_entity = VersionEntity.from_entity_data(
+            version, entity_hub=self
+        )
         self.add_entity(version_entity)
         return version_entity
 
