@@ -347,8 +347,10 @@ class EntityHub(object):
 
     def add_new_folder(
         self,
-        name: str,
+        # TODO move 'folder_type' after 'name'
+        #  - that will break backwards compatibility
         folder_type: str,
+        name: str,
         parent_id: Optional[str] = UNKNOWN_VALUE,
         label: Optional[str] = None,
         path: Optional[str] = None,
@@ -407,8 +409,10 @@ class EntityHub(object):
 
     def add_new_task(
         self,
-        name: str,
+        # TODO move 'folder_type' after 'name'
+        #  - that will break backwards compatibility
         task_type: str,
+        name: str,
         folder_id: Optional[str] = UNKNOWN_VALUE,
         label: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
