@@ -314,6 +314,12 @@ class EntityHub(object):
         elif entity_type == "task":
             return self.add_task(entity_data)
 
+        elif entity_type == "product":
+            return self.add_product(entity_data)
+
+        elif entity_type == "version":
+            return self.add_version(entity_data)
+
         return None
 
     def get_or_query_entity_by_id(
@@ -495,6 +501,34 @@ class EntityHub(object):
         task_entity = TaskEntity.from_entity_data(task, entity_hub=self)
         self.add_entity(task_entity)
         return task_entity
+
+    def add_product(self, product):
+        """Create version object and add it to entity hub.
+
+        Args:
+            product (Dict[str, Any]): Version entity data.
+
+        Returns:
+            ProductEntity: Added version entity.
+
+        """
+        product_entity = ProductEntity.from_entity_data(product, entity_hub=self)
+        self.add_entity(product_entity)
+        return product_entity
+
+    def add_version(self, version):
+        """Create version object and add it to entity hub.
+
+        Args:
+            version (Dict[str, Any]): Version entity data.
+
+        Returns:
+            VersionEntity: Added version entity.
+
+        """
+        version_entity = VersionEntity.from_entity_data(version, entity_hub=self)
+        self.add_entity(version_entity)
+        return version_entity
 
     def add_entity(self, entity):
         """Add entity to hub cache.
