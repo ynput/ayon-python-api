@@ -43,14 +43,14 @@ class EntityHub(object):
     frequently.
 
     Todos:
-        Listen to server events about entity changes to be able update already
-            queried entities.
+        Listen to server events about entity changes to be able to update
+            already queried entities.
 
     Args:
         project_name (str): Name of project where changes will happen.
         connection (ServerAPI): Connection to server with logged user.
         allow_data_changes (bool): This option gives ability to change 'data'
-            key on entities. This is not recommended as 'data' may be use for
+            key on entities. This is not recommended as 'data' may be used for
             secure information and would also slow down server queries. Content
             of 'data' key can't be received only GraphQl.
 
@@ -85,9 +85,11 @@ class EntityHub(object):
     def allow_data_changes(self):
         """Entity hub allows changes of 'data' key on entities.
 
-        Data are private and not all users may have access to them. Also to get
-        'data' for entity is required to use REST api calls, which means to
-        query each entity on-by-one from server.
+        Data are private and not all users may have access to them.
+
+        Older version of AYON server allowed to get 'data' for entity only
+        using REST api calls, which means to query each entity on-by-one
+        from server.
 
         Returns:
             bool: Data changes are allowed.
