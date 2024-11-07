@@ -11,6 +11,7 @@ from ayon_api import (
     is_connection_created,
     close_connection,
     get,
+    get_event,
     get_events,
     get_project_names,
     get_user_by_name,
@@ -18,7 +19,9 @@ from ayon_api import (
     get_base_url,
     get_rest_url,
     get_timeout,
-    set_timeout
+    set_timeout,
+    update_event,
+    exceptions
 )
 
 AYON_BASE_URL = os.getenv("AYON_SERVER_URL")
@@ -140,7 +143,7 @@ test_fields = [
 @pytest.mark.parametrize("older_than", test_older_than[-3:])
 @pytest.mark.parametrize("fields", test_fields[-3:])
 def test_get_events_all_filter_combinations(
-    topics, 
+    topics,
     project_names,
     states,
     users,
@@ -158,7 +161,7 @@ def test_get_events_all_filter_combinations(
         set_timeout(20.0)
 
     res = list(get_events(
-        topics=topics, 
+        topics=topics,
         project_names=project_names,
         states=states,
         users=users,
@@ -252,6 +255,28 @@ def test_get_events_all_filter_combinations(
     )) for field in fields)
 
 
+@pytest.fixture(params=[1, 2, 3, 4, 5])
+def event_ids(request):
+    length = request.param
+    if length == 0:
+        return None
+
+    recent_events = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    ))
+
+    return [recent_event["id"] for recent_event in recent_events[:length]]
+
+
+def test_get_events_event_ids(event_ids):
+    res = list(get_events(event_ids=event_ids))
+
+    for item in res:
+        assert item.get("id") in event_ids
+    
+    assert len(res) == sum(len(list(get_events(event_ids=[event_id]))) for event_id in event_ids)
+
+
 @pytest.mark.parametrize("project_names", test_project_names)
 def test_get_events_project_name(project_names):
     res = list(get_events(project_names=project_names))
@@ -266,7 +291,6 @@ def test_get_events_project_name(project_names):
 @pytest.mark.parametrize("project_names", test_project_names)
 @pytest.mark.parametrize("topics", test_topics)
 def test_get_events_project_name_topic(project_names, topics):
-    print(project_names, "", topics)
     res = list(get_events(
         topics=topics,
         project_names=project_names
@@ -397,9 +421,116 @@ def test_get_events_invalid_data(
         or datetime.fromisoformat(newer_than) < datetime.now(timezone.utc)
 
 
+@pytest.fixture
+def event_id():
+    recent_event = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    ))
+    return recent_event[0]["id"] if recent_event else None
+
 test_update_sender = [
-    (),
+    ("test.server.api"),
 ]
 
-# def test_update_event():
+test_update_username = [
+    ("testing_user"),
+]
 
+test_update_status = [
+    ("pending"),
+    ("in_progress"),
+    ("finished"),
+    ("failed"),
+    ("aborted"),
+    ("restarted")
+]
+
+test_update_description = [
+    ("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce viverra."),
+    ("Updated description test...")
+]
+
+test_update_retries = [
+    (1),
+    (0),
+    (10),
+]
+
+@pytest.mark.parametrize("sender", test_update_sender)
+@pytest.mark.parametrize("username", test_update_username)
+@pytest.mark.parametrize("status", test_update_status)
+@pytest.mark.parametrize("description", test_update_description)
+@pytest.mark.parametrize("retries", test_update_retries)
+def test_update_event(
+        event_id,
+        sender,
+        username,
+        status,
+        description,
+        retries,
+        project_name=None,
+        summary=None,
+        payload=None,
+        progress=None,
+):        
+    kwargs = {
+        key: value
+        for key, value in (
+            ("event_id", event_id),
+            ("sender", sender),
+            ("project", project_name),
+            ("username", username),
+            ("status", status),
+            ("description", description),
+            ("summary", summary),
+            ("payload", payload),
+            ("progress", progress),
+            ("retries", retries),
+        )
+        if value is not None
+    }
+
+    prev = get_event(event_id=event_id)
+    update_event(**kwargs)
+    res = get_event(event_id=event_id)
+
+    for key, value in res.items():
+        assert value == prev.get(key) \
+        or key in kwargs.keys() and value == kwargs.get(key) \
+        or (
+            key == "updatedAt" and (
+                datetime.fromisoformat(value) - datetime.now(timezone.utc) < timedelta(minutes=1)
+            )
+        )
+
+
+test_update_invalid_status = [
+    ("finisheddd"),
+    ("pending_pending"),
+    (42),
+    (False),
+    ("_in_progress")
+]
+
+@pytest.mark.parametrize("status", test_update_invalid_status)
+def test_update_event_invalid_status(status):
+    events = list(get_events(project_names=["demo_Commercial"]))
+
+    with pytest.raises(exceptions.HTTPRequestError):
+        update_event(events[0]["id"], status=status)
+
+
+test_update_invalid_progress = [
+    ("good"),
+    ("bad"),
+    (-1),
+    ([0, 1, 2]),
+    (101)
+]
+
+@pytest.mark.parametrize("progress", test_update_invalid_progress)
+def test_update_event_invalid_progress(progress):
+    events = list(get_events(project_names=["demo_Commercial"]))
+
+    with pytest.raises(exceptions.HTTPRequestError):
+        update_event(events[0]["id"], progress=progress)
