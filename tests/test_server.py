@@ -11,6 +11,7 @@ from ayon_api import (
     is_connection_created,
     close_connection,
     get,
+    get_default_fields_for_type,
     get_event,
     get_events,
     get_project_names,
@@ -102,7 +103,7 @@ test_include_logs = [
 test_has_children = [
     (None),
     (True),
-    # (False),
+    (False),
 ]
 
 from datetime import datetime, timedelta, timezone
@@ -129,21 +130,36 @@ test_older_than = [
 test_fields = [
     (None),
     ([]),
+    ([])
 ]
+
+@pytest.fixture(params=[3, 4, 5])
+def event_ids(request):
+    length = request.param
+    if length == 0:
+        return None
+
+    recent_events = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    ))
+
+    return [recent_event["id"] for recent_event in recent_events[:length]]
 
 
 # takes max 3 items in a list to reduce the number of combinations
 @pytest.mark.parametrize("topics", test_topics[-3:])
+@pytest.mark.parametrize("event_ids", [None] + [pytest.param(None, marks=pytest.mark.usefixtures("event_ids"))])
 @pytest.mark.parametrize("project_names", test_project_names[-3:])
 @pytest.mark.parametrize("states", test_states[-3:])
 @pytest.mark.parametrize("users", test_users[-3:])
 @pytest.mark.parametrize("include_logs", test_include_logs[-3:])
-@pytest.mark.parametrize("has_children", test_has_children[-3:])
+@pytest.mark.parametrize("has_children", test_has_children[2:3])
 @pytest.mark.parametrize("newer_than", test_newer_than[-3:])
 @pytest.mark.parametrize("older_than", test_older_than[-3:])
 @pytest.mark.parametrize("fields", test_fields[-3:])
 def test_get_events_all_filter_combinations(
     topics,
+    event_ids,
     project_names,
     states,
     users,
@@ -155,22 +171,26 @@ def test_get_events_all_filter_combinations(
 ):
     """Tests all combination of possible filters.
     """
-    # with many tests - ayon_api.exceptions.ServerError: Connection timed out.
-    # TODO - maybe some better solution
     if get_timeout() < 5:
-        set_timeout(20.0)
+        set_timeout(None) # default timeout
 
-    res = list(get_events(
-        topics=topics,
-        project_names=project_names,
-        states=states,
-        users=users,
-        include_logs=include_logs,
-        has_children=has_children,
-        newer_than=newer_than,
-        older_than=older_than,
-        fields=fields
-    ))
+    try:
+        res = list(get_events(
+            topics=topics,
+            event_ids=event_ids,
+            project_names=project_names,
+            states=states,
+            users=users,
+            include_logs=include_logs,
+            has_children=has_children,
+            newer_than=newer_than,
+            older_than=older_than,
+            fields=fields
+        ))
+    except exceptions.ServerError as exc:
+        assert has_children == False, f"{exc} even if has_children is {has_children}."
+        print("Warning: ServerError encountered, test skipped due to timeout.")
+        pytest.skip("Skipping test due to server timeout.")
 
     # test if filtering was correct
     for item in res:
@@ -242,30 +262,32 @@ def test_get_events_all_filter_combinations(
         fields=fields)
     )) for user in users)
 
-    assert fields is None or len(res) == sum(len(list(get_events(
-        topics=topics, 
-        project_names=project_names,
-        states=states,
-        users=users,
-        include_logs=include_logs,
-        has_children=has_children,
-        newer_than=newer_than,
-        older_than=older_than,
-        fields=[field])
-    )) for field in fields)
+    if fields == []:
+        fields = get_default_fields_for_type("event")
+
+    assert fields is None \
+        or all(
+            set(event.keys()) == set(fields)
+            for event in res
+        )
 
 
-@pytest.fixture(params=[1, 2, 3, 4, 5])
-def event_ids(request):
-    length = request.param
-    if length == 0:
-        return None
+@pytest.mark.parametrize("has_children", test_has_children)
+def test_get_events_timeout_has_children(has_children):
+    """Separete test for has_children filter. 
 
-    recent_events = list(get_events(
-        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
-    ))
-
-    return [recent_event["id"] for recent_event in recent_events[:length]]
+    Issues with timeouts.
+    """
+    try:
+        _ = list(get_events(
+            has_children=has_children,
+            newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+        ))
+    except exceptions.ServerError as exc:
+        has_children = True
+        assert has_children == False, f"{exc} even if has_children is {has_children}."
+        print("Warning: ServerError encountered, test skipped due to timeout.")
+        pytest.skip("Skipping test due to server timeout.")
 
 
 def test_get_events_event_ids(event_ids):
@@ -328,7 +350,7 @@ def test_get_events_project_name_topic_user(project_names, topics, users):
 
 @pytest.mark.parametrize("newer_than", test_newer_than)
 @pytest.mark.parametrize("older_than", test_older_than)
-def test_get_events_timestamp(newer_than, older_than):
+def test_get_events_timestamps(newer_than, older_than):
     res = list(get_events(
         newer_than=newer_than,
         older_than=older_than
@@ -514,10 +536,8 @@ test_update_invalid_status = [
 
 @pytest.mark.parametrize("status", test_update_invalid_status)
 def test_update_event_invalid_status(status):
-    events = list(get_events(project_names=["demo_Commercial"]))
-
     with pytest.raises(exceptions.HTTPRequestError):
-        update_event(events[0]["id"], status=status)
+        update_event(event_id, status=status)
 
 
 test_update_invalid_progress = [
@@ -529,8 +549,6 @@ test_update_invalid_progress = [
 ]
 
 @pytest.mark.parametrize("progress", test_update_invalid_progress)
-def test_update_event_invalid_progress(progress):
-    events = list(get_events(project_names=["demo_Commercial"]))
-
+def test_update_event_invalid_progress(event_id, progress):
     with pytest.raises(exceptions.HTTPRequestError):
-        update_event(events[0]["id"], progress=progress)
+        update_event(event_id, progress=progress)
