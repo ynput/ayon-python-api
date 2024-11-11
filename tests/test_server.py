@@ -30,6 +30,16 @@ AYON_REST_URL = "{}/api".format(AYON_BASE_URL)
 
 
 def test_close_connection():
+    """Tests the functionality of opening and closing the server API 
+    connection.
+
+    Verifies:
+        - Confirms that the connection is successfully created when 
+            `get_server_api_connection()` is called.
+        - Ensures that the connection is closed correctly when
+            `close_connection()` is invoked, and that the connection 
+            state is appropriately updated.
+    """
     _ = get_server_api_connection()
     assert is_connection_created() is True
     close_connection()
@@ -37,18 +47,37 @@ def test_close_connection():
 
 
 def test_get_base_url():
+    """Tests the retrieval of the base URL for the API.
+
+    Verifies:
+        - Confirms that `get_base_url()` returns a string.
+        - Ensures that the returned URL matches the expected `AYON_BASE_URL`.
+    """
     res = get_base_url()
     assert isinstance(res, str)
     assert res == AYON_BASE_URL
 
 
 def test_get_rest_url():
+    """Tests the retrieval of the REST API URL.
+
+    Verifies:
+        - Confirms that `get_rest_url()` returns a string.
+        - Ensures that the returned URL matches the expected `AYON_REST_URL`.
+    """
     res = get_rest_url()
     assert isinstance(res, str)
     assert res == AYON_REST_URL
 
 
 def test_get():
+    """Tests the `get` method for making API requests.
+
+    Verifies:
+        - Ensures that a successful GET request to the endpoint 'info' 
+            returns a status code of 200.
+        - Confirms that the response data is in the form of a dictionary.
+    """
     res = get("info")
     assert res.status_code == 200
     assert isinstance(res.data, dict)
@@ -83,7 +112,7 @@ test_users = [
     (["entity.folder.attrib_changed", "entity.project.created", "entity.task.created", "settings.changed"]),
 ]
 
-# incorrect name for statuses
+# states is incorrect name for statuses
 test_states = [
     (None),
     ([]),
@@ -148,7 +177,10 @@ def event_ids(request):
 
 # takes max 3 items in a list to reduce the number of combinations
 @pytest.mark.parametrize("topics", test_topics[-3:])
-@pytest.mark.parametrize("event_ids", [None] + [pytest.param(None, marks=pytest.mark.usefixtures("event_ids"))])
+@pytest.mark.parametrize(
+    "event_ids", 
+    [None] + [pytest.param(None, marks=pytest.mark.usefixtures("event_ids"))]
+)
 @pytest.mark.parametrize("project_names", test_project_names[-3:])
 @pytest.mark.parametrize("states", test_states[-3:])
 @pytest.mark.parametrize("users", test_users[-3:])
@@ -169,7 +201,23 @@ def test_get_events_all_filter_combinations(
     older_than,
     fields
 ):
-    """Tests all combination of possible filters.
+    """Tests all combinations of possible filters for `get_events`.
+
+    Verifies:
+        - Calls `get_events` with the provided filter parameters.
+        - Ensures each event in the result set matches the specified filters.
+        - Checks that the number of returned events matches the expected count 
+            based on the filters applied.
+        - Confirms that each event contains only the specified fields, with 
+            no extra keys.
+
+    Note:
+        - Adjusts the timeout setting if necessary to handle a large number 
+            of tests and avoid timeout errors.
+        - Some combinations of filter parameters may lead to a server timeout 
+            error. When this occurs, the test will skip instead of failing.
+        - Currently, a ServerError due to timeout may occur when `has_children` 
+            is set to False.
     """
     if get_timeout() < 5:
         set_timeout(None) # default timeout
@@ -192,7 +240,6 @@ def test_get_events_all_filter_combinations(
         print("Warning: ServerError encountered, test skipped due to timeout.")
         pytest.skip("Skipping test due to server timeout.")
 
-    # test if filtering was correct
     for item in res:
         assert item.get("topic") in topics, (
             f"Expected 'project' one of values: {topics}, but got '{item.get('topic')}'"
@@ -213,7 +260,6 @@ def test_get_events_all_filter_combinations(
             datetime.fromisoformat(item.get("createdAt")) < datetime.fromisoformat(older_than)
         )
 
-    # test if all events were given
     assert topics is None or len(res) == sum(len(list(get_events(
         topics=[topic], 
         project_names=project_names,
@@ -274,9 +320,16 @@ def test_get_events_all_filter_combinations(
 
 @pytest.mark.parametrize("has_children", test_has_children)
 def test_get_events_timeout_has_children(has_children):
-    """Separete test for has_children filter. 
+    """Test `get_events` function with the `has_children` filter.
 
-    Issues with timeouts.
+    Verifies:
+        - The `get_events` function handles requests correctly and does 
+          not time out when using the `has_children` filter with events 
+          created within the last 5 days.
+        - If a `ServerError` (likely due to a timeout) is raised:
+            - Logs a warning message and skips the test to avoid failure.
+            - Asserts that the `ServerError` should occur only when 
+              `has_children` is set to False.
     """
     try:
         _ = list(get_events(
@@ -291,6 +344,13 @@ def test_get_events_timeout_has_children(has_children):
 
 
 def test_get_events_event_ids(event_ids):
+    """Test `get_events` function using specified event IDs.
+
+    Verifies:
+        - Each item returned has an ID in the `event_ids` list.
+        - The number of items returned matches the expected count 
+            when filtered by each individual event ID.
+    """
     res = list(get_events(event_ids=event_ids))
 
     for item in res:
@@ -301,6 +361,13 @@ def test_get_events_event_ids(event_ids):
 
 @pytest.mark.parametrize("project_names", test_project_names)
 def test_get_events_project_name(project_names):
+    """Test `get_events` function using specified project names.
+
+    Verifies:
+        - Each item returned has a project in the `project_names` list.
+        - The count of items matches the expected number when filtered 
+            by each individual project name.
+    """
     res = list(get_events(project_names=project_names))
     
     for item in res:
@@ -313,6 +380,14 @@ def test_get_events_project_name(project_names):
 @pytest.mark.parametrize("project_names", test_project_names)
 @pytest.mark.parametrize("topics", test_topics)
 def test_get_events_project_name_topic(project_names, topics):
+    """Test `get_events` function using both project names and topics.
+
+    Verifies:
+        - Each item returned has a project in `project_names` and a topic 
+            in `topics`.
+        - The item count matches the expected number when filtered by 
+            each project name and topic combination.
+    """
     res = list(get_events(
         topics=topics,
         project_names=project_names
@@ -331,6 +406,14 @@ def test_get_events_project_name_topic(project_names, topics):
 @pytest.mark.parametrize("topics", test_topics)
 @pytest.mark.parametrize("users", test_users)
 def test_get_events_project_name_topic_user(project_names, topics, users):
+    """Test `get_events` function using project names, topics, and users.
+
+    Verifies:
+        - Each item has a project in `project_names`, a topic in `topics`, 
+            and a user in `users`.
+        - The item count matches the expected number when filtered by 
+            combinations of project names, topics, and users.
+    """
     res = list(get_events(
         topics=topics,
         project_names=project_names,
@@ -351,6 +434,12 @@ def test_get_events_project_name_topic_user(project_names, topics, users):
 @pytest.mark.parametrize("newer_than", test_newer_than)
 @pytest.mark.parametrize("older_than", test_older_than)
 def test_get_events_timestamps(newer_than, older_than):
+    """Test `get_events` function using date filters `newer_than` and `older_than`.
+
+    Verifies:
+        - Each item's creation date falls within the specified date 
+            range between `newer_than` and `older_than`.
+    """
     res = list(get_events(
         newer_than=newer_than,
         older_than=older_than
@@ -413,10 +502,26 @@ def test_get_events_invalid_data(
     users,
     newer_than
 ):
-    # with many tests - ayon_api.exceptions.ServerError: Connection timed out.
-    # TODO - maybe some better solution
+    """Tests `get_events` with invalid filter data to ensure correct handling
+    of invalid input and prevent errors or unexpected results.
+
+    Verifies:
+        - Confirms that the result is either empty or aligns with expected valid 
+            entries:
+            - `topics`: Result is empty or topics is set to `None`.
+            - `project_names`: Result is empty or project names exist in the 
+            list of valid project names.
+            - `states`: Result is empty or states is set to `None`.
+            - `users`: Result is empty or each user exists as a valid user.
+            - `newer_than`: Result is empty or `newer_than` date is in the past.
+
+    Note:
+        - Adjusts the timeout setting if necessary to handle a large number 
+            of tests and avoid timeout errors.
+    """
+
     if get_timeout() < 5:
-        set_timeout(20.0)
+        set_timeout(None) # default timeout value
 
     res = list(get_events(
         topics=topics, 
@@ -445,6 +550,14 @@ def test_get_events_invalid_data(
 
 @pytest.fixture
 def event_id():
+    """Fixture that retrieves the ID of a recent event created within 
+    the last 5 days.
+
+    Returns:
+        - The event ID of the most recent event within the last 5 days 
+          if available.
+        - `None` if no recent events are found within this time frame.
+    """
     recent_event = list(get_events(
         newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
     ))
@@ -494,7 +607,25 @@ def test_update_event(
         summary=None,
         payload=None,
         progress=None,
-):        
+):
+    """Verifies that the `update_event` function correctly updates event fields.
+
+    Verifies:
+        - The function updates the specified event fields based on the provided
+            parameters (`sender`, `username`, `status`, `description`, `retries`,
+            etc.).
+        - Only the fields specified in `kwargs` are updated, and other fields 
+            remain unchanged.
+        - The `updatedAt` field is updated and the change occurs within a 
+            reasonable time frame (within one minute).
+        - The event's state before and after the update matches the expected 
+            values for the updated fields.
+    
+    Notes:
+        - Parameters like `event_id`, `sender`, `username`, `status`, 
+            `description`, `retries`, etc., are passed dynamically to the function.
+        - If any parameter is `None`, it is excluded from the update request.
+    """
     kwargs = {
         key: value
         for key, value in (
@@ -536,6 +667,13 @@ test_update_invalid_status = [
 
 @pytest.mark.parametrize("status", test_update_invalid_status)
 def test_update_event_invalid_status(status):
+    """Tests `update_event` with invalid status values to ensure correct 
+    error handling for unsupported status inputs.
+
+    Verifies:
+        - Confirms that an `HTTPRequestError` is raised for invalid status values
+            when attempting to update an event with an unsupported status.
+    """
     with pytest.raises(exceptions.HTTPRequestError):
         update_event(event_id, status=status)
 
@@ -550,5 +688,12 @@ test_update_invalid_progress = [
 
 @pytest.mark.parametrize("progress", test_update_invalid_progress)
 def test_update_event_invalid_progress(event_id, progress):
+    """Tests `update_event` with invalid progress values to ensure correct 
+    error handling for unsupported progress inputs.
+
+    Verifies:
+        - Confirms that an `HTTPRequestError` is raised for invalid progress values
+            when attempting to update an event with unsupported progress.
+    """
     with pytest.raises(exceptions.HTTPRequestError):
         update_event(event_id, progress=progress)
