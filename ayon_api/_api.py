@@ -550,6 +550,30 @@ def set_sender(*args, **kwargs):
     return con.set_sender(*args, **kwargs)
 
 
+def get_sender_type():
+    """Sender type used to send requests.
+
+    Sender type is supported since AYON server 1.5.5 .
+
+    Returns:
+        Union[str, None]: Sender type or None.
+
+    """
+    con = get_server_api_connection()
+    return con.get_sender_type()
+
+
+def set_sender_type(*args, **kwargs):
+    """Change sender type used for requests.
+
+    Args:
+        sender_type (Union[str, None]): Sender type or None.
+
+    """
+    con = get_server_api_connection()
+    return con.set_sender_type(*args, **kwargs)
+
+
 def get_info():
     """Get information about current used api key.
 
