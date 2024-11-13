@@ -1663,6 +1663,8 @@ class ServerAPI(object):
         sequential=None,
         events_filter=None,
         max_retries=None,
+        ignore_older_than=None,
+        ignore_sender_types=None,
     ):
         """Enroll job based on events.
 
@@ -1711,6 +1713,10 @@ class ServerAPI(object):
                 TODO: Add example of filters.
             max_retries (Optional[int]): How many times can be event retried.
                 Default value is based on server (3 at the time of this PR).
+            ignore_older_than (Optional[int]): Ignore events older than
+                given number in days.
+            ignore_sender_types (Optional[List[str]]): Ignore events triggered
+                by given sender types.
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1722,6 +1728,7 @@ class ServerAPI(object):
             "targetTopic": target_topic,
             "sender": sender,
         }
+        major, minor, patch, _, _ = self.server_version_tuple
         if max_retries is not None:
             kwargs["maxRetries"] = max_retries
         if sequential is not None:
@@ -1730,6 +1737,16 @@ class ServerAPI(object):
             kwargs["description"] = description
         if events_filter is not None:
             kwargs["filter"] = events_filter
+        if (
+            ignore_older_than is not None
+            and (major, minor, patch) > (1, 5, 1)
+        ):
+            kwargs["ignoreOlderThan"] = ignore_older_than
+        if (
+            ignore_sender_types is not None
+            and (major, minor, patch) > (1, 5, 4)
+        ):
+            kwargs["ignoreSenderTypes"] = ignore_sender_types
 
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:

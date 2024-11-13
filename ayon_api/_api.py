@@ -875,6 +875,10 @@ def enroll_event_job(*args, **kwargs):
             TODO: Add example of filters.
         max_retries (Optional[int]): How many times can be event retried.
             Default value is based on server (3 at the time of this PR).
+        ignore_older_than (Optional[int]): Ignore events older than
+            given number in days.
+        ignore_sender_types (Optional[List[str]]): Ignore events triggered
+            by given sender types.
 
     Returns:
         Union[None, dict[str, Any]]: None if there is no event matching
