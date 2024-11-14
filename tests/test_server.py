@@ -759,7 +759,6 @@ def clean_up_events(topics=[TEST_SOURCE_TOPIC, TEST_TARGET_TOPIC]):
     the test setup or outcomes by marking them as 'finished'.
     
     """
-    print("clean_up FIXTURE", datetime.now())
     events = list(get_events(topics=topics))
     for event in events:
         if event["status"] not in ["finished", "failed"]:
@@ -774,7 +773,6 @@ def create_test_events(num_of_events=DEFAULT_NUMBER_OF_EVENTS):
     list of event IDs for the created events.
 
     """
-    print("new_tests FIXTURE", datetime.now())
     return [
         dispatch_event(topic=TEST_SOURCE_TOPIC, sender="tester", description=f"New test event n. {num}")["id"]
         for num in range(num_of_events)
@@ -808,12 +806,6 @@ def test_enroll_event_job(sequential):
         - TODO - delete events after test if possible
 
     """
-    events = list(get_events(
-        newer_than=(datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
-    ))
-
-    print([event["updatedAt"] for event in events])
-
     job_1 = enroll_event_job(
         source_topic=TEST_SOURCE_TOPIC,
         target_topic=TEST_TARGET_TOPIC,
