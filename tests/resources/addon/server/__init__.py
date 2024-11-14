@@ -9,11 +9,11 @@ class TestsAddon(BaseServerAddon):
             self.get_test,
             method="GET",
         )
-    
+
     async def get_test(
         self, user: CurrentUser,
     ):
         """Return a random folder from the database"""
         return {
             "success": True,
-        } 
+        }
