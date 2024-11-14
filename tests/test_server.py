@@ -4,24 +4,54 @@ To run use: pytest --envfile {environment path}.
 Make sure you have set AYON_TOKEN in your environment.
 """
 
+from datetime import datetime, timedelta, timezone
 import os
 import pytest
+import time
 
 from ayon_api import (
-    is_connection_created,
     close_connection,
+    create_folder,
+    create_project,
+    create_thumbnail,
+    delete,
+    delete_project,
+    dispatch_event,
+    download_addon_private_file,
+    download_file_to_stream,
+    download_file,
+    enroll_event_job,
     get,
+    get_addon_project_settings,
+    get_addon_settings,
+    get_addon_settings_schema,
+    get_addon_site_settings_schema,
+    get_addon_site_settings,
+    get_addon_endpoint,
+    get_addon_url,
+    get_addons_info,
+    get_addons_project_settings,
+    get_addons_settings,
+    get_addons_studio_settings,
     get_default_fields_for_type,
     get_event,
     get_events,
+    get_folder_thumbnail,
+    get_project,
     get_project_names,
     get_user_by_name,
     get_server_api_connection,
     get_base_url,
     get_rest_url,
+    get_thumbnail,
+    get_thumbnail_by_id,
     get_timeout,
+    is_connection_created,
     set_timeout,
+    trigger_server_restart,
     update_event,
+    upload_addon_zip,
+    ServerAPI,
     exceptions
 )
 
@@ -39,6 +69,7 @@ def test_close_connection():
         - Ensures that the connection is closed correctly when
             `close_connection()` is invoked, and that the connection 
             state is appropriately updated.
+    
     """
     _ = get_server_api_connection()
     assert is_connection_created() is True
@@ -52,6 +83,7 @@ def test_get_base_url():
     Verifies:
         - Confirms that `get_base_url()` returns a string.
         - Ensures that the returned URL matches the expected `AYON_BASE_URL`.
+    
     """
     res = get_base_url()
     assert isinstance(res, str)
@@ -64,6 +96,7 @@ def test_get_rest_url():
     Verifies:
         - Confirms that `get_rest_url()` returns a string.
         - Ensures that the returned URL matches the expected `AYON_REST_URL`.
+    
     """
     res = get_rest_url()
     assert isinstance(res, str)
@@ -77,6 +110,7 @@ def test_get():
         - Ensures that a successful GET request to the endpoint 'info' 
             returns a status code of 200.
         - Confirms that the response data is in the form of a dictionary.
+    
     """
     res = get("info")
     assert res.status_code == 200
@@ -134,8 +168,6 @@ test_has_children = [
     (True),
     (False),
 ]
-
-from datetime import datetime, timedelta, timezone
 
 test_newer_than = [
     (None),
@@ -218,6 +250,7 @@ def test_get_events_all_filter_combinations(
             error. When this occurs, the test will skip instead of failing.
         - Currently, a ServerError due to timeout may occur when `has_children` 
             is set to False.
+    
     """
     if get_timeout() < 5:
         set_timeout(None) # default timeout
@@ -284,7 +317,7 @@ def test_get_events_all_filter_combinations(
         fields=fields)
     )) for project_name in project_names)
     
-    assert states is None or  len(res) == sum(len(list(get_events(
+    assert states is None or len(res) == sum(len(list(get_events(
         topics=topics, 
         project_names=project_names,
         states=[state],
@@ -330,6 +363,7 @@ def test_get_events_timeout_has_children(has_children):
             - Logs a warning message and skips the test to avoid failure.
             - Asserts that the `ServerError` should occur only when 
               `has_children` is set to False.
+    
     """
     try:
         _ = list(get_events(
@@ -350,6 +384,7 @@ def test_get_events_event_ids(event_ids):
         - Each item returned has an ID in the `event_ids` list.
         - The number of items returned matches the expected count 
             when filtered by each individual event ID.
+    
     """
     res = list(get_events(event_ids=event_ids))
 
@@ -367,6 +402,7 @@ def test_get_events_project_name(project_names):
         - Each item returned has a project in the `project_names` list.
         - The count of items matches the expected number when filtered 
             by each individual project name.
+    
     """
     res = list(get_events(project_names=project_names))
     
@@ -387,6 +423,7 @@ def test_get_events_project_name_topic(project_names, topics):
             in `topics`.
         - The item count matches the expected number when filtered by 
             each project name and topic combination.
+    
     """
     res = list(get_events(
         topics=topics,
@@ -439,6 +476,7 @@ def test_get_events_timestamps(newer_than, older_than):
     Verifies:
         - Each item's creation date falls within the specified date 
             range between `newer_than` and `older_than`.
+    
     """
     res = list(get_events(
         newer_than=newer_than,
@@ -518,8 +556,8 @@ def test_get_events_invalid_data(
     Note:
         - Adjusts the timeout setting if necessary to handle a large number 
             of tests and avoid timeout errors.
+    
     """
-
     if get_timeout() < 5:
         set_timeout(None) # default timeout value
 
@@ -557,6 +595,7 @@ def event_id():
         - The event ID of the most recent event within the last 5 days 
           if available.
         - `None` if no recent events are found within this time frame.
+    
     """
     recent_event = list(get_events(
         newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
@@ -625,6 +664,7 @@ def test_update_event(
         - Parameters like `event_id`, `sender`, `username`, `status`, 
             `description`, `retries`, etc., are passed dynamically to the function.
         - If any parameter is `None`, it is excluded from the update request.
+    
     """
     kwargs = {
         key: value
@@ -673,6 +713,7 @@ def test_update_event_invalid_status(status):
     Verifies:
         - Confirms that an `HTTPRequestError` is raised for invalid status values
             when attempting to update an event with an unsupported status.
+    
     """
     with pytest.raises(exceptions.HTTPRequestError):
         update_event(event_id, status=status)
@@ -694,6 +735,286 @@ def test_update_event_invalid_progress(event_id, progress):
     Verifies:
         - Confirms that an `HTTPRequestError` is raised for invalid progress values
             when attempting to update an event with unsupported progress.
+    
     """
     with pytest.raises(exceptions.HTTPRequestError):
         update_event(event_id, progress=progress)
+
+
+
+TEST_SOURCE_TOPIC = "test.source.topic"
+TEST_TARGET_TOPIC = "test.target.topic"
+
+test_sequential = [
+    (True),
+    (False),
+    (None)
+]
+
+def clean_up(topics=[TEST_SOURCE_TOPIC, TEST_TARGET_TOPIC]):
+    events = list(get_events(topics=topics))
+    for event in events:
+        if event["status"] not in ["finished", "failed"]:
+            update_event(event["id"], status="finished")
+
+
+@pytest.fixture
+def new_events():
+    clean_up()
+
+    num_of_events = 3
+    return [
+        dispatch_event(topic=TEST_SOURCE_TOPIC, sender="tester", description=f"New test event n. {num}")["id"]
+        for num in range(num_of_events)
+    ]
+
+
+@pytest.mark.parametrize("sequential", test_sequential)
+def test_enroll_event_job(sequential, new_events):
+    # clean_up() # "close" all pending jobs
+
+    job_1 = enroll_event_job(
+        source_topic=TEST_SOURCE_TOPIC,
+        target_topic=TEST_TARGET_TOPIC,
+        sender="test_sender_1",
+        sequential=sequential
+    )
+
+    job_2 = enroll_event_job(
+        source_topic=TEST_SOURCE_TOPIC,
+        target_topic=TEST_TARGET_TOPIC,
+        sender="test_sender_2",
+        sequential=sequential
+    )
+
+    assert sequential is False \
+        or sequential is None \
+        or job_2 is None
+
+    update_event(job_1["id"], status="finished")
+
+    job_2 = enroll_event_job(
+        source_topic=TEST_SOURCE_TOPIC,
+        target_topic=TEST_TARGET_TOPIC,
+        sender="test_sender_2",
+        sequential=sequential
+    )
+
+    assert job_2 is not None \
+        and job_1 != job_2
+
+    # TODO - delete events - if possible
+
+    # src_event = get_event(job["dependsOn"])
+    # update_event(job["id"], status="failed")
+
+
+@pytest.mark.parametrize("sequential", test_sequential)
+def test_enroll_event_job_failed(sequential):
+    clean_up()
+
+    job_1 = enroll_event_job(
+        source_topic=TEST_SOURCE_TOPIC,
+        target_topic=TEST_TARGET_TOPIC,
+        sender="test_sender_1",
+        sequential=sequential
+    )
+
+    update_event(job_1["id"], status="failed")
+
+    job_2 = enroll_event_job(
+        source_topic=TEST_SOURCE_TOPIC,
+        target_topic=TEST_TARGET_TOPIC,
+        sender="test_sender_2",
+        sequential=sequential
+    )
+
+    assert sequential is not True or job_1 == job_2
+
+    # TODO - delete events - if possible
+
+    # src_event = get_event(job_1["dependsOn"])
+    # print(src_event)
+
+    # print(job)
+    # print(job_2)
+    
+    # update_event(job["id"], status="failed")
+
+
+@pytest.mark.parametrize("sequential", test_sequential)
+def test_enroll_event_job_same_sender(sequential):
+    clean_up()
+
+    job_1 = enroll_event_job(
+        source_topic=TEST_SOURCE_TOPIC,
+        target_topic=TEST_TARGET_TOPIC,
+        sender="test_sender",
+        sequential=sequential
+    )
+
+    job_2 = enroll_event_job(
+        source_topic=TEST_SOURCE_TOPIC,
+        target_topic=TEST_TARGET_TOPIC,
+        sender="test_sender",
+        sequential=sequential
+    )
+
+    assert job_1 == job_2
+
+    # TODO - delete events - if possible
+
+test_invalid_topics = [
+    (("invalid_source_topic", "invalid_target_topic"))
+]
+
+@pytest.mark.parametrize("topics", test_invalid_topics)
+@pytest.mark.parametrize("sequential", test_sequential)
+def test_enroll_event_job_invalid_topics(topics, sequential):
+    clean_up()
+
+    source_topic, target_topic = topics
+ 
+    job = enroll_event_job(
+        source_topic=source_topic,
+        target_topic=target_topic,
+        sender="test_sender",
+        sequential=sequential
+    )
+
+    assert job is None
+
+
+def test_enroll_event_job_sequential_false():
+    clean_up() # "close" all pending jobs
+    new_events()
+
+    depends_on_ids = set()
+
+    for sender in ["test_1", "test_2", "test_3"]:
+        job = enroll_event_job(
+            source_topic=TEST_SOURCE_TOPIC,
+            target_topic=TEST_TARGET_TOPIC,
+            sender=sender,
+            sequential=False
+        )
+
+        assert job is not None \
+            and job["dependsOn"] not in depends_on_ids
+
+        depends_on_ids.add(job["dependsOn"])
+    
+    # TODO - delete events if possible
+
+
+TEST_PROJECT_NAME = "test_API_project"
+TEST_PROJECT_CODE = "apitest"
+AYON_THUMBNAIL_PATH = "tests/resources/ayon-symbol.png"
+
+
+def test_thumbnail_operations(
+    project_name=TEST_PROJECT_NAME,
+    project_code=TEST_PROJECT_CODE,
+    thumbnail_path=AYON_THUMBNAIL_PATH
+):
+    if get_project(project_name):
+        delete_project(TEST_PROJECT_NAME)
+
+    project = create_project(project_name, project_code)
+    
+    thumbnail_id = create_thumbnail(project_name, thumbnail_path)
+
+    folder_id = create_folder(project_name, "my_test_folder", thumbnail_id=thumbnail_id)
+    thumbnail = get_folder_thumbnail(project_name, folder_id, thumbnail_id)
+
+    assert thumbnail.project_name == project_name
+    assert thumbnail.thumbnail_id == thumbnail_id
+
+    with open(thumbnail_path, "rb") as file:
+        image_bytes = file.read()
+
+    assert image_bytes == thumbnail.content
+
+    delete_project(project["name"])
+
+
+def test_addon_methods():
+    addon_name = "tests"
+    addon_version = "1.0.0"
+    download_path = "tests/resources/tmp_downloads"
+    private_file_path = os.path.join(download_path, "ayon-symbol.png")
+    
+    delete(f"/addons/{addon_name}/{addon_version}")
+    assert all(addon_name != addon["name"] for addon in get_addons_info()["addons"])
+
+    try:
+        _ = upload_addon_zip("tests/resources/addon/package/tests-1.0.0.zip")
+        
+        trigger_server_restart()
+        
+        # need to wait at least 0.1 sec. to restart server  
+        time.sleep(0.1)
+        while True:
+            try:
+                addons = get_addons_info()["addons"]
+                break
+            except exceptions.ServerError as exc:
+                assert "Connection timed out" in str(exc)
+
+        assert any(addon_name == addon["name"] for addon in addons)
+
+        downloaded_file = download_addon_private_file(
+            addon_name,
+            addon_version,
+            "ayon-symbol.png",
+            download_path
+        )
+
+        assert downloaded_file == private_file_path
+        assert os.path.isfile(private_file_path)
+
+    finally:
+        if os.path.isfile(private_file_path):
+            os.remove(private_file_path)
+
+        if os.path.isdir(download_path):
+            os.rmdir(download_path)
+
+
+@pytest.fixture
+def api_artist_user():
+    project = get_project(TEST_PROJECT_NAME)
+    if project is None:
+        project = create_project(TEST_PROJECT_NAME, TEST_PROJECT_CODE)
+
+    api = get_server_api_connection()
+    
+    username = "testUser"
+    password = "testUserPassword"
+    response = api.get("accessGroups/_")
+    access_groups = [
+        item["name"]
+        for item in response.data
+    ]
+    api.put(
+        f"users/{username}",
+        password=password,
+        data={
+            "isAdmin": False,
+            "isManager": False,
+            "defaultAccessGroups": access_groups,
+            "accessGroups": {
+                project["name"]: access_groups
+            },
+        }
+    )
+    new_api = ServerAPI(api.base_url)
+    new_api.login(username, password)
+
+    return new_api
+
+
+def test_server_restart_as_user(api_artist_user):
+    with pytest.raises(Exception):
+        api_artist_user.trigger_server_restart()
+
