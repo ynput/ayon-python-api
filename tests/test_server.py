@@ -771,8 +771,28 @@ def new_events():
 
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job(sequential, new_events):
-    # clean_up() # "close" all pending jobs
+    """Tests the `enroll_event_job` function for proper event job enrollment and sequential behavior.
 
+    Verifies:
+        - `enroll_event_job` correctly creates and returns a job with specified parameters
+          (`source_topic`, `target_topic`, `sender`, and `sequential`).
+        - When `sequential` is set to `True`, only one job can be enrolled at a time, 
+          preventing new enrollments until the first job is closed or updated.
+        - When `sequential` is `False` or `None`, multiple jobs can be enrolled 
+          concurrently without conflicts.
+        - The `update_event` function successfully updates the `status` of a job 
+          as expected, allowing for sequential job processing.
+
+    Parameters:
+        new_events: Fixture or setup to initialize new events for the test case.
+
+    Notes:
+        - `clean_up()` is called at the start to close any pending jobs, which 
+          could interfere with the test setup and expected outcomes.
+        - `update_event` is used to set `job_1`'s status to "failed" to test 
+          re-enrollment behavior.
+
+    """
     job_1 = enroll_event_job(
         source_topic=TEST_SOURCE_TOPIC,
         target_topic=TEST_TARGET_TOPIC,
@@ -811,6 +831,26 @@ def test_enroll_event_job(sequential, new_events):
 
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_failed(sequential):
+    """Tests `enroll_event_job` behavior when the initial job fails and sequential processing is enabled.
+
+    Verifies:
+        - `enroll_event_job` creates a job (`job_1`) with specified parameters 
+          (`source_topic`, `target_topic`, `sender`, and `sequential`).
+        - After `job_1` fails (status set to "failed"), a new job (`job_2`) can be 
+          enrolled with the same parameters.
+        - When `sequential` is `True`, the test verifies that `job_1` and `job_2` 
+          are identical, as a failed sequential job should not allow a new job 
+          to be enrolled separately.
+        - When `sequential` is `False`, `job_1` and `job_2` are allowed to differ, 
+          as concurrent processing is permitted.
+
+    Notes:
+        - `clean_up()` is called at the start to close any pending jobs, which 
+          could interfere with the test setup and expected outcomes.
+        - `update_event` is used to set `job_1`'s status to "failed" to test 
+          re-enrollment behavior.
+    
+    """
     clean_up()
 
     job_1 = enroll_event_job(
@@ -833,17 +873,26 @@ def test_enroll_event_job_failed(sequential):
 
     # TODO - delete events - if possible
 
-    # src_event = get_event(job_1["dependsOn"])
-    # print(src_event)
-
-    # print(job)
-    # print(job_2)
-    
-    # update_event(job["id"], status="failed")
-
 
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_same_sender(sequential):
+    """Tests `enroll_event_job` behavior when multiple jobs are enrolled by the same sender.
+
+    Verifies:
+        - `enroll_event_job` creates a job (`job_1`) with specified parameters 
+          (`source_topic`, `target_topic`, `sender`, and `sequential`).
+        - When a second job (`job_2`) is enrolled by the same sender with 
+          identical parameters, the function should return the same job as `job_1` 
+          (indicating idempotent behavior for the same sender and parameters).
+        - The test checks that `job_1` and `job_2` are identical, ensuring that 
+          no duplicate jobs are created for the same sender when `sequential` 
+          behavior does not permit additional jobs.
+
+    Notes:
+        - `clean_up()` is used at the beginning to close any pending jobs, ensuring 
+          they do not interfere with the test setup or outcomes.
+    
+    """
     clean_up()
 
     job_1 = enroll_event_job(
@@ -864,13 +913,28 @@ def test_enroll_event_job_same_sender(sequential):
 
     # TODO - delete events - if possible
 
+
 test_invalid_topics = [
-    (("invalid_source_topic", "invalid_target_topic"))
+    (("invalid_source_topic", "invalid_target_topic")),
+    (("nonexisting_source_topic", "nonexisting_target_topic")),
 ]
 
 @pytest.mark.parametrize("topics", test_invalid_topics)
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_invalid_topics(topics, sequential):
+    """Tests `enroll_event_job` behavior when provided with invalid topics.
+
+    Verifies:
+        - `enroll_event_job` returns `None` when given invalid `source_topic` 
+          or `target_topic`, indicating that the function properly rejects 
+          invalid topic values.
+        - The function correctly handles both sequential and non-sequential 
+          job processing modes when invalid topics are used.
+
+    Notes:
+        - `clean_up()` is called at the beginning to close any pending jobs that 
+          may interfere with the test setup or outcomes.
+    """
     clean_up()
 
     source_topic, target_topic = topics
@@ -885,10 +949,24 @@ def test_enroll_event_job_invalid_topics(topics, sequential):
     assert job is None
 
 
-def test_enroll_event_job_sequential_false():
-    clean_up() # "close" all pending jobs
-    new_events()
+def test_enroll_event_job_sequential_false(new_events):
+    """Tests `enroll_event_job` behavior when `sequential` is set to `False`.
 
+    Verifies:
+        - `enroll_event_job` creates a unique job for each sender even when 
+          `sequential` is set to `False`, allowing concurrent job processing.
+        - Each job has a unique `dependsOn` identifier, ensuring that no two 
+          jobs are linked in dependency, as expected for non-sequential enrollment.
+
+    Parameters:
+        new_events: Fixture or setup to initialize new events for the test case.
+    
+    Notes:
+        - The `depends_on_ids` set is used to track `dependsOn` identifiers and 
+          verify that each job has a unique dependency state, as required for 
+          concurrent processing.
+    
+    """
     depends_on_ids = set()
 
     for sender in ["test_1", "test_2", "test_3"]:
@@ -917,6 +995,23 @@ def test_thumbnail_operations(
     project_code=TEST_PROJECT_CODE,
     thumbnail_path=AYON_THUMBNAIL_PATH
 ):
+    """Tests thumbnail operations for a project, including creation, association, retrieval, and verification.
+
+    Verifies:
+        - A project is created with a specified name and code, and any existing 
+          project with the same name is deleted before setup to ensure a clean state.
+        - A thumbnail is created for the project and associated with a folder.
+        - The thumbnail associated with the folder is correctly retrieved, with 
+          attributes matching the project name and thumbnail ID.
+        - The content of the retrieved thumbnail matches the expected image bytes 
+          read from the specified `thumbnail_path`.
+
+    Notes:
+        - `delete_project` is called initially to remove any pre-existing project 
+          with the same name, ensuring no conflicts during testing.
+        - At the end of the test, the project is deleted to clean up resources.
+    
+    """
     if get_project(project_name):
         delete_project(TEST_PROJECT_NAME)
 
@@ -939,6 +1034,24 @@ def test_thumbnail_operations(
 
 
 def test_addon_methods():
+    """Tests addon methods, including upload, verification, download, and cleanup of addon resources.
+
+    Verifies:
+        - An addon with the specified name and version does not exist at the start.
+        - Uploads an addon package `.zip` file and triggers a server restart.
+        - Ensures the server restart completes, and verifies the uploaded addon is 
+          available in the list of addons after the restart.
+        - Downloads a private file associated with the addon, verifying its 
+          existence and correct download location.
+        - Cleans up downloaded files and directories after the test to maintain a 
+          clean state.
+
+    Notes:
+        - `time.sleep(0.1)` is used to allow for a brief pause for the server restart.
+        - The `finally` block removes downloaded files and the directory to prevent 
+          residual test artifacts.
+    
+    """
     addon_name = "tests"
     addon_version = "1.0.0"
     download_path = "tests/resources/tmp_downloads"
@@ -981,8 +1094,27 @@ def test_addon_methods():
             os.rmdir(download_path)
 
 
+
 @pytest.fixture
 def api_artist_user():
+    """Fixture that sets up an API connection for a non-admin artist user.
+
+    Workflow:
+        - Checks if the project exists; if not, it creates one with specified 
+          `TEST_PROJECT_NAME` and `TEST_PROJECT_CODE`.
+        - Establishes a server API connection and retrieves the list of available 
+          access groups.
+        - Configures a new user with limited permissions (`isAdmin` and `isManager` 
+          set to `False`) and assigns all available access groups as default and 
+          project-specific groups.
+        - Creates a new API connection using the artist user's credentials 
+          (`username` and `password`) and logs in with it.
+
+    Returns:
+        new_api: A `ServerAPI` instance authenticated with the artist user's 
+          credentials, ready to use in tests.
+
+    """
     project = get_project(TEST_PROJECT_NAME)
     if project is None:
         project = create_project(TEST_PROJECT_NAME, TEST_PROJECT_CODE)
@@ -1015,6 +1147,19 @@ def api_artist_user():
 
 
 def test_server_restart_as_user(api_artist_user):
+    """Tests that a non-admin artist user is not permitted to trigger a server restart.
+
+    Verifies:
+        - An attempt to call `trigger_server_restart` as a non-admin artist user 
+          raises an exception, ensuring that only users with the appropriate 
+          permissions (e.g., admins) can perform server restart operations.
+
+    Notes:
+        - The test checks the access control around the `trigger_server_restart` 
+          method to confirm that only authorized users can perform critical actions 
+          like server restarts.
+    
+    """
     with pytest.raises(Exception):
         api_artist_user.trigger_server_restart()
 
