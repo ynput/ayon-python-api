@@ -7365,29 +7365,6 @@ class ServerAPI(object):
             project_name, "workfile", workfile_id, thumbnail_id
         )
 
-    def _get_thumbnail_mime_type(self, thumbnail_path):
-        """Get thumbnail mime type on thumbnail creation based on source path.
-
-        Args:
-            thumbnail_path (str): Path to thumbnail source fie.
-
-        Returns:
-            str: Mime type used for thumbnail creation.
-
-        Raises:
-            ValueError: Mime type cannot be determined.
-
-        """
-        ext = os.path.splitext(thumbnail_path)[-1].lower()
-        if ext == ".png":
-            return "image/png"
-
-        elif ext in (".jpeg", ".jpg"):
-            return "image/jpeg"
-
-        raise ValueError(
-            "Thumbnail source file has unknown extensions {}".format(ext))
-
     def create_thumbnail(self, project_name, src_filepath, thumbnail_id=None):
         """Create new thumbnail on server from passed path.
 
@@ -7415,7 +7392,7 @@ class ServerAPI(object):
             )
             return thumbnail_id
 
-        mime_type = self._get_thumbnail_mime_type(src_filepath)
+        mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
             "projects/{}/thumbnails".format(project_name),
             src_filepath,
@@ -7443,7 +7420,7 @@ class ServerAPI(object):
         if not os.path.exists(src_filepath):
             raise ValueError("Entered filepath does not exist.")
 
-        mime_type = self._get_thumbnail_mime_type(src_filepath)
+        mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
             "projects/{}/thumbnails/{}".format(project_name, thumbnail_id),
             src_filepath,
