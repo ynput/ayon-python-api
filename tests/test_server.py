@@ -450,6 +450,7 @@ def test_get_events_project_name_topic_user(project_names, topics, users):
             and a user in `users`.
         - The item count matches the expected number when filtered by 
             combinations of project names, topics, and users.
+    
     """
     res = list(get_events(
         topics=topics,
@@ -744,6 +745,7 @@ def test_update_event_invalid_progress(event_id, progress):
 
 TEST_SOURCE_TOPIC = "test.source.topic"
 TEST_TARGET_TOPIC = "test.target.topic"
+DEFAULT_NUMBER_OF_EVENTS = 3
 
 test_sequential = [
     (True),
@@ -751,7 +753,13 @@ test_sequential = [
     (None)
 ]
 
-def clean_up(topics=[TEST_SOURCE_TOPIC, TEST_TARGET_TOPIC]):
+@pytest.fixture
+def clean_up_events(topics=[TEST_SOURCE_TOPIC, TEST_TARGET_TOPIC]):
+    """Called at the beginning to close any pending events that may interfere with 
+    the test setup or outcomes by marking them as 'finished'.
+    
+    """
+    print("clean_up FIXTURE", datetime.now())
     events = list(get_events(topics=topics))
     for event in events:
         if event["status"] not in ["finished", "failed"]:
@@ -759,18 +767,26 @@ def clean_up(topics=[TEST_SOURCE_TOPIC, TEST_TARGET_TOPIC]):
 
 
 @pytest.fixture
-def new_events():
-    clean_up()
+def create_test_events(num_of_events=DEFAULT_NUMBER_OF_EVENTS):
+    """Fixture to create a specified number of test events and return their IDs.
 
-    num_of_events = 3
+    This fixture dispatches events to the `TEST_SOURCE_TOPIC` and returns the 
+    list of event IDs for the created events.
+
+    """
+    print("new_tests FIXTURE", datetime.now())
     return [
         dispatch_event(topic=TEST_SOURCE_TOPIC, sender="tester", description=f"New test event n. {num}")["id"]
         for num in range(num_of_events)
     ]
 
 
+# clean_up_events should be below create_test_events to ensure it is called first
+# pytest probably does not guarantee the order of execution 
+@pytest.mark.usefixtures("create_test_events")
+@pytest.mark.usefixtures("clean_up_events")
 @pytest.mark.parametrize("sequential", test_sequential)
-def test_enroll_event_job(sequential, new_events):
+def test_enroll_event_job(sequential):
     """Tests the `enroll_event_job` function for proper event job enrollment and sequential behavior.
 
     Verifies:
@@ -787,12 +803,17 @@ def test_enroll_event_job(sequential, new_events):
         new_events: Fixture or setup to initialize new events for the test case.
 
     Notes:
-        - `clean_up()` is called at the start to close any pending jobs, which 
-          could interfere with the test setup and expected outcomes.
         - `update_event` is used to set `job_1`'s status to "failed" to test 
           re-enrollment behavior.
+        - TODO - delete events after test if possible
 
     """
+    events = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    ))
+
+    print([event["updatedAt"] for event in events])
+
     job_1 = enroll_event_job(
         source_topic=TEST_SOURCE_TOPIC,
         target_topic=TEST_TARGET_TOPIC,
@@ -823,12 +844,8 @@ def test_enroll_event_job(sequential, new_events):
     assert job_2 is not None \
         and job_1 != job_2
 
-    # TODO - delete events - if possible
 
-    # src_event = get_event(job["dependsOn"])
-    # update_event(job["id"], status="failed")
-
-
+@pytest.mark.usefixtures("clean_up_events")
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_failed(sequential):
     """Tests `enroll_event_job` behavior when the initial job fails and sequential processing is enabled.
@@ -845,14 +862,11 @@ def test_enroll_event_job_failed(sequential):
           as concurrent processing is permitted.
 
     Notes:
-        - `clean_up()` is called at the start to close any pending jobs, which 
-          could interfere with the test setup and expected outcomes.
         - `update_event` is used to set `job_1`'s status to "failed" to test 
           re-enrollment behavior.
-    
-    """
-    clean_up()
+        - TODO - delete events after test if possible
 
+    """
     job_1 = enroll_event_job(
         source_topic=TEST_SOURCE_TOPIC,
         target_topic=TEST_TARGET_TOPIC,
@@ -871,9 +885,8 @@ def test_enroll_event_job_failed(sequential):
 
     assert sequential is not True or job_1 == job_2
 
-    # TODO - delete events - if possible
 
-
+@pytest.mark.usefixtures("clean_up_events")
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_same_sender(sequential):
     """Tests `enroll_event_job` behavior when multiple jobs are enrolled by the same sender.
@@ -889,12 +902,9 @@ def test_enroll_event_job_same_sender(sequential):
           behavior does not permit additional jobs.
 
     Notes:
-        - `clean_up()` is used at the beginning to close any pending jobs, ensuring 
-          they do not interfere with the test setup or outcomes.
-    
-    """
-    clean_up()
+        - TODO - delete events after test if possible
 
+    """
     job_1 = enroll_event_job(
         source_topic=TEST_SOURCE_TOPIC,
         target_topic=TEST_TARGET_TOPIC,
@@ -911,14 +921,13 @@ def test_enroll_event_job_same_sender(sequential):
 
     assert job_1 == job_2
 
-    # TODO - delete events - if possible
-
 
 test_invalid_topics = [
     (("invalid_source_topic", "invalid_target_topic")),
     (("nonexisting_source_topic", "nonexisting_target_topic")),
 ]
 
+@pytest.mark.usefixtures("clean_up_events")
 @pytest.mark.parametrize("topics", test_invalid_topics)
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_invalid_topics(topics, sequential):
@@ -932,11 +941,10 @@ def test_enroll_event_job_invalid_topics(topics, sequential):
           job processing modes when invalid topics are used.
 
     Notes:
-        - `clean_up()` is called at the beginning to close any pending jobs that 
+        - `clean_up_events()` is called at the beginning to close any pending jobs that 
           may interfere with the test setup or outcomes.
+    
     """
-    clean_up()
-
     source_topic, target_topic = topics
  
     job = enroll_event_job(
@@ -949,7 +957,11 @@ def test_enroll_event_job_invalid_topics(topics, sequential):
     assert job is None
 
 
-def test_enroll_event_job_sequential_false(new_events):
+# clean_up_events should be below create_test_events to ensure it is called first
+# pytest probably does not guarantee the order of execution 
+@pytest.mark.usefixtures("create_test_events")
+@pytest.mark.usefixtures("clean_up_events")
+def test_enroll_event_job_sequential_false():
     """Tests `enroll_event_job` behavior when `sequential` is set to `False`.
 
     Verifies:
@@ -965,7 +977,7 @@ def test_enroll_event_job_sequential_false(new_events):
         - The `depends_on_ids` set is used to track `dependsOn` identifiers and 
           verify that each job has a unique dependency state, as required for 
           concurrent processing.
-    
+        - TODO - delete events after test if possible
     """
     depends_on_ids = set()
 
@@ -981,8 +993,6 @@ def test_enroll_event_job_sequential_false(new_events):
             and job["dependsOn"] not in depends_on_ids
 
         depends_on_ids.add(job["dependsOn"])
-    
-    # TODO - delete events if possible
 
 
 TEST_PROJECT_NAME = "test_API_project"
@@ -1047,10 +1057,10 @@ def test_addon_methods():
           clean state.
 
     Notes:
-        - `time.sleep(0.1)` is used to allow for a brief pause for the server restart.
+        - `time.sleep()` is used to allow for a brief pause for the server restart.
         - The `finally` block removes downloaded files and the directory to prevent 
           residual test artifacts.
-    
+
     """
     addon_name = "tests"
     addon_version = "1.0.0"
@@ -1065,8 +1075,8 @@ def test_addon_methods():
         
         trigger_server_restart()
         
-        # need to wait at least 0.1 sec. to restart server  
-        time.sleep(0.1)
+        # need to wait at least 0.1 sec. to restart server
+        time.sleep(0.5)
         while True:
             try:
                 addons = get_addons_info()["addons"]
@@ -1092,7 +1102,6 @@ def test_addon_methods():
 
         if os.path.isdir(download_path):
             os.rmdir(download_path)
-
 
 
 @pytest.fixture
@@ -1158,7 +1167,7 @@ def test_server_restart_as_user(api_artist_user):
         - The test checks the access control around the `trigger_server_restart` 
           method to confirm that only authorized users can perform critical actions 
           like server restarts.
-    
+
     """
     with pytest.raises(Exception):
         api_artist_user.trigger_server_restart()
