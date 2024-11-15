@@ -636,3 +636,47 @@ def users_graphql_query(fields):
         for k, v in value.items():
             query_queue.append((k, v, field))
     return query
+
+
+def activities_graphql_query(fields):
+    query = GraphQlQuery("Activities")
+    project_name_var = query.add_variable("projectName", "String!")
+    activity_ids_var = query.add_variable("activityIds", "[String]")
+    activity_types_var = query.add_variable("activityTypes", "[String]")
+    entity_ids_var = query.add_variable("entityIds", "[String]")
+    entity_names_var = query.add_variable("entityNames", "[String]")
+    entity_type_var = query.add_variable("entityType", "String!")
+    changed_after_var = query.add_variable("changedAfter", "String!")
+    changed_before_var = query.add_variable("changedBefore", "String!")
+    reference_types_var = query.add_variable("referenceTypes", "String!")
+
+    project_field = query.add_field_with_edges("project")
+    project_field.set_filter("name", project_name_var)
+
+    activities_field = project_field.add_field_with_edges("activities")
+    activities_field.set_filter("activityIds", activity_ids_var)
+    activities_field.set_filter("activityTypes", activity_types_var)
+    activities_field.set_filter("entityIds", entity_ids_var)
+    activities_field.set_filter("entityNames", entity_names_var)
+    activities_field.set_filter("entityType", entity_type_var)
+    activities_field.set_filter("changedAfter", changed_after_var)
+    activities_field.set_filter("changedBefore", changed_before_var)
+    activities_field.set_filter("referenceTypes", reference_types_var)
+
+    nested_fields = fields_to_dict(set(fields))
+
+    query_queue = collections.deque()
+    for key, value in nested_fields.items():
+        query_queue.append((key, value, activities_field))
+
+    while query_queue:
+        item = query_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            query_queue.append((k, v, field))
+
+    return query

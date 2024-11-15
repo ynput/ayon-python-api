@@ -16,7 +16,7 @@ import uuid
 import warnings
 import itertools
 from contextlib import contextmanager
-from typing import Optional
+from typing import Optional, Iterable
 
 try:
     from http import HTTPStatus
@@ -49,6 +49,7 @@ from .constants import (
     REPRESENTATION_FILES_FIELDS,
     DEFAULT_WORKFILE_INFO_FIELDS,
     DEFAULT_EVENT_FIELDS,
+    DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
     DEFAULT_LINK_FIELDS,
 )
@@ -68,6 +69,7 @@ from .graphql_queries import (
     workfiles_info_graphql_query,
     events_graphql_query,
     users_graphql_query,
+    activities_graphql_query,
 )
 from .exceptions import (
     FailedOperations,
@@ -1729,6 +1731,75 @@ class ServerAPI(object):
 
         return response.data
 
+    def get_activities(
+        self,
+        project_name: str,
+        activity_ids: Optional[Iterable[str]] = None,
+        activity_types: Optional[Iterable[str]] = None,
+        entity_ids: Optional[Iterable[str]] = None,
+        entity_names: Optional[Iterable[str]] = None,
+        entity_type: Optional[str] = None,
+        changed_after: Optional[str] = None,
+        changed_before: Optional[str] = None,
+        reference_types: Optional[Iterable[str]] = None,
+        fields: Optional[Iterable[str]] = None,
+    ):
+        """Get activities from server with filtering options.
+
+        Args:
+            project_name (str): Project on which event happened.
+            activity_ids (Optional[Iterable[str]]): Activity ids.
+            activity_types (Optional[Iterable[str]]): Activity types.
+            entity_ids (Optional[Iterable[str]]): Entity ids.
+            entity_names (Optional[Iterable[str]]): Entity names.
+            entity_type (Optional[str]): Entity type.
+            changed_after (Optional[str]): Return only activities changed
+                after given iso datetime string.
+            changed_before (Optional[str]): Return only activities changed
+                before given iso datetime string.
+            reference_types (Optional[Iterable[str]]): Reference types.
+            fields (Optional[Iterable[str]]): Fields that should be received
+                for each activity.
+
+        Returns:
+            Generator[dict[str, Any]]: Available activities matching filters.
+
+        """
+        if not project_name:
+            return
+        filters = {
+            "projectName": project_name,
+        }
+
+        if not _prepare_list_filters(
+            filters,
+            ("activityIds", activity_ids),
+            ("activityTypes", activity_types),
+            ("entityIds", entity_ids),
+            ("entityNames", entity_names),
+            ("referenceTypes", reference_types),
+        ):
+            return
+
+        for filter_key, filter_value in (
+            ("entityType", entity_type),
+            ("changedAfter", changed_after),
+            ("changedBefore", changed_before),
+        ):
+            if filter_value is not None:
+                filters[filter_key] = filter_value
+
+        if not fields:
+            fields = self.get_default_fields_for_type("activity")
+
+        query = activities_graphql_query(set(fields))
+        for attr, filter_value in filters.items():
+            query.set_variable_value(attr, filter_value)
+
+        for parsed_data in query.continuous_query(self):
+            for event in parsed_data["activities"]:
+                yield event
+
     def _endpoint_to_url(
         self,
         endpoint: str,
@@ -2305,6 +2376,9 @@ class ServerAPI(object):
         # Event does not have attributes
         if entity_type == "event":
             return set(DEFAULT_EVENT_FIELDS)
+
+        if entity_type == "activity":
+            return set(DEFAULT_ACTIVITY_FIELDS)
 
         if entity_type == "project":
             entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
