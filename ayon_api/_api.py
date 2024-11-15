@@ -803,6 +803,22 @@ def dispatch_event(*args, **kwargs):
     return con.dispatch_event(*args, **kwargs)
 
 
+def delete_event(*args, **kwargs):
+    """Delete event by id.
+
+    Supported since AYON server 1.6.0.
+
+    Args:
+        event_id (str): Event id.
+
+    Returns:
+        RestApiResponse: Response from server.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_event(*args, **kwargs)
+
+
 def enroll_event_job(*args, **kwargs):
     """Enroll job based on events.
 
