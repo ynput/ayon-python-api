@@ -877,6 +877,100 @@ def enroll_event_job(*args, **kwargs):
     return con.enroll_event_job(*args, **kwargs)
 
 
+def get_activities(*args, **kwargs):
+    """Get activities from server with filtering options.
+
+    Args:
+        project_name (str): Project on which activities happened.
+        activity_ids (Optional[Iterable[str]]): Activity ids.
+        activity_types (Optional[Iterable[ActivityType]]): Activity types.
+        entity_ids (Optional[Iterable[str]]): Entity ids.
+        entity_names (Optional[Iterable[str]]): Entity names.
+        entity_type (Optional[str]): Entity type.
+        changed_after (Optional[str]): Return only activities changed
+            after given iso datetime string.
+        changed_before (Optional[str]): Return only activities changed
+            before given iso datetime string.
+        reference_types (Optional[Iterable[str]]): Reference types.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+
+    Returns:
+        Generator[dict[str, Any]]: Available activities matching filters.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activities(*args, **kwargs)
+
+
+def get_activity_by_id(*args, **kwargs):
+    """Get activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+
+    Returns:
+        Optional[Dict[str, Any]]: Activity data or None if activity is not
+            found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activity_by_id(*args, **kwargs)
+
+
+def create_activity(*args, **kwargs):
+    """Create activity on a project.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        entity_id (str): Entity id.
+        entity_type (str): Entity type.
+        activity_type (ActivityType): Activity type.
+        activity_id (Optional[str]): Activity id.
+        body (Optional[str]): Activity body.
+        file_ids (Optional[List[str]]): List of file ids attached
+            to activity.
+        timestamp (Optional[str]): Activity timestamp.
+        data (Optional[Dict[str, Any]]): Additional data.
+
+    Returns:
+        Dict[str, str]: Data with activity id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_activity(*args, **kwargs)
+
+
+def update_activity(*args, **kwargs):
+    """Update activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        body (str): Activity body.
+        file_ids (Optional[List[str]]): List of file ids attached
+            to activity.
+
+    """
+    con = get_server_api_connection()
+    return con.update_activity(*args, **kwargs)
+
+
+def delete_activity(*args, **kwargs):
+    """Delete activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id to remove.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_activity(*args, **kwargs)
+
+
 def download_file_to_stream(*args, **kwargs):
     """Download file from AYON server to IOStream.
 
