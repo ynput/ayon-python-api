@@ -1814,6 +1814,33 @@ class ServerAPI(object):
             for activity in parsed_data["project"]["activities"]:
                 yield activity
 
+    def get_activity_by_id(
+        self,
+        project_name: str,
+        activity_id: str,
+        fields: Optional[Iterable[str]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get activity by id.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            activity_id (str): Activity id.
+            fields (Optional[Iterable[str]]): Fields that should be received
+                for each activity.
+
+        Returns:
+            Optional[Dict[str, Any]]: Activity data or None if activity is not
+                found.
+
+        """
+        for activity in self.get_activities(
+            project_name=project_name,
+            activity_ids={activity_id},
+            fields=fields,
+        ):
+            return activity
+        return None
+
     def _endpoint_to_url(
         self,
         endpoint: str,
