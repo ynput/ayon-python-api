@@ -1797,7 +1797,7 @@ class ServerAPI(object):
             query.set_variable_value(attr, filter_value)
 
         for parsed_data in query.continuous_query(self):
-            for event in parsed_data["activities"]:
+            for event in parsed_data["project"]["activities"]:
                 yield event
 
     def _endpoint_to_url(

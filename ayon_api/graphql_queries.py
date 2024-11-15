@@ -650,7 +650,7 @@ def activities_graphql_query(fields):
     changed_before_var = query.add_variable("changedBefore", "String!")
     reference_types_var = query.add_variable("referenceTypes", "String!")
 
-    project_field = query.add_field_with_edges("project")
+    project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
     activities_field = project_field.add_field_with_edges("activities")
