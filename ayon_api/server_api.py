@@ -1841,6 +1841,56 @@ class ServerAPI(object):
             return activity
         return None
 
+    def create_activity(
+        self,
+        project_name: str,
+        entity_id: str,
+        entity_type: str,
+        activity_type: "ActivityType",
+        activity_id: Optional[str] = None,
+        body: Optional[str] = None,
+        file_ids: Optional[List[str]] = None,
+        timestamp: Optional[str] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ):
+        """Create activity on a project.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            entity_id (str): Entity id.
+            entity_type (str): Entity type.
+            activity_type (ActivityType): Activity type.
+            activity_id (Optional[str]): Activity id.
+            body (Optional[str]): Activity body.
+            file_ids (Optional[List[str]]): List of file ids attached
+                to activity.
+            timestamp (Optional[str]): Activity timestamp.
+            data (Optional[Dict[str, Any]]): Additional data.
+
+        Returns:
+            Dict[str, str]: Data with activity id.
+
+        """
+        post_data = {
+            "activityType": activity_type,
+        }
+        for key, value in (
+            ("id", activity_id),
+            ("body", body),
+            ("files", file_ids),
+            ("timestamp", timestamp),
+            ("data", data),
+        ):
+            if value is not None:
+                post_data[key] = value
+
+        response = self.post(
+            f"projects/{project_name}/{entity_type}/{entity_id}/activities",
+            **post_data
+        )
+        response.raise_for_status()
+        return response.data
+
     def _endpoint_to_url(
         self,
         endpoint: str,
