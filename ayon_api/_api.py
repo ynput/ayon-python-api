@@ -1484,6 +1484,35 @@ def upload_dependency_package(*args, **kwargs):
     return con.upload_dependency_package(*args, **kwargs)
 
 
+def delete_addon(*args, **kwargs):
+    """Delete addon from server.
+
+    Delete all versions of addon from server.
+
+    Args:
+        addon_name (str): Addon name.
+        purge (Optional[bool]): Purge all data related to the addon.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon(*args, **kwargs)
+
+
+def delete_addon_version(*args, **kwargs):
+    """Delete addon version from server.
+
+    Delete all versions of addon from server.
+
+    Args:
+        addon_name (str): Addon name.
+        addon_version (str): Addon version.
+        purge (Optional[bool]): Purge all data related to the addon.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon_version(*args, **kwargs)
+
+
 def upload_addon_zip(*args, **kwargs):
     """Upload addon zip file to server.
 
