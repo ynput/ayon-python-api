@@ -331,6 +331,20 @@ def get_server_api_connection():
     """
     return GlobalContext.get_server_api_connection()
 
+
+def get_default_settings_variant():
+    """Default variant used for settings.
+
+    Returns:
+        Union[str, None]: name of variant or None.
+
+    """
+    if not GlobalContext.is_connection_created():
+        return _get_default_settings_variant()
+    con = get_server_api_connection()
+    return con.get_default_settings_variant()
+
+
 # ------------------------------------------------
 #     This content is generated automatically.
 # ------------------------------------------------
@@ -496,19 +510,6 @@ def set_client_version(*args, **kwargs):
     """
     con = get_server_api_connection()
     return con.set_client_version(*args, **kwargs)
-
-
-def get_default_settings_variant():
-    """Default variant used for settings.
-
-    Returns:
-        Union[str, None]: name of variant or None.
-
-    """
-    if not GlobalContext.is_connection_created():
-        return _get_default_settings_variant()
-    con = get_server_api_connection()
-    return con.get_default_settings_variant()
 
 
 def set_default_settings_variant(*args, **kwargs):
@@ -800,6 +801,22 @@ def dispatch_event(*args, **kwargs):
     """
     con = get_server_api_connection()
     return con.dispatch_event(*args, **kwargs)
+
+
+def delete_event(*args, **kwargs):
+    """Delete event by id.
+
+    Supported since AYON server 1.6.0.
+
+    Args:
+        event_id (str): Event id.
+
+    Returns:
+        RestApiResponse: Response from server.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_event(*args, **kwargs)
 
 
 def enroll_event_job(*args, **kwargs):
@@ -3405,9 +3422,9 @@ def get_representations(*args, **kwargs):
         version_ids (Optional[Iterable[str]]): Version ids used for
             representation filtering. Versions are parents of
             representations.
-        names_by_version_ids (Optional[bool]): Find representations
-            by names and version ids. This filter discard all
-            other filters.
+        names_by_version_ids (Optional[Dict[str, Iterable[str]]): Find
+            representations by names and version ids. This filter
+            discards all other filters.
         statuses (Optional[Iterable[str]]): Representation statuses used
             for filtering.
         tags (Optional[Iterable[str]]): Representation tags used

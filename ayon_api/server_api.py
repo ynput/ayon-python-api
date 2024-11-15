@@ -1620,6 +1620,23 @@ class ServerAPI(object):
         response.raise_for_status()
         return response
 
+    def delete_event(self, event_id: str):
+        """Delete event by id.
+
+        Supported since AYON server 1.6.0.
+
+        Args:
+            event_id (str): Event id.
+
+        Returns:
+            RestApiResponse: Response from server.
+
+        """
+        response = self.delete(f"events/{event_id}")
+        response.raise_for_status()
+        return response
+
+
     def enroll_event_job(
         self,
         source_topic,
@@ -6374,9 +6391,9 @@ class ServerAPI(object):
             version_ids (Optional[Iterable[str]]): Version ids used for
                 representation filtering. Versions are parents of
                 representations.
-            names_by_version_ids (Optional[bool]): Find representations
-                by names and version ids. This filter discard all
-                other filters.
+            names_by_version_ids (Optional[Dict[str, Iterable[str]]): Find
+                representations by names and version ids. This filter
+                discards all other filters.
             statuses (Optional[Iterable[str]]): Representation statuses used
                 for filtering.
             tags (Optional[Iterable[str]]): Representation tags used
@@ -6438,21 +6455,21 @@ class ServerAPI(object):
             filters["representationIds"] = list(representation_ids)
 
         version_ids_filter = None
-        representaion_names_filter = None
+        representation_names_filter = None
         if names_by_version_ids is not None:
             version_ids_filter = set()
-            representaion_names_filter = set()
+            representation_names_filter = set()
             for version_id, names in names_by_version_ids.items():
                 version_ids_filter.add(version_id)
-                representaion_names_filter |= set(names)
+                representation_names_filter |= set(names)
 
-            if not version_ids_filter or not representaion_names_filter:
+            if not version_ids_filter or not representation_names_filter:
                 return
 
         else:
             if representation_names is not None:
-                representaion_names_filter = set(representation_names)
-                if not representaion_names_filter:
+                representation_names_filter = set(representation_names)
+                if not representation_names_filter:
                     return
 
             if version_ids is not None:
@@ -6463,8 +6480,8 @@ class ServerAPI(object):
         if version_ids_filter:
             filters["versionIds"] = list(version_ids_filter)
 
-        if representaion_names_filter:
-            filters["representationNames"] = list(representaion_names_filter)
+        if representation_names_filter:
+            filters["representationNames"] = list(representation_names_filter)
 
         if statuses is not None:
             statuses = set(statuses)
