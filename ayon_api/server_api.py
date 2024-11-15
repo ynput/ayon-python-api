@@ -16,7 +16,8 @@ import uuid
 import warnings
 import itertools
 from contextlib import contextmanager
-from typing import Optional, Iterable
+import typing
+from typing import Optional, Iterable, Generator, Dict, List, Any
 
 try:
     from http import HTTPStatus
@@ -96,6 +97,19 @@ from .utils import (
     NOT_SET,
     get_media_mime_type,
 )
+
+if typing.TYPE_CHECKING:
+    from typing import Literal
+
+    ActivityType = Literal[
+        "comment",
+        "watch",
+        "reviewable",
+        "status.change",
+        "assignee.add",
+        "assignee.remove",
+        "version.publish"
+    ]
 
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
@@ -1735,7 +1749,7 @@ class ServerAPI(object):
         self,
         project_name: str,
         activity_ids: Optional[Iterable[str]] = None,
-        activity_types: Optional[Iterable[str]] = None,
+        activity_types: Optional[Iterable["ActivityType"]] = None,
         entity_ids: Optional[Iterable[str]] = None,
         entity_names: Optional[Iterable[str]] = None,
         entity_type: Optional[str] = None,
@@ -1743,13 +1757,13 @@ class ServerAPI(object):
         changed_before: Optional[str] = None,
         reference_types: Optional[Iterable[str]] = None,
         fields: Optional[Iterable[str]] = None,
-    ):
+    ) -> Generator[Dict[str, Any], None, None]:
         """Get activities from server with filtering options.
 
         Args:
-            project_name (str): Project on which event happened.
+            project_name (str): Project on which activities happened.
             activity_ids (Optional[Iterable[str]]): Activity ids.
-            activity_types (Optional[Iterable[str]]): Activity types.
+            activity_types (Optional[Iterable[ActivityType]]): Activity types.
             entity_ids (Optional[Iterable[str]]): Entity ids.
             entity_names (Optional[Iterable[str]]): Entity names.
             entity_type (Optional[str]): Entity type.
@@ -1797,8 +1811,8 @@ class ServerAPI(object):
             query.set_variable_value(attr, filter_value)
 
         for parsed_data in query.continuous_query(self):
-            for event in parsed_data["project"]["activities"]:
-                yield event
+            for activity in parsed_data["project"]["activities"]:
+                yield activity
 
     def _endpoint_to_url(
         self,
