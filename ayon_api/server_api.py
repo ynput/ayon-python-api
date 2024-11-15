@@ -1620,6 +1620,23 @@ class ServerAPI(object):
         response.raise_for_status()
         return response
 
+    def delete_event(self, event_id: str):
+        """Delete event by id.
+
+        Supported since AYON server 1.6.0.
+
+        Args:
+            event_id (str): Event id.
+
+        Returns:
+            RestApiResponse: Response from server.
+
+        """
+        response = self.delete(f"events/{event_id}")
+        response.raise_for_status()
+        return response
+
+
     def enroll_event_job(
         self,
         source_topic,
