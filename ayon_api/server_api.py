@@ -1891,6 +1891,47 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
+    def update_activity(
+        self,
+        project_name: str,
+        activity_id: str,
+        body: str,
+        file_ids: Optional[List[str]] = None,
+    ):
+        """Update activity by id.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            activity_id (str): Activity id.
+            body (str): Activity body.
+            file_ids (Optional[List[str]]): List of file ids attached
+                to activity.
+
+        """
+        data = {
+            "body": body,
+        }
+        if file_ids is not None:
+            data["files"] = file_ids
+        response = self.delete(
+            f"projects/{project_name}/activities/{activity_id}",
+            **data
+        )
+        response.raise_for_status()
+
+    def delete_activity(self, project_name: str, activity_id: str):
+        """Delete activity by id.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            activity_id (str): Activity id to remove.
+
+        """
+        response = self.delete(
+            f"projects/{project_name}/activities/{activity_id}"
+        )
+        response.raise_for_status()
+
     def _endpoint_to_url(
         self,
         endpoint: str,
