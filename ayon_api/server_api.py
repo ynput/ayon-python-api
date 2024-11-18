@@ -8544,6 +8544,59 @@ class ServerAPI(object):
             list[dict[str, Any]]: Operations result with process details.
 
         """
+        return self._send_batch_operations(
+            f"projects/{project_name}/operations",
+            operations,
+            can_fail,
+            raise_on_fail,
+        )
+
+    def send_activities_batch_operations(
+        self,
+        project_name,
+        operations,
+        can_fail=False,
+        raise_on_fail=True
+    ):
+        """Post multiple CRUD activities operations to server.
+
+        When multiple changes should be made on server side this is the best
+        way to go. It is possible to pass multiple operations to process on a
+        server side and do the changes in a transaction.
+
+        Args:
+            project_name (str): On which project should be operations
+                processed.
+            operations (list[dict[str, Any]]): Operations to be processed.
+            can_fail (Optional[bool]): Server will try to process all
+                operations even if one of them fails.
+            raise_on_fail (Optional[bool]): Raise exception if an operation
+                fails. You can handle failed operations on your own
+                when set to 'False'.
+
+        Raises:
+            ValueError: Operations can't be converted to json string.
+            FailedOperations: When output does not contain server operations
+                or 'raise_on_fail' is enabled and any operation fails.
+
+        Returns:
+            list[dict[str, Any]]: Operations result with process details.
+
+        """
+        return self._send_batch_operations(
+            f"projects/{project_name}/operations/activities",
+            operations,
+            can_fail,
+            raise_on_fail,
+        )
+
+    def _send_batch_operations(
+        self,
+        uri: str,
+        operations: List[Dict[str, Any]],
+        can_fail: bool,
+        raise_on_fail: bool
+    ):
         if not operations:
             return []
 
@@ -8576,7 +8629,7 @@ class ServerAPI(object):
             return []
 
         result = self.post(
-            "projects/{}/operations".format(project_name),
+            uri,
             operations=operations_body,
             canFail=can_fail
         )
