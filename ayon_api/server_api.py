@@ -110,6 +110,13 @@ if typing.TYPE_CHECKING:
         "assignee.remove",
         "version.publish"
     ]
+    ActivityReferenceType = Literal[
+        "origin",
+        "mention",
+        "author",
+        "relation",
+        "watching",
+    ]
 
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
@@ -1755,7 +1762,7 @@ class ServerAPI(object):
         entity_type: Optional[str] = None,
         changed_after: Optional[str] = None,
         changed_before: Optional[str] = None,
-        reference_types: Optional[Iterable[str]] = None,
+        reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """Get activities from server with filtering options.
@@ -1771,7 +1778,8 @@ class ServerAPI(object):
                 after given iso datetime string.
             changed_before (Optional[str]): Return only activities changed
                 before given iso datetime string.
-            reference_types (Optional[Iterable[str]]): Reference types.
+            reference_types (Optional[Iterable[ActivityReferenceType]]):
+                Reference types filter. Defaults to `['origin']`.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each activity.
 
@@ -1784,6 +1792,8 @@ class ServerAPI(object):
         filters = {
             "projectName": project_name,
         }
+        if reference_types is None:
+            reference_types = {"origin"}
 
         if not _prepare_list_filters(
             filters,
@@ -1818,6 +1828,7 @@ class ServerAPI(object):
         self,
         project_name: str,
         activity_id: str,
+        reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Get activity by id.
@@ -1836,6 +1847,7 @@ class ServerAPI(object):
         for activity in self.get_activities(
             project_name=project_name,
             activity_ids={activity_id},
+            reference_types=reference_types,
             fields=fields,
         ):
             return activity
@@ -1895,7 +1907,7 @@ class ServerAPI(object):
         self,
         project_name: str,
         activity_id: str,
-        body: str,
+        body: Optional[str] = None,
         file_ids: Optional[List[str]] = None,
         append_file_ids: Optional[bool] = False,
         data: Optional[Dict[str, Any]] = None,
@@ -1913,11 +1925,18 @@ class ServerAPI(object):
             data (Optional[Dict[str, Any]]): Update data in activity.
 
         """
-        update_data = {
-            "body": body,
-        }
+        update_data = {}
         major, minor, patch, _, _ = self.server_version_tuple
         new_patch_model = (major, minor, patch) > (1, 5, 6)
+        if body is None and not new_patch_model:
+            raise ValueError(
+                "Update without 'body' is supported"
+                " after server version 1.5.6."
+            )
+
+        if body is not None:
+            update_data["body"] = body
+
         if file_ids is not None:
             update_data["files"] = file_ids
             if new_patch_model:
