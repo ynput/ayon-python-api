@@ -803,6 +803,22 @@ def dispatch_event(*args, **kwargs):
     return con.dispatch_event(*args, **kwargs)
 
 
+def delete_event(*args, **kwargs):
+    """Delete event by id.
+
+    Supported since AYON server 1.6.0.
+
+    Args:
+        event_id (str): Event id.
+
+    Returns:
+        RestApiResponse: Response from server.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_event(*args, **kwargs)
+
+
 def enroll_event_job(*args, **kwargs):
     """Enroll job based on events.
 
@@ -1466,6 +1482,35 @@ def upload_dependency_package(*args, **kwargs):
     """
     con = get_server_api_connection()
     return con.upload_dependency_package(*args, **kwargs)
+
+
+def delete_addon(*args, **kwargs):
+    """Delete addon from server.
+
+    Delete all versions of addon from server.
+
+    Args:
+        addon_name (str): Addon name.
+        purge (Optional[bool]): Purge all data related to the addon.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon(*args, **kwargs)
+
+
+def delete_addon_version(*args, **kwargs):
+    """Delete addon version from server.
+
+    Delete all versions of addon from server.
+
+    Args:
+        addon_name (str): Addon name.
+        addon_version (str): Addon version.
+        purge (Optional[bool]): Purge all data related to the addon.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon_version(*args, **kwargs)
 
 
 def upload_addon_zip(*args, **kwargs):

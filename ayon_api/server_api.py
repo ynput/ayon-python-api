@@ -1620,6 +1620,23 @@ class ServerAPI(object):
         response.raise_for_status()
         return response
 
+    def delete_event(self, event_id: str):
+        """Delete event by id.
+
+        Supported since AYON server 1.6.0.
+
+        Args:
+            event_id (str): Event id.
+
+        Returns:
+            RestApiResponse: Response from server.
+
+        """
+        response = self.delete(f"events/{event_id}")
+        response.raise_for_status()
+        return response
+
+
     def enroll_event_job(
         self,
         source_topic,
@@ -2831,6 +2848,47 @@ class ServerAPI(object):
 
         route = self._get_dependency_package_route(dst_filename)
         self.upload_file(route, src_filepath, progress=progress)
+
+    def delete_addon(self, addon_name: str, purge: Optional[bool] = None):
+        """Delete addon from server.
+
+        Delete all versions of addon from server.
+
+        Args:
+            addon_name (str): Addon name.
+            purge (Optional[bool]): Purge all data related to the addon.
+
+        """
+        query_data = {}
+        if purge is not None:
+            query_data["purge"] = "true" if purge else "false"
+        query = prepare_query_string(query_data)
+
+        response = self.delete(f"addons/{addon_name}{query}")
+        response.raise_for_status()
+
+    def delete_addon_version(
+        self,
+        addon_name: str,
+        addon_version: str,
+        purge: Optional[bool] = None,
+    ):
+        """Delete addon version from server.
+
+        Delete all versions of addon from server.
+
+        Args:
+            addon_name (str): Addon name.
+            addon_version (str): Addon version.
+            purge (Optional[bool]): Purge all data related to the addon.
+
+        """
+        query_data = {}
+        if purge is not None:
+            query_data["purge"] = "true" if purge else "false"
+        query = prepare_query_string(query_data)
+        response = self.delete(f"addons/{addon_name}/{addon_version}{query}")
+        response.raise_for_status()
 
     def upload_addon_zip(self, src_filepath, progress=None):
         """Upload addon zip file to server.
