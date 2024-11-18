@@ -891,7 +891,8 @@ def get_activities(*args, **kwargs):
             after given iso datetime string.
         changed_before (Optional[str]): Return only activities changed
             before given iso datetime string.
-        reference_types (Optional[Iterable[str]]): Reference types.
+        reference_types (Optional[Iterable[ActivityReferenceType]]):
+            Reference types filter. Defaults to `['origin']`.
         fields (Optional[Iterable[str]]): Fields that should be received
             for each activity.
 
@@ -953,6 +954,9 @@ def update_activity(*args, **kwargs):
         body (str): Activity body.
         file_ids (Optional[List[str]]): List of file ids attached
             to activity.
+        append_file_ids (Optional[bool]): Append file ids to existing
+            list of file ids.
+        data (Optional[Dict[str, Any]]): Update data in activity.
 
     """
     con = get_server_api_connection()
@@ -4509,3 +4513,33 @@ def send_batch_operations(*args, **kwargs):
     """
     con = get_server_api_connection()
     return con.send_batch_operations(*args, **kwargs)
+
+
+def send_activities_batch_operations(*args, **kwargs):
+    """Post multiple CRUD activities operations to server.
+
+    When multiple changes should be made on server side this is the best
+    way to go. It is possible to pass multiple operations to process on a
+    server side and do the changes in a transaction.
+
+    Args:
+        project_name (str): On which project should be operations
+            processed.
+        operations (list[dict[str, Any]]): Operations to be processed.
+        can_fail (Optional[bool]): Server will try to process all
+            operations even if one of them fails.
+        raise_on_fail (Optional[bool]): Raise exception if an operation
+            fails. You can handle failed operations on your own
+            when set to 'False'.
+
+    Raises:
+        ValueError: Operations can't be converted to json string.
+        FailedOperations: When output does not contain server operations
+            or 'raise_on_fail' is enabled and any operation fails.
+
+    Returns:
+        list[dict[str, Any]]: Operations result with process details.
+
+    """
+    con = get_server_api_connection()
+    return con.send_activities_batch_operations(*args, **kwargs)

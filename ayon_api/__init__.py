@@ -235,6 +235,7 @@ from ._api import (
     get_representations_links,
     get_representation_links,
     send_batch_operations,
+    send_activities_batch_operations,
 )
 
 
@@ -473,4 +474,5 @@ __all__ = (
     "get_representations_links",
     "get_representation_links",
     "send_batch_operations",
+    "send_activities_batch_operations",
 )
