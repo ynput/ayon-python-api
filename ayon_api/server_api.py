@@ -1897,6 +1897,8 @@ class ServerAPI(object):
         activity_id: str,
         body: str,
         file_ids: Optional[List[str]] = None,
+        append_file_ids: Optional[bool] = False,
+        data: Optional[Dict[str, Any]] = None,
     ):
         """Update activity by id.
 
@@ -1906,16 +1908,35 @@ class ServerAPI(object):
             body (str): Activity body.
             file_ids (Optional[List[str]]): List of file ids attached
                 to activity.
+            append_file_ids (Optional[bool]): Append file ids to existing
+                list of file ids.
+            data (Optional[Dict[str, Any]]): Update data in activity.
 
         """
-        data = {
+        update_data = {
             "body": body,
         }
+        major, minor, patch, _, _ = self.server_version_tuple
+        new_patch_model = (major, minor, patch) > (1, 5, 6)
         if file_ids is not None:
-            data["files"] = file_ids
+            update_data["files"] = file_ids
+            if new_patch_model:
+                update_data["appendFiles"] = append_file_ids
+            elif append_file_ids:
+                raise ValueError(
+                    "Append file ids is supported after server version 1.5.6."
+                )
+
+        if data is not None:
+            if not new_patch_model:
+                raise ValueError(
+                    "Update of data is supported after server version 1.5.6."
+                )
+            update_data["data"] = data
+
         response = self.delete(
             f"projects/{project_name}/activities/{activity_id}",
-            **data
+            **update_data
         )
         response.raise_for_status()
 
