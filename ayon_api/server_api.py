@@ -1953,7 +1953,7 @@ class ServerAPI(object):
                 )
             update_data["data"] = data
 
-        response = self.delete(
+        response = self.patch(
             f"projects/{project_name}/activities/{activity_id}",
             **update_data
         )
