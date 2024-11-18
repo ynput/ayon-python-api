@@ -1822,6 +1822,9 @@ class ServerAPI(object):
 
         for parsed_data in query.continuous_query(self):
             for activity in parsed_data["project"]["activities"]:
+                activity_data = activity.get("activityData")
+                if isinstance(activity_data, str):
+                    activity["activityData"] = json.loads(activity_data)
                 yield activity
 
     def get_activity_by_id(
