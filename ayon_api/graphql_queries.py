@@ -648,7 +648,7 @@ def activities_graphql_query(fields):
     entity_type_var = query.add_variable("entityType", "String!")
     changed_after_var = query.add_variable("changedAfter", "String!")
     changed_before_var = query.add_variable("changedBefore", "String!")
-    reference_types_var = query.add_variable("referenceTypes", "String!")
+    reference_types_var = query.add_variable("referenceTypes", "[String!]")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
