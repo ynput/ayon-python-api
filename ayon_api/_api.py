@@ -550,6 +550,30 @@ def set_sender(*args, **kwargs):
     return con.set_sender(*args, **kwargs)
 
 
+def get_sender_type():
+    """Sender type used to send requests.
+
+    Sender type is supported since AYON server 1.5.5 .
+
+    Returns:
+        Union[str, None]: Sender type or None.
+
+    """
+    con = get_server_api_connection()
+    return con.get_sender_type()
+
+
+def set_sender_type(*args, **kwargs):
+    """Change sender type used for requests.
+
+    Args:
+        sender_type (Union[str, None]): Sender type or None.
+
+    """
+    con = get_server_api_connection()
+    return con.set_sender_type(*args, **kwargs)
+
+
 def get_info():
     """Get information about current used api key.
 
@@ -867,6 +891,10 @@ def enroll_event_job(*args, **kwargs):
             TODO: Add example of filters.
         max_retries (Optional[int]): How many times can be event retried.
             Default value is based on server (3 at the time of this PR).
+        ignore_older_than (Optional[int]): Ignore events older than
+            given number in days.
+        ignore_sender_types (Optional[List[str]]): Ignore events triggered
+            by given sender types.
 
     Returns:
         Union[None, dict[str, Any]]: None if there is no event matching
