@@ -393,7 +393,10 @@ class ServerAPI(object):
         default_settings_variant (Optional[Literal["production", "staging"]]):
             Settings variant used by default if a method for settings won't
             get any (by default is 'production').
-        sender (Optional[str]): Sender of requests. Used in server logs and
+        sender_type (Optional[str]): Sender type of requests. Used in server
+            logs and propagated into events.
+        sender (Optional[str]): Sender of requests, more specific than
+            sender type (e.g. machine name). Used in server logs and
             propagated into events.
         ssl_verify (Union[bool, str, None]): Verify SSL certificate
             Looks for env variable value ``AYON_CA_FILE`` by default. If not
@@ -419,6 +422,7 @@ class ServerAPI(object):
         site_id=NOT_SET,
         client_version=None,
         default_settings_variant=None,
+        sender_type=None,
         sender=None,
         ssl_verify=None,
         cert=None,
@@ -445,6 +449,7 @@ class ServerAPI(object):
             or get_default_settings_variant()
         )
         self._sender = sender
+        self._sender_type = sender_type
 
         self._timeout = None
         self._max_retries = None
@@ -763,6 +768,31 @@ class ServerAPI(object):
 
     sender = property(get_sender, set_sender)
 
+    def get_sender_type(self):
+        """Sender type used to send requests.
+
+        Sender type is supported since AYON server 1.5.5 .
+
+        Returns:
+            Union[str, None]: Sender type or None.
+
+        """
+        return self._sender_type
+
+    def set_sender_type(self, sender_type):
+        """Change sender type used for requests.
+
+        Args:
+            sender_type (Union[str, None]): Sender type or None.
+
+        """
+        if sender_type == self._sender_type:
+            return
+        self._sender_type = sender_type
+        self._update_session_headers()
+
+    sender_type = property(get_sender_type, set_sender_type)
+
     def get_default_service_username(self):
         """Default username used for callbacks when used with service API key.
 
@@ -946,6 +976,7 @@ class ServerAPI(object):
             ("X-as-user", self._as_user_stack.username),
             ("x-ayon-version", self._client_version),
             ("x-ayon-site-id", self._site_id),
+            ("x-sender-type", self._sender_type),
             ("x-sender", self._sender),
         ):
             if value is not None:
@@ -1156,6 +1187,9 @@ class ServerAPI(object):
 
         if self._client_version is not None:
             headers["x-ayon-version"] = self._client_version
+
+        if self._sender_type is not None:
+            headers["x-sender-type"] = self._sender_type
 
         if self._sender is not None:
             headers["x-sender"] = self._sender
@@ -1646,6 +1680,8 @@ class ServerAPI(object):
         sequential=None,
         events_filter=None,
         max_retries=None,
+        ignore_older_than=None,
+        ignore_sender_types=None,
     ):
         """Enroll job based on events.
 
@@ -1694,6 +1730,10 @@ class ServerAPI(object):
                 TODO: Add example of filters.
             max_retries (Optional[int]): How many times can be event retried.
                 Default value is based on server (3 at the time of this PR).
+            ignore_older_than (Optional[int]): Ignore events older than
+                given number in days.
+            ignore_sender_types (Optional[List[str]]): Ignore events triggered
+                by given sender types.
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1705,6 +1745,7 @@ class ServerAPI(object):
             "targetTopic": target_topic,
             "sender": sender,
         }
+        major, minor, patch, _, _ = self.server_version_tuple
         if max_retries is not None:
             kwargs["maxRetries"] = max_retries
         if sequential is not None:
@@ -1713,6 +1754,16 @@ class ServerAPI(object):
             kwargs["description"] = description
         if events_filter is not None:
             kwargs["filter"] = events_filter
+        if (
+            ignore_older_than is not None
+            and (major, minor, patch) > (1, 5, 1)
+        ):
+            kwargs["ignoreOlderThan"] = ignore_older_than
+        if (
+            ignore_sender_types is not None
+            and (major, minor, patch) > (1, 5, 4)
+        ):
+            kwargs["ignoreSenderTypes"] = ignore_sender_types
 
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
