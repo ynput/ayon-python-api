@@ -3534,7 +3534,7 @@ class ProductEntity(BaseEntity):
             product_type=product["productType"],
             folder_id=product["folderId"],
             tags=product["tags"],
-            attribs=product["ownAttrib"],
+            attribs=product["attrib"],
             data=product.get("data"),
             active=product["active"],
             entity_id=product["id"],
