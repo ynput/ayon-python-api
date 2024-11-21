@@ -6669,6 +6669,7 @@ class ServerAPI(object):
 
         if project_fields is not None:
             project_fields = set(project_fields)
+            self._prepare_fields("project", project_fields)
 
         project = {}
         if project_fields is None:
@@ -6715,6 +6716,15 @@ class ServerAPI(object):
             )
         else:
             representation_fields = set(representation_fields)
+
+        for (entity_type, fields) in (
+            ("folder", folder_fields),
+            ("task", task_fields),
+            ("product", product_fields),
+            ("version", version_fields),
+            ("representation", representation_fields),
+        ):
+            self._prepare_fields(entity_type, fields)
 
         representation_fields.add("id")
 
