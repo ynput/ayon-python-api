@@ -289,7 +289,6 @@ class EntityHub(object):
                     self.project_name,
                     entity_id,
                     fields=self._get_product_fields(),
-                    own_attributes=True
                 )
             elif entity_type == "version":
                 entity_data = self._connection.get_version_by_id(
