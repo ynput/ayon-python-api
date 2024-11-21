@@ -8403,7 +8403,7 @@ class ServerAPI(object):
 
     def _prepare_fields(self, entity_type, fields, own_attributes=False):
         if not fields:
-            return fields
+            return
 
         if "attrib" in fields:
             fields.remove("attrib")
