@@ -11,7 +11,8 @@ automatically, and changing them manually can cause issues.
 
 import os
 import socket
-from typing import Optional
+import typing
+from typing import Optional, List, Dict, Iterable, Generator, Any
 
 from .constants import (
     SERVER_URL_ENV_KEY,
@@ -23,6 +24,9 @@ from .utils import (
     NOT_SET,
     get_default_settings_variant as _get_default_settings_variant,
 )
+
+if typing.TYPE_CHECKING:
+    from ._typing import ActivityType, ActivityReferenceType
 
 
 class GlobalServerAPI(ServerAPI):
@@ -1123,16 +1127,16 @@ def enroll_event_job(
 
 def get_activities(
     project_name: str,
-    activity_ids: "Optional[Iterable[str]]" = None,
-    activity_types: "Optional[Iterable[ForwardRef('ActivityType')]]" = None,
-    entity_ids: "Optional[Iterable[str]]" = None,
-    entity_names: "Optional[Iterable[str]]" = None,
+    activity_ids: Optional[Iterable[str]] = None,
+    activity_types: Optional[Iterable["ActivityType"]] = None,
+    entity_ids: Optional[Iterable[str]] = None,
+    entity_names: Optional[Iterable[str]] = None,
     entity_type: Optional[str] = None,
     changed_after: Optional[str] = None,
     changed_before: Optional[str] = None,
-    reference_types: "Optional[Iterable[ForwardRef('ActivityReferenceType')]]" = None,
-    fields: "Optional[Iterable[str]]" = None,
-) -> typing.Generator[typing.Dict[str, typing.Any], NoneType, NoneType]:
+    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Generator[Dict[str, Any], None, None]:
     """Get activities from server with filtering options.
 
     Args:
@@ -1173,9 +1177,9 @@ def get_activities(
 def get_activity_by_id(
     project_name: str,
     activity_id: str,
-    reference_types: "Optional[Iterable[ForwardRef('ActivityReferenceType')]]" = None,
-    fields: "Optional[Iterable[str]]" = None,
-) -> typing.Optional[typing.Dict[str, typing.Any]]:
+    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Optional[Dict[str, Any]]:
     """Get activity by id.
 
     Args:
@@ -1205,9 +1209,9 @@ def create_activity(
     activity_type: "ActivityType",
     activity_id: Optional[str] = None,
     body: Optional[str] = None,
-    file_ids: "Optional[List[str]]" = None,
+    file_ids: Optional[List[str]] = None,
     timestamp: Optional[str] = None,
-    data: "Optional[Dict[str, Any]]" = None,
+    data: Optional[Dict[str, Any]] = None,
 ):
     """Create activity on a project.
 
@@ -1245,9 +1249,9 @@ def update_activity(
     project_name: str,
     activity_id: str,
     body: Optional[str] = None,
-    file_ids: "Optional[List[str]]" = None,
+    file_ids: Optional[List[str]] = None,
     append_file_ids: Optional[bool] = False,
-    data: "Optional[Dict[str, Any]]" = None,
+    data: Optional[Dict[str, Any]] = None,
 ):
     """Update activity by id.
 
