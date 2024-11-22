@@ -17,13 +17,15 @@ import os
 import sys
 import re
 import inspect
+import typing
 
 # Fake modules to avoid import errors
 for module_name in ("requests", "unidecode"):
     sys.modules[module_name] = object()
 
 import ayon_api  # noqa: E402
-from ayon_api import ServerAPI  # noqa: E402
+from ayon_api.server_api import ServerAPI, _PLACEHOLDER  # noqa: E402
+from ayon_api.utils import NOT_SET  # noqa: E402
 
 EXCLUDED_METHODS = {
     "get_default_service_username",
@@ -101,18 +103,6 @@ def indent_lines(src_str, indent=1):
     return "\n".join(new_lines)
 
 
-def split_sig_str(sig_str):
-    args_str = sig_str[1:-1]
-    args = [f"    {arg.strip()}" for arg in args_str.split(",")]
-    joined_args = ",\n".join(args)
-
-    return f"(\n{joined_args}\n)"
-
-
-def prepare_func_def_line(attr_name, sig_str):
-    return f"def {attr_name}{sig_str}:\n"
-
-
 def prepare_docstring(func):
     docstring = inspect.getdoc(func)
     if not docstring:
@@ -124,39 +114,122 @@ def prepare_docstring(func):
     return f'"""{docstring}{line_char}\n"""'
 
 
-def prapre_body_sig_str(sig_str):
-    if "=" not in sig_str:
-        return sig_str
+def _get_typehint(param, api_globals):
+    if param.annotation is inspect.Parameter.empty:
+        return None
 
-    args_str = sig_str[1:-1]
-    args = []
-    for arg in args_str.split(","):
-        arg = arg.strip()
-        if "=" in arg:
-            parts = arg.split("=")
-            parts[1] = parts[0]
-            arg = "=".join(parts)
-        args.append(arg)
-    joined_args = ", ".join(args)
-    return f"({joined_args})"
+    an = param.annotation
+    if inspect.isclass(an):
+        return an.__name__
 
-
-def prepare_body_parts(attr_name, sig_str):
-    output = [
-        "con = get_server_api_connection()",
-    ]
-    body_sig_str = prapre_body_sig_str(sig_str)
-    return_str = f"return con.{attr_name}{body_sig_str}"
-    if len(return_str) + 4 <= 79:
-        output.append(return_str)
-        return output
-
-    return_str = f"return con.{attr_name}{split_sig_str(body_sig_str)}"
-    output.append(return_str)
-    return output
+    typehint = str(an).replace("typing.", "")
+    try:
+        # Test if typehint is valid for known '_api' content
+        exec(f"_: {typehint} = None", api_globals)
+    except NameError:
+        typehint = f'"{typehint}"'
+    return typehint
 
 
-def prepare_api_functions():
+def _add_typehint(param_name, param, api_globals):
+    typehint = _get_typehint(param, api_globals)
+    if not typehint:
+        return param_name
+    return f"{param_name}: {typehint}"
+
+
+def _kw_default_to_str(param_name, param, api_globals):
+    if param.default is inspect.Parameter.empty:
+        return _add_typehint(param_name, param, api_globals)
+
+    default = param.default
+    if default is _PLACEHOLDER:
+        default = "_PLACEHOLDER"
+    elif default is NOT_SET:
+        default = "NOT_SET"
+    elif (
+        default is not None
+        and not isinstance(default, (str, bool, int, float))
+    ):
+        raise TypeError("Unknown default value type")
+    else:
+        default = repr(default)
+    typehint = _get_typehint(param, api_globals)
+    if typehint:
+        return f"{param_name}: {typehint} = {default}"
+    return f"{param_name}={default}"
+
+
+def sig_params_to_str(sig, param_names, api_globals, indent=0):
+    pos_only = []
+    pos_or_kw = []
+    var_positional = None
+    kw_only = []
+    var_keyword = None
+    for param_name in param_names:
+        param = sig.parameters[param_name]
+        if param.kind == inspect.Parameter.POSITIONAL_ONLY:
+            pos_only.append((param_name, param))
+        elif param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD:
+            pos_or_kw.append((param_name, param))
+        elif param.kind == inspect.Parameter.VAR_POSITIONAL:
+            var_positional = param_name
+        elif param.kind == inspect.Parameter.KEYWORD_ONLY:
+            kw_only.append((param_name, param))
+        elif param.kind == inspect.Parameter.VAR_KEYWORD:
+            var_keyword = param_name
+
+    func_params = []
+    body_params = []
+    for param_name, param in pos_only:
+        body_params.append(param_name)
+        func_params.append(_add_typehint(param_name, param, api_globals))
+
+    if pos_only:
+        func_params.append("/")
+
+    for param_name, param in pos_or_kw:
+        body_params.append(f"{param_name}={param_name}")
+        func_params.append(_kw_default_to_str(param_name, param, api_globals))
+
+    if var_positional:
+        body_params.append(f"*{var_positional}")
+        func_params.append(f"*{var_positional}")
+
+    for param_name, param in kw_only:
+        body_params.append(f"{param_name}={param_name}")
+        func_params.append(_kw_default_to_str(param_name, param, api_globals))
+
+    if var_keyword is not None:
+        body_params.append(f"**{var_keyword}")
+        func_params.append(f"**{var_keyword}")
+
+    base_indent_str = " " * indent
+    param_indent_str = " " * (indent + 4)
+
+    func_params_str = "()"
+    if func_params:
+        lines_str = "\n".join([
+            f"{param_indent_str}{line},"
+            for line in func_params
+        ])
+        func_params_str = f"(\n{lines_str}\n{base_indent_str})"
+
+    if sig.return_annotation is not inspect.Signature.empty:
+        func_params_str += f" -> {sig.return_annotation}"
+
+    body_params_str = "()"
+    if body_params:
+        lines_str = "\n".join([
+            f"{param_indent_str}{line},"
+            for line in body_params
+        ])
+        body_params_str = f"(\n{lines_str}\n{base_indent_str})"
+
+    return func_params_str, body_params_str
+
+
+def prepare_api_functions(api_globals):
     functions = []
     for attr_name, attr in ServerAPI.__dict__.items():
         if (
@@ -167,21 +240,25 @@ def prepare_api_functions():
             continue
 
         sig = inspect.signature(attr)
-        base_sig_str = str(sig)
-        if base_sig_str == "(self)":
-            sig_str = "()"
-        else:
-            # TODO copy signature from method so IDEs can use it
-            sig_str = "(*args, **kwargs)"
+        param_names = list(sig.parameters)
+        if inspect.isfunction(attr):
+            param_names.pop(0)
 
-        func_def = prepare_func_def_line(attr_name, sig_str)
+        func_def_params, func_body_params = sig_params_to_str(
+            sig, param_names, api_globals
+        )
+
+        func_def = f"def {attr_name}{func_def_params}:\n"
 
         func_body_parts = []
         docstring = prepare_docstring(attr)
         if docstring:
             func_body_parts.append(docstring)
 
-        func_body_parts.extend(prepare_body_parts(attr_name, sig_str))
+        func_body_parts.extend([
+            "con = get_server_api_connection()",
+            f"return con.{attr_name}{func_body_params}",
+        ])
 
         func_body = indent_lines("\n".join(func_body_parts))
         full_def = func_def + func_body
@@ -216,8 +293,20 @@ def main():
     print("(2/5) Parsing current '__init__.py' content")
     formatting_init_content = prepare_init_without_api(init_filepath)
 
+    # Read content of first part of `_api.py` to get global variables
+    # - disable type checking so imports done only during typechecking are
+    #   not executed
+    old_value = typing.TYPE_CHECKING
+    typing.TYPE_CHECKING = False
+    api_globals = {"__name__": "ayon_api._api"}
+    exec(parts[0], api_globals)
+    for attr_name in dir(__builtins__):
+        api_globals[attr_name] = getattr(__builtins__, attr_name)
+    typing.TYPE_CHECKING = old_value
+
+    # print(api_globals)
     print("(3/5) Preparing functions body based on 'ServerAPI' class")
-    result = prepare_api_functions()
+    result = prepare_api_functions(api_globals)
 
     print("(4/5) Store new functions body to '_api.py'")
     new_content = f"{parts[0]}{AUTOMATED_COMMENT}\n{result}"
