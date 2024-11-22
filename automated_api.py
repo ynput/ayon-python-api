@@ -124,7 +124,7 @@ def _get_typehint(annotation, api_globals):
         .replace("NoneType", "None")
     )
     forwardref_regex = re.compile(
-        "(?P<full>ForwardRef\('(?P<name>[a-zA-Z0-9]+)'\))"
+        r"(?P<full>ForwardRef\('(?P<name>[a-zA-Z0-9]+)'\))"
     )
     for item in forwardref_regex.finditer(str(typehint)):
         groups = item.groupdict()
