@@ -1901,7 +1901,7 @@ class ServerAPI(object):
         file_ids: Optional[List[str]] = None,
         timestamp: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> str:
         """Create activity on a project.
 
         Args:
@@ -1917,7 +1917,7 @@ class ServerAPI(object):
             data (Optional[Dict[str, Any]]): Additional data.
 
         Returns:
-            Dict[str, str]: Data with activity id.
+            str: Activity id.
 
         """
         post_data = {
@@ -1938,7 +1938,7 @@ class ServerAPI(object):
             **post_data
         )
         response.raise_for_status()
-        return response.data
+        return response.data["id"]
 
     def update_activity(
         self,

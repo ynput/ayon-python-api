@@ -1212,7 +1212,7 @@ def create_activity(
     file_ids: Optional[List[str]] = None,
     timestamp: Optional[str] = None,
     data: Optional[Dict[str, Any]] = None,
-):
+) -> str:
     """Create activity on a project.
 
     Args:
@@ -1228,7 +1228,7 @@ def create_activity(
         data (Optional[Dict[str, Any]]): Additional data.
 
     Returns:
-        Dict[str, str]: Data with activity id.
+        str: Activity id.
 
     """
     con = get_server_api_connection()
