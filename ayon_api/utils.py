@@ -767,7 +767,11 @@ def _get_media_mime_type_from_ftyp(content):
     return None
 
 
-def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
+def _get_media_mime_type_for_content_base(content: bytes) -> Optional[str]:
+    """Determine Mime-Type of a file.
+
+    Use header of the file to determine mime type (needs 12 bytes).
+    """
     content_len = len(content)
     # Pre-validation (largest definition check)
     # - hopefully there cannot be media defined in less than 12 bytes
@@ -789,10 +793,6 @@ def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
     # PNG
     if content[0:4] == b"\211PNG":
         return "image/png"
-
-    # SVG
-    if b'xmlns="http://www.w3.org/2000/svg"' in content:
-        return "image/svg+xml"
 
     # JPEG, JFIF or Exif
     if (
@@ -820,6 +820,32 @@ def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
     return None
 
 
+def _get_svg_mime_type(content: bytes) -> Optional[str]:
+    # SVG
+    if b'xmlns="http://www.w3.org/2000/svg"' in content:
+        return "image/svg+xml"
+    return None
+
+
+def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
+    mime_type = _get_media_mime_type_for_content_base(content)
+    if mime_type is not None:
+        return mime_type
+    return _get_svg_mime_type(content)
+
+
+def get_media_mime_type_for_stream(stream) -> Optional[str]:
+    # Read only 12 bytes to determine mime type
+    content = stream.read(12)
+    if len(content) < 12:
+        return None
+    mime_type = _get_media_mime_type_for_content_base(content)
+    if mime_type is None:
+        content += stream.read()
+        mime_type = _get_svg_mime_type(content)
+    return mime_type
+
+
 def get_media_mime_type(filepath: str) -> Optional[str]:
     """Determine Mime-Type of a file.
 
@@ -834,9 +860,7 @@ def get_media_mime_type(filepath: str) -> Optional[str]:
         return None
 
     with open(filepath, "rb") as stream:
-        content = stream.read()
-
-    return get_media_mime_type_for_content(content)
+        return get_media_mime_type_for_stream(stream)
 
 
 def take_web_action_event(
