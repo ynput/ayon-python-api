@@ -4178,35 +4178,6 @@ class ServerAPI(object):
                 return True
         return False
 
-    def _prepare_project_fields(self, fields, own_attributes):
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= self.get_attributes_fields_for_type("project")
-
-        if "folderTypes" in fields:
-            fields.remove("folderTypes")
-            fields |= {
-                "folderTypes.{}".format(name)
-                for name in self.get_default_fields_for_type("folderType")
-            }
-
-        if "taskTypes" in fields:
-            fields.remove("taskTypes")
-            fields |= {
-                "taskTypes.{}".format(name)
-                for name in self.get_default_fields_for_type("taskType")
-            }
-
-        if "productTypes" in fields:
-            fields.remove("productTypes")
-            fields |= {
-                "productTypes.{}".format(name)
-                for name in self.get_default_fields_for_type("productType")
-            }
-
-        if own_attributes:
-            fields.add("ownAttrib")
-
     def get_projects(
         self, active=True, library=None, fields=None, own_attributes=False
     ):
@@ -4237,7 +4208,7 @@ class ServerAPI(object):
                 yield project
             return
 
-        self._prepare_project_fields(fields, own_attributes)
+        self._prepare_fields("project", fields, own_attributes)
 
         query = projects_graphql_query(fields)
         for parsed_data in query.continuous_query(self):
@@ -4271,7 +4242,7 @@ class ServerAPI(object):
                 fill_own_attribs(project)
             return project
 
-        self._prepare_project_fields(fields, own_attributes)
+        self._prepare_fields("project", fields, own_attributes)
 
         query = project_graphql_query(fields)
         query.set_variable_value("projectName", project_name)
@@ -4521,9 +4492,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("folder")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("folder")
+            self._prepare_fields("folder", fields)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -4911,9 +4880,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("task")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("task")
+            self._prepare_fields("task", fields, own_attributes)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -4922,9 +4889,6 @@ class ServerAPI(object):
 
         if active is not None:
             fields.add("active")
-
-        if own_attributes:
-            fields.add("ownAttrib")
 
         query = tasks_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -5078,9 +5042,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("task")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("task")
+            self._prepare_fields("task", fields, own_attributes)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -5089,9 +5051,6 @@ class ServerAPI(object):
 
         if active is not None:
             fields.add("active")
-
-        if own_attributes:
-            fields.add("ownAttrib")
 
         query = tasks_by_folder_paths_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -5455,9 +5414,7 @@ class ServerAPI(object):
         # Convert fields and add minimum required fields
         if fields:
             fields = set(fields) | {"id"}
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("product")
+            self._prepare_fields("product", fields)
         else:
             fields = self.get_default_fields_for_type("product")
 
@@ -5869,9 +5826,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("version")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("version")
+            self._prepare_fields("version", fields)
 
         # Make sure fields have minimum required fields
         fields |= {"id", "version"}
@@ -6508,11 +6463,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("representation")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type(
-                    "representation"
-                )
+            self._prepare_fields("representation", fields)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -6718,6 +6669,7 @@ class ServerAPI(object):
 
         if project_fields is not None:
             project_fields = set(project_fields)
+            self._prepare_fields("project", project_fields)
 
         project = {}
         if project_fields is None:
@@ -6764,6 +6716,15 @@ class ServerAPI(object):
             )
         else:
             representation_fields = set(representation_fields)
+
+        for (entity_type, fields) in (
+            ("folder", folder_fields),
+            ("task", task_fields),
+            ("product", product_fields),
+            ("version", version_fields),
+            ("representation", representation_fields),
+        ):
+            self._prepare_fields(entity_type, fields)
 
         representation_fields.add("id")
 
@@ -7219,14 +7180,9 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("workfile")
-
-        fields = set(fields)
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= {
-                "attrib.{}".format(attr)
-                for attr in self.get_attributes_for_type("workfile")
-            }
+        else:
+            fields = set(fields)
+            self._prepare_fields("workfile", fields)
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
@@ -8421,6 +8377,41 @@ class ServerAPI(object):
                     op_result["detail"],
                 ))
         return op_results
+
+    def _prepare_fields(self, entity_type, fields, own_attributes=False):
+        if not fields:
+            return
+
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= self.get_attributes_fields_for_type(entity_type)
+
+        if own_attributes and entity_type in {"project", "folder", "task"}:
+            fields.add("ownAttrib")
+
+        if entity_type == "project":
+            if "folderTypes" in fields:
+                fields.remove("folderTypes")
+                fields |= {
+                    "folderTypes.{}".format(name)
+                    for name in self.get_default_fields_for_type("folderType")
+                }
+
+            if "taskTypes" in fields:
+                fields.remove("taskTypes")
+                fields |= {
+                    "taskTypes.{}".format(name)
+                    for name in self.get_default_fields_for_type("taskType")
+                }
+
+            if "productTypes" in fields:
+                fields.remove("productTypes")
+                fields |= {
+                    "productTypes.{}".format(name)
+                    for name in self.get_default_fields_for_type(
+                        "productType"
+                    )
+                }
 
     def _convert_entity_data(self, entity):
         if not entity or "data" not in entity:
