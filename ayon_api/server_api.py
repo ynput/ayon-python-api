@@ -99,24 +99,7 @@ from .utils import (
 )
 
 if typing.TYPE_CHECKING:
-    from typing import Literal
-
-    ActivityType = Literal[
-        "comment",
-        "watch",
-        "reviewable",
-        "status.change",
-        "assignee.add",
-        "assignee.remove",
-        "version.publish"
-    ]
-    ActivityReferenceType = Literal[
-        "origin",
-        "mention",
-        "author",
-        "relation",
-        "watching",
-    ]
+    from ._typing import ActivityType, ActivityReferenceType
 
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
