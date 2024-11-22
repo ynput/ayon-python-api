@@ -360,7 +360,7 @@ class EntityHub(object):
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: bool = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
-        created: Optional[bool] = None,
+        created: Optional[bool] = True,
     ):
         """Create folder object and add it to entity hub.
 
@@ -420,7 +420,7 @@ class EntityHub(object):
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
-        created: Optional[bool] = None,
+        created: Optional[bool] = True,
         parent_id: Optional[str] = UNKNOWN_VALUE,
     ):
         """Create task object and add it to entity hub.
