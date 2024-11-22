@@ -84,6 +84,7 @@ DEFAULT_TASK_FIELDS = {
     "taskType",
     "folderId",
     "active",
+    "thumbnailId",
     "assignees",
     "data",
     "status",
