@@ -859,12 +859,12 @@ class ServerAPI(object):
                 "Can't set service username. API key is not a service token."
             )
 
-        with self._as_user_stack.as_user(username) as o:
-            self._update_session_headers()
-            try:
-                yield o
-            finally:
+        try:
+            with self._as_user_stack.as_user(username) as o:
                 self._update_session_headers()
+                yield o
+        finally:
+            self._update_session_headers()
 
     @property
     def is_server_available(self):
