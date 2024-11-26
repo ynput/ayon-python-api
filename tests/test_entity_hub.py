@@ -1,9 +1,12 @@
+from traceback import print_exc
 import uuid
+
+from requests import delete
 
 import pytest
 
 import ayon_api
-from ayon_api.entity_hub import EntityHub
+from ayon_api.entity_hub import EntityHub, UNKNOWN_VALUE
 
 from .conftest import project_entity_fixture
 
@@ -11,29 +14,29 @@ from .conftest import project_entity_fixture
 def test_rename_status(project_entity_fixture):
     # Change statuses - add prefix 'new_'
     project_name = project_entity_fixture["name"]
-    e = EntityHub(project_name)
+    hub = EntityHub(project_name)
     status_mapping = {}
-    for status in e.project_entity.statuses:
+    for status in hub.project_entity.statuses:
         orig_name = status.name
         new_name = f"new_{orig_name}"
         status_mapping[new_name] = orig_name
         status.name = new_name
-    e.commit_changes()
+    hub.commit_changes()
 
     # Create new entity hub for same project and validate the changes
     #   are propagated
-    e = EntityHub(project_name)
+    hub = EntityHub(project_name)
     statuses_by_name = {
         status.name: status
-        for status in e.project_entity.statuses
+        for status in hub.project_entity.statuses
     }
     if set(statuses_by_name) != set(status_mapping.keys()):
         raise AssertionError("Statuses were not renamed correctly.")
 
     # Change statuses back
-    for status in e.project_entity.statuses:
+    for status in hub.project_entity.statuses:
         status.name = status_mapping[status.name]
-    e.commit_changes()
+    hub.commit_changes()
 
 
 @pytest.mark.parametrize(
@@ -51,51 +54,51 @@ def test_simple_operations(
     """Test of simple operations with folders - create, move, delete.
     """
     project_name = project_entity_fixture["name"]
-    e = EntityHub(project_name)
+    hub = EntityHub(project_name)
 
     folders = []
     subfolders = []
     # create folders with subfolder
     for folder_number in range(folders_count):
-        folder = e.add_new_folder(
+        folder = hub.add_new_folder(
             "Folder",
             name=f"{folder_name}{folder_number:03}"
         )
         folders.append(folder)
-        e.commit_changes()
+        hub.commit_changes()
 
-        subfolder = e.add_new_folder(
+        subfolder = hub.add_new_folder(
             "Folder",
             name=f"{folder_name}{folder_number:03}",
             parent_id=folder["id"]
         )
         subfolders.append(subfolder)
-        e.commit_changes()
+        hub.commit_changes()
 
     # move subfolders
     for index, subfolder in enumerate(subfolders):
         new_parent_id = folders[(index + 1) % folders_count]["id"]
-        e.set_entity_parent(
+        hub.set_entity_parent(
             subfolder["id"],
             new_parent_id,
             subfolder["parent_id"])
-        e.commit_changes()
+        hub.commit_changes()
 
-        assert e.get_entity_by_id(
+        assert hub.get_entity_by_id(
                 subfolder["id"]
             )["parent_id"] == new_parent_id
 
     # delete subfolders
     for subfolder in subfolders:
-        e.delete_entity(e.get_entity_by_id(subfolder["id"]))
-        e.commit_changes()
-        assert e.get_entity_by_id(subfolder["id"]) is None
+        hub.delete_entity(hub.get_entity_by_id(subfolder["id"]))
+        hub.commit_changes()
+        assert hub.get_entity_by_id(subfolder["id"]) is None
 
     # delete folders
     for folder in folders:
-        e.delete_entity(e.get_entity_by_id(folder["id"]))
-        e.commit_changes()
-        assert e.get_entity_by_id(folder["id"]) is None
+        hub.delete_entity(hub.get_entity_by_id(folder["id"]))
+        hub.commit_changes()
+        assert hub.get_entity_by_id(folder["id"]) is None
 
 
 def test_custom_values_on_entities(project_entity_fixture):
@@ -110,7 +113,8 @@ def test_custom_values_on_entities(project_entity_fixture):
     # --- CREATE ---
     folder_type = project_entity_fixture["folderTypes"][-1]["name"]
     root_folder = hub.add_new_folder(
-        folder_type, name="custom_values_root_folder"
+        folder_type=folder_type,
+        name="custom_values_root_folder"
     )
 
     folder_id = uuid.uuid1().hex
@@ -132,7 +136,7 @@ def test_custom_values_on_entities(project_entity_fixture):
     task_data = {"MyTaskKey": "MyTaskValue"}
 
     folder = hub.add_new_folder(
-        folder_type,
+        folder_type=folder_type,
         name=folder_name,
         label=folder_label,
         parent_id=root_folder.id,
@@ -144,7 +148,7 @@ def test_custom_values_on_entities(project_entity_fixture):
 
     task_type = project_entity_fixture["taskTypes"][-1]["name"]
     task = hub.add_new_task(
-        task_type,
+        task_type=task_type,
         name=task_name,
         label=task_label,
         parent_id=folder.id,
@@ -270,7 +274,8 @@ def test_label_eq_name_on_entities(project_entity_fixture):
 
     folder_type = project_entity_fixture["folderTypes"][-1]["name"]
     root_folder = hub.add_new_folder(
-        folder_type, name="label_eq_name_root_folder"
+        folder_type=folder_type,
+        name="label_eq_name_root_folder"
     )
 
     folder_id = uuid.uuid1().hex
@@ -282,7 +287,7 @@ def test_label_eq_name_on_entities(project_entity_fixture):
     task_label = "my_task"
 
     folder = hub.add_new_folder(
-        folder_type,
+        folder_type=folder_type,
         name=folder_name,
         label=folder_label,
         parent_id=root_folder.id,
@@ -291,7 +296,7 @@ def test_label_eq_name_on_entities(project_entity_fixture):
 
     task_type = project_entity_fixture["taskTypes"][-1]["name"]
     task = hub.add_new_task(
-        task_type,
+        task_type=task_type,
         name=task_name,
         label=task_label,
         parent_id=folder.id,
@@ -325,7 +330,8 @@ def test_data_changes_on_entities(project_entity_fixture):
 
     folder_type = project_entity_fixture["folderTypes"][-1]["name"]
     root_folder = hub.add_new_folder(
-        folder_type, name="data_changes_on_entities"
+        folder_type=folder_type,
+        name="data_changes_on_entities"
     )
 
     folder_id = uuid.uuid1().hex
@@ -337,7 +343,7 @@ def test_data_changes_on_entities(project_entity_fixture):
     task_data = {"key2": "value2"}
 
     folder = hub.add_new_folder(
-        folder_type,
+        folder_type=folder_type,
         name=folder_name,
         data=folder_data,
         parent_id=root_folder.id,
@@ -346,7 +352,7 @@ def test_data_changes_on_entities(project_entity_fixture):
 
     task_type = project_entity_fixture["taskTypes"][-1]["name"]
     task = hub.add_new_task(
-        task_type,
+        task_type=task_type,
         name=task_name,
         data=task_data,
         parent_id=folder.id,
@@ -405,7 +411,7 @@ def test_label_eq_name_on_entities(project_entity_fixture):
     folder_id = uuid.uuid1().hex
     task_id = uuid.uuid1().hex
     folder = hub.add_new_folder(
-        folder_type,
+        folder_type=folder_type,
         name="status_root_folder",
         entity_id=folder_id,
         status=init_status_name,
@@ -414,7 +420,7 @@ def test_label_eq_name_on_entities(project_entity_fixture):
     task_name = "my_task"
     task_label = "my_task"
     task = hub.add_new_task(
-        task_type,
+        task_type=task_type,
         name=task_name,
         label=task_label,
         parent_id=folder.id,
@@ -491,39 +497,39 @@ def test_create_delete_with_duplicated_names(
     Exception should not be raised.
     """
     project_name = project_entity_fixture["name"]
-    e = EntityHub(project_name)
+    hub = EntityHub(project_name)
 
-    folder1 = e.add_new_folder("Folder", name=folder_name)
+    folder1 = hub.add_new_folder("Folder", name=folder_name)
 
     subfolders = []
     for folder_number in range(num_of_subfolders):
-        subfolder = e.add_new_folder(
+        subfolder = hub.add_new_folder(
             "Folder",
             parent_id=folder1["id"],
             name=f"{subfolder_name}{folder_number:03}"
         )
         subfolders.append(subfolder)
-        e.commit_changes()
+        hub.commit_changes()
 
         # create and delete folder with same name
-        subfolder = e.add_new_folder(
+        subfolder = hub.add_new_folder(
             "Folder",
             parent_id=folder1["id"],
             name=f"{subfolder_name}{folder_number:03}"
         )
-        e.delete_entity(subfolder)
-        e.commit_changes()
+        hub.delete_entity(subfolder)
+        hub.commit_changes()
 
-    assert e.get_folder_by_id(project_name, folder1["id"]) is not None
+    assert hub.get_folder_by_id(project_name, folder1["id"]) is not None
 
     for subfolder in subfolders:
-        assert e.get_folder_by_id(
+        assert hub.get_folder_by_id(
             project_name,
             subfolder["id"]) is not None
 
     # clean up
-    e.delete_entity(folder1)
-    e.commit_changes()
+    hub.delete_entity(folder1)
+    hub.commit_changes()
 
 
 # @pytest.mark.parametrize(
@@ -726,15 +732,14 @@ def test_create_delete_with_duplicated_names(
 #     with pytest.raises(HTTPRequestError):
 #         e.commit_changes()
 #     # print(list(e.project_entity.statuses)[0])
-#
-#
-# def test_rename_status():
-#     e = EntityHub(PROJECT_NAME)
-#
-#     for status in e.project_entity.statuses:
+
+
+# def test_rename_status(project_entity_fixture):
+#     hub = EntityHub(project_entity_fixture["name"])
+
+#     for status in hub.project_entity.statuses:
 #         print(status.name)
-#
-#
+
 # def test_task_types():
 #     raise NotImplementedError()
 #
@@ -746,3 +751,395 @@ def test_create_delete_with_duplicated_names(
 #
 # def test_status_icon():
 #     raise NotImplementedError()
+
+
+# def test_project_statuses(project_entity_fixture):
+#     statuses = project_entity_fixture.get_statuses()
+#     pass
+
+test_names = [
+    ("test_name"),
+    # ("test_123"),
+]
+
+test_product_types = [
+    ("animation"),
+    ("camera"),
+    ("render"),
+    ("workfile"),
+]
+
+@pytest.mark.parametrize("folder_name", test_names)
+@pytest.mark.parametrize("product_name", test_names)
+@pytest.mark.parametrize("product_type", test_product_types)
+def test_create_delete_products(
+    project_entity_fixture,
+    folder_name,
+    product_name,
+    product_type
+):
+    project_name = project_entity_fixture["name"]
+    folder_type = project_entity_fixture["folderTypes"][0]["name"]
+    hub = EntityHub(project_name)
+
+    for folder in ayon_api.get_folders(
+        project_name,
+        folder_names=[folder_name]
+    ):
+        # delete tasks
+        for task in ayon_api.get_tasks(
+            project_name,
+            folder_ids=[folder["id"]]
+        ):
+            hub.delete_entity(hub.get_task_by_id(task["id"]))
+
+        # delete products
+        for product in list(ayon_api.get_products(
+            project_name, folder_ids=[folder["id"]]
+        )):
+            product_entity = hub.get_product_by_id(product["id"])
+            hub.delete_entity(product_entity)
+
+        entity = hub.get_folder_by_id(folder["id"])
+        hub.delete_entity(entity)
+
+        hub.commit_changes()
+
+    folder = hub.add_new_folder(
+        folder_type=folder_type,
+        name=folder_name,
+    )
+
+    product = hub.add_new_product(
+        name=product_name,
+        product_type=product_type,
+        folder_id=folder["id"]
+    )
+
+    hub.commit_changes()
+
+    assert hub.get_product_by_id(product["id"])
+    assert product.get_name() == product_name
+    assert product.get_product_type() == product_type
+    assert product.get_folder_id() == folder["id"]
+
+    # bonus test:
+    #   create new entity hub for same project and validate the changes
+    #   are propagated
+    hub = EntityHub(project_name)
+    product = hub.get_product_by_id(product["id"])
+    assert product.get_name() == product_name
+    assert product.get_product_type() == product_type
+    assert product.get_folder_id() == folder["id"]
+
+
+@pytest.mark.parametrize("name", test_names)
+def test_create_delete_folders(project_entity_fixture, name):
+    project_name = project_entity_fixture["name"]
+    folder_types = [
+        type["name"] for type in project_entity_fixture["folderTypes"]
+    ]
+
+    hub = EntityHub(project_name)
+
+    folder = hub.add_new_folder(
+        folder_type=folder_types[0],
+        name=name,
+    )
+
+    hub.commit_changes()
+
+    assert ayon_api.get_folders(
+        project_name,
+        folder_names=[name],
+        folder_types=folder_types[0:1],
+        folder_ids=[folder["id"]]
+    )
+
+    for folder in ayon_api.get_folders(
+        project_name,
+        folder_names=[name]
+    ):
+        # delete tasks
+        for task in ayon_api.get_tasks(
+            project_name,
+            folder_ids=[folder["id"]]
+        ):
+            hub.delete_entity(hub.get_task_by_id(task["id"]))
+
+        entity = hub.get_folder_by_id(folder["id"])
+
+        for id in entity.children_ids:
+            hub.delete_entity(hub.get_entity_by_id(id))
+
+        hub.delete_entity(entity)
+
+        hub.commit_changes()
+
+    # new folder
+    folder = hub.add_new_folder(
+        folder_type=folder_types[1],
+        name=name,
+    )
+
+    hub.commit_changes()
+
+    assert ayon_api.get_folders(
+        project_name,
+        folder_names=[name],
+        folder_types=folder_types[1:2],
+        folder_ids=[folder["id"]]
+    )
+
+
+test_version_numbers = [
+    ([1, 2, 3, 4])
+]
+
+
+@pytest.mark.parametrize("version_numbers", test_version_numbers)
+def test_create_delete_versions(project_entity_fixture, version_numbers):
+    # prepare hierarchy
+    folder_types = [
+        type["name"] for type in project_entity_fixture["folderTypes"]
+    ]
+    hub = EntityHub(project_entity_fixture["name"])
+
+    folder = hub.add_new_folder(
+        folder_type=folder_types[0],
+        name="test_folder",
+    )
+
+    product = hub.add_new_product(
+        name="test_product",
+        product_type="animation",
+        folder_id=folder["id"]
+    )
+
+    assert product.get_children_ids() == set()
+
+    # add
+    versions = []
+    for version in version_numbers:
+        versions.append(
+            hub.add_new_version(
+                version,
+                product["id"]
+            )
+        )
+
+    hub.commit_changes()
+
+    res = product.get_children_ids()
+
+    assert len(versions) == len(res)
+    for version in versions:
+        assert version
+        assert hub.get_version_by_id(version["id"])
+        assert version["id"] in res
+
+        # delete
+        hub.delete_entity(hub.get_version_by_id(version["id"]))
+        hub.commit_changes()
+
+        assert hub.get_version_by_id(version["id"]) is None
+        # assert
+
+
+test_invalid_version_number = [
+    ("a"),
+    (None),
+    ("my_version_number")
+]
+
+
+@pytest.mark.parametrize("version_number", test_invalid_version_number)
+def test_create_invalid_versions(project_entity_fixture, version_number):
+    # prepare hierarchy
+    folder_types = [
+        type["name"] for type in project_entity_fixture["folderTypes"]
+    ]
+    hub = EntityHub(project_entity_fixture["name"])
+
+    folder = hub.add_new_folder(
+        folder_type=folder_types[0],
+        name="test_folder",
+    )
+
+    product = hub.add_new_product(
+        name="test_product",
+        product_type="animation",
+        folder_id=folder["id"]
+    )
+
+    assert product.get_children_ids() == set()
+
+    hub.add_new_version(
+        version_number,
+        product["id"]
+    )
+
+    with pytest.raises(ayon_api.exceptions.FailedOperations):
+        hub.commit_changes()
+
+
+def test_change_status_on_version(project_entity_fixture):
+    folder_types = [
+        type["name"] for type in project_entity_fixture["folderTypes"]
+    ]
+    status_names = [
+        status["name"]
+        for status in project_entity_fixture["statuses"]
+        if "version" in status["scope"]
+    ]
+
+    hub = EntityHub(project_entity_fixture["name"])
+
+    folder = hub.add_new_folder(
+        folder_type=folder_types[0],
+        name="test_folder",
+    )
+
+    product = hub.add_new_product(
+        name="test_product",
+        product_type="animation",
+        folder_id=folder["id"]
+    )
+
+    version = hub.add_new_version(
+        1,
+        product["id"]
+    )
+
+    hub.commit_changes
+
+    for status_name in status_names:
+        version.set_status(status_name)
+        hub.commit_changes()
+
+        assert version.get_status() == status_name
+
+
+@pytest.mark.parametrize("version", test_version_numbers)
+def test_set_invalid_status_on_version(project_entity_fixture, version):
+    folder_types = [
+        type["name"] for type in project_entity_fixture["folderTypes"]
+    ]
+    valid_names = [
+        status["name"]
+        for status in project_entity_fixture["statuses"]
+        if "version" in status["scope"]
+    ]
+    invalid_names = [
+        status["name"]
+        for status in project_entity_fixture["statuses"]
+        if "version" not in status["scope"]
+    ]
+
+    hub = EntityHub(project_entity_fixture["name"])
+
+    folder = hub.add_new_folder(
+        folder_type=folder_types[0],
+        name="test_folder",
+    )
+
+    product = hub.add_new_product(
+        name="test_product",
+        product_type="animation",
+        folder_id=folder["id"]
+    )
+
+    version = hub.add_new_version(
+        1,
+        product["id"]
+    )
+
+    # test on version without status
+    for status_name in invalid_names:
+        with pytest.raises(ValueError):
+            version.set_status(status_name)
+            hub.commit_changes()
+
+        assert version.get_status() == UNKNOWN_VALUE
+
+    # test valid statuses
+    for status_name in valid_names:
+        version.set_status(status_name)
+        hub.commit_changes()
+
+        assert version.get_status() == status_name
+
+    current_status = version.get_status()
+
+    # test on version with status
+    for status_name in invalid_names:
+        with pytest.raises(ValueError):
+            version.set_status(status_name)
+            hub.commit_changes()
+
+        assert version.get_status() == current_status
+
+
+test_tags = [
+    (["tag1", "tag2", "tag3"]),
+    (["tag4"]),
+    (["tag5", "tag6"]),
+]
+
+
+@pytest.mark.parametrize("tags", test_tags)
+def test_set_tag_on_version(project_entity_fixture, tags):
+    folder_types = [
+        type["name"] for type in project_entity_fixture["folderTypes"]
+    ]
+
+
+    hub = EntityHub(project_entity_fixture["name"])
+
+    folder = hub.add_new_folder(
+        folder_type=folder_types[0],
+        name="test_folder",
+    )
+
+    product = hub.add_new_product(
+        name="test_product",
+        product_type="animation",
+        folder_id=folder["id"]
+    )
+
+    version = hub.add_new_version(
+        1,
+        product["id"]
+    )
+
+    assert version.get_tags() == []
+
+    for tag in tags:
+        version.set_tags([tag])
+        hub.commit_changes()
+
+        assert tag in version.get_tags()
+
+
+def test_set_invalid_tag_on_version():
+    raise NotImplementedError()
+
+
+def test_status_definition_on_project(project_entity_fixture):
+    hub = EntityHub(project_entity_fixture["name"])
+
+    project = hub.project_entity
+    project.status = "test_status"
+    print(project.status)
+
+    # project.set_status()
+    # project_status_obj = hub.project_entity.get_statuses()
+    # project_status_obj.set_state()
+    # print(type(project_status_obj), project_status_obj)
+
+
+# definice status na projects
+# zmena statusu a tagu na entitach - verzich
+# vytvareni a mazani produktu a verzi
+
+
