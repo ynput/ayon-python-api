@@ -72,6 +72,11 @@ from ._api import (
     dispatch_event,
     delete_event,
     enroll_event_job,
+    get_activities,
+    get_activity_by_id,
+    create_activity,
+    update_activity,
+    delete_activity,
     download_file_to_stream,
     download_file,
     upload_file_from_stream,
@@ -234,6 +239,7 @@ from ._api import (
     get_representations_links,
     get_representation_links,
     send_batch_operations,
+    send_activities_batch_operations,
 )
 
 
@@ -309,6 +315,11 @@ __all__ = (
     "dispatch_event",
     "delete_event",
     "enroll_event_job",
+    "get_activities",
+    "get_activity_by_id",
+    "create_activity",
+    "update_activity",
+    "delete_activity",
     "download_file_to_stream",
     "download_file",
     "upload_file_from_stream",
@@ -471,4 +482,5 @@ __all__ = (
     "get_representations_links",
     "get_representation_links",
     "send_batch_operations",
+    "send_activities_batch_operations",
 )

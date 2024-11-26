@@ -114,25 +114,40 @@ def prepare_docstring(func):
     return f'"""{docstring}{line_char}\n"""'
 
 
-def _get_typehint(param, api_globals):
-    if param.annotation is inspect.Parameter.empty:
-        return None
+def _get_typehint(annotation, api_globals):
+    if inspect.isclass(annotation):
+        return annotation.__name__
 
-    an = param.annotation
-    if inspect.isclass(an):
-        return an.__name__
+    typehint = (
+        str(annotation)
+        .replace("typing.", "")
+        .replace("NoneType", "None")
+    )
+    forwardref_regex = re.compile(
+        r"(?P<full>ForwardRef\('(?P<name>[a-zA-Z0-9]+)'\))"
+    )
+    for item in forwardref_regex.finditer(str(typehint)):
+        groups = item.groupdict()
+        name = groups["name"]
+        typehint = typehint.replace(groups["full"], f'"{name}"')
 
-    typehint = str(an).replace("typing.", "")
     try:
         # Test if typehint is valid for known '_api' content
         exec(f"_: {typehint} = None", api_globals)
     except NameError:
+        print("Unknown typehint:", typehint)
         typehint = f'"{typehint}"'
     return typehint
 
 
+def _get_param_typehint(param, api_globals):
+    if param.annotation is inspect.Parameter.empty:
+        return None
+    return _get_typehint(param.annotation, api_globals)
+
+
 def _add_typehint(param_name, param, api_globals):
-    typehint = _get_typehint(param, api_globals)
+    typehint = _get_param_typehint(param, api_globals)
     if not typehint:
         return param_name
     return f"{param_name}: {typehint}"
@@ -154,7 +169,7 @@ def _kw_default_to_str(param_name, param, api_globals):
         raise TypeError("Unknown default value type")
     else:
         default = repr(default)
-    typehint = _get_typehint(param, api_globals)
+    typehint = _get_param_typehint(param, api_globals)
     if typehint:
         return f"{param_name}: {typehint} = {default}"
     return f"{param_name}={default}"
@@ -216,7 +231,8 @@ def sig_params_to_str(sig, param_names, api_globals, indent=0):
         func_params_str = f"(\n{lines_str}\n{base_indent_str})"
 
     if sig.return_annotation is not inspect.Signature.empty:
-        func_params_str += f" -> {sig.return_annotation}"
+        return_typehint = _get_typehint(sig.return_annotation, api_globals)
+        func_params_str += f" -> {return_typehint}"
 
     body_params_str = "()"
     if body_params:

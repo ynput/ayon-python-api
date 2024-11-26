@@ -185,3 +185,13 @@ DEFAULT_LINK_FIELDS = {
     "description",
     "author",
 }
+
+DEFAULT_ACTIVITY_FIELDS = {
+    "activityId",
+    "activityType",
+    "activityData",
+    "body",
+    "entityId",
+    "entityType",
+    "author.name",
+}
