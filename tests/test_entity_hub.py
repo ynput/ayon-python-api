@@ -61,14 +61,14 @@ def test_simple_operations(
     # create folders with subfolder
     for folder_number in range(folders_count):
         folder = hub.add_new_folder(
-            "Folder",
+            folder_type="Folder",
             name=f"{folder_name}{folder_number:03}"
         )
         folders.append(folder)
         hub.commit_changes()
 
         subfolder = hub.add_new_folder(
-            "Folder",
+            folder_type="Folder",
             name=f"{folder_name}{folder_number:03}",
             parent_id=folder["id"]
         )
