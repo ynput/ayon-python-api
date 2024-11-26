@@ -84,6 +84,7 @@ DEFAULT_TASK_FIELDS = {
     "taskType",
     "folderId",
     "active",
+    "thumbnailId",
     "assignees",
     "data",
     "status",
@@ -183,4 +184,14 @@ DEFAULT_LINK_FIELDS = {
     "direction",
     "description",
     "author",
+}
+
+DEFAULT_ACTIVITY_FIELDS = {
+    "activityId",
+    "activityType",
+    "activityData",
+    "body",
+    "entityId",
+    "entityType",
+    "author.name",
 }

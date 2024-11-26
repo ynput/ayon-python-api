@@ -11,16 +11,22 @@ automatically, and changing them manually can cause issues.
 
 import os
 import socket
+import typing
+from typing import Optional, List, Dict, Iterable, Generator, Any
 
 from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_API_ENV_KEY,
 )
-from .server_api import ServerAPI
+from .server_api import ServerAPI, _PLACEHOLDER
 from .exceptions import FailedServiceInit
 from .utils import (
-    get_default_settings_variant as _get_default_settings_variant
+    NOT_SET,
+    get_default_settings_variant as _get_default_settings_variant,
 )
+
+if typing.TYPE_CHECKING:
+    from ._typing import ActivityType, ActivityReferenceType
 
 
 class GlobalServerAPI(ServerAPI):
@@ -369,7 +375,9 @@ def get_ssl_verify():
     return con.get_ssl_verify()
 
 
-def set_ssl_verify(*args, **kwargs):
+def set_ssl_verify(
+    ssl_verify,
+):
     """Change ssl verification state.
 
     Args:
@@ -378,7 +386,9 @@ def set_ssl_verify(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_ssl_verify(*args, **kwargs)
+    return con.set_ssl_verify(
+        ssl_verify=ssl_verify,
+    )
 
 
 def get_cert():
@@ -392,7 +402,9 @@ def get_cert():
     return con.get_cert()
 
 
-def set_cert(*args, **kwargs):
+def set_cert(
+    cert,
+):
     """Change cert file used for connection to server.
 
     Args:
@@ -400,7 +412,9 @@ def set_cert(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_cert(*args, **kwargs)
+    return con.set_cert(
+        cert=cert,
+    )
 
 
 def get_timeout():
@@ -414,7 +428,9 @@ def get_timeout():
     return con.get_timeout()
 
 
-def set_timeout(*args, **kwargs):
+def set_timeout(
+    timeout,
+):
     """Change timeout value for requests.
 
     Args:
@@ -422,7 +438,9 @@ def set_timeout(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_timeout(*args, **kwargs)
+    return con.set_timeout(
+        timeout=timeout,
+    )
 
 
 def get_max_retries():
@@ -436,7 +454,9 @@ def get_max_retries():
     return con.get_max_retries()
 
 
-def set_max_retries(*args, **kwargs):
+def set_max_retries(
+    max_retries,
+):
     """Change max retries value for requests.
 
     Args:
@@ -444,7 +464,9 @@ def set_max_retries(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_max_retries(*args, **kwargs)
+    return con.set_max_retries(
+        max_retries=max_retries,
+    )
 
 
 def is_service_user():
@@ -472,7 +494,9 @@ def get_site_id():
     return con.get_site_id()
 
 
-def set_site_id(*args, **kwargs):
+def set_site_id(
+    site_id,
+):
     """Change site id of connection.
 
     Behave as specific site for server. It affects default behavior of
@@ -483,7 +507,9 @@ def set_site_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_site_id(*args, **kwargs)
+    return con.set_site_id(
+        site_id=site_id,
+    )
 
 
 def get_client_version():
@@ -499,7 +525,9 @@ def get_client_version():
     return con.get_client_version()
 
 
-def set_client_version(*args, **kwargs):
+def set_client_version(
+    client_version,
+):
     """Set version of client used to connect to server.
 
     Client version is AYON client build desktop application.
@@ -509,10 +537,14 @@ def set_client_version(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_client_version(*args, **kwargs)
+    return con.set_client_version(
+        client_version=client_version,
+    )
 
 
-def set_default_settings_variant(*args, **kwargs):
+def set_default_settings_variant(
+    variant,
+):
     """Change default variant for addon settings.
 
     Note:
@@ -525,7 +557,9 @@ def set_default_settings_variant(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_default_settings_variant(*args, **kwargs)
+    return con.set_default_settings_variant(
+        variant=variant,
+    )
 
 
 def get_sender():
@@ -539,7 +573,9 @@ def get_sender():
     return con.get_sender()
 
 
-def set_sender(*args, **kwargs):
+def set_sender(
+    sender,
+):
     """Change sender used for requests.
 
     Args:
@@ -547,7 +583,37 @@ def set_sender(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.set_sender(*args, **kwargs)
+    return con.set_sender(
+        sender=sender,
+    )
+
+
+def get_sender_type():
+    """Sender type used to send requests.
+
+    Sender type is supported since AYON server 1.5.5 .
+
+    Returns:
+        Union[str, None]: Sender type or None.
+
+    """
+    con = get_server_api_connection()
+    return con.get_sender_type()
+
+
+def set_sender_type(
+    sender_type,
+):
+    """Change sender type used for requests.
+
+    Args:
+        sender_type (Union[str, None]): Sender type or None.
+
+    """
+    con = get_server_api_connection()
+    return con.set_sender_type(
+        sender_type=sender_type,
+    )
 
 
 def get_info():
@@ -597,7 +663,11 @@ def get_server_version_tuple():
     return con.get_server_version_tuple()
 
 
-def get_users(*args, **kwargs):
+def get_users(
+    project_name=None,
+    usernames=None,
+    fields=None,
+):
     """Get Users.
 
     Only administrators and managers can fetch all users. For other users
@@ -614,10 +684,18 @@ def get_users(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_users(*args, **kwargs)
+    return con.get_users(
+        project_name=project_name,
+        usernames=usernames,
+        fields=fields,
+    )
 
 
-def get_user_by_name(*args, **kwargs):
+def get_user_by_name(
+    username,
+    project_name=None,
+    fields=None,
+):
     """Get user by name using GraphQl.
 
     Only administrators and managers can fetch all users. For other users
@@ -635,10 +713,16 @@ def get_user_by_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_user_by_name(*args, **kwargs)
+    return con.get_user_by_name(
+        username=username,
+        project_name=project_name,
+        fields=fields,
+    )
 
 
-def get_user(*args, **kwargs):
+def get_user(
+    username=None,
+):
     """Get user info using REST endpoit.
 
     Args:
@@ -650,60 +734,124 @@ def get_user(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_user(*args, **kwargs)
+    return con.get_user(
+        username=username,
+    )
 
 
-def raw_post(*args, **kwargs):
+def raw_post(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.raw_post(*args, **kwargs)
+    return con.raw_post(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def raw_put(*args, **kwargs):
+def raw_put(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.raw_put(*args, **kwargs)
+    return con.raw_put(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def raw_patch(*args, **kwargs):
+def raw_patch(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.raw_patch(*args, **kwargs)
+    return con.raw_patch(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def raw_get(*args, **kwargs):
+def raw_get(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.raw_get(*args, **kwargs)
+    return con.raw_get(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def raw_delete(*args, **kwargs):
+def raw_delete(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.raw_delete(*args, **kwargs)
+    return con.raw_delete(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def post(*args, **kwargs):
+def post(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.post(*args, **kwargs)
+    return con.post(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def put(*args, **kwargs):
+def put(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.put(*args, **kwargs)
+    return con.put(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def patch(*args, **kwargs):
+def patch(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.patch(*args, **kwargs)
+    return con.patch(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def get(*args, **kwargs):
+def get(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.get(*args, **kwargs)
+    return con.get(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def delete(*args, **kwargs):
+def delete(
+    entrypoint,
+    **kwargs,
+):
     con = get_server_api_connection()
-    return con.delete(*args, **kwargs)
+    return con.delete(
+        entrypoint=entrypoint,
+        **kwargs,
+    )
 
 
-def get_event(*args, **kwargs):
+def get_event(
+    event_id,
+):
     """Query full event data by id.
 
     Events received using event server do not contain full information. To
@@ -717,10 +865,23 @@ def get_event(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_event(*args, **kwargs)
+    return con.get_event(
+        event_id=event_id,
+    )
 
 
-def get_events(*args, **kwargs):
+def get_events(
+    topics=None,
+    event_ids=None,
+    project_names=None,
+    states=None,
+    users=None,
+    include_logs=None,
+    has_children=None,
+    newer_than=None,
+    older_than=None,
+    fields=None,
+):
     """Get events from server with filtering options.
 
     Notes:
@@ -749,10 +910,32 @@ def get_events(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_events(*args, **kwargs)
+    return con.get_events(
+        topics=topics,
+        event_ids=event_ids,
+        project_names=project_names,
+        states=states,
+        users=users,
+        include_logs=include_logs,
+        has_children=has_children,
+        newer_than=newer_than,
+        older_than=older_than,
+        fields=fields,
+    )
 
 
-def update_event(*args, **kwargs):
+def update_event(
+    event_id,
+    sender=None,
+    project_name=None,
+    username=None,
+    status=None,
+    description=None,
+    summary=None,
+    payload=None,
+    progress=None,
+    retries=None,
+):
     """Update event data.
 
     Args:
@@ -770,10 +953,34 @@ def update_event(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_event(*args, **kwargs)
+    return con.update_event(
+        event_id=event_id,
+        sender=sender,
+        project_name=project_name,
+        username=username,
+        status=status,
+        description=description,
+        summary=summary,
+        payload=payload,
+        progress=progress,
+        retries=retries,
+    )
 
 
-def dispatch_event(*args, **kwargs):
+def dispatch_event(
+    topic,
+    sender=None,
+    event_hash=None,
+    project_name=None,
+    username=None,
+    depends_on=None,
+    description=None,
+    summary=None,
+    payload=None,
+    finished=True,
+    store=True,
+    dependencies=None,
+):
     """Dispatch event to server.
 
     Args:
@@ -800,10 +1007,25 @@ def dispatch_event(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.dispatch_event(*args, **kwargs)
+    return con.dispatch_event(
+        topic=topic,
+        sender=sender,
+        event_hash=event_hash,
+        project_name=project_name,
+        username=username,
+        depends_on=depends_on,
+        description=description,
+        summary=summary,
+        payload=payload,
+        finished=finished,
+        store=store,
+        dependencies=dependencies,
+    )
 
 
-def delete_event(*args, **kwargs):
+def delete_event(
+    event_id: str,
+):
     """Delete event by id.
 
     Supported since AYON server 1.6.0.
@@ -816,10 +1038,22 @@ def delete_event(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_event(*args, **kwargs)
+    return con.delete_event(
+        event_id=event_id,
+    )
 
 
-def enroll_event_job(*args, **kwargs):
+def enroll_event_job(
+    source_topic,
+    target_topic,
+    sender,
+    description=None,
+    sequential=None,
+    events_filter=None,
+    max_retries=None,
+    ignore_older_than=None,
+    ignore_sender_types=None,
+):
     """Enroll job based on events.
 
     Enroll will find first unprocessed event with 'source_topic' and will
@@ -867,6 +1101,10 @@ def enroll_event_job(*args, **kwargs):
             TODO: Add example of filters.
         max_retries (Optional[int]): How many times can be event retried.
             Default value is based on server (3 at the time of this PR).
+        ignore_older_than (Optional[int]): Ignore events older than
+            given number in days.
+        ignore_sender_types (Optional[List[str]]): Ignore events triggered
+            by given sender types.
 
     Returns:
         Union[None, dict[str, Any]]: None if there is no event matching
@@ -874,10 +1112,195 @@ def enroll_event_job(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.enroll_event_job(*args, **kwargs)
+    return con.enroll_event_job(
+        source_topic=source_topic,
+        target_topic=target_topic,
+        sender=sender,
+        description=description,
+        sequential=sequential,
+        events_filter=events_filter,
+        max_retries=max_retries,
+        ignore_older_than=ignore_older_than,
+        ignore_sender_types=ignore_sender_types,
+    )
 
 
-def download_file_to_stream(*args, **kwargs):
+def get_activities(
+    project_name: str,
+    activity_ids: Optional[Iterable[str]] = None,
+    activity_types: Optional[Iterable["ActivityType"]] = None,
+    entity_ids: Optional[Iterable[str]] = None,
+    entity_names: Optional[Iterable[str]] = None,
+    entity_type: Optional[str] = None,
+    changed_after: Optional[str] = None,
+    changed_before: Optional[str] = None,
+    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Generator[Dict[str, Any], None, None]:
+    """Get activities from server with filtering options.
+
+    Args:
+        project_name (str): Project on which activities happened.
+        activity_ids (Optional[Iterable[str]]): Activity ids.
+        activity_types (Optional[Iterable[ActivityType]]): Activity types.
+        entity_ids (Optional[Iterable[str]]): Entity ids.
+        entity_names (Optional[Iterable[str]]): Entity names.
+        entity_type (Optional[str]): Entity type.
+        changed_after (Optional[str]): Return only activities changed
+            after given iso datetime string.
+        changed_before (Optional[str]): Return only activities changed
+            before given iso datetime string.
+        reference_types (Optional[Iterable[ActivityReferenceType]]):
+            Reference types filter. Defaults to `['origin']`.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+
+    Returns:
+        Generator[dict[str, Any]]: Available activities matching filters.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activities(
+        project_name=project_name,
+        activity_ids=activity_ids,
+        activity_types=activity_types,
+        entity_ids=entity_ids,
+        entity_names=entity_names,
+        entity_type=entity_type,
+        changed_after=changed_after,
+        changed_before=changed_before,
+        reference_types=reference_types,
+        fields=fields,
+    )
+
+
+def get_activity_by_id(
+    project_name: str,
+    activity_id: str,
+    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Get activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+
+    Returns:
+        Optional[Dict[str, Any]]: Activity data or None if activity is not
+            found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activity_by_id(
+        project_name=project_name,
+        activity_id=activity_id,
+        reference_types=reference_types,
+        fields=fields,
+    )
+
+
+def create_activity(
+    project_name: str,
+    entity_id: str,
+    entity_type: str,
+    activity_type: "ActivityType",
+    activity_id: Optional[str] = None,
+    body: Optional[str] = None,
+    file_ids: Optional[List[str]] = None,
+    timestamp: Optional[str] = None,
+    data: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Create activity on a project.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        entity_id (str): Entity id.
+        entity_type (str): Entity type.
+        activity_type (ActivityType): Activity type.
+        activity_id (Optional[str]): Activity id.
+        body (Optional[str]): Activity body.
+        file_ids (Optional[List[str]]): List of file ids attached
+            to activity.
+        timestamp (Optional[str]): Activity timestamp.
+        data (Optional[Dict[str, Any]]): Additional data.
+
+    Returns:
+        str: Activity id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_activity(
+        project_name=project_name,
+        entity_id=entity_id,
+        entity_type=entity_type,
+        activity_type=activity_type,
+        activity_id=activity_id,
+        body=body,
+        file_ids=file_ids,
+        timestamp=timestamp,
+        data=data,
+    )
+
+
+def update_activity(
+    project_name: str,
+    activity_id: str,
+    body: Optional[str] = None,
+    file_ids: Optional[List[str]] = None,
+    append_file_ids: Optional[bool] = False,
+    data: Optional[Dict[str, Any]] = None,
+):
+    """Update activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        body (str): Activity body.
+        file_ids (Optional[List[str]]): List of file ids attached
+            to activity.
+        append_file_ids (Optional[bool]): Append file ids to existing
+            list of file ids.
+        data (Optional[Dict[str, Any]]): Update data in activity.
+
+    """
+    con = get_server_api_connection()
+    return con.update_activity(
+        project_name=project_name,
+        activity_id=activity_id,
+        body=body,
+        file_ids=file_ids,
+        append_file_ids=append_file_ids,
+        data=data,
+    )
+
+
+def delete_activity(
+    project_name: str,
+    activity_id: str,
+):
+    """Delete activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id to remove.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_activity(
+        project_name=project_name,
+        activity_id=activity_id,
+    )
+
+
+def download_file_to_stream(
+    endpoint,
+    stream,
+    chunk_size=None,
+    progress=None,
+):
     """Download file from AYON server to IOStream.
 
     Endpoint can be full url (must start with 'base_url' of api object).
@@ -901,10 +1324,20 @@ def download_file_to_stream(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.download_file_to_stream(*args, **kwargs)
+    return con.download_file_to_stream(
+        endpoint=endpoint,
+        stream=stream,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
 
 
-def download_file(*args, **kwargs):
+def download_file(
+    endpoint,
+    filepath,
+    chunk_size=None,
+    progress=None,
+):
     """Download file from AYON server.
 
     Endpoint can be full url (must start with 'base_url' of api object).
@@ -927,10 +1360,21 @@ def download_file(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.download_file(*args, **kwargs)
+    return con.download_file(
+        endpoint=endpoint,
+        filepath=filepath,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
 
 
-def upload_file_from_stream(*args, **kwargs):
+def upload_file_from_stream(
+    endpoint,
+    stream,
+    progress,
+    request_type,
+    **kwargs,
+):
     """Upload file to server from bytes.
 
     Todos:
@@ -952,10 +1396,22 @@ def upload_file_from_stream(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.upload_file_from_stream(*args, **kwargs)
+    return con.upload_file_from_stream(
+        endpoint=endpoint,
+        stream=stream,
+        progress=progress,
+        request_type=request_type,
+        **kwargs,
+    )
 
 
-def upload_file(*args, **kwargs):
+def upload_file(
+    endpoint,
+    filepath,
+    progress=None,
+    request_type=None,
+    **kwargs,
+):
     """Upload file to server.
 
     Todos:
@@ -977,10 +1433,26 @@ def upload_file(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.upload_file(*args, **kwargs)
+    return con.upload_file(
+        endpoint=endpoint,
+        filepath=filepath,
+        progress=progress,
+        request_type=request_type,
+        **kwargs,
+    )
 
 
-def upload_reviewable(*args, **kwargs):
+def upload_reviewable(
+    project_name,
+    version_id,
+    filepath,
+    label=None,
+    content_type=None,
+    filename=None,
+    progress=None,
+    headers=None,
+    **kwargs,
+):
     """Upload reviewable file to server.
 
     Args:
@@ -1000,7 +1472,17 @@ def upload_reviewable(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.upload_reviewable(*args, **kwargs)
+    return con.upload_reviewable(
+        project_name=project_name,
+        version_id=version_id,
+        filepath=filepath,
+        label=label,
+        content_type=content_type,
+        filename=filename,
+        progress=progress,
+        headers=headers,
+        **kwargs,
+    )
 
 
 def trigger_server_restart():
@@ -1014,7 +1496,10 @@ def trigger_server_restart():
     return con.trigger_server_restart()
 
 
-def query_graphql(*args, **kwargs):
+def query_graphql(
+    query,
+    variables=None,
+):
     """Execute GraphQl query.
 
     Args:
@@ -1027,7 +1512,10 @@ def query_graphql(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.query_graphql(*args, **kwargs)
+    return con.query_graphql(
+        query=query,
+        variables=variables,
+    )
 
 
 def get_graphql_schema():
@@ -1065,9 +1553,13 @@ def get_schemas():
     return con.get_schemas()
 
 
-def get_attributes_schema(*args, **kwargs):
+def get_attributes_schema(
+    use_cache=True,
+):
     con = get_server_api_connection()
-    return con.get_attributes_schema(*args, **kwargs)
+    return con.get_attributes_schema(
+        use_cache=use_cache,
+    )
 
 
 def reset_attributes_schema():
@@ -1075,12 +1567,26 @@ def reset_attributes_schema():
     return con.reset_attributes_schema()
 
 
-def set_attribute_config(*args, **kwargs):
+def set_attribute_config(
+    attribute_name,
+    data,
+    scope,
+    position=None,
+    builtin=False,
+):
     con = get_server_api_connection()
-    return con.set_attribute_config(*args, **kwargs)
+    return con.set_attribute_config(
+        attribute_name=attribute_name,
+        data=data,
+        scope=scope,
+        position=position,
+        builtin=builtin,
+    )
 
 
-def remove_attribute_config(*args, **kwargs):
+def remove_attribute_config(
+    attribute_name,
+):
     """Remove attribute from server.
 
     This can't be un-done, please use carefully.
@@ -1090,10 +1596,14 @@ def remove_attribute_config(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.remove_attribute_config(*args, **kwargs)
+    return con.remove_attribute_config(
+        attribute_name=attribute_name,
+    )
 
 
-def get_attributes_for_type(*args, **kwargs):
+def get_attributes_for_type(
+    entity_type,
+):
     """Get attribute schemas available for an entity type.
 
     Example::
@@ -1131,10 +1641,14 @@ def get_attributes_for_type(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_attributes_for_type(*args, **kwargs)
+    return con.get_attributes_for_type(
+        entity_type=entity_type,
+    )
 
 
-def get_attributes_fields_for_type(*args, **kwargs):
+def get_attributes_fields_for_type(
+    entity_type,
+):
     """Prepare attribute fields for entity type.
 
     Returns:
@@ -1142,10 +1656,14 @@ def get_attributes_fields_for_type(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_attributes_fields_for_type(*args, **kwargs)
+    return con.get_attributes_fields_for_type(
+        entity_type=entity_type,
+    )
 
 
-def get_default_fields_for_type(*args, **kwargs):
+def get_default_fields_for_type(
+    entity_type,
+):
     """Default fields for entity type.
 
     Returns most of commonly used fields from server.
@@ -1158,10 +1676,14 @@ def get_default_fields_for_type(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_default_fields_for_type(*args, **kwargs)
+    return con.get_default_fields_for_type(
+        entity_type=entity_type,
+    )
 
 
-def get_addons_info(*args, **kwargs):
+def get_addons_info(
+    details=True,
+):
     """Get information about addons available on server.
 
     Args:
@@ -1170,10 +1692,16 @@ def get_addons_info(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addons_info(*args, **kwargs)
+    return con.get_addons_info(
+        details=details,
+    )
 
 
-def get_addon_endpoint(*args, **kwargs):
+def get_addon_endpoint(
+    addon_name,
+    addon_version,
+    *subpaths,
+):
     """Calculate endpoint to addon route.
 
     Examples:
@@ -1194,10 +1722,19 @@ def get_addon_endpoint(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_endpoint(*args, **kwargs)
+    return con.get_addon_endpoint(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        *subpaths,
+    )
 
 
-def get_addon_url(*args, **kwargs):
+def get_addon_url(
+    addon_name,
+    addon_version,
+    *subpaths,
+    use_rest=True,
+):
     """Calculate url to addon route.
 
     Examples:
@@ -1219,10 +1756,23 @@ def get_addon_url(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_url(*args, **kwargs)
+    return con.get_addon_url(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        *subpaths,
+        use_rest=use_rest,
+    )
 
 
-def download_addon_private_file(*args, **kwargs):
+def download_addon_private_file(
+    addon_name,
+    addon_version,
+    filename,
+    destination_dir,
+    destination_filename=None,
+    chunk_size=None,
+    progress=None,
+):
     """Download a file from addon private files.
 
     This method requires to have authorized token available. Private files
@@ -1244,10 +1794,21 @@ def download_addon_private_file(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.download_addon_private_file(*args, **kwargs)
+    return con.download_addon_private_file(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        filename=filename,
+        destination_dir=destination_dir,
+        destination_filename=destination_filename,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
 
 
-def get_installers(*args, **kwargs):
+def get_installers(
+    version=None,
+    platform_name=None,
+):
     """Information about desktop application installers on server.
 
     Desktop application installers are helpers to download/update AYON
@@ -1262,10 +1823,24 @@ def get_installers(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_installers(*args, **kwargs)
+    return con.get_installers(
+        version=version,
+        platform_name=platform_name,
+    )
 
 
-def create_installer(*args, **kwargs):
+def create_installer(
+    filename,
+    version,
+    python_version,
+    platform_name,
+    python_modules,
+    runtime_python_modules,
+    checksum,
+    checksum_algorithm,
+    file_size,
+    sources=None,
+):
     """Create new installer information on server.
 
     This step will create only metadata. Make sure to upload installer
@@ -1292,10 +1867,24 @@ def create_installer(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_installer(*args, **kwargs)
+    return con.create_installer(
+        filename=filename,
+        version=version,
+        python_version=python_version,
+        platform_name=platform_name,
+        python_modules=python_modules,
+        runtime_python_modules=runtime_python_modules,
+        checksum=checksum,
+        checksum_algorithm=checksum_algorithm,
+        file_size=file_size,
+        sources=sources,
+    )
 
 
-def update_installer(*args, **kwargs):
+def update_installer(
+    filename,
+    sources,
+):
     """Update installer information on server.
 
     Args:
@@ -1305,10 +1894,15 @@ def update_installer(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_installer(*args, **kwargs)
+    return con.update_installer(
+        filename=filename,
+        sources=sources,
+    )
 
 
-def delete_installer(*args, **kwargs):
+def delete_installer(
+    filename,
+):
     """Delete installer from server.
 
     Args:
@@ -1316,10 +1910,17 @@ def delete_installer(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_installer(*args, **kwargs)
+    return con.delete_installer(
+        filename=filename,
+    )
 
 
-def download_installer(*args, **kwargs):
+def download_installer(
+    filename,
+    dst_filepath,
+    chunk_size=None,
+    progress=None,
+):
     """Download installer file from server.
 
     Args:
@@ -1331,10 +1932,19 @@ def download_installer(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.download_installer(*args, **kwargs)
+    return con.download_installer(
+        filename=filename,
+        dst_filepath=dst_filepath,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
 
 
-def upload_installer(*args, **kwargs):
+def upload_installer(
+    src_filepath,
+    dst_filename,
+    progress=None,
+):
     """Upload installer file to server.
 
     Args:
@@ -1348,7 +1958,11 @@ def upload_installer(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.upload_installer(*args, **kwargs)
+    return con.upload_installer(
+        src_filepath=src_filepath,
+        dst_filename=dst_filename,
+        progress=progress,
+    )
 
 
 def get_dependency_packages():
@@ -1383,7 +1997,17 @@ def get_dependency_packages():
     return con.get_dependency_packages()
 
 
-def create_dependency_package(*args, **kwargs):
+def create_dependency_package(
+    filename,
+    python_modules,
+    source_addons,
+    installer_version,
+    checksum,
+    checksum_algorithm,
+    file_size,
+    sources=None,
+    platform_name=None,
+):
     """Create dependency package on server.
 
     The package will be created on a server, it is also required to upload
@@ -1414,10 +2038,23 @@ def create_dependency_package(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_dependency_package(*args, **kwargs)
+    return con.create_dependency_package(
+        filename=filename,
+        python_modules=python_modules,
+        source_addons=source_addons,
+        installer_version=installer_version,
+        checksum=checksum,
+        checksum_algorithm=checksum_algorithm,
+        file_size=file_size,
+        sources=sources,
+        platform_name=platform_name,
+    )
 
 
-def update_dependency_package(*args, **kwargs):
+def update_dependency_package(
+    filename,
+    sources,
+):
     """Update dependency package metadata on server.
 
     Args:
@@ -1428,10 +2065,16 @@ def update_dependency_package(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_dependency_package(*args, **kwargs)
+    return con.update_dependency_package(
+        filename=filename,
+        sources=sources,
+    )
 
 
-def delete_dependency_package(*args, **kwargs):
+def delete_dependency_package(
+    filename,
+    platform_name=None,
+):
     """Remove dependency package for specific platform.
 
     Args:
@@ -1440,10 +2083,20 @@ def delete_dependency_package(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_dependency_package(*args, **kwargs)
+    return con.delete_dependency_package(
+        filename=filename,
+        platform_name=platform_name,
+    )
 
 
-def download_dependency_package(*args, **kwargs):
+def download_dependency_package(
+    src_filename,
+    dst_directory,
+    dst_filename,
+    platform_name=None,
+    chunk_size=None,
+    progress=None,
+):
     """Download dependency package from server.
 
     This method requires to have authorized token available. The package
@@ -1465,10 +2118,22 @@ def download_dependency_package(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.download_dependency_package(*args, **kwargs)
+    return con.download_dependency_package(
+        src_filename=src_filename,
+        dst_directory=dst_directory,
+        dst_filename=dst_filename,
+        platform_name=platform_name,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
 
 
-def upload_dependency_package(*args, **kwargs):
+def upload_dependency_package(
+    src_filepath,
+    dst_filename,
+    platform_name=None,
+    progress=None,
+):
     """Upload dependency package to server.
 
     Args:
@@ -1481,10 +2146,18 @@ def upload_dependency_package(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.upload_dependency_package(*args, **kwargs)
+    return con.upload_dependency_package(
+        src_filepath=src_filepath,
+        dst_filename=dst_filename,
+        platform_name=platform_name,
+        progress=progress,
+    )
 
 
-def delete_addon(*args, **kwargs):
+def delete_addon(
+    addon_name: str,
+    purge: Optional[bool] = None,
+):
     """Delete addon from server.
 
     Delete all versions of addon from server.
@@ -1495,10 +2168,17 @@ def delete_addon(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_addon(*args, **kwargs)
+    return con.delete_addon(
+        addon_name=addon_name,
+        purge=purge,
+    )
 
 
-def delete_addon_version(*args, **kwargs):
+def delete_addon_version(
+    addon_name: str,
+    addon_version: str,
+    purge: Optional[bool] = None,
+):
     """Delete addon version from server.
 
     Delete all versions of addon from server.
@@ -1510,10 +2190,17 @@ def delete_addon_version(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_addon_version(*args, **kwargs)
+    return con.delete_addon_version(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        purge=purge,
+    )
 
 
-def upload_addon_zip(*args, **kwargs):
+def upload_addon_zip(
+    src_filepath,
+    progress=None,
+):
     """Upload addon zip file to server.
 
     File is validated on server. If it is valid, it is installed. It will
@@ -1534,7 +2221,10 @@ def upload_addon_zip(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.upload_addon_zip(*args, **kwargs)
+    return con.upload_addon_zip(
+        src_filepath=src_filepath,
+        progress=progress,
+    )
 
 
 def get_bundles():
@@ -1572,7 +2262,17 @@ def get_bundles():
     return con.get_bundles()
 
 
-def create_bundle(*args, **kwargs):
+def create_bundle(
+    name,
+    addon_versions,
+    installer_version,
+    dependency_packages=None,
+    is_production=None,
+    is_staging=None,
+    is_dev=None,
+    dev_active_user=None,
+    dev_addons_config=None,
+):
     """Create bundle on server.
 
     Bundle cannot be changed once is created. Only isProduction, isStaging
@@ -1612,10 +2312,30 @@ def create_bundle(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_bundle(*args, **kwargs)
+    return con.create_bundle(
+        name=name,
+        addon_versions=addon_versions,
+        installer_version=installer_version,
+        dependency_packages=dependency_packages,
+        is_production=is_production,
+        is_staging=is_staging,
+        is_dev=is_dev,
+        dev_active_user=dev_active_user,
+        dev_addons_config=dev_addons_config,
+    )
 
 
-def update_bundle(*args, **kwargs):
+def update_bundle(
+    bundle_name,
+    addon_versions=None,
+    installer_version=None,
+    dependency_packages=None,
+    is_production=None,
+    is_staging=None,
+    is_dev=None,
+    dev_active_user=None,
+    dev_addons_config=None,
+):
     """Update bundle on server.
 
     Dependency packages can be update only for single platform. Others
@@ -1641,10 +2361,30 @@ def update_bundle(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_bundle(*args, **kwargs)
+    return con.update_bundle(
+        bundle_name=bundle_name,
+        addon_versions=addon_versions,
+        installer_version=installer_version,
+        dependency_packages=dependency_packages,
+        is_production=is_production,
+        is_staging=is_staging,
+        is_dev=is_dev,
+        dev_active_user=dev_active_user,
+        dev_addons_config=dev_addons_config,
+    )
 
 
-def check_bundle_compatibility(*args, **kwargs):
+def check_bundle_compatibility(
+    name,
+    addon_versions,
+    installer_version,
+    dependency_packages=None,
+    is_production=None,
+    is_staging=None,
+    is_dev=None,
+    dev_active_user=None,
+    dev_addons_config=None,
+):
     """Check bundle compatibility.
 
     Can be used as per-flight validation before creating bundle.
@@ -1670,10 +2410,22 @@ def check_bundle_compatibility(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.check_bundle_compatibility(*args, **kwargs)
+    return con.check_bundle_compatibility(
+        name=name,
+        addon_versions=addon_versions,
+        installer_version=installer_version,
+        dependency_packages=dependency_packages,
+        is_production=is_production,
+        is_staging=is_staging,
+        is_dev=is_dev,
+        dev_active_user=dev_active_user,
+        dev_addons_config=dev_addons_config,
+    )
 
 
-def delete_bundle(*args, **kwargs):
+def delete_bundle(
+    bundle_name,
+):
     """Delete bundle from server.
 
     Args:
@@ -1681,7 +2433,9 @@ def delete_bundle(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_bundle(*args, **kwargs)
+    return con.delete_bundle(
+        bundle_name=bundle_name,
+    )
 
 
 def get_project_anatomy_presets():
@@ -1724,7 +2478,9 @@ def get_default_anatomy_preset_name():
     return con.get_default_anatomy_preset_name()
 
 
-def get_project_anatomy_preset(*args, **kwargs):
+def get_project_anatomy_preset(
+    preset_name=None,
+):
     """Anatomy preset values by name.
 
     Get anatomy preset values by preset name. Primary preset is returned
@@ -1738,7 +2494,9 @@ def get_project_anatomy_preset(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_anatomy_preset(*args, **kwargs)
+    return con.get_project_anatomy_preset(
+        preset_name=preset_name,
+    )
 
 
 def get_build_in_anatomy_preset():
@@ -1752,7 +2510,9 @@ def get_build_in_anatomy_preset():
     return con.get_build_in_anatomy_preset()
 
 
-def get_project_root_overrides(*args, **kwargs):
+def get_project_root_overrides(
+    project_name,
+):
     """Root overrides per site name.
 
     Method is based on logged user and can't be received for any other
@@ -1768,10 +2528,14 @@ def get_project_root_overrides(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_root_overrides(*args, **kwargs)
+    return con.get_project_root_overrides(
+        project_name=project_name,
+    )
 
 
-def get_project_roots_by_site(*args, **kwargs):
+def get_project_roots_by_site(
+    project_name,
+):
     """Root overrides per site name.
 
     Method is based on logged user and can't be received for any other
@@ -1791,10 +2555,15 @@ def get_project_roots_by_site(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_by_site(*args, **kwargs)
+    return con.get_project_roots_by_site(
+        project_name=project_name,
+    )
 
 
-def get_project_root_overrides_by_site_id(*args, **kwargs):
+def get_project_root_overrides_by_site_id(
+    project_name,
+    site_id=None,
+):
     """Root overrides for site.
 
     If site id is not passed a site set in current api object is used
@@ -1811,10 +2580,16 @@ def get_project_root_overrides_by_site_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_root_overrides_by_site_id(*args, **kwargs)
+    return con.get_project_root_overrides_by_site_id(
+        project_name=project_name,
+        site_id=site_id,
+    )
 
 
-def get_project_roots_for_site(*args, **kwargs):
+def get_project_roots_for_site(
+    project_name,
+    site_id=None,
+):
     """Root overrides for site.
 
     If site id is not passed a site set in current api object is used
@@ -1834,10 +2609,16 @@ def get_project_roots_for_site(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_for_site(*args, **kwargs)
+    return con.get_project_roots_for_site(
+        project_name=project_name,
+        site_id=site_id,
+    )
 
 
-def get_project_roots_by_site_id(*args, **kwargs):
+def get_project_roots_by_site_id(
+    project_name,
+    site_id=None,
+):
     """Root values for a site.
 
     If site id is not passed a site set in current api object is used
@@ -1854,10 +2635,16 @@ def get_project_roots_by_site_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_by_site_id(*args, **kwargs)
+    return con.get_project_roots_by_site_id(
+        project_name=project_name,
+        site_id=site_id,
+    )
 
 
-def get_project_roots_by_platform(*args, **kwargs):
+def get_project_roots_by_platform(
+    project_name,
+    platform_name=None,
+):
     """Root values for a site.
 
     If platform name is not passed current platform name is used instead.
@@ -1876,10 +2663,17 @@ def get_project_roots_by_platform(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_by_platform(*args, **kwargs)
+    return con.get_project_roots_by_platform(
+        project_name=project_name,
+        platform_name=platform_name,
+    )
 
 
-def get_addon_settings_schema(*args, **kwargs):
+def get_addon_settings_schema(
+    addon_name,
+    addon_version,
+    project_name=None,
+):
     """Sudio/Project settings schema of an addon.
 
     Project schema may look differently as some enums are based on project
@@ -1896,10 +2690,17 @@ def get_addon_settings_schema(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_settings_schema(*args, **kwargs)
+    return con.get_addon_settings_schema(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+    )
 
 
-def get_addon_site_settings_schema(*args, **kwargs):
+def get_addon_site_settings_schema(
+    addon_name,
+    addon_version,
+):
     """Site settings schema of an addon.
 
     Args:
@@ -1911,10 +2712,17 @@ def get_addon_site_settings_schema(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_site_settings_schema(*args, **kwargs)
+    return con.get_addon_site_settings_schema(
+        addon_name=addon_name,
+        addon_version=addon_version,
+    )
 
 
-def get_addon_studio_settings(*args, **kwargs):
+def get_addon_studio_settings(
+    addon_name,
+    addon_version,
+    variant=None,
+):
     """Addon studio settings.
 
     Receive studio settings for specific version of an addon.
@@ -1930,10 +2738,21 @@ def get_addon_studio_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_studio_settings(*args, **kwargs)
+    return con.get_addon_studio_settings(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        variant=variant,
+    )
 
 
-def get_addon_project_settings(*args, **kwargs):
+def get_addon_project_settings(
+    addon_name,
+    addon_version,
+    project_name,
+    variant=None,
+    site_id=None,
+    use_site=True,
+):
     """Addon project settings.
 
     Receive project settings for specific version of an addon. The settings
@@ -1961,10 +2780,24 @@ def get_addon_project_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_project_settings(*args, **kwargs)
+    return con.get_addon_project_settings(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        variant=variant,
+        site_id=site_id,
+        use_site=use_site,
+    )
 
 
-def get_addon_settings(*args, **kwargs):
+def get_addon_settings(
+    addon_name,
+    addon_version,
+    project_name=None,
+    variant=None,
+    site_id=None,
+    use_site=True,
+):
     """Receive addon settings.
 
     Receive addon settings based on project name value. Some arguments may
@@ -1990,10 +2823,21 @@ def get_addon_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_settings(*args, **kwargs)
+    return con.get_addon_settings(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        variant=variant,
+        site_id=site_id,
+        use_site=use_site,
+    )
 
 
-def get_addon_site_settings(*args, **kwargs):
+def get_addon_site_settings(
+    addon_name,
+    addon_version,
+    site_id=None,
+):
     """Site settings of an addon.
 
     If site id is not available an empty dictionary is returned.
@@ -2009,10 +2853,20 @@ def get_addon_site_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addon_site_settings(*args, **kwargs)
+    return con.get_addon_site_settings(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        site_id=site_id,
+    )
 
 
-def get_bundle_settings(*args, **kwargs):
+def get_bundle_settings(
+    bundle_name=None,
+    project_name=None,
+    variant=None,
+    site_id=None,
+    use_site=True,
+):
     """Get complete set of settings for given data.
 
     If project is not passed then studio settings are returned. If variant
@@ -2045,10 +2899,22 @@ def get_bundle_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_bundle_settings(*args, **kwargs)
+    return con.get_bundle_settings(
+        bundle_name=bundle_name,
+        project_name=project_name,
+        variant=variant,
+        site_id=site_id,
+        use_site=use_site,
+    )
 
 
-def get_addons_studio_settings(*args, **kwargs):
+def get_addons_studio_settings(
+    bundle_name=None,
+    variant=None,
+    site_id=None,
+    use_site=True,
+    only_values=True,
+):
     """All addons settings in one bulk.
 
     Warnings:
@@ -2074,10 +2940,23 @@ def get_addons_studio_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addons_studio_settings(*args, **kwargs)
+    return con.get_addons_studio_settings(
+        bundle_name=bundle_name,
+        variant=variant,
+        site_id=site_id,
+        use_site=use_site,
+        only_values=only_values,
+    )
 
 
-def get_addons_project_settings(*args, **kwargs):
+def get_addons_project_settings(
+    project_name,
+    bundle_name=None,
+    variant=None,
+    site_id=None,
+    use_site=True,
+    only_values=True,
+):
     """Project settings of all addons.
 
     Server returns information about used addon versions, so full output
@@ -2120,10 +2999,24 @@ def get_addons_project_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addons_project_settings(*args, **kwargs)
+    return con.get_addons_project_settings(
+        project_name=project_name,
+        bundle_name=bundle_name,
+        variant=variant,
+        site_id=site_id,
+        use_site=use_site,
+        only_values=only_values,
+    )
 
 
-def get_addons_settings(*args, **kwargs):
+def get_addons_settings(
+    bundle_name=None,
+    project_name=None,
+    variant=None,
+    site_id=None,
+    use_site=True,
+    only_values=True,
+):
     """Universal function to receive all addon settings.
 
     Based on 'project_name' will receive studio settings or project
@@ -2151,7 +3044,14 @@ def get_addons_settings(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_addons_settings(*args, **kwargs)
+    return con.get_addons_settings(
+        bundle_name=bundle_name,
+        project_name=project_name,
+        variant=variant,
+        site_id=site_id,
+        use_site=use_site,
+        only_values=only_values,
+    )
 
 
 def get_secrets():
@@ -2178,7 +3078,9 @@ def get_secrets():
     return con.get_secrets()
 
 
-def get_secret(*args, **kwargs):
+def get_secret(
+    secret_name,
+):
     """Get secret by name.
 
     Example output::
@@ -2196,10 +3098,15 @@ def get_secret(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_secret(*args, **kwargs)
+    return con.get_secret(
+        secret_name=secret_name,
+    )
 
 
-def save_secret(*args, **kwargs):
+def save_secret(
+    secret_name,
+    secret_value,
+):
     """Save secret.
 
     This endpoint can create and update secret.
@@ -2210,10 +3117,15 @@ def save_secret(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.save_secret(*args, **kwargs)
+    return con.save_secret(
+        secret_name=secret_name,
+        secret_value=secret_value,
+    )
 
 
-def delete_secret(*args, **kwargs):
+def delete_secret(
+    secret_name,
+):
     """Delete secret by name.
 
     Args:
@@ -2221,10 +3133,14 @@ def delete_secret(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_secret(*args, **kwargs)
+    return con.delete_secret(
+        secret_name=secret_name,
+    )
 
 
-def get_rest_project(*args, **kwargs):
+def get_rest_project(
+    project_name,
+):
     """Query project by name.
 
     This call returns project with anatomy data.
@@ -2238,10 +3154,15 @@ def get_rest_project(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_rest_project(*args, **kwargs)
+    return con.get_rest_project(
+        project_name=project_name,
+    )
 
 
-def get_rest_projects(*args, **kwargs):
+def get_rest_projects(
+    active=True,
+    library=None,
+):
     """Query available project entities.
 
     User must be logged in.
@@ -2257,10 +3178,17 @@ def get_rest_projects(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_rest_projects(*args, **kwargs)
+    return con.get_rest_projects(
+        active=active,
+        library=library,
+    )
 
 
-def get_rest_entity_by_id(*args, **kwargs):
+def get_rest_entity_by_id(
+    project_name,
+    entity_type,
+    entity_id,
+):
     """Get entity using REST on a project by its id.
 
     Args:
@@ -2274,15 +3202,28 @@ def get_rest_entity_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_rest_entity_by_id(*args, **kwargs)
+    return con.get_rest_entity_by_id(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
 
 
-def get_rest_folder(*args, **kwargs):
+def get_rest_folder(
+    project_name,
+    folder_id,
+):
     con = get_server_api_connection()
-    return con.get_rest_folder(*args, **kwargs)
+    return con.get_rest_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+    )
 
 
-def get_rest_folders(*args, **kwargs):
+def get_rest_folders(
+    project_name,
+    include_attrib=False,
+):
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -2324,30 +3265,60 @@ def get_rest_folders(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_rest_folders(*args, **kwargs)
+    return con.get_rest_folders(
+        project_name=project_name,
+        include_attrib=include_attrib,
+    )
 
 
-def get_rest_task(*args, **kwargs):
+def get_rest_task(
+    project_name,
+    task_id,
+):
     con = get_server_api_connection()
-    return con.get_rest_task(*args, **kwargs)
+    return con.get_rest_task(
+        project_name=project_name,
+        task_id=task_id,
+    )
 
 
-def get_rest_product(*args, **kwargs):
+def get_rest_product(
+    project_name,
+    product_id,
+):
     con = get_server_api_connection()
-    return con.get_rest_product(*args, **kwargs)
+    return con.get_rest_product(
+        project_name=project_name,
+        product_id=product_id,
+    )
 
 
-def get_rest_version(*args, **kwargs):
+def get_rest_version(
+    project_name,
+    version_id,
+):
     con = get_server_api_connection()
-    return con.get_rest_version(*args, **kwargs)
+    return con.get_rest_version(
+        project_name=project_name,
+        version_id=version_id,
+    )
 
 
-def get_rest_representation(*args, **kwargs):
+def get_rest_representation(
+    project_name,
+    representation_id,
+):
     con = get_server_api_connection()
-    return con.get_rest_representation(*args, **kwargs)
+    return con.get_rest_representation(
+        project_name=project_name,
+        representation_id=representation_id,
+    )
 
 
-def get_project_names(*args, **kwargs):
+def get_project_names(
+    active=True,
+    library=None,
+):
     """Receive available project names.
 
     User must be logged in.
@@ -2363,10 +3334,18 @@ def get_project_names(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_names(*args, **kwargs)
+    return con.get_project_names(
+        active=active,
+        library=library,
+    )
 
 
-def get_projects(*args, **kwargs):
+def get_projects(
+    active=True,
+    library=None,
+    fields=None,
+    own_attributes=False,
+):
     """Get projects.
 
     Args:
@@ -2384,10 +3363,19 @@ def get_projects(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_projects(*args, **kwargs)
+    return con.get_projects(
+        active=active,
+        library=library,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_project(*args, **kwargs):
+def get_project(
+    project_name,
+    fields=None,
+    own_attributes=False,
+):
     """Get project.
 
     Args:
@@ -2403,10 +3391,18 @@ def get_project(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project(*args, **kwargs)
+    return con.get_project(
+        project_name=project_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_folders_hierarchy(*args, **kwargs):
+def get_folders_hierarchy(
+    project_name,
+    search_string=None,
+    folder_types=None,
+):
     """Get project hierarchy.
 
     All folders in project in hierarchy data structure.
@@ -2440,10 +3436,17 @@ def get_folders_hierarchy(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folders_hierarchy(*args, **kwargs)
+    return con.get_folders_hierarchy(
+        project_name=project_name,
+        search_string=search_string,
+        folder_types=folder_types,
+    )
 
 
-def get_folders_rest(*args, **kwargs):
+def get_folders_rest(
+    project_name,
+    include_attrib=False,
+):
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -2491,10 +3494,31 @@ def get_folders_rest(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folders_rest(*args, **kwargs)
+    return con.get_folders_rest(
+        project_name=project_name,
+        include_attrib=include_attrib,
+    )
 
 
-def get_folders(*args, **kwargs):
+def get_folders(
+    project_name,
+    folder_ids=None,
+    folder_paths=None,
+    folder_names=None,
+    folder_types=None,
+    parent_ids=None,
+    folder_path_regex=None,
+    has_products=None,
+    has_tasks=None,
+    has_children=None,
+    statuses=None,
+    assignees_all=None,
+    tags=None,
+    active=True,
+    has_links=None,
+    fields=None,
+    own_attributes=False,
+):
     """Query folders from server.
 
     Todos:
@@ -2544,10 +3568,33 @@ def get_folders(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folders(*args, **kwargs)
+    return con.get_folders(
+        project_name=project_name,
+        folder_ids=folder_ids,
+        folder_paths=folder_paths,
+        folder_names=folder_names,
+        folder_types=folder_types,
+        parent_ids=parent_ids,
+        folder_path_regex=folder_path_regex,
+        has_products=has_products,
+        has_tasks=has_tasks,
+        has_children=has_children,
+        statuses=statuses,
+        assignees_all=assignees_all,
+        tags=tags,
+        active=active,
+        has_links=has_links,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_folder_by_id(*args, **kwargs):
+def get_folder_by_id(
+    project_name,
+    folder_id,
+    fields=None,
+    own_attributes=False,
+):
     """Query folder entity by id.
 
     Args:
@@ -2564,10 +3611,20 @@ def get_folder_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folder_by_id(*args, **kwargs)
+    return con.get_folder_by_id(
+        project_name=project_name,
+        folder_id=folder_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_folder_by_path(*args, **kwargs):
+def get_folder_by_path(
+    project_name,
+    folder_path,
+    fields=None,
+    own_attributes=False,
+):
     """Query folder entity by path.
 
     Folder path is a path to folder with all parent names joined by slash.
@@ -2586,10 +3643,20 @@ def get_folder_by_path(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folder_by_path(*args, **kwargs)
+    return con.get_folder_by_path(
+        project_name=project_name,
+        folder_path=folder_path,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_folder_by_name(*args, **kwargs):
+def get_folder_by_name(
+    project_name,
+    folder_name,
+    fields=None,
+    own_attributes=False,
+):
     """Query folder entity by path.
 
     Warnings:
@@ -2610,10 +3677,18 @@ def get_folder_by_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folder_by_name(*args, **kwargs)
+    return con.get_folder_by_name(
+        project_name=project_name,
+        folder_name=folder_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_folder_ids_with_products(*args, **kwargs):
+def get_folder_ids_with_products(
+    project_name,
+    folder_ids=None,
+):
     """Find folders which have at least one product.
 
     Folders that have at least one product should be immutable, so they
@@ -2631,10 +3706,26 @@ def get_folder_ids_with_products(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folder_ids_with_products(*args, **kwargs)
+    return con.get_folder_ids_with_products(
+        project_name=project_name,
+        folder_ids=folder_ids,
+    )
 
 
-def create_folder(*args, **kwargs):
+def create_folder(
+    project_name,
+    name,
+    folder_type=None,
+    parent_id=None,
+    label=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    thumbnail_id=None,
+    folder_id=None,
+):
     """Create new folder.
 
     Args:
@@ -2658,10 +3749,36 @@ def create_folder(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_folder(*args, **kwargs)
+    return con.create_folder(
+        project_name=project_name,
+        name=name,
+        folder_type=folder_type,
+        parent_id=parent_id,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        folder_id=folder_id,
+    )
 
 
-def update_folder(*args, **kwargs):
+def update_folder(
+    project_name,
+    folder_id,
+    name=None,
+    folder_type=None,
+    parent_id=NOT_SET,
+    label=NOT_SET,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    thumbnail_id=NOT_SET,
+):
     """Update folder entity on server.
 
     Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
@@ -2689,10 +3806,27 @@ def update_folder(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_folder(*args, **kwargs)
+    return con.update_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+        name=name,
+        folder_type=folder_type,
+        parent_id=parent_id,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def delete_folder(*args, **kwargs):
+def delete_folder(
+    project_name,
+    folder_id,
+    force=False,
+):
     """Delete folder.
 
     Args:
@@ -2703,10 +3837,27 @@ def delete_folder(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_folder(*args, **kwargs)
+    return con.delete_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+        force=force,
+    )
 
 
-def get_tasks(*args, **kwargs):
+def get_tasks(
+    project_name,
+    task_ids=None,
+    task_names=None,
+    task_types=None,
+    folder_ids=None,
+    assignees=None,
+    assignees_all=None,
+    statuses=None,
+    tags=None,
+    active=True,
+    fields=None,
+    own_attributes=False,
+):
     """Query task entities from server.
 
     Args:
@@ -2739,10 +3890,29 @@ def get_tasks(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_tasks(*args, **kwargs)
+    return con.get_tasks(
+        project_name=project_name,
+        task_ids=task_ids,
+        task_names=task_names,
+        task_types=task_types,
+        folder_ids=folder_ids,
+        assignees=assignees,
+        assignees_all=assignees_all,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_task_by_name(*args, **kwargs):
+def get_task_by_name(
+    project_name,
+    folder_id,
+    task_name,
+    fields=None,
+    own_attributes=False,
+):
     """Query task entity by name and folder id.
 
     Args:
@@ -2760,10 +3930,21 @@ def get_task_by_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_task_by_name(*args, **kwargs)
+    return con.get_task_by_name(
+        project_name=project_name,
+        folder_id=folder_id,
+        task_name=task_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_task_by_id(*args, **kwargs):
+def get_task_by_id(
+    project_name,
+    task_id,
+    fields=None,
+    own_attributes=False,
+):
     """Query task entity by id.
 
     Args:
@@ -2780,10 +3961,27 @@ def get_task_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_task_by_id(*args, **kwargs)
+    return con.get_task_by_id(
+        project_name=project_name,
+        task_id=task_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_tasks_by_folder_paths(*args, **kwargs):
+def get_tasks_by_folder_paths(
+    project_name,
+    folder_paths,
+    task_names=None,
+    task_types=None,
+    assignees=None,
+    assignees_all=None,
+    statuses=None,
+    tags=None,
+    active=True,
+    fields=None,
+    own_attributes=False,
+):
     """Query task entities from server by folder paths.
 
     Args:
@@ -2815,10 +4013,34 @@ def get_tasks_by_folder_paths(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_tasks_by_folder_paths(*args, **kwargs)
+    return con.get_tasks_by_folder_paths(
+        project_name=project_name,
+        folder_paths=folder_paths,
+        task_names=task_names,
+        task_types=task_types,
+        assignees=assignees,
+        assignees_all=assignees_all,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_tasks_by_folder_path(*args, **kwargs):
+def get_tasks_by_folder_path(
+    project_name,
+    folder_path,
+    task_names=None,
+    task_types=None,
+    assignees=None,
+    assignees_all=None,
+    statuses=None,
+    tags=None,
+    active=True,
+    fields=None,
+    own_attributes=False,
+):
     """Query task entities from server by folder path.
 
     Args:
@@ -2846,10 +4068,28 @@ def get_tasks_by_folder_path(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_tasks_by_folder_path(*args, **kwargs)
+    return con.get_tasks_by_folder_path(
+        project_name=project_name,
+        folder_path=folder_path,
+        task_names=task_names,
+        task_types=task_types,
+        assignees=assignees,
+        assignees_all=assignees_all,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_task_by_folder_path(*args, **kwargs):
+def get_task_by_folder_path(
+    project_name,
+    folder_path,
+    task_name,
+    fields=None,
+    own_attributes=False,
+):
     """Query task entity by folder path and task name.
 
     Args:
@@ -2867,10 +4107,30 @@ def get_task_by_folder_path(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_task_by_folder_path(*args, **kwargs)
+    return con.get_task_by_folder_path(
+        project_name=project_name,
+        folder_path=folder_path,
+        task_name=task_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def create_task(*args, **kwargs):
+def create_task(
+    project_name,
+    name,
+    task_type,
+    folder_id,
+    label=None,
+    assignees=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    thumbnail_id=None,
+    task_id=None,
+):
     """Create new task.
 
     Args:
@@ -2894,10 +4154,38 @@ def create_task(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_task(*args, **kwargs)
+    return con.create_task(
+        project_name=project_name,
+        name=name,
+        task_type=task_type,
+        folder_id=folder_id,
+        label=label,
+        assignees=assignees,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        task_id=task_id,
+    )
 
 
-def update_task(*args, **kwargs):
+def update_task(
+    project_name,
+    task_id,
+    name=None,
+    task_type=None,
+    folder_id=None,
+    label=NOT_SET,
+    assignees=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    thumbnail_id=NOT_SET,
+):
     """Update task entity on server.
 
     Do not pass ``label`` amd ``thumbnail_id`` if you don't
@@ -2926,10 +4214,27 @@ def update_task(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_task(*args, **kwargs)
+    return con.update_task(
+        project_name=project_name,
+        task_id=task_id,
+        name=name,
+        task_type=task_type,
+        folder_id=folder_id,
+        label=label,
+        assignees=assignees,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def delete_task(*args, **kwargs):
+def delete_task(
+    project_name,
+    task_id,
+):
     """Delete task.
 
     Args:
@@ -2938,10 +4243,27 @@ def delete_task(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_task(*args, **kwargs)
+    return con.delete_task(
+        project_name=project_name,
+        task_id=task_id,
+    )
 
 
-def get_products(*args, **kwargs):
+def get_products(
+    project_name,
+    product_ids=None,
+    product_names=None,
+    folder_ids=None,
+    product_types=None,
+    product_name_regex=None,
+    product_path_regex=None,
+    names_by_folder_ids=None,
+    statuses=None,
+    tags=None,
+    active=True,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query products from server.
 
     Todos:
@@ -2979,10 +4301,29 @@ def get_products(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_products(*args, **kwargs)
+    return con.get_products(
+        project_name=project_name,
+        product_ids=product_ids,
+        product_names=product_names,
+        folder_ids=folder_ids,
+        product_types=product_types,
+        product_name_regex=product_name_regex,
+        product_path_regex=product_path_regex,
+        names_by_folder_ids=names_by_folder_ids,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_product_by_id(*args, **kwargs):
+def get_product_by_id(
+    project_name,
+    product_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query product entity by id.
 
     Args:
@@ -2999,10 +4340,21 @@ def get_product_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_product_by_id(*args, **kwargs)
+    return con.get_product_by_id(
+        project_name=project_name,
+        product_id=product_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_product_by_name(*args, **kwargs):
+def get_product_by_name(
+    project_name,
+    product_name,
+    folder_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query product entity by name and folder id.
 
     Args:
@@ -3020,10 +4372,18 @@ def get_product_by_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_product_by_name(*args, **kwargs)
+    return con.get_product_by_name(
+        project_name=project_name,
+        product_name=product_name,
+        folder_id=folder_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_product_types(*args, **kwargs):
+def get_product_types(
+    fields=None,
+):
     """Types of products.
 
     This is server wide information. Product types have 'name', 'icon' and
@@ -3037,10 +4397,15 @@ def get_product_types(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_product_types(*args, **kwargs)
+    return con.get_product_types(
+        fields=fields,
+    )
 
 
-def get_project_product_types(*args, **kwargs):
+def get_project_product_types(
+    project_name,
+    fields=None,
+):
     """Types of products available on a project.
 
     Filter only product types available on project.
@@ -3055,10 +4420,16 @@ def get_project_product_types(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_project_product_types(*args, **kwargs)
+    return con.get_project_product_types(
+        project_name=project_name,
+        fields=fields,
+    )
 
 
-def get_product_type_names(*args, **kwargs):
+def get_product_type_names(
+    project_name=None,
+    product_ids=None,
+):
     """Product type names.
 
     Warnings:
@@ -3076,10 +4447,24 @@ def get_product_type_names(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_product_type_names(*args, **kwargs)
+    return con.get_product_type_names(
+        project_name=project_name,
+        product_ids=product_ids,
+    )
 
 
-def create_product(*args, **kwargs):
+def create_product(
+    project_name,
+    name,
+    product_type,
+    folder_id,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    product_id=None,
+):
     """Create new product.
 
     Args:
@@ -3100,10 +4485,32 @@ def create_product(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_product(*args, **kwargs)
+    return con.create_product(
+        project_name=project_name,
+        name=name,
+        product_type=product_type,
+        folder_id=folder_id,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        product_id=product_id,
+    )
 
 
-def update_product(*args, **kwargs):
+def update_product(
+    project_name,
+    product_id,
+    name=None,
+    folder_id=None,
+    product_type=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+):
     """Update product entity on server.
 
     Update of ``data`` will override existing value on folder entity.
@@ -3125,10 +4532,24 @@ def update_product(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_product(*args, **kwargs)
+    return con.update_product(
+        project_name=project_name,
+        product_id=product_id,
+        name=name,
+        folder_id=folder_id,
+        product_type=product_type,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+    )
 
 
-def delete_product(*args, **kwargs):
+def delete_product(
+    project_name,
+    product_id,
+):
     """Delete product.
 
     Args:
@@ -3137,10 +4558,27 @@ def delete_product(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_product(*args, **kwargs)
+    return con.delete_product(
+        project_name=project_name,
+        product_id=product_id,
+    )
 
 
-def get_versions(*args, **kwargs):
+def get_versions(
+    project_name,
+    version_ids=None,
+    product_ids=None,
+    task_ids=None,
+    versions=None,
+    hero=True,
+    standard=True,
+    latest=None,
+    statuses=None,
+    tags=None,
+    active=True,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Get version entities based on passed filters from server.
 
     Args:
@@ -3175,10 +4613,29 @@ def get_versions(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_versions(*args, **kwargs)
+    return con.get_versions(
+        project_name=project_name,
+        version_ids=version_ids,
+        product_ids=product_ids,
+        task_ids=task_ids,
+        versions=versions,
+        hero=hero,
+        standard=standard,
+        latest=latest,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_version_by_id(*args, **kwargs):
+def get_version_by_id(
+    project_name,
+    version_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query version entity by id.
 
     Args:
@@ -3195,10 +4652,21 @@ def get_version_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_version_by_id(*args, **kwargs)
+    return con.get_version_by_id(
+        project_name=project_name,
+        version_id=version_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_version_by_name(*args, **kwargs):
+def get_version_by_name(
+    project_name,
+    version,
+    product_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query version entity by version and product id.
 
     Args:
@@ -3216,10 +4684,21 @@ def get_version_by_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_version_by_name(*args, **kwargs)
+    return con.get_version_by_name(
+        project_name=project_name,
+        version=version,
+        product_id=product_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_hero_version_by_id(*args, **kwargs):
+def get_hero_version_by_id(
+    project_name,
+    version_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query hero version entity by id.
 
     Args:
@@ -3236,10 +4715,20 @@ def get_hero_version_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_hero_version_by_id(*args, **kwargs)
+    return con.get_hero_version_by_id(
+        project_name=project_name,
+        version_id=version_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_hero_version_by_product_id(*args, **kwargs):
+def get_hero_version_by_product_id(
+    project_name,
+    product_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query hero version entity by product id.
 
     Only one hero version is available on a product.
@@ -3258,10 +4747,22 @@ def get_hero_version_by_product_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_hero_version_by_product_id(*args, **kwargs)
+    return con.get_hero_version_by_product_id(
+        project_name=project_name,
+        product_id=product_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_hero_versions(*args, **kwargs):
+def get_hero_versions(
+    project_name,
+    product_ids=None,
+    version_ids=None,
+    active=True,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query hero versions by multiple filters.
 
     Only one hero version is available on a product.
@@ -3283,10 +4784,23 @@ def get_hero_versions(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_hero_versions(*args, **kwargs)
+    return con.get_hero_versions(
+        project_name=project_name,
+        product_ids=product_ids,
+        version_ids=version_ids,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_last_versions(*args, **kwargs):
+def get_last_versions(
+    project_name,
+    product_ids,
+    active=True,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query last version entities by product ids.
 
     Args:
@@ -3304,10 +4818,22 @@ def get_last_versions(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_last_versions(*args, **kwargs)
+    return con.get_last_versions(
+        project_name=project_name,
+        product_ids=product_ids,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_last_version_by_product_id(*args, **kwargs):
+def get_last_version_by_product_id(
+    project_name,
+    product_id,
+    active=True,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query last version entity by product id.
 
     Args:
@@ -3325,10 +4851,23 @@ def get_last_version_by_product_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_last_version_by_product_id(*args, **kwargs)
+    return con.get_last_version_by_product_id(
+        project_name=project_name,
+        product_id=product_id,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_last_version_by_product_name(*args, **kwargs):
+def get_last_version_by_product_name(
+    project_name,
+    product_name,
+    folder_id,
+    active=True,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query last version entity by product name and folder id.
 
     Args:
@@ -3347,10 +4886,20 @@ def get_last_version_by_product_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_last_version_by_product_name(*args, **kwargs)
+    return con.get_last_version_by_product_name(
+        project_name=project_name,
+        product_name=product_name,
+        folder_id=folder_id,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def version_is_latest(*args, **kwargs):
+def version_is_latest(
+    project_name,
+    version_id,
+):
     """Is version latest from a product.
 
     Args:
@@ -3362,10 +4911,26 @@ def version_is_latest(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.version_is_latest(*args, **kwargs)
+    return con.version_is_latest(
+        project_name=project_name,
+        version_id=version_id,
+    )
 
 
-def create_version(*args, **kwargs):
+def create_version(
+    project_name,
+    version,
+    product_id,
+    task_id=None,
+    author=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    thumbnail_id=None,
+    version_id=None,
+):
     """Create new version.
 
     Args:
@@ -3388,10 +4953,36 @@ def create_version(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_version(*args, **kwargs)
+    return con.create_version(
+        project_name=project_name,
+        version=version,
+        product_id=product_id,
+        task_id=task_id,
+        author=author,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        version_id=version_id,
+    )
 
 
-def update_version(*args, **kwargs):
+def update_version(
+    project_name,
+    version_id,
+    version=None,
+    product_id=None,
+    task_id=NOT_SET,
+    author=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    thumbnail_id=NOT_SET,
+):
     """Update version entity on server.
 
     Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
@@ -3419,10 +5010,26 @@ def update_version(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_version(*args, **kwargs)
+    return con.update_version(
+        project_name=project_name,
+        version_id=version_id,
+        version=version,
+        product_id=product_id,
+        task_id=task_id,
+        author=author,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def delete_version(*args, **kwargs):
+def delete_version(
+    project_name,
+    version_id,
+):
     """Delete version.
 
     Args:
@@ -3431,10 +5038,25 @@ def delete_version(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_version(*args, **kwargs)
+    return con.delete_version(
+        project_name=project_name,
+        version_id=version_id,
+    )
 
 
-def get_representations(*args, **kwargs):
+def get_representations(
+    project_name,
+    representation_ids=None,
+    representation_names=None,
+    version_ids=None,
+    names_by_version_ids=None,
+    statuses=None,
+    tags=None,
+    active=True,
+    has_links=None,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Get representation entities based on passed filters from server.
 
     .. todo::
@@ -3473,10 +5095,27 @@ def get_representations(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representations(*args, **kwargs)
+    return con.get_representations(
+        project_name=project_name,
+        representation_ids=representation_ids,
+        representation_names=representation_names,
+        version_ids=version_ids,
+        names_by_version_ids=names_by_version_ids,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        has_links=has_links,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_representation_by_id(*args, **kwargs):
+def get_representation_by_id(
+    project_name,
+    representation_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query representation entity from server based on id filter.
 
     Args:
@@ -3492,10 +5131,21 @@ def get_representation_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representation_by_id(*args, **kwargs)
+    return con.get_representation_by_id(
+        project_name=project_name,
+        representation_id=representation_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_representation_by_name(*args, **kwargs):
+def get_representation_by_name(
+    project_name,
+    representation_name,
+    version_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Query representation entity by name and version id.
 
     Args:
@@ -3512,10 +5162,25 @@ def get_representation_by_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representation_by_name(*args, **kwargs)
+    return con.get_representation_by_name(
+        project_name=project_name,
+        representation_name=representation_name,
+        version_id=version_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_representations_hierarchy(*args, **kwargs):
+def get_representations_hierarchy(
+    project_name,
+    representation_ids,
+    project_fields=None,
+    folder_fields=None,
+    task_fields=None,
+    product_fields=None,
+    version_fields=None,
+    representation_fields=None,
+):
     """Find representation with parents by representation id.
 
     Representation entity with parent entities up to project.
@@ -3541,10 +5206,28 @@ def get_representations_hierarchy(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representations_hierarchy(*args, **kwargs)
+    return con.get_representations_hierarchy(
+        project_name=project_name,
+        representation_ids=representation_ids,
+        project_fields=project_fields,
+        folder_fields=folder_fields,
+        task_fields=task_fields,
+        product_fields=product_fields,
+        version_fields=version_fields,
+        representation_fields=representation_fields,
+    )
 
 
-def get_representation_hierarchy(*args, **kwargs):
+def get_representation_hierarchy(
+    project_name,
+    representation_id,
+    project_fields=None,
+    folder_fields=None,
+    task_fields=None,
+    product_fields=None,
+    version_fields=None,
+    representation_fields=None,
+):
     """Find representation parents by representation id.
 
     Representation parent entities up to project.
@@ -3565,10 +5248,26 @@ def get_representation_hierarchy(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representation_hierarchy(*args, **kwargs)
+    return con.get_representation_hierarchy(
+        project_name=project_name,
+        representation_id=representation_id,
+        project_fields=project_fields,
+        folder_fields=folder_fields,
+        task_fields=task_fields,
+        product_fields=product_fields,
+        version_fields=version_fields,
+        representation_fields=representation_fields,
+    )
 
 
-def get_representations_parents(*args, **kwargs):
+def get_representations_parents(
+    project_name,
+    representation_ids,
+    project_fields=None,
+    folder_fields=None,
+    product_fields=None,
+    version_fields=None,
+):
     """Find representations parents by representation id.
 
     Representation parent entities up to project.
@@ -3587,10 +5286,24 @@ def get_representations_parents(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representations_parents(*args, **kwargs)
+    return con.get_representations_parents(
+        project_name=project_name,
+        representation_ids=representation_ids,
+        project_fields=project_fields,
+        folder_fields=folder_fields,
+        product_fields=product_fields,
+        version_fields=version_fields,
+    )
 
 
-def get_representation_parents(*args, **kwargs):
+def get_representation_parents(
+    project_name,
+    representation_id,
+    project_fields=None,
+    folder_fields=None,
+    product_fields=None,
+    version_fields=None,
+):
     """Find representation parents by representation id.
 
     Representation parent entities up to project.
@@ -3608,10 +5321,22 @@ def get_representation_parents(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representation_parents(*args, **kwargs)
+    return con.get_representation_parents(
+        project_name=project_name,
+        representation_id=representation_id,
+        project_fields=project_fields,
+        folder_fields=folder_fields,
+        product_fields=product_fields,
+        version_fields=version_fields,
+    )
 
 
-def get_repre_ids_by_context_filters(*args, **kwargs):
+def get_repre_ids_by_context_filters(
+    project_name,
+    context_filters,
+    representation_names=None,
+    version_ids=None,
+):
     """Find representation ids which match passed context filters.
 
     Each representation has context integrated on representation entity in
@@ -3652,10 +5377,26 @@ def get_repre_ids_by_context_filters(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_repre_ids_by_context_filters(*args, **kwargs)
+    return con.get_repre_ids_by_context_filters(
+        project_name=project_name,
+        context_filters=context_filters,
+        representation_names=representation_names,
+        version_ids=version_ids,
+    )
 
 
-def create_representation(*args, **kwargs):
+def create_representation(
+    project_name,
+    name,
+    version_id,
+    files=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+    representation_id=None,
+):
     """Create new representation.
 
     Args:
@@ -3676,10 +5417,32 @@ def create_representation(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_representation(*args, **kwargs)
+    return con.create_representation(
+        project_name=project_name,
+        name=name,
+        version_id=version_id,
+        files=files,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        representation_id=representation_id,
+    )
 
 
-def update_representation(*args, **kwargs):
+def update_representation(
+    project_name,
+    representation_id,
+    name=None,
+    version_id=None,
+    files=None,
+    attrib=None,
+    data=None,
+    tags=None,
+    status=None,
+    active=None,
+):
     """Update representation entity on server.
 
     Update of ``data`` will override existing value on folder entity.
@@ -3702,10 +5465,24 @@ def update_representation(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_representation(*args, **kwargs)
+    return con.update_representation(
+        project_name=project_name,
+        representation_id=representation_id,
+        name=name,
+        version_id=version_id,
+        files=files,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+    )
 
 
-def delete_representation(*args, **kwargs):
+def delete_representation(
+    project_name,
+    representation_id,
+):
     """Delete representation.
 
     Args:
@@ -3714,10 +5491,24 @@ def delete_representation(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_representation(*args, **kwargs)
+    return con.delete_representation(
+        project_name=project_name,
+        representation_id=representation_id,
+    )
 
 
-def get_workfiles_info(*args, **kwargs):
+def get_workfiles_info(
+    project_name,
+    workfile_ids=None,
+    task_ids=None,
+    paths=None,
+    path_regex=None,
+    statuses=None,
+    tags=None,
+    has_links=None,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Workfile info entities by passed filters.
 
     Args:
@@ -3743,10 +5534,27 @@ def get_workfiles_info(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_workfiles_info(*args, **kwargs)
+    return con.get_workfiles_info(
+        project_name=project_name,
+        workfile_ids=workfile_ids,
+        task_ids=task_ids,
+        paths=paths,
+        path_regex=path_regex,
+        statuses=statuses,
+        tags=tags,
+        has_links=has_links,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_workfile_info(*args, **kwargs):
+def get_workfile_info(
+    project_name,
+    task_id,
+    path,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Workfile info entity by task id and workfile path.
 
     Args:
@@ -3764,10 +5572,21 @@ def get_workfile_info(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_workfile_info(*args, **kwargs)
+    return con.get_workfile_info(
+        project_name=project_name,
+        task_id=task_id,
+        path=path,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_workfile_info_by_id(*args, **kwargs):
+def get_workfile_info_by_id(
+    project_name,
+    workfile_id,
+    fields=None,
+    own_attributes=_PLACEHOLDER,
+):
     """Workfile info entity by id.
 
     Args:
@@ -3784,10 +5603,18 @@ def get_workfile_info_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_workfile_info_by_id(*args, **kwargs)
+    return con.get_workfile_info_by_id(
+        project_name=project_name,
+        workfile_id=workfile_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
 
 
-def get_thumbnail_by_id(*args, **kwargs):
+def get_thumbnail_by_id(
+    project_name,
+    thumbnail_id,
+):
     """Get thumbnail from server by id.
 
     Permissions of thumbnails are related to entities so thumbnails must
@@ -3813,10 +5640,18 @@ def get_thumbnail_by_id(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_thumbnail_by_id(*args, **kwargs)
+    return con.get_thumbnail_by_id(
+        project_name=project_name,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def get_thumbnail(*args, **kwargs):
+def get_thumbnail(
+    project_name,
+    entity_type,
+    entity_id,
+    thumbnail_id=None,
+):
     """Get thumbnail from server.
 
     Permissions of thumbnails are related to entities so thumbnails must
@@ -3844,10 +5679,19 @@ def get_thumbnail(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_thumbnail(*args, **kwargs)
+    return con.get_thumbnail(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def get_folder_thumbnail(*args, **kwargs):
+def get_folder_thumbnail(
+    project_name,
+    folder_id,
+    thumbnail_id=None,
+):
     """Prepared method to receive thumbnail for folder entity.
 
     Args:
@@ -3862,10 +5706,18 @@ def get_folder_thumbnail(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folder_thumbnail(*args, **kwargs)
+    return con.get_folder_thumbnail(
+        project_name=project_name,
+        folder_id=folder_id,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def get_version_thumbnail(*args, **kwargs):
+def get_version_thumbnail(
+    project_name,
+    version_id,
+    thumbnail_id=None,
+):
     """Prepared method to receive thumbnail for version entity.
 
     Args:
@@ -3881,10 +5733,18 @@ def get_version_thumbnail(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_version_thumbnail(*args, **kwargs)
+    return con.get_version_thumbnail(
+        project_name=project_name,
+        version_id=version_id,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def get_workfile_thumbnail(*args, **kwargs):
+def get_workfile_thumbnail(
+    project_name,
+    workfile_id,
+    thumbnail_id=None,
+):
     """Prepared method to receive thumbnail for workfile entity.
 
     Args:
@@ -3900,10 +5760,18 @@ def get_workfile_thumbnail(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_workfile_thumbnail(*args, **kwargs)
+    return con.get_workfile_thumbnail(
+        project_name=project_name,
+        workfile_id=workfile_id,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def create_thumbnail(*args, **kwargs):
+def create_thumbnail(
+    project_name,
+    src_filepath,
+    thumbnail_id=None,
+):
     """Create new thumbnail on server from passed path.
 
     Args:
@@ -3920,10 +5788,18 @@ def create_thumbnail(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_thumbnail(*args, **kwargs)
+    return con.create_thumbnail(
+        project_name=project_name,
+        src_filepath=src_filepath,
+        thumbnail_id=thumbnail_id,
+    )
 
 
-def update_thumbnail(*args, **kwargs):
+def update_thumbnail(
+    project_name,
+    thumbnail_id,
+    src_filepath,
+):
     """Change thumbnail content by id.
 
     Update can be also used to create new thumbnail.
@@ -3939,10 +5815,19 @@ def update_thumbnail(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_thumbnail(*args, **kwargs)
+    return con.update_thumbnail(
+        project_name=project_name,
+        thumbnail_id=thumbnail_id,
+        src_filepath=src_filepath,
+    )
 
 
-def create_project(*args, **kwargs):
+def create_project(
+    project_name,
+    project_code,
+    library_project=False,
+    preset_name=None,
+):
     """Create project using AYON settings.
 
     This project creation function is not validating project entity on
@@ -3970,10 +5855,29 @@ def create_project(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_project(*args, **kwargs)
+    return con.create_project(
+        project_name=project_name,
+        project_code=project_code,
+        library_project=library_project,
+        preset_name=preset_name,
+    )
 
 
-def update_project(*args, **kwargs):
+def update_project(
+    project_name,
+    library=None,
+    folder_types=None,
+    task_types=None,
+    link_types=None,
+    statuses=None,
+    tags=None,
+    config=None,
+    attrib=None,
+    data=None,
+    active=None,
+    project_code=None,
+    **changes,
+):
     """Update project entity on server.
 
     Args:
@@ -4000,10 +5904,26 @@ def update_project(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.update_project(*args, **kwargs)
+    return con.update_project(
+        project_name=project_name,
+        library=library,
+        folder_types=folder_types,
+        task_types=task_types,
+        link_types=link_types,
+        statuses=statuses,
+        tags=tags,
+        config=config,
+        attrib=attrib,
+        data=data,
+        active=active,
+        project_code=project_code,
+        **changes,
+    )
 
 
-def delete_project(*args, **kwargs):
+def delete_project(
+    project_name,
+):
     """Delete project from server.
 
     This will completely remove project from server without any step back.
@@ -4013,10 +5933,16 @@ def delete_project(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_project(*args, **kwargs)
+    return con.delete_project(
+        project_name=project_name,
+    )
 
 
-def get_full_link_type_name(*args, **kwargs):
+def get_full_link_type_name(
+    link_type_name,
+    input_type,
+    output_type,
+):
     """Calculate full link type name used for query from server.
 
     Args:
@@ -4029,10 +5955,16 @@ def get_full_link_type_name(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_full_link_type_name(*args, **kwargs)
+    return con.get_full_link_type_name(
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
 
 
-def get_link_types(*args, **kwargs):
+def get_link_types(
+    project_name,
+):
     """All link types available on a project.
 
     Example output:
@@ -4054,10 +5986,17 @@ def get_link_types(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_link_types(*args, **kwargs)
+    return con.get_link_types(
+        project_name=project_name,
+    )
 
 
-def get_link_type(*args, **kwargs):
+def get_link_type(
+    project_name,
+    link_type_name,
+    input_type,
+    output_type,
+):
     """Get link type data.
 
     There is not dedicated REST endpoint to get single link type,
@@ -4083,10 +6022,21 @@ def get_link_type(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_link_type(*args, **kwargs)
+    return con.get_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
 
 
-def create_link_type(*args, **kwargs):
+def create_link_type(
+    project_name,
+    link_type_name,
+    input_type,
+    output_type,
+    data=None,
+):
     """Create or update link type on server.
 
     Warning:
@@ -4104,10 +6054,21 @@ def create_link_type(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_link_type(*args, **kwargs)
+    return con.create_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+        data=data,
+    )
 
 
-def delete_link_type(*args, **kwargs):
+def delete_link_type(
+    project_name,
+    link_type_name,
+    input_type,
+    output_type,
+):
     """Remove link type from project.
 
     Args:
@@ -4121,10 +6082,21 @@ def delete_link_type(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_link_type(*args, **kwargs)
+    return con.delete_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
 
 
-def make_sure_link_type_exists(*args, **kwargs):
+def make_sure_link_type_exists(
+    project_name,
+    link_type_name,
+    input_type,
+    output_type,
+    data=None,
+):
     """Make sure link type exists on a project.
 
     Args:
@@ -4136,10 +6108,24 @@ def make_sure_link_type_exists(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.make_sure_link_type_exists(*args, **kwargs)
+    return con.make_sure_link_type_exists(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+        data=data,
+    )
 
 
-def create_link(*args, **kwargs):
+def create_link(
+    project_name,
+    link_type_name,
+    input_id,
+    input_type,
+    output_id,
+    output_type,
+    link_name=None,
+):
     """Create link between 2 entities.
 
     Link has a type which must already exists on a project.
@@ -4168,10 +6154,21 @@ def create_link(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.create_link(*args, **kwargs)
+    return con.create_link(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_id=input_id,
+        input_type=input_type,
+        output_id=output_id,
+        output_type=output_type,
+        link_name=link_name,
+    )
 
 
-def delete_link(*args, **kwargs):
+def delete_link(
+    project_name,
+    link_id,
+):
     """Remove link by id.
 
     Args:
@@ -4183,10 +6180,21 @@ def delete_link(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.delete_link(*args, **kwargs)
+    return con.delete_link(
+        project_name=project_name,
+        link_id=link_id,
+    )
 
 
-def get_entities_links(*args, **kwargs):
+def get_entities_links(
+    project_name,
+    entity_type,
+    entity_ids=None,
+    link_types=None,
+    link_direction=None,
+    link_names=None,
+    link_name_regex=None,
+):
     """Helper method to get links from server for entity types.
 
     .. highlight:: text
@@ -4227,10 +6235,23 @@ def get_entities_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_entities_links(*args, **kwargs)
+    return con.get_entities_links(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+        link_names=link_names,
+        link_name_regex=link_name_regex,
+    )
 
 
-def get_folders_links(*args, **kwargs):
+def get_folders_links(
+    project_name,
+    folder_ids=None,
+    link_types=None,
+    link_direction=None,
+):
     """Query folders links from server.
 
     Args:
@@ -4246,10 +6267,20 @@ def get_folders_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folders_links(*args, **kwargs)
+    return con.get_folders_links(
+        project_name=project_name,
+        folder_ids=folder_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_folder_links(*args, **kwargs):
+def get_folder_links(
+    project_name,
+    folder_id,
+    link_types=None,
+    link_direction=None,
+):
     """Query folder links from server.
 
     Args:
@@ -4264,10 +6295,20 @@ def get_folder_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_folder_links(*args, **kwargs)
+    return con.get_folder_links(
+        project_name=project_name,
+        folder_id=folder_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_tasks_links(*args, **kwargs):
+def get_tasks_links(
+    project_name,
+    task_ids=None,
+    link_types=None,
+    link_direction=None,
+):
     """Query tasks links from server.
 
     Args:
@@ -4283,10 +6324,20 @@ def get_tasks_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_tasks_links(*args, **kwargs)
+    return con.get_tasks_links(
+        project_name=project_name,
+        task_ids=task_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_task_links(*args, **kwargs):
+def get_task_links(
+    project_name,
+    task_id,
+    link_types=None,
+    link_direction=None,
+):
     """Query task links from server.
 
     Args:
@@ -4301,10 +6352,20 @@ def get_task_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_task_links(*args, **kwargs)
+    return con.get_task_links(
+        project_name=project_name,
+        task_id=task_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_products_links(*args, **kwargs):
+def get_products_links(
+    project_name,
+    product_ids=None,
+    link_types=None,
+    link_direction=None,
+):
     """Query products links from server.
 
     Args:
@@ -4320,10 +6381,20 @@ def get_products_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_products_links(*args, **kwargs)
+    return con.get_products_links(
+        project_name=project_name,
+        product_ids=product_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_product_links(*args, **kwargs):
+def get_product_links(
+    project_name,
+    product_id,
+    link_types=None,
+    link_direction=None,
+):
     """Query product links from server.
 
     Args:
@@ -4338,10 +6409,20 @@ def get_product_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_product_links(*args, **kwargs)
+    return con.get_product_links(
+        project_name=project_name,
+        product_id=product_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_versions_links(*args, **kwargs):
+def get_versions_links(
+    project_name,
+    version_ids=None,
+    link_types=None,
+    link_direction=None,
+):
     """Query versions links from server.
 
     Args:
@@ -4357,10 +6438,20 @@ def get_versions_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_versions_links(*args, **kwargs)
+    return con.get_versions_links(
+        project_name=project_name,
+        version_ids=version_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_version_links(*args, **kwargs):
+def get_version_links(
+    project_name,
+    version_id,
+    link_types=None,
+    link_direction=None,
+):
     """Query version links from server.
 
     Args:
@@ -4375,10 +6466,20 @@ def get_version_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_version_links(*args, **kwargs)
+    return con.get_version_links(
+        project_name=project_name,
+        version_id=version_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_representations_links(*args, **kwargs):
+def get_representations_links(
+    project_name,
+    representation_ids=None,
+    link_types=None,
+    link_direction=None,
+):
     """Query representations links from server.
 
     Args:
@@ -4394,10 +6495,20 @@ def get_representations_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representations_links(*args, **kwargs)
+    return con.get_representations_links(
+        project_name=project_name,
+        representation_ids=representation_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def get_representation_links(*args, **kwargs):
+def get_representation_links(
+    project_name,
+    representation_id,
+    link_types=None,
+    link_direction=None,
+):
     """Query representation links from server.
 
     Args:
@@ -4413,10 +6524,20 @@ def get_representation_links(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.get_representation_links(*args, **kwargs)
+    return con.get_representation_links(
+        project_name=project_name,
+        representation_id=representation_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
 
 
-def send_batch_operations(*args, **kwargs):
+def send_batch_operations(
+    project_name,
+    operations,
+    can_fail=False,
+    raise_on_fail=True,
+):
     """Post multiple CRUD operations to server.
 
     When multiple changes should be made on server side this is the best
@@ -4443,4 +6564,49 @@ def send_batch_operations(*args, **kwargs):
 
     """
     con = get_server_api_connection()
-    return con.send_batch_operations(*args, **kwargs)
+    return con.send_batch_operations(
+        project_name=project_name,
+        operations=operations,
+        can_fail=can_fail,
+        raise_on_fail=raise_on_fail,
+    )
+
+
+def send_activities_batch_operations(
+    project_name,
+    operations,
+    can_fail=False,
+    raise_on_fail=True,
+):
+    """Post multiple CRUD activities operations to server.
+
+    When multiple changes should be made on server side this is the best
+    way to go. It is possible to pass multiple operations to process on a
+    server side and do the changes in a transaction.
+
+    Args:
+        project_name (str): On which project should be operations
+            processed.
+        operations (list[dict[str, Any]]): Operations to be processed.
+        can_fail (Optional[bool]): Server will try to process all
+            operations even if one of them fails.
+        raise_on_fail (Optional[bool]): Raise exception if an operation
+            fails. You can handle failed operations on your own
+            when set to 'False'.
+
+    Raises:
+        ValueError: Operations can't be converted to json string.
+        FailedOperations: When output does not contain server operations
+            or 'raise_on_fail' is enabled and any operation fails.
+
+    Returns:
+        list[dict[str, Any]]: Operations result with process details.
+
+    """
+    con = get_server_api_connection()
+    return con.send_activities_batch_operations(
+        project_name=project_name,
+        operations=operations,
+        can_fail=can_fail,
+        raise_on_fail=raise_on_fail,
+    )

@@ -16,7 +16,8 @@ import uuid
 import warnings
 import itertools
 from contextlib import contextmanager
-from typing import Optional
+import typing
+from typing import Optional, Iterable, Generator, Dict, List, Any
 
 try:
     from http import HTTPStatus
@@ -49,6 +50,7 @@ from .constants import (
     REPRESENTATION_FILES_FIELDS,
     DEFAULT_WORKFILE_INFO_FIELDS,
     DEFAULT_EVENT_FIELDS,
+    DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
     DEFAULT_LINK_FIELDS,
 )
@@ -68,6 +70,7 @@ from .graphql_queries import (
     workfiles_info_graphql_query,
     events_graphql_query,
     users_graphql_query,
+    activities_graphql_query,
 )
 from .exceptions import (
     FailedOperations,
@@ -94,6 +97,9 @@ from .utils import (
     NOT_SET,
     get_media_mime_type,
 )
+
+if typing.TYPE_CHECKING:
+    from ._typing import ActivityType, ActivityReferenceType
 
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
@@ -393,7 +399,10 @@ class ServerAPI(object):
         default_settings_variant (Optional[Literal["production", "staging"]]):
             Settings variant used by default if a method for settings won't
             get any (by default is 'production').
-        sender (Optional[str]): Sender of requests. Used in server logs and
+        sender_type (Optional[str]): Sender type of requests. Used in server
+            logs and propagated into events.
+        sender (Optional[str]): Sender of requests, more specific than
+            sender type (e.g. machine name). Used in server logs and
             propagated into events.
         ssl_verify (Union[bool, str, None]): Verify SSL certificate
             Looks for env variable value ``AYON_CA_FILE`` by default. If not
@@ -419,6 +428,7 @@ class ServerAPI(object):
         site_id=NOT_SET,
         client_version=None,
         default_settings_variant=None,
+        sender_type=None,
         sender=None,
         ssl_verify=None,
         cert=None,
@@ -445,6 +455,7 @@ class ServerAPI(object):
             or get_default_settings_variant()
         )
         self._sender = sender
+        self._sender_type = sender_type
 
         self._timeout = None
         self._max_retries = None
@@ -763,6 +774,31 @@ class ServerAPI(object):
 
     sender = property(get_sender, set_sender)
 
+    def get_sender_type(self):
+        """Sender type used to send requests.
+
+        Sender type is supported since AYON server 1.5.5 .
+
+        Returns:
+            Union[str, None]: Sender type or None.
+
+        """
+        return self._sender_type
+
+    def set_sender_type(self, sender_type):
+        """Change sender type used for requests.
+
+        Args:
+            sender_type (Union[str, None]): Sender type or None.
+
+        """
+        if sender_type == self._sender_type:
+            return
+        self._sender_type = sender_type
+        self._update_session_headers()
+
+    sender_type = property(get_sender_type, set_sender_type)
+
     def get_default_service_username(self):
         """Default username used for callbacks when used with service API key.
 
@@ -829,12 +865,12 @@ class ServerAPI(object):
                 "Can't set service username. API key is not a service token."
             )
 
-        with self._as_user_stack.as_user(username) as o:
-            self._update_session_headers()
-            try:
-                yield o
-            finally:
+        try:
+            with self._as_user_stack.as_user(username) as o:
                 self._update_session_headers()
+                yield o
+        finally:
+            self._update_session_headers()
 
     @property
     def is_server_available(self):
@@ -946,6 +982,7 @@ class ServerAPI(object):
             ("X-as-user", self._as_user_stack.username),
             ("x-ayon-version", self._client_version),
             ("x-ayon-site-id", self._site_id),
+            ("x-sender-type", self._sender_type),
             ("x-sender", self._sender),
         ):
             if value is not None:
@@ -1156,6 +1193,9 @@ class ServerAPI(object):
 
         if self._client_version is not None:
             headers["x-ayon-version"] = self._client_version
+
+        if self._sender_type is not None:
+            headers["x-sender-type"] = self._sender_type
 
         if self._sender is not None:
             headers["x-sender"] = self._sender
@@ -1646,6 +1686,8 @@ class ServerAPI(object):
         sequential=None,
         events_filter=None,
         max_retries=None,
+        ignore_older_than=None,
+        ignore_sender_types=None,
     ):
         """Enroll job based on events.
 
@@ -1694,6 +1736,10 @@ class ServerAPI(object):
                 TODO: Add example of filters.
             max_retries (Optional[int]): How many times can be event retried.
                 Default value is based on server (3 at the time of this PR).
+            ignore_older_than (Optional[int]): Ignore events older than
+                given number in days.
+            ignore_sender_types (Optional[List[str]]): Ignore events triggered
+                by given sender types.
 
         Returns:
             Union[None, dict[str, Any]]: None if there is no event matching
@@ -1705,6 +1751,7 @@ class ServerAPI(object):
             "targetTopic": target_topic,
             "sender": sender,
         }
+        major, minor, patch, _, _ = self.server_version_tuple
         if max_retries is not None:
             kwargs["maxRetries"] = max_retries
         if sequential is not None:
@@ -1713,6 +1760,18 @@ class ServerAPI(object):
             kwargs["description"] = description
         if events_filter is not None:
             kwargs["filter"] = events_filter
+        if (
+            ignore_older_than is not None
+            and (major, minor, patch) > (1, 5, 1)
+        ):
+            kwargs["ignoreOlderThan"] = ignore_older_than
+        if ignore_sender_types is not None:
+            if (major, minor, patch) > (1, 5, 4):
+                raise ValueError(
+                    "Ignore sender types are not supported for"
+                    f" your version of server {self.server_version}."
+                )
+            kwargs["ignoreSenderTypes"] = list(ignore_sender_types)
 
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
@@ -1728,6 +1787,229 @@ class ServerAPI(object):
             return None
 
         return response.data
+
+    def get_activities(
+        self,
+        project_name: str,
+        activity_ids: Optional[Iterable[str]] = None,
+        activity_types: Optional[Iterable["ActivityType"]] = None,
+        entity_ids: Optional[Iterable[str]] = None,
+        entity_names: Optional[Iterable[str]] = None,
+        entity_type: Optional[str] = None,
+        changed_after: Optional[str] = None,
+        changed_before: Optional[str] = None,
+        reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+        fields: Optional[Iterable[str]] = None,
+    ) -> Generator[Dict[str, Any], None, None]:
+        """Get activities from server with filtering options.
+
+        Args:
+            project_name (str): Project on which activities happened.
+            activity_ids (Optional[Iterable[str]]): Activity ids.
+            activity_types (Optional[Iterable[ActivityType]]): Activity types.
+            entity_ids (Optional[Iterable[str]]): Entity ids.
+            entity_names (Optional[Iterable[str]]): Entity names.
+            entity_type (Optional[str]): Entity type.
+            changed_after (Optional[str]): Return only activities changed
+                after given iso datetime string.
+            changed_before (Optional[str]): Return only activities changed
+                before given iso datetime string.
+            reference_types (Optional[Iterable[ActivityReferenceType]]):
+                Reference types filter. Defaults to `['origin']`.
+            fields (Optional[Iterable[str]]): Fields that should be received
+                for each activity.
+
+        Returns:
+            Generator[dict[str, Any]]: Available activities matching filters.
+
+        """
+        if not project_name:
+            return
+        filters = {
+            "projectName": project_name,
+        }
+        if reference_types is None:
+            reference_types = {"origin"}
+
+        if not _prepare_list_filters(
+            filters,
+            ("activityIds", activity_ids),
+            ("activityTypes", activity_types),
+            ("entityIds", entity_ids),
+            ("entityNames", entity_names),
+            ("referenceTypes", reference_types),
+        ):
+            return
+
+        for filter_key, filter_value in (
+            ("entityType", entity_type),
+            ("changedAfter", changed_after),
+            ("changedBefore", changed_before),
+        ):
+            if filter_value is not None:
+                filters[filter_key] = filter_value
+
+        if not fields:
+            fields = self.get_default_fields_for_type("activity")
+
+        query = activities_graphql_query(set(fields))
+        for attr, filter_value in filters.items():
+            query.set_variable_value(attr, filter_value)
+
+        for parsed_data in query.continuous_query(self):
+            for activity in parsed_data["project"]["activities"]:
+                activity_data = activity.get("activityData")
+                if isinstance(activity_data, str):
+                    activity["activityData"] = json.loads(activity_data)
+                yield activity
+
+    def get_activity_by_id(
+        self,
+        project_name: str,
+        activity_id: str,
+        reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+        fields: Optional[Iterable[str]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get activity by id.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            activity_id (str): Activity id.
+            fields (Optional[Iterable[str]]): Fields that should be received
+                for each activity.
+
+        Returns:
+            Optional[Dict[str, Any]]: Activity data or None if activity is not
+                found.
+
+        """
+        for activity in self.get_activities(
+            project_name=project_name,
+            activity_ids={activity_id},
+            reference_types=reference_types,
+            fields=fields,
+        ):
+            return activity
+        return None
+
+    def create_activity(
+        self,
+        project_name: str,
+        entity_id: str,
+        entity_type: str,
+        activity_type: "ActivityType",
+        activity_id: Optional[str] = None,
+        body: Optional[str] = None,
+        file_ids: Optional[List[str]] = None,
+        timestamp: Optional[str] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """Create activity on a project.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            entity_id (str): Entity id.
+            entity_type (str): Entity type.
+            activity_type (ActivityType): Activity type.
+            activity_id (Optional[str]): Activity id.
+            body (Optional[str]): Activity body.
+            file_ids (Optional[List[str]]): List of file ids attached
+                to activity.
+            timestamp (Optional[str]): Activity timestamp.
+            data (Optional[Dict[str, Any]]): Additional data.
+
+        Returns:
+            str: Activity id.
+
+        """
+        post_data = {
+            "activityType": activity_type,
+        }
+        for key, value in (
+            ("id", activity_id),
+            ("body", body),
+            ("files", file_ids),
+            ("timestamp", timestamp),
+            ("data", data),
+        ):
+            if value is not None:
+                post_data[key] = value
+
+        response = self.post(
+            f"projects/{project_name}/{entity_type}/{entity_id}/activities",
+            **post_data
+        )
+        response.raise_for_status()
+        return response.data["id"]
+
+    def update_activity(
+        self,
+        project_name: str,
+        activity_id: str,
+        body: Optional[str] = None,
+        file_ids: Optional[List[str]] = None,
+        append_file_ids: Optional[bool] = False,
+        data: Optional[Dict[str, Any]] = None,
+    ):
+        """Update activity by id.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            activity_id (str): Activity id.
+            body (str): Activity body.
+            file_ids (Optional[List[str]]): List of file ids attached
+                to activity.
+            append_file_ids (Optional[bool]): Append file ids to existing
+                list of file ids.
+            data (Optional[Dict[str, Any]]): Update data in activity.
+
+        """
+        update_data = {}
+        major, minor, patch, _, _ = self.server_version_tuple
+        new_patch_model = (major, minor, patch) > (1, 5, 6)
+        if body is None and not new_patch_model:
+            raise ValueError(
+                "Update without 'body' is supported"
+                " after server version 1.5.6."
+            )
+
+        if body is not None:
+            update_data["body"] = body
+
+        if file_ids is not None:
+            update_data["files"] = file_ids
+            if new_patch_model:
+                update_data["appendFiles"] = append_file_ids
+            elif append_file_ids:
+                raise ValueError(
+                    "Append file ids is supported after server version 1.5.6."
+                )
+
+        if data is not None:
+            if not new_patch_model:
+                raise ValueError(
+                    "Update of data is supported after server version 1.5.6."
+                )
+            update_data["data"] = data
+
+        response = self.patch(
+            f"projects/{project_name}/activities/{activity_id}",
+            **update_data
+        )
+        response.raise_for_status()
+
+    def delete_activity(self, project_name: str, activity_id: str):
+        """Delete activity by id.
+
+        Args:
+            project_name (str): Project on which activity happened.
+            activity_id (str): Activity id to remove.
+
+        """
+        response = self.delete(
+            f"projects/{project_name}/activities/{activity_id}"
+        )
+        response.raise_for_status()
 
     def _endpoint_to_url(
         self,
@@ -2305,6 +2587,9 @@ class ServerAPI(object):
         # Event does not have attributes
         if entity_type == "event":
             return set(DEFAULT_EVENT_FIELDS)
+
+        if entity_type == "activity":
+            return set(DEFAULT_ACTIVITY_FIELDS)
 
         if entity_type == "project":
             entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
@@ -4127,35 +4412,6 @@ class ServerAPI(object):
                 return True
         return False
 
-    def _prepare_project_fields(self, fields, own_attributes):
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= self.get_attributes_fields_for_type("project")
-
-        if "folderTypes" in fields:
-            fields.remove("folderTypes")
-            fields |= {
-                "folderTypes.{}".format(name)
-                for name in self.get_default_fields_for_type("folderType")
-            }
-
-        if "taskTypes" in fields:
-            fields.remove("taskTypes")
-            fields |= {
-                "taskTypes.{}".format(name)
-                for name in self.get_default_fields_for_type("taskType")
-            }
-
-        if "productTypes" in fields:
-            fields.remove("productTypes")
-            fields |= {
-                "productTypes.{}".format(name)
-                for name in self.get_default_fields_for_type("productType")
-            }
-
-        if own_attributes:
-            fields.add("ownAttrib")
-
     def get_projects(
         self, active=True, library=None, fields=None, own_attributes=False
     ):
@@ -4186,7 +4442,7 @@ class ServerAPI(object):
                 yield project
             return
 
-        self._prepare_project_fields(fields, own_attributes)
+        self._prepare_fields("project", fields, own_attributes)
 
         query = projects_graphql_query(fields)
         for parsed_data in query.continuous_query(self):
@@ -4220,7 +4476,7 @@ class ServerAPI(object):
                 fill_own_attribs(project)
             return project
 
-        self._prepare_project_fields(fields, own_attributes)
+        self._prepare_fields("project", fields, own_attributes)
 
         query = project_graphql_query(fields)
         query.set_variable_value("projectName", project_name)
@@ -4470,9 +4726,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("folder")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("folder")
+            self._prepare_fields("folder", fields)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -4860,9 +5114,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("task")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("task")
+            self._prepare_fields("task", fields, own_attributes)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -4871,9 +5123,6 @@ class ServerAPI(object):
 
         if active is not None:
             fields.add("active")
-
-        if own_attributes:
-            fields.add("ownAttrib")
 
         query = tasks_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -5027,9 +5276,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("task")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("task")
+            self._prepare_fields("task", fields, own_attributes)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -5038,9 +5285,6 @@ class ServerAPI(object):
 
         if active is not None:
             fields.add("active")
-
-        if own_attributes:
-            fields.add("ownAttrib")
 
         query = tasks_by_folder_paths_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -5404,9 +5648,7 @@ class ServerAPI(object):
         # Convert fields and add minimum required fields
         if fields:
             fields = set(fields) | {"id"}
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("product")
+            self._prepare_fields("product", fields)
         else:
             fields = self.get_default_fields_for_type("product")
 
@@ -5818,9 +6060,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("version")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type("version")
+            self._prepare_fields("version", fields)
 
         # Make sure fields have minimum required fields
         fields |= {"id", "version"}
@@ -6457,11 +6697,7 @@ class ServerAPI(object):
             fields = self.get_default_fields_for_type("representation")
         else:
             fields = set(fields)
-            if "attrib" in fields:
-                fields.remove("attrib")
-                fields |= self.get_attributes_fields_for_type(
-                    "representation"
-                )
+            self._prepare_fields("representation", fields)
 
         use_rest = False
         if "data" in fields and not self.graphql_allows_data_in_query:
@@ -6667,6 +6903,7 @@ class ServerAPI(object):
 
         if project_fields is not None:
             project_fields = set(project_fields)
+            self._prepare_fields("project", project_fields)
 
         project = {}
         if project_fields is None:
@@ -6713,6 +6950,15 @@ class ServerAPI(object):
             )
         else:
             representation_fields = set(representation_fields)
+
+        for (entity_type, fields) in (
+            ("folder", folder_fields),
+            ("task", task_fields),
+            ("product", product_fields),
+            ("version", version_fields),
+            ("representation", representation_fields),
+        ):
+            self._prepare_fields(entity_type, fields)
 
         representation_fields.add("id")
 
@@ -7168,14 +7414,9 @@ class ServerAPI(object):
 
         if not fields:
             fields = self.get_default_fields_for_type("workfile")
-
-        fields = set(fields)
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= {
-                "attrib.{}".format(attr)
-                for attr in self.get_attributes_for_type("workfile")
-            }
+        else:
+            fields = set(fields)
+            self._prepare_fields("workfile", fields)
 
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
@@ -7423,29 +7664,6 @@ class ServerAPI(object):
             project_name, "workfile", workfile_id, thumbnail_id
         )
 
-    def _get_thumbnail_mime_type(self, thumbnail_path):
-        """Get thumbnail mime type on thumbnail creation based on source path.
-
-        Args:
-            thumbnail_path (str): Path to thumbnail source fie.
-
-        Returns:
-            str: Mime type used for thumbnail creation.
-
-        Raises:
-            ValueError: Mime type cannot be determined.
-
-        """
-        ext = os.path.splitext(thumbnail_path)[-1].lower()
-        if ext == ".png":
-            return "image/png"
-
-        elif ext in (".jpeg", ".jpg"):
-            return "image/jpeg"
-
-        raise ValueError(
-            "Thumbnail source file has unknown extensions {}".format(ext))
-
     def create_thumbnail(self, project_name, src_filepath, thumbnail_id=None):
         """Create new thumbnail on server from passed path.
 
@@ -7473,7 +7691,7 @@ class ServerAPI(object):
             )
             return thumbnail_id
 
-        mime_type = self._get_thumbnail_mime_type(src_filepath)
+        mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
             "projects/{}/thumbnails".format(project_name),
             src_filepath,
@@ -7501,7 +7719,7 @@ class ServerAPI(object):
         if not os.path.exists(src_filepath):
             raise ValueError("Entered filepath does not exist.")
 
-        mime_type = self._get_thumbnail_mime_type(src_filepath)
+        mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
             "projects/{}/thumbnails/{}".format(project_name, thumbnail_id),
             src_filepath,
@@ -8336,6 +8554,59 @@ class ServerAPI(object):
             list[dict[str, Any]]: Operations result with process details.
 
         """
+        return self._send_batch_operations(
+            f"projects/{project_name}/operations",
+            operations,
+            can_fail,
+            raise_on_fail,
+        )
+
+    def send_activities_batch_operations(
+        self,
+        project_name,
+        operations,
+        can_fail=False,
+        raise_on_fail=True
+    ):
+        """Post multiple CRUD activities operations to server.
+
+        When multiple changes should be made on server side this is the best
+        way to go. It is possible to pass multiple operations to process on a
+        server side and do the changes in a transaction.
+
+        Args:
+            project_name (str): On which project should be operations
+                processed.
+            operations (list[dict[str, Any]]): Operations to be processed.
+            can_fail (Optional[bool]): Server will try to process all
+                operations even if one of them fails.
+            raise_on_fail (Optional[bool]): Raise exception if an operation
+                fails. You can handle failed operations on your own
+                when set to 'False'.
+
+        Raises:
+            ValueError: Operations can't be converted to json string.
+            FailedOperations: When output does not contain server operations
+                or 'raise_on_fail' is enabled and any operation fails.
+
+        Returns:
+            list[dict[str, Any]]: Operations result with process details.
+
+        """
+        return self._send_batch_operations(
+            f"projects/{project_name}/operations/activities",
+            operations,
+            can_fail,
+            raise_on_fail,
+        )
+
+    def _send_batch_operations(
+        self,
+        uri: str,
+        operations: List[Dict[str, Any]],
+        can_fail: bool,
+        raise_on_fail: bool
+    ):
         if not operations:
             return []
 
@@ -8368,7 +8639,7 @@ class ServerAPI(object):
             return []
 
         result = self.post(
-            "projects/{}/operations".format(project_name),
+            uri,
             operations=operations_body,
             canFail=can_fail
         )
@@ -8393,6 +8664,41 @@ class ServerAPI(object):
                     op_result["detail"],
                 ))
         return op_results
+
+    def _prepare_fields(self, entity_type, fields, own_attributes=False):
+        if not fields:
+            return
+
+        if "attrib" in fields:
+            fields.remove("attrib")
+            fields |= self.get_attributes_fields_for_type(entity_type)
+
+        if own_attributes and entity_type in {"project", "folder", "task"}:
+            fields.add("ownAttrib")
+
+        if entity_type == "project":
+            if "folderTypes" in fields:
+                fields.remove("folderTypes")
+                fields |= {
+                    "folderTypes.{}".format(name)
+                    for name in self.get_default_fields_for_type("folderType")
+                }
+
+            if "taskTypes" in fields:
+                fields.remove("taskTypes")
+                fields |= {
+                    "taskTypes.{}".format(name)
+                    for name in self.get_default_fields_for_type("taskType")
+                }
+
+            if "productTypes" in fields:
+                fields.remove("productTypes")
+                fields |= {
+                    "productTypes.{}".format(name)
+                    for name in self.get_default_fields_for_type(
+                        "productType"
+                    )
+                }
 
     def _convert_entity_data(self, entity):
         if not entity or "data" not in entity:
