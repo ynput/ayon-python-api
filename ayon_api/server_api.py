@@ -865,12 +865,12 @@ class ServerAPI(object):
                 "Can't set service username. API key is not a service token."
             )
 
-        with self._as_user_stack.as_user(username) as o:
-            self._update_session_headers()
-            try:
-                yield o
-            finally:
+        try:
+            with self._as_user_stack.as_user(username) as o:
                 self._update_session_headers()
+                yield o
+        finally:
+            self._update_session_headers()
 
     @property
     def is_server_available(self):
@@ -1765,11 +1765,13 @@ class ServerAPI(object):
             and (major, minor, patch) > (1, 5, 1)
         ):
             kwargs["ignoreOlderThan"] = ignore_older_than
-        if (
-            ignore_sender_types is not None
-            and (major, minor, patch) > (1, 5, 4)
-        ):
-            kwargs["ignoreSenderTypes"] = ignore_sender_types
+        if ignore_sender_types is not None:
+            if (major, minor, patch) > (1, 5, 4):
+                raise ValueError(
+                    "Ignore sender types are not supported for"
+                    f" your version of server {self.server_version}."
+                )
+            kwargs["ignoreSenderTypes"] = list(ignore_sender_types)
 
         response = self.post("enroll", **kwargs)
         if response.status_code == 204:
