@@ -2,6 +2,7 @@ from traceback import print_exc
 import uuid
 
 from requests import delete
+import test
 
 import pytest
 
@@ -264,7 +265,7 @@ def test_custom_values_on_entities(project_entity_fixture):
     hub.commit_changes()
 
 
-def test_label_eq_name_on_entities(project_entity_fixture):
+def test_label_eq_name_on_entities_1(project_entity_fixture):
     """Test label that have same values as name on folder and task.
 
     When the entity has same name and label, the label should be set to None.
@@ -372,11 +373,11 @@ def test_data_changes_on_entities(project_entity_fixture):
 
     hub = EntityHub(project_name)
 
-    folder = hub.get_or_query_entity_by_id(folder_id, {"folder"})
+    folder = hub.get_or_fetch_entity_by_id(folder_id, {"folder"})
     folder.data["key3"] = "value3"
     folder.data.pop("key1")
 
-    task = hub.get_or_query_entity_by_id(task_id, {"task"})
+    task = hub.get_or_fetch_entity_by_id(task_id, {"task"})
     task.data["key4"] = "value4"
     task.data.pop("key2")
     hub.commit_changes()
@@ -397,7 +398,7 @@ def test_data_changes_on_entities(project_entity_fixture):
     hub.commit_changes()
 
 
-def test_label_eq_name_on_entities(project_entity_fixture):
+def test_label_eq_name_on_entities_2(project_entity_fixture):
     """Test label that have same values as name on folder and task.
 
     When the entity has same name and label, the label should be set to None.
@@ -430,8 +431,8 @@ def test_label_eq_name_on_entities(project_entity_fixture):
     hub.commit_changes()
 
     hub = EntityHub(project_name)
-    folder = hub.get_or_query_entity_by_id(folder_id, {"folder"})
-    task = hub.get_or_query_entity_by_id(task_id, {"task"})
+    folder = hub.get_or_fetch_entity_by_id(folder_id, {"folder"})
+    task = hub.get_or_fetch_entity_by_id(task_id, {"task"})
 
     assert folder.status == init_status_name, (
         "Folder status set on create was not propagated"
@@ -759,7 +760,7 @@ def test_create_delete_with_duplicated_names(
 
 test_names = [
     ("test_name"),
-    # ("test_123"),
+    ("test_123"),
 ]
 
 test_product_types = [
@@ -769,6 +770,8 @@ test_product_types = [
     ("workfile"),
 ]
 
+
+@pytest.mark.usefixtures("clean_project")
 @pytest.mark.parametrize("folder_name", test_names)
 @pytest.mark.parametrize("product_name", test_names)
 @pytest.mark.parametrize("product_type", test_product_types)
@@ -833,6 +836,7 @@ def test_create_delete_products(
     assert product.get_folder_id() == folder["id"]
 
 
+@pytest.mark.usefixtures("clean_project")
 @pytest.mark.parametrize("name", test_names)
 def test_create_delete_folders(project_entity_fixture, name):
     project_name = project_entity_fixture["name"]
@@ -893,10 +897,12 @@ def test_create_delete_folders(project_entity_fixture, name):
 
 
 test_version_numbers = [
-    ([1, 2, 3, 4])
+    ([1, 2, 3, 4]),
+    ([8, 10, 4, 5]),
 ]
 
 
+@pytest.mark.usefixtures("clean_project")
 @pytest.mark.parametrize("version_numbers", test_version_numbers)
 def test_create_delete_versions(project_entity_fixture, version_numbers):
     # prepare hierarchy
@@ -953,6 +959,7 @@ test_invalid_version_number = [
 ]
 
 
+@pytest.mark.usefixtures("clean_project")
 @pytest.mark.parametrize("version_number", test_invalid_version_number)
 def test_create_invalid_versions(project_entity_fixture, version_number):
     # prepare hierarchy
@@ -983,6 +990,7 @@ def test_create_invalid_versions(project_entity_fixture, version_number):
         hub.commit_changes()
 
 
+@pytest.mark.usefixtures("clean_project")
 def test_change_status_on_version(project_entity_fixture):
     folder_types = [
         type["name"] for type in project_entity_fixture["folderTypes"]
@@ -1020,6 +1028,7 @@ def test_change_status_on_version(project_entity_fixture):
         assert version.get_status() == status_name
 
 
+@pytest.mark.usefixtures("clean_project")
 @pytest.mark.parametrize("version", test_version_numbers)
 def test_set_invalid_status_on_version(project_entity_fixture, version):
     folder_types = [
@@ -1087,6 +1096,7 @@ test_tags = [
 ]
 
 
+@pytest.mark.usefixtures("clean_project")
 @pytest.mark.parametrize("tags", test_tags)
 def test_set_tag_on_version(project_entity_fixture, tags):
     folder_types = [
@@ -1125,12 +1135,37 @@ def test_set_invalid_tag_on_version():
     raise NotImplementedError()
 
 
-def test_status_definition_on_project(project_entity_fixture):
+test_statuses = [
+    ("status1"),
+    ("status2"),
+    ("status3"),
+]
+
+test_icon = [
+    ("arrow_forward"),
+    ("expand_circle_down"),
+    ("done_outline"),
+]
+
+
+@pytest.mark.parametrize("status_name", test_statuses)
+@pytest.mark.parametrize("icon_name", test_icon)
+def test_status_definition_on_project(
+    project_entity_fixture,
+    status_name,
+    icon_name
+):
     hub = EntityHub(project_entity_fixture["name"])
 
     project = hub.project_entity
-    project.status = "test_status"
-    print(project.status)
+    project.get_statuses().create(
+        status_name,
+        icon_name
+    )
+    assert status_name == project.get_statuses().get(status_name).get_name()
+    assert icon_name == project.get_statuses().get(status_name).get_icon()
+
+    # print(project.status)
 
     # project.set_status()
     # project_status_obj = hub.project_entity.get_statuses()
