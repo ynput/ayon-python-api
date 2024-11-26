@@ -3286,6 +3286,8 @@ class TaskEntity(BaseEntity):
             value is defined based on value of 'entity_id'.
         entity_hub (EntityHub): Object of entity hub which created object of
             the entity.
+        parent_id (Union[str, None]): DEPRECATED please use 'folder_id'
+            instead.
 
     """
     _supports_name = True
@@ -3312,18 +3314,7 @@ class TaskEntity(BaseEntity):
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
-        parent_id: Optional[str] = UNKNOWN_VALUE,
     ):
-        if folder_id is UNKNOWN_VALUE and parent_id is not UNKNOWN_VALUE:
-            warnings.warn(
-                (
-                    "DEV WARNING: Used 'parent_id' instead of 'folder_id' in"
-                    " TaskEntity. Please use 'folder_id' instead."
-                ),
-                DeprecationWarning
-            )
-            folder_id = parent_id
-
         super().__init__(
             name=name,
             parent_id=folder_id,
