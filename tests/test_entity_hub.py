@@ -151,7 +151,7 @@ def test_custom_values_on_entities(project_entity_fixture):
         task_type=task_type,
         name=task_name,
         label=task_label,
-        parent_id=folder.id,
+        folder_id=folder.id,
         data=task_data,
         attribs=task_attrib,
         entity_id=task_id,
@@ -299,7 +299,7 @@ def test_label_eq_name_on_entities(project_entity_fixture):
         task_type=task_type,
         name=task_name,
         label=task_label,
-        parent_id=folder.id,
+        folder_id=folder.id,
         entity_id=task_id,
     )
     hub.commit_changes()
@@ -355,7 +355,7 @@ def test_data_changes_on_entities(project_entity_fixture):
         task_type=task_type,
         name=task_name,
         data=task_data,
-        parent_id=folder.id,
+        folder_id=folder.id,
         entity_id=task_id,
     )
     hub.commit_changes()
@@ -423,7 +423,7 @@ def test_label_eq_name_on_entities(project_entity_fixture):
         task_type=task_type,
         name=task_name,
         label=task_label,
-        parent_id=folder.id,
+        folder_id=folder.id,
         entity_id=task_id,
         status=init_status_name,
     )
