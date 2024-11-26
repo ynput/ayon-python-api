@@ -3271,7 +3271,7 @@ class TaskEntity(BaseEntity):
         name (str): Name of entity.
         task_type (str): Type of task. Task type must be available in config
             of project task types.
-        parent_id (Union[str, None]): Id of parent entity.
+        folder_id (Union[str, None]): Parent folder id.
         label (Optional[str]): Task label.
         status (Optional[str]): Task status.
         tags (Optional[Iterable[str]]): Folder tags.
