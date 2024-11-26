@@ -499,12 +499,12 @@ def test_create_delete_with_duplicated_names(
     project_name = project_entity_fixture["name"]
     hub = EntityHub(project_name)
 
-    folder1 = hub.add_new_folder("Folder", name=folder_name)
+    folder1 = hub.add_new_folder(folder_type="Folder", name=folder_name)
 
     subfolders = []
     for folder_number in range(num_of_subfolders):
         subfolder = hub.add_new_folder(
-            "Folder",
+            folder_type="Folder",
             parent_id=folder1["id"],
             name=f"{subfolder_name}{folder_number:03}"
         )
@@ -513,7 +513,7 @@ def test_create_delete_with_duplicated_names(
 
         # create and delete folder with same name
         subfolder = hub.add_new_folder(
-            "Folder",
+            folder_type="Folder",
             parent_id=folder1["id"],
             name=f"{subfolder_name}{folder_number:03}"
         )
@@ -546,7 +546,7 @@ def test_create_delete_with_duplicated_names(
 #     """
 #     e = EntityHub(PROJECT_NAME)
 #
-#     parent_folder = e.add_new_folder("Folder", name=folder_name)
+#     parent_folder = e.add_new_folder(folder_type="Folder", name=folder_name)
 #     e.commit_changes()
 #
 #
@@ -554,14 +554,14 @@ def test_create_delete_with_duplicated_names(
 #     subfolders = []
 #     for folder_number in range(2):
 #         folder = e.add_new_folder(
-#             "Folder",
+#             folder_type="Folder",
 #             name=f"test{folder_number:03}",
 #             parent_id=parent_folder["id"]
 #         )
 #         folders.append(folder)
 #
 #         subfolder = e.add_new_folder(
-#             "Folder",
+#             folder_type="Folder",
 #             name="duplicated",
 #             parent_id=folder["id"]
 #         )
@@ -628,14 +628,14 @@ def test_create_delete_with_duplicated_names(
 #     e = EntityHub(PROJECT_NAME)
 #
 #     parent_folder = e.add_new_folder(
-#         "Folder",
+#         folder_type="Folder",
 #         name=parent_folder_name
 #     )
 #
 #     folder_ids = []
 #     for folder_number in range(num_of_folders):
 #         folder = e.add_new_folder(
-#             "Folder",
+#             folder_type="Folder",
 #             parent_id=parent_folder["id"],
 #             name=f"{folder_name}{folder_number:03}"
 #         )
@@ -645,7 +645,7 @@ def test_create_delete_with_duplicated_names(
 #     for folder_id in folder_ids:
 #         for subfolder_number in range(num_of_subfolders):
 #             subfolder = e.add_new_folder(
-#                 "Folder",
+#                 folder_type="Folder",
 #                 parent_id=folder_id,
 #                 name=f"{subfolder_name}{subfolder_number:03}"
 #             )
