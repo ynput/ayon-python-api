@@ -137,7 +137,9 @@ def test_get_events_timeout_has_children(has_children):
         assert has_children is False, (
             f"{exc} even if has_children is {has_children}."
         )
-        print("Warning: ServerError encountered, test skipped due to timeout.")
+        print(
+            "Warning: ServerError encountered, test skipped due to timeout."
+        )
         pytest.skip("Skipping test due to server timeout.")
 
 
@@ -146,8 +148,8 @@ def test_get_events_event_ids(event_ids):
 
     Verifies:
         - Each item returned has an ID in the `event_ids` list.
-        - The number of items returned matches the expected count when filtered
-            by each individual event ID.
+        - The number of items returned matches the expected count when
+            filtered by each individual event ID.
 
     """
     res = list(get_events(event_ids=event_ids))
@@ -300,7 +302,9 @@ def test_get_events_timestamps(newer_than, older_than):
 
 
 @pytest.mark.parametrize("topics", TestInvalidEventFilters.topics)
-@pytest.mark.parametrize("project_names", TestInvalidEventFilters.project_names)
+@pytest.mark.parametrize(
+    "project_names",
+    TestInvalidEventFilters.project_names)
 @pytest.mark.parametrize("states", TestInvalidEventFilters.states)
 @pytest.mark.parametrize("users", TestInvalidEventFilters.users)
 @pytest.mark.parametrize("newer_than", TestInvalidEventFilters.newer_than)
@@ -364,7 +368,9 @@ def test_get_events_invalid_data(
 @pytest.mark.parametrize("sender", TestUpdateEventData.update_sender)
 @pytest.mark.parametrize("username", TestUpdateEventData.update_username)
 @pytest.mark.parametrize("status", TestUpdateEventData.update_status)
-@pytest.mark.parametrize("description", TestUpdateEventData.update_description)
+@pytest.mark.parametrize(
+    "description",
+    TestUpdateEventData.update_description)
 @pytest.mark.parametrize("retries", TestUpdateEventData.update_retries)
 def test_update_event(
         event_id,
@@ -539,12 +545,12 @@ def test_enroll_event_job(sequential):
 
     Verifies:
         - When `sequential` is set to `True`, only one job can be enrolled at
-            a time, preventing new enrollments until the first job is closed or
-            updated.
+            a time, preventing new enrollments until the first job is closed
+            or updated.
         - When `sequential` is `False` or `None`, multiple jobs can be
             enrolled concurrently without conflicts.
-        - The `update_event` function updates the `status` of a job to allowing
-            next sequential job processing.
+        - The `update_event` function updates the `status` of a job to
+            allowing next sequential job processing.
 
     Notes:
         - `update_event` is used to set `job_1`'s status to "failed" to test
@@ -596,8 +602,8 @@ def test_enroll_event_job_failed(sequential):
     Verifies:
         - `enroll_event_job` creates a job (`job_1`) with specified parameters
           `(`source_topic`, `target_topic`, `sender`, and `sequential`).
-        - After `job_1` fails (status set to "failed"), a new job (`job_2`) can
-            be enrolled with the same parameters.
+        - After `job_1` fails (status set to "failed"), a new job (`job_2`)
+            can be enrolled with the same parameters.
         - When `sequential` is `True`, the test verifies that `job_1` and
             `job_2` are identical, as a failed sequential job should not allow
             a new job to be enrolled separately.
@@ -641,8 +647,8 @@ def test_enroll_event_job_same_sender(sequential):
         - `enroll_event_job` creates a `job_1` and `job_2` with the same
             parameters (`source_topic`, `target_topic`, `sender`, and
             `sequential`).
-        - The test checks that `job_1` and `job_2` are identical, ensuring that
-            no duplicate jobs are created for the same sender.
+        - The test checks that `job_1` and `job_2` are identical, ensuring
+            that no duplicate jobs are created for the same sender.
 
     Notes:
         - TODO - delete events after test if possible
@@ -716,9 +722,9 @@ def test_enroll_event_job_sequential_false():
         - Each job has a unique `dependsOn` identifier
 
     Notes:
-        - The `depends_on_ids` set is used to track `dependsOn` identifiers and
-          verify that each job has a unique dependency state, as required for
-          concurrent processing.
+        - The `depends_on_ids` set is used to track `dependsOn` identifiers
+            and verify that each job has a unique dependency state, as
+            required for concurrent processing.
         - TODO - delete events after test if possible
 
     """
@@ -752,15 +758,16 @@ def test_thumbnail_operations(
 
     Verifies:
         - A thumbnail is created for the project and associated with a folder.
-        - The thumbnail associated with the folder is correctly retrieved, with
-            attributes matching the project name and thumbnail ID.
+        - The thumbnail associated with the folder is correctly retrieved,
+            with attributes matching the project name and thumbnail ID.
         - The content of the retrieved thumbnail matches the expected image
             bytes read from the specified `thumbnail_path`.
 
     Notes:
         - `delete_project` is called initially to remove any pre-existing
             project with the same name, ensuring no conflicts during testing.
-        - At the end of the test, the project is deleted to clean up resources.
+        - At the end of the test, the project is deleted to clean up
+            resources.
 
     """
     if get_project(project_name):
@@ -795,12 +802,12 @@ def test_addon_methods():
         - An addon with the specified name and version does not exist at the
             start.
         - Uploads an addon package `.zip` file and triggers a server restart.
-        - Ensures the server restart completes, and verifies the uploaded addon
-            is available in the list of addons after the restart.
+        - Ensures the server restart completes, and verifies the uploaded
+            addon is available in the list of addons after the restart.
         - Downloads a private file associated with the addon, verifying its
             existence and correct download location.
-        - Cleans up downloaded files and directories after the test to maintain
-            a clean state.
+        - Cleans up downloaded files and directories after the test to
+            maintain a clean state.
 
     Notes:
         - `time.sleep()` is used to allow for a brief pause for the server
@@ -863,8 +870,8 @@ def api_artist_user():
         - Establishes a server API connection and retrieves the list
             of available access groups.
         - Configures a new user with limited permissions (`isAdmin` and
-            `isManager` set to `False`) and assigns all available access groups
-            as default and project-specific groups.
+            `isManager` set to `False`) and assigns all available access
+            groups as default and project-specific groups.
         - Creates a new API connection using the artist user's credentials
             (`username` and `password`) and logs in with it.
 
