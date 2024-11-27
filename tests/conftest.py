@@ -103,7 +103,12 @@ class TestEventFilters:
         (["demo_Big_Feature"]),
         (["demo_Commercial"]),
         (["AY_Tests"]),
-        (["demo_Big_Episodic", "demo_Big_Feature", "demo_Commercial", "AY_Tests"])
+        ([
+            "demo_Big_Episodic",
+            "demo_Big_Feature",
+            "demo_Commercial",
+            "AY_Tests"
+        ])
     ]
 
     topics = [
@@ -138,7 +143,14 @@ class TestEventFilters:
     states = [
         (None),
         ([]),
-        (["pending", "in_progress", "finished", "failed", "aborted", "restarted"]),
+        ([
+            "pending",
+            "in_progress",
+            "finished",
+            "failed",
+            "aborted",
+            "restarted"
+        ]),
         (["failed", "aborted"]),
         (["pending", "in_progress"]),
         (["finished", "failed", "restarted"]),
@@ -239,7 +251,10 @@ class TestUpdateEventData:
     ]
 
     update_description = [
-        ("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce vivera."),
+        (
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+            " Fusce vivera."
+        ),
         ("Updated description test...")
     ]
 
