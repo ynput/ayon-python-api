@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 import pytest
-from xml.dom.minidom import Entity
 
 from ayon_api import (
     get_project,
