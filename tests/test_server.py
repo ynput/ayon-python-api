@@ -15,14 +15,14 @@ from ayon_api import (
     create_folder,
     create_project,
     create_thumbnail,
-    delete,
+    delete_addon_version,
+    delete_event,
     delete_project,
     dispatch_event,
     download_addon_private_file,
     enroll_event_job,
     get,
     get_addons_info,
-    get_default_fields_for_type,
     get_event,
     get_events,
     get_folder_thumbnail,
@@ -41,6 +41,14 @@ from ayon_api import (
     ServerAPI,
     exceptions
 )
+from .conftest import (
+    TestEventFilters,
+    TestInvalidEventFilters,
+    TestUpdateEventData,
+    event_id,
+    event_ids
+)
+
 
 AYON_BASE_URL = os.getenv("AYON_SERVER_URL")
 AYON_REST_URL = "{}/api".format(AYON_BASE_URL)
@@ -104,256 +112,7 @@ def test_get():
     assert isinstance(res.data, dict)
 
 
-test_project_names = [
-    (None),
-    ([]),
-    (["demo_Big_Episodic"]),
-    (["demo_Big_Feature"]),
-    (["demo_Commercial"]),
-    (["AY_Tests"]),
-    (["demo_Big_Episodic", "demo_Big_Feature", "demo_Commercial", "AY_Tests"])
-]
-
-test_topics = [
-    (None),
-    ([]),
-    (["entity.folder.attrib_changed"]),
-    (["entity.task.created", "entity.project.created"]),
-    (["settings.changed", "entity.version.status_changed"]),
-    (["entity.task.status_changed", "entity.folder.deleted"]),
-    ([
-        "entity.project.changed",
-        "entity.task.tags_changed",
-        "entity.product.created"
-    ])
-]
-
-test_users = [
-    (None),
-    ([]),
-    (["admin"]),
-    (["mkolar", "tadeas.8964"]),
-    (["roy", "luke.inderwick", "ynbot"]),
-    ([
-        "entity.folder.attrib_changed",
-        "entity.project.created",
-        "entity.task.created",
-        "settings.changed"
-    ]),
-]
-
-# states is incorrect name for statuses
-test_states = [
-    (None),
-    ([]),
-    (["pending", "in_progress", "finished", "failed", "aborted", "restarted"]),
-    (["failed", "aborted"]),
-    (["pending", "in_progress"]),
-    (["finished", "failed", "restarted"]),
-    (["finished"]),
-]
-
-test_include_logs = [
-    (None),
-    (True),
-    (False),
-]
-
-test_has_children = [
-    (None),
-    (True),
-    (False),
-]
-
-now = datetime.now(timezone.utc)
-
-test_newer_than = [
-    (None),
-    ((now - timedelta(days=2)).isoformat()),
-    ((now - timedelta(days=5)).isoformat()),
-    ((now - timedelta(days=10)).isoformat()),
-    ((now - timedelta(days=20)).isoformat()),
-    ((now - timedelta(days=30)).isoformat()),
-]
-
-test_older_than = [
-    (None),
-    ((now - timedelta(days=0)).isoformat()),
-    ((now - timedelta(days=5)).isoformat()),
-    ((now - timedelta(days=10)).isoformat()),
-    ((now - timedelta(days=20)).isoformat()),
-    ((now - timedelta(days=30)).isoformat()),
-]
-
-test_fields = [
-    (None),
-    ([]),
-    ([])
-]
-
-@pytest.fixture(params=[3, 4, 5])
-def event_ids(request):
-    length = request.param
-    if length == 0:
-        return None
-
-    recent_events = list(get_events(
-        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
-    ))
-
-    return [recent_event["id"] for recent_event in recent_events[:length]]
-
-
-# takes max 3 items in a list to reduce the number of combinations
-@pytest.mark.parametrize("topics", test_topics[-3:])
-@pytest.mark.parametrize(
-    "event_ids",
-    [None] + [pytest.param(None, marks=pytest.mark.usefixtures("event_ids"))]
-)
-@pytest.mark.parametrize("project_names", test_project_names[-3:])
-@pytest.mark.parametrize("states", test_states[-3:])
-@pytest.mark.parametrize("users", test_users[-3:])
-@pytest.mark.parametrize("include_logs", test_include_logs[-3:])
-@pytest.mark.parametrize("has_children", test_has_children[2:3])
-@pytest.mark.parametrize("newer_than", test_newer_than[-3:])
-@pytest.mark.parametrize("older_than", test_older_than[-3:])
-@pytest.mark.parametrize("fields", test_fields[-3:])
-def test_get_events_all_filter_combinations(
-    topics,
-    event_ids,
-    project_names,
-    states,
-    users,
-    include_logs,
-    has_children,
-    newer_than,
-    older_than,
-    fields
-):
-    """Tests all combinations of possible filters for `get_events`.
-
-    Verifies:
-        - Calls `get_events` with the provided filter parameters.
-        - Ensures each event in the result set matches the specified filters.
-        - Checks that the number of returned events matches the expected count
-            based on the filters applied.
-        - Confirms that each event contains only the specified fields, with
-            no extra keys.
-
-    Note:
-        - Adjusts the timeout setting if necessary to handle a large number
-            of tests and avoid timeout errors.
-        - Some combinations of filter parameters may lead to a server timeout
-            error. When this occurs, the test will skip instead of failing.
-        - Currently, a ServerError due to timeout may occur when `has_children`
-            is set to False.
-
-    """
-    if get_timeout() < 5:
-        set_timeout(None) # default timeout
-
-    try:
-        res = list(get_events(
-            topics=topics,
-            event_ids=event_ids,
-            project_names=project_names,
-            states=states,
-            users=users,
-            include_logs=include_logs,
-            has_children=has_children,
-            newer_than=newer_than,
-            older_than=older_than,
-            fields=fields
-        ))
-    except exceptions.ServerError as exc:
-        assert has_children is False, (
-            f"{exc} even if has_children is {has_children}."
-        )
-        print("Warning: ServerError encountered, test skipped due to timeout.")
-        pytest.skip("Skipping test due to server timeout.")
-
-    for item in res:
-        assert item.get("topic") in topics
-        assert item.get("project") in project_names
-        assert item.get("user") in users
-        assert item.get("status") in states
-
-        assert (newer_than is None) or (
-            datetime.fromisoformat(item.get("createdAt"))
-                > datetime.fromisoformat(newer_than)
-        )
-        assert (older_than is None) or (
-            datetime.fromisoformat(item.get("createdAt"))
-                < datetime.fromisoformat(older_than)
-        )
-
-    assert topics is None or len(res) == sum(len(list(
-        get_events(
-            topics=[topic],
-            project_names=project_names,
-            states=states,
-            users=users,
-            include_logs=include_logs,
-            has_children=has_children,
-            newer_than=newer_than,
-            older_than=older_than,
-            fields=fields
-        )
-    )) for topic in topics)
-
-    assert project_names is None or len(res) == sum(len(list(
-        get_events(
-            topics=topics,
-            project_names=[project_name],
-            states=states,
-            users=users,
-            include_logs=include_logs,
-            has_children=has_children,
-            newer_than=newer_than,
-            older_than=older_than,
-            fields=fields
-        )
-    )) for project_name in project_names)
-
-    assert states is None or len(res) == sum(len(list(
-        get_events(
-            topics=topics,
-            project_names=project_names,
-            states=[state],
-            users=users,
-            include_logs=include_logs,
-            has_children=has_children,
-            newer_than=newer_than,
-            older_than=older_than,
-            fields=fields
-        )
-    )) for state in states)
-
-    assert users is None or len(res) == sum(len(list(
-        get_events(
-            topics=topics,
-            project_names=project_names,
-            states=states,
-            users=[user],
-            include_logs=include_logs,
-            has_children=has_children,
-            newer_than=newer_than,
-            older_than=older_than,
-            fields=fields
-        )
-    )) for user in users)
-
-    if fields == []:
-        fields = get_default_fields_for_type("event")
-
-    assert fields is None \
-        or all(
-            set(event.keys()) == set(fields)
-            for event in res
-        )
-
-
-@pytest.mark.parametrize("has_children", test_has_children)
+@pytest.mark.parametrize("has_children", TestEventFilters.has_children)
 def test_get_events_timeout_has_children(has_children):
     """Test `get_events` function with the `has_children` filter.
 
@@ -378,7 +137,9 @@ def test_get_events_timeout_has_children(has_children):
         assert has_children is False, (
             f"{exc} even if has_children is {has_children}."
         )
-        print("Warning: ServerError encountered, test skipped due to timeout.")
+        print(
+            "Warning: ServerError encountered, test skipped due to timeout."
+        )
         pytest.skip("Skipping test due to server timeout.")
 
 
@@ -387,8 +148,8 @@ def test_get_events_event_ids(event_ids):
 
     Verifies:
         - Each item returned has an ID in the `event_ids` list.
-        - The number of items returned matches the expected count when filtered
-            by each individual event ID.
+        - The number of items returned matches the expected count when
+            filtered by each individual event ID.
 
     """
     res = list(get_events(event_ids=event_ids))
@@ -396,14 +157,14 @@ def test_get_events_event_ids(event_ids):
     for item in res:
         assert item.get("id") in event_ids
 
-    assert len(res) == sum(len(list(
-        get_events(
+    assert event_ids is None or len(res) == sum(len(
+        list(get_events(
             event_ids=[event_id]
-        )
-    )) for event_id in event_ids)
+        )) or []
+    ) for event_id in event_ids)
 
 
-@pytest.mark.parametrize("project_names", test_project_names)
+@pytest.mark.parametrize("project_names", TestEventFilters.project_names)
 def test_get_events_project_name(project_names):
     """Test `get_events` function using specified project names.
 
@@ -419,15 +180,15 @@ def test_get_events_project_name(project_names):
         assert item.get("project") in project_names
 
     # test if the legths are equal
-    assert len(res) == sum(len(list(
-        get_events(
+    assert project_names is None or len(res) == sum(len(
+        list(get_events(
             project_names=[project_name]
-        )
-    )) for project_name in project_names)
+        )) or []
+    ) for project_name in project_names)
 
 
-@pytest.mark.parametrize("project_names", test_project_names)
-@pytest.mark.parametrize("topics", test_topics)
+@pytest.mark.parametrize("project_names", TestEventFilters.project_names)
+@pytest.mark.parametrize("topics", TestEventFilters.topics)
 def test_get_events_project_name_topic(project_names, topics):
     """Test `get_events` function using both project names and topics.
 
@@ -448,24 +209,24 @@ def test_get_events_project_name_topic(project_names, topics):
         assert item.get("project") in project_names
 
     # test if the legths are equal
-    assert len(res) == sum(len(list(
-        get_events(
+    assert project_names is None or len(res) == sum(len(
+        list(get_events(
             project_names=[project_name],
             topics=topics
-        )
-    )) for project_name in project_names)
+        )) or []
+    ) for project_name in project_names)
 
-    assert len(res) == sum(len(list(
-        get_events(
+    assert topics is None or len(res) == sum(len(
+        list(get_events(
             project_names=project_names,
             topics=[topic]
-        )
-    )) for topic in topics)
+        )) or []
+    ) for topic in topics)
 
 
-@pytest.mark.parametrize("project_names", test_project_names)
-@pytest.mark.parametrize("topics", test_topics)
-@pytest.mark.parametrize("users", test_users)
+@pytest.mark.parametrize("project_names", TestEventFilters.project_names)
+@pytest.mark.parametrize("topics", TestEventFilters.topics)
+@pytest.mark.parametrize("users", TestEventFilters.users)
 def test_get_events_project_name_topic_user(project_names, topics, users):
     """Test `get_events` function using project names, topics, and users.
 
@@ -483,35 +244,38 @@ def test_get_events_project_name_topic_user(project_names, topics, users):
     ))
 
     for item in res:
-        assert item.get("topic") in topics
-        assert item.get("project") in project_names
-        assert item.get("user") in project_names
+        assert topics is None or item.get("topic") in topics
+        assert project_names is None or item.get("project") in project_names
+        assert users is None or item.get("user") in users
 
     # test if the legths are equal
-    assert len(res) == sum(len(list(
-        get_events(
+    assert project_names is None or len(res) == sum(len(
+        list(get_events(
             project_names=[project_name],
-            topics=topics
-        )
-    )) for project_name in project_names)
+            topics=topics,
+            users=users
+        )) or []
+    ) for project_name in project_names)
 
-    assert len(res) == sum(len(list(
-        get_events(
+    assert topics is None or len(res) == sum(len(
+        list(get_events(
             project_names=project_names,
-            topics=[topic]
-        )
-    )) for topic in topics)
+            topics=[topic],
+            users=users
+        )) or []
+    ) for topic in topics)
 
-    assert len(res) == sum(len(list(
-        get_events(
+    assert users is None or len(res) == sum(len(
+        list(get_events(
             project_names=project_names,
-            topics=[topic]
-        )
-    )) for topic in topics)
+            topics=topics,
+            users=[user]
+        )) or []
+    ) for user in users)
 
 
-@pytest.mark.parametrize("newer_than", test_newer_than)
-@pytest.mark.parametrize("older_than", test_older_than)
+@pytest.mark.parametrize("newer_than", TestEventFilters.newer_than)
+@pytest.mark.parametrize("older_than", TestEventFilters.older_than)
 def test_get_events_timestamps(newer_than, older_than):
     """Test `get_events` function using date filters `newer_than` and
     `older_than`.
@@ -537,47 +301,13 @@ def test_get_events_timestamps(newer_than, older_than):
         )
 
 
-test_invalid_topics = [
-    (None),
-    (["invalid_topic_name_1", "invalid_topic_name_2"]),
-    (["invalid_topic_name_1"]),
-]
-
-test_invalid_project_names = [
-    (None),
-    (["invalid_project"]),
-    (["invalid_project", "demo_Big_Episodic", "demo_Big_Feature"]),
-    (["invalid_name_2", "demo_Commercial"]),
-    (["demo_Commercial"]),
-]
-
-test_invalid_states = [
-    (None),
-    (["pending_invalid"]),
-    (["in_progress_invalid"]),
-    (["finished_invalid", "failed_invalid"]),
-]
-
-test_invalid_users = [
-    (None),
-    (["ayon_invalid_user"]),
-    (["ayon_invalid_user1", "ayon_invalid_user2"]),
-    (["ayon_invalid_user1", "ayon_invalid_user2", "admin"]),
-]
-
-test_invalid_newer_than = [
-    (None),
-    ((datetime.now(timezone.utc) + timedelta(days=2)).isoformat()),
-    ((datetime.now(timezone.utc) + timedelta(days=5)).isoformat()),
-    ((datetime.now(timezone.utc) - timedelta(days=5)).isoformat()),
-]
-
-
-@pytest.mark.parametrize("topics", test_invalid_topics)
-@pytest.mark.parametrize("project_names", test_invalid_project_names)
-@pytest.mark.parametrize("states", test_invalid_states)
-@pytest.mark.parametrize("users", test_invalid_users)
-@pytest.mark.parametrize("newer_than", test_invalid_newer_than)
+@pytest.mark.parametrize("topics", TestInvalidEventFilters.topics)
+@pytest.mark.parametrize(
+    "project_names",
+    TestInvalidEventFilters.project_names)
+@pytest.mark.parametrize("states", TestInvalidEventFilters.states)
+@pytest.mark.parametrize("users", TestInvalidEventFilters.users)
+@pytest.mark.parametrize("newer_than", TestInvalidEventFilters.newer_than)
 def test_get_events_invalid_data(
     topics,
     project_names,
@@ -635,55 +365,13 @@ def test_get_events_invalid_data(
         or datetime.fromisoformat(newer_than) < datetime.now(timezone.utc)
 
 
-@pytest.fixture
-def event_id():
-    """Fixture that retrieves the ID of a recent event created within
-    the last 5 days.
-
-    Returns:
-        - The event ID of the most recent event within the last 5 days
-          if available.
-        - `None` if no recent events are found within this time frame.
-
-    """
-    recent_events = list(get_events(
-        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
-    ))
-    return recent_events[0]["id"] if recent_events else None
-
-test_update_sender = [
-    ("test.server.api"),
-]
-
-test_update_username = [
-    ("testing_user"),
-]
-
-test_update_status = [
-    ("pending"),
-    ("in_progress"),
-    ("finished"),
-    ("failed"),
-    ("aborted"),
-    ("restarted")
-]
-
-test_update_description = [
-    ("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce vivera."),
-    ("Updated description test...")
-]
-
-test_update_retries = [
-    (1),
-    (0),
-    (10),
-]
-
-@pytest.mark.parametrize("sender", test_update_sender)
-@pytest.mark.parametrize("username", test_update_username)
-@pytest.mark.parametrize("status", test_update_status)
-@pytest.mark.parametrize("description", test_update_description)
-@pytest.mark.parametrize("retries", test_update_retries)
+@pytest.mark.parametrize("sender", TestUpdateEventData.update_sender)
+@pytest.mark.parametrize("username", TestUpdateEventData.update_username)
+@pytest.mark.parametrize("status", TestUpdateEventData.update_status)
+@pytest.mark.parametrize(
+    "description",
+    TestUpdateEventData.update_description)
+@pytest.mark.parametrize("retries", TestUpdateEventData.update_retries)
 def test_update_event(
         event_id,
         sender,
@@ -812,8 +500,8 @@ def clean_up_events(topics=[TEST_SOURCE_TOPIC, TEST_TARGET_TOPIC]):
     interfere with the test setup or outcomes by marking them as 'finished'.
 
     """
-    events = list(get_events(topics=topics))
-    for event in events:
+    pending_events = list(get_events(topics=topics))
+    for event in pending_events:
         if event["status"] not in ["finished", "failed"]:
             update_event(event["id"], status="finished")
 
@@ -834,8 +522,20 @@ def create_test_events(num_of_events=DEFAULT_NUMBER_OF_EVENTS):
     ]
 
 
+@pytest.fixture
+def delete_events(topics=[TEST_SOURCE_TOPIC, TEST_TARGET_TOPIC]):
+    """Cleans up events from the specified topics after the test completes.
+    """
+    yield
+
+    for event in list(get_events(topics=topics)):
+        delete_event(event["id"])
+
+
 # clean_up should be below create_test to ensure it is called first
 # pytest probably does not guarantee the order of execution
+# delete_events is disabled for now - until new sever version
+# @pytest.mark.usefixtures("delete_events")
 @pytest.mark.usefixtures("create_test_events")
 @pytest.mark.usefixtures("clean_up_events")
 @pytest.mark.parametrize("sequential", test_sequential)
@@ -845,12 +545,12 @@ def test_enroll_event_job(sequential):
 
     Verifies:
         - When `sequential` is set to `True`, only one job can be enrolled at
-            a time, preventing new enrollments until the first job is closed or
-            updated.
+            a time, preventing new enrollments until the first job is closed
+            or updated.
         - When `sequential` is `False` or `None`, multiple jobs can be
             enrolled concurrently without conflicts.
-        - The `update_event` function updates the `status` of a job to allowing
-            next sequential job processing.
+        - The `update_event` function updates the `status` of a job to
+            allowing next sequential job processing.
 
     Notes:
         - `update_event` is used to set `job_1`'s status to "failed" to test
@@ -889,6 +589,10 @@ def test_enroll_event_job(sequential):
         and job_1 != job_2
 
 
+# disabled for now - until new sever version
+# delete_events is disabled for now - until new sever version
+# @pytest.mark.usefixtures("delete_events")
+@pytest.mark.usefixtures("create_test_events")
 @pytest.mark.usefixtures("clean_up_events")
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_failed(sequential):
@@ -898,8 +602,8 @@ def test_enroll_event_job_failed(sequential):
     Verifies:
         - `enroll_event_job` creates a job (`job_1`) with specified parameters
           `(`source_topic`, `target_topic`, `sender`, and `sequential`).
-        - After `job_1` fails (status set to "failed"), a new job (`job_2`) can
-            be enrolled with the same parameters.
+        - After `job_1` fails (status set to "failed"), a new job (`job_2`)
+            can be enrolled with the same parameters.
         - When `sequential` is `True`, the test verifies that `job_1` and
             `job_2` are identical, as a failed sequential job should not allow
             a new job to be enrolled separately.
@@ -931,6 +635,8 @@ def test_enroll_event_job_failed(sequential):
     assert sequential is not True or job_1 == job_2
 
 
+# delete_events is disabled for now - until new sever version
+# @pytest.mark.usefixtures("delete_events")
 @pytest.mark.usefixtures("clean_up_events")
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_same_sender(sequential):
@@ -941,8 +647,8 @@ def test_enroll_event_job_same_sender(sequential):
         - `enroll_event_job` creates a `job_1` and `job_2` with the same
             parameters (`source_topic`, `target_topic`, `sender`, and
             `sequential`).
-        - The test checks that `job_1` and `job_2` are identical, ensuring that
-            no duplicate jobs are created for the same sender.
+        - The test checks that `job_1` and `job_2` are identical, ensuring
+            that no duplicate jobs are created for the same sender.
 
     Notes:
         - TODO - delete events after test if possible
@@ -970,8 +676,11 @@ test_invalid_topic = [
     ("nonexisting_source_topic"),
 ]
 
+
+# delete_events is disabled for now - until new sever version
+# @pytest.mark.usefixtures("delete_events")
 @pytest.mark.usefixtures("clean_up_events")
-@pytest.mark.parametrize("topic", test_invalid_topics)
+@pytest.mark.parametrize("topic", TestInvalidEventFilters.topics)
 @pytest.mark.parametrize("sequential", test_sequential)
 def test_enroll_event_job_invalid_topic(topic, sequential):
     """Tests `enroll_event_job` behavior when provided with invalid topics.
@@ -1000,6 +709,8 @@ def test_enroll_event_job_invalid_topic(topic, sequential):
 
 # clean_up should be below create_test to ensure it is called first
 # pytest probably does not guarantee the order of execution
+# delete_events is disabled for now - until new sever version
+# @pytest.mark.usefixtures("delete_events")
 @pytest.mark.usefixtures("create_test_events")
 @pytest.mark.usefixtures("clean_up_events")
 def test_enroll_event_job_sequential_false():
@@ -1011,9 +722,9 @@ def test_enroll_event_job_sequential_false():
         - Each job has a unique `dependsOn` identifier
 
     Notes:
-        - The `depends_on_ids` set is used to track `dependsOn` identifiers and
-          verify that each job has a unique dependency state, as required for
-          concurrent processing.
+        - The `depends_on_ids` set is used to track `dependsOn` identifiers
+            and verify that each job has a unique dependency state, as
+            required for concurrent processing.
         - TODO - delete events after test if possible
 
     """
@@ -1047,15 +758,16 @@ def test_thumbnail_operations(
 
     Verifies:
         - A thumbnail is created for the project and associated with a folder.
-        - The thumbnail associated with the folder is correctly retrieved, with
-            attributes matching the project name and thumbnail ID.
+        - The thumbnail associated with the folder is correctly retrieved,
+            with attributes matching the project name and thumbnail ID.
         - The content of the retrieved thumbnail matches the expected image
             bytes read from the specified `thumbnail_path`.
 
     Notes:
         - `delete_project` is called initially to remove any pre-existing
             project with the same name, ensuring no conflicts during testing.
-        - At the end of the test, the project is deleted to clean up resources.
+        - At the end of the test, the project is deleted to clean up
+            resources.
 
     """
     if get_project(project_name):
@@ -1090,12 +802,12 @@ def test_addon_methods():
         - An addon with the specified name and version does not exist at the
             start.
         - Uploads an addon package `.zip` file and triggers a server restart.
-        - Ensures the server restart completes, and verifies the uploaded addon
-            is available in the list of addons after the restart.
+        - Ensures the server restart completes, and verifies the uploaded
+            addon is available in the list of addons after the restart.
         - Downloads a private file associated with the addon, verifying its
             existence and correct download location.
-        - Cleans up downloaded files and directories after the test to maintain
-            a clean state.
+        - Cleans up downloaded files and directories after the test to
+            maintain a clean state.
 
     Notes:
         - `time.sleep()` is used to allow for a brief pause for the server
@@ -1109,7 +821,7 @@ def test_addon_methods():
     download_path = "tests/resources/tmp_downloads"
     private_file_path = os.path.join(download_path, "ayon-symbol.png")
 
-    delete(f"/addons/{addon_name}/{addon_version}")
+    delete_addon_version(addon_name, addon_version)
     assert all(
         addon_name != addon["name"] for addon in get_addons_info()["addons"]
     )
@@ -1158,8 +870,8 @@ def api_artist_user():
         - Establishes a server API connection and retrieves the list
             of available access groups.
         - Configures a new user with limited permissions (`isAdmin` and
-            `isManager` set to `False`) and assigns all available access groups
-            as default and project-specific groups.
+            `isManager` set to `False`) and assigns all available access
+            groups as default and project-specific groups.
         - Creates a new API connection using the artist user's credentials
             (`username` and `password`) and logs in with it.
 

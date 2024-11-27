@@ -1775,14 +1775,6 @@ class BaseEntity(ABC):
     def _get_entity_by_id(self, entity_id):
         return self._entity_hub.get_entity_by_id(entity_id)
 
-    def get_name(self):
-        return self._name
-
-    def set_name(self, name):
-        self._name = name
-
-    name = property(get_name, set_name)
-
     def get_parent_id(self):
         """Parent entity id.
 
@@ -1972,7 +1964,17 @@ class BaseEntity(ABC):
             )
         return self._name
 
-    name = property(get_name)
+    def set_name(self, name):
+        if not self._supports_name:
+            raise NotImplementedError(
+                f"Name is not supported for '{self.entity_type}'."
+            )
+
+        if not isinstance(name, str):
+            raise TypeError("Name must be a string.")
+        self._name = name
+
+    name = property(get_name, set_name)
 
     def get_label(self) -> Optional[str]:
         if not self._supports_label:
@@ -3271,7 +3273,7 @@ class TaskEntity(BaseEntity):
         name (str): Name of entity.
         task_type (str): Type of task. Task type must be available in config
             of project task types.
-        parent_id (Union[str, None]): Id of parent entity.
+        folder_id (Union[str, None]): Parent folder id.
         label (Optional[str]): Task label.
         status (Optional[str]): Task status.
         tags (Optional[Iterable[str]]): Folder tags.
