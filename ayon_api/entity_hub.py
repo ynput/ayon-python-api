@@ -3288,8 +3288,6 @@ class TaskEntity(BaseEntity):
             value is defined based on value of 'entity_id'.
         entity_hub (EntityHub): Object of entity hub which created object of
             the entity.
-        parent_id (Union[str, None]): DEPRECATED please use 'folder_id'
-            instead.
 
     """
     _supports_name = True
