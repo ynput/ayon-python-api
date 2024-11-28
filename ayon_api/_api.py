@@ -874,13 +874,14 @@ def get_events(
     topics=None,
     event_ids=None,
     project_names=None,
-    states=None,
+    statuses=None,
     users=None,
     include_logs=None,
     has_children=None,
     newer_than=None,
     older_than=None,
     fields=None,
+    states=None,
 ):
     """Get events from server with filtering options.
 
@@ -892,7 +893,7 @@ def get_events(
         event_ids (Optional[Iterable[str]]): Event ids.
         project_names (Optional[Iterable[str]]): Project on which
             event happened.
-        states (Optional[Iterable[str]]): Filtering by states.
+        statuses (Optional[Iterable[str]]): Filtering by statuses.
         users (Optional[Iterable[str]]): Filtering by users
             who created/triggered an event.
         include_logs (Optional[bool]): Query also log events.
@@ -904,6 +905,8 @@ def get_events(
             iso datetime string.
         fields (Optional[Iterable[str]]): Fields that should be received
             for each event.
+        states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
+            Use 'statuses' instead.
 
     Returns:
         Generator[dict[str, Any]]: Available events matching filters.
@@ -914,13 +917,14 @@ def get_events(
         topics=topics,
         event_ids=event_ids,
         project_names=project_names,
-        states=states,
+        statuses=statuses,
         users=users,
         include_logs=include_logs,
         has_children=has_children,
         newer_than=newer_than,
         older_than=older_than,
         fields=fields,
+        states=states,
     )
 
 
