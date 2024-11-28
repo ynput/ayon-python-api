@@ -9,7 +9,7 @@ import pytest
 import ayon_api
 from ayon_api.entity_hub import EntityHub, UNKNOWN_VALUE
 
-from .conftest import project_entity_fixture
+from .conftest import project_entity_fixture, TestProductData
 
 
 def test_rename_status(project_entity_fixture):
@@ -41,15 +41,14 @@ def test_rename_status(project_entity_fixture):
 
 
 @pytest.mark.parametrize(
-    "folder_name, subfolder_name, folders_count",
+    "folder_name, folders_count",
     [
-        ("entity_hub_simple_test", "subfolder", 3),
+        ("entity_hub_simple_test", 3),
     ]
 )
 def test_simple_operations(
     project_entity_fixture,
     folder_name,
-    subfolder_name,
     folders_count
 ):
     """Test of simple operations with folders - create, move, delete.
@@ -506,7 +505,7 @@ def test_create_delete_with_duplicated_names(
     for folder_number in range(num_of_subfolders):
         subfolder = hub.add_new_folder(
             folder_type="Folder",
-            parent_id=folder1["id"],
+            parent_id=folder1.id,
             name=f"{subfolder_name}{folder_number:03}"
         )
         subfolders.append(subfolder)
@@ -515,18 +514,18 @@ def test_create_delete_with_duplicated_names(
         # create and delete folder with same name
         subfolder = hub.add_new_folder(
             folder_type="Folder",
-            parent_id=folder1["id"],
+            parent_id=folder1.id,
             name=f"{subfolder_name}{folder_number:03}"
         )
         hub.delete_entity(subfolder)
         hub.commit_changes()
 
-    assert hub.get_folder_by_id(project_name, folder1["id"]) is not None
+    assert hub.get_folder_by_id(project_name, folder1.id) is not None
 
     for subfolder in subfolders:
         assert hub.get_folder_by_id(
             project_name,
-            subfolder["id"]) is not None
+            subfolder.id) is not None
 
     # clean up
     hub.delete_entity(folder1)
@@ -758,142 +757,217 @@ def test_create_delete_with_duplicated_names(
 #     statuses = project_entity_fixture.get_statuses()
 #     pass
 
-test_names = [
-    ("test_name"),
-    ("test_123"),
-]
-
-test_product_types = [
-    ("animation"),
-    ("camera"),
-    ("render"),
-    ("workfile"),
-]
 
 
 @pytest.mark.usefixtures("clean_project")
-@pytest.mark.parametrize("folder_name", test_names)
-@pytest.mark.parametrize("product_name", test_names)
-@pytest.mark.parametrize("product_type", test_product_types)
+@pytest.mark.parametrize("folder_name", TestProductData.names)
+@pytest.mark.parametrize("product_name", TestProductData.names)
+@pytest.mark.parametrize("product_type", TestProductData.product_types)
 def test_create_delete_products(
     project_entity_fixture,
     folder_name,
     product_name,
     product_type
 ):
+    """
+    Test the creation and deletion of products within a project.
+
+    Verifies:
+        - the product is created and can be retrieved by its ID
+        - the product name, type, and folder ID are set correctly
+        - the product is deleted and cannot be retrieved by its ID
+    """
     project_name = project_entity_fixture["name"]
-    folder_type = project_entity_fixture["folderTypes"][0]["name"]
     hub = EntityHub(project_name)
 
-    for folder in ayon_api.get_folders(
-        project_name,
-        folder_names=[folder_name]
-    ):
-        # delete tasks
-        for task in ayon_api.get_tasks(
-            project_name,
-            folder_ids=[folder["id"]]
-        ):
-            hub.delete_entity(hub.get_task_by_id(task["id"]))
-
-        # delete products
-        for product in list(ayon_api.get_products(
-            project_name, folder_ids=[folder["id"]]
-        )):
-            product_entity = hub.get_product_by_id(product["id"])
-            hub.delete_entity(product_entity)
-
-        entity = hub.get_folder_by_id(folder["id"])
-        hub.delete_entity(entity)
+    for num, folder_type in enumerate(project_entity_fixture["folderTypes"]):
+        assert list(ayon_api.get_folders(
+            project_name=project_name, folder_names=[folder_name]
+        )) == []
+        folder = hub.add_new_folder(
+            name=f"{folder_name}{num:02}",
+            folder_type=folder_type["name"],
+        )
 
         hub.commit_changes()
 
-    folder = hub.add_new_folder(
-        folder_type=folder_type,
-        name=folder_name,
-    )
+        product = hub.add_new_product(
+            name=product_name,
+            product_type=product_type,
+            folder_id=folder.id
+        )
 
-    product = hub.add_new_product(
-        name=product_name,
-        product_type=product_type,
-        folder_id=folder["id"]
-    )
+        hub.commit_changes()
 
-    hub.commit_changes()
+        assert hub.get_product_by_id(product.id)
+        assert product.get_name() == product_name
+        assert product.get_product_type() == product_type
+        assert product.get_folder_id() == folder.id
 
-    assert hub.get_product_by_id(product["id"])
-    assert product.get_name() == product_name
-    assert product.get_product_type() == product_type
-    assert product.get_folder_id() == folder["id"]
+        hub.delete_entity(product)
+        hub.commit_changes()
 
-    # bonus test:
-    #   create new entity hub for same project and validate the changes
-    #   are propagated
-    hub = EntityHub(project_name)
-    product = hub.get_product_by_id(product["id"])
-    assert product.get_name() == product_name
-    assert product.get_product_type() == product_type
-    assert product.get_folder_id() == folder["id"]
+        assert hub.get_product_by_id(product.id) is None
+        assert ayon_api.get_product_by_id(project_name, product.id) is None
 
 
 @pytest.mark.usefixtures("clean_project")
-@pytest.mark.parametrize("name", test_names)
-def test_create_delete_folders(project_entity_fixture, name):
-    project_name = project_entity_fixture["name"]
-    folder_types = [
-        type["name"] for type in project_entity_fixture["folderTypes"]
-    ]
+@pytest.mark.parametrize("folder_name", TestProductData.names)
+@pytest.mark.parametrize("product_name", TestProductData.names)
+@pytest.mark.parametrize("product_type", TestProductData.product_types)
+def test_create_delete_products_bonus(
+    project_entity_fixture,
+    folder_name,
+    product_name,
+    product_type
+):
+    """
+    Test the creation and deletion of products within a project.
 
+    Verifies:
+        - the product is created and can be retrieved by its ID
+        - the product name, type, and folder ID are set correctly
+        - the product is deleted with a new EntityHub and cannot be retrieved 
+            by its ID
+    """
+    project_name = project_entity_fixture["name"]
     hub = EntityHub(project_name)
 
-    folder = hub.add_new_folder(
-        folder_type=folder_types[0],
-        name=name,
-    )
-
-    hub.commit_changes()
-
-    assert ayon_api.get_folders(
-        project_name,
-        folder_names=[name],
-        folder_types=folder_types[0:1],
-        folder_ids=[folder["id"]]
-    )
-
-    for folder in ayon_api.get_folders(
-        project_name,
-        folder_names=[name]
-    ):
-        # delete tasks
-        for task in ayon_api.get_tasks(
-            project_name,
-            folder_ids=[folder["id"]]
-        ):
-            hub.delete_entity(hub.get_task_by_id(task["id"]))
-
-        entity = hub.get_folder_by_id(folder["id"])
-
-        for id in entity.children_ids:
-            hub.delete_entity(hub.get_entity_by_id(id))
-
-        hub.delete_entity(entity)
+    products = []
+    for num, folder_type in enumerate(project_entity_fixture["folderTypes"]):
+        assert list(ayon_api.get_folders(
+            project_name=project_name, folder_names=[folder_name]
+        )) == []
+        folder = hub.add_new_folder(
+            name=f"{folder_name}{num:02}",
+            folder_type=folder_type["name"],
+        )
 
         hub.commit_changes()
 
-    # new folder
-    folder = hub.add_new_folder(
-        folder_type=folder_types[1],
-        name=name,
-    )
+        product = hub.add_new_product(
+            name=product_name,
+            product_type=product_type,
+            folder_id=folder.id
+        )
 
-    hub.commit_changes()
+        hub.commit_changes()
 
-    assert ayon_api.get_folders(
-        project_name,
-        folder_names=[name],
-        folder_types=folder_types[1:2],
-        folder_ids=[folder["id"]]
-    )
+        assert hub.get_product_by_id(product.id)
+        assert product.get_name() == product_name
+        assert product.get_product_type() == product_type
+        assert product.get_folder_id() == folder.id
+
+        products.append(product)
+
+    # create new entity hub for same project and validate the changes
+    # are propagated
+    new_hub = EntityHub(project_name)
+
+    for product in products:
+        new_product = new_hub.get_product_by_id(product.id)
+        assert new_product is not None
+        assert new_product.get_name() == product_name
+        assert new_product.get_product_type() == product_type
+
+        new_hub.delete_entity(new_product)
+        new_hub.commit_changes()
+
+        assert ayon_api.get_product_by_id(
+            project_name, new_product.id, fields={"id"}
+        ) is None
+        assert new_hub.get_product_by_id(new_product.id) is None
+
+
+@pytest.mark.usefixtures("clean_project")
+@pytest.mark.parametrize("name", TestProductData.names)
+def test_create_delete_folders(project_entity_fixture, name):
+    """Tests the creation and deletion of folders within a project.
+
+    Verifies:
+        - A folder can be successfully created for each folder type specified
+            in the project.
+        - The created folder exists both locally (in `hub`) and remotely (via
+            `ayon_api`) after committing changes.
+        - The folder can be deleted, and its deletion is confirmed locally
+            and remotely.
+
+    """
+    project_name = project_entity_fixture["name"]
+
+    hub = EntityHub(project_name)
+
+    for folder_type in project_entity_fixture["folderTypes"]:
+        folder = hub.add_new_folder(
+            folder_type=folder_type["name"],
+            name=name,
+        )
+
+        hub.commit_changes()
+
+        assert hub.get_folder_by_id(folder.id)
+        assert ayon_api.get_folder_by_id(
+            project_name, folder.id
+        )
+
+        hub.delete_entity(folder)
+        hub.commit_changes()
+
+        assert hub.get_folder_by_id(folder.id) is None
+        assert ayon_api.get_folder_by_id(
+            project_name, folder.id
+        ) is None
+
+
+@pytest.mark.usefixtures("clean_project")
+@pytest.mark.parametrize("name", TestProductData.names)
+def test_create_delete_folders_bonus(project_entity_fixture, name):
+    """Tests the creation, persistence, and deletion of multiple folders within
+    a project.
+
+    Verifies:
+        - After creation, folders are accessible locally (via `hub`) and
+            remotely (via `ayon_api`).
+        - Folder persistence is confirmed using a new `EntityHub` instance to
+            simulate a fresh session.
+        - Folders can be deleted, and their deletion is reflected both locally
+            and remotely.
+
+    """
+    project_name = project_entity_fixture["name"]
+
+    hub = EntityHub(project_name)
+
+    folders = []
+    for num, folder_type in enumerate(project_entity_fixture["folderTypes"]):
+        folder = hub.add_new_folder(
+            folder_type=folder_type["name"],
+            name=f"{name}{num:02}",
+        )
+
+        hub.commit_changes()
+
+        assert hub.get_folder_by_id(folder.id)
+        assert ayon_api.get_folder_by_id(
+            project_name, folder.id
+        )
+        folders.append(folder)
+
+    new_hub = EntityHub(project_name)
+
+    for folder in folders:
+        assert new_hub.get_folder_by_id(folder.id)
+        assert ayon_api.get_folder_by_id(
+            project_name, folder.id
+        )
+
+        new_hub.delete_entity(folder)
+        new_hub.commit_changes()
+
+        assert new_hub.get_folder_by_id(folder.id) is None
+        assert ayon_api.get_folder_by_id(
+            project_name, folder.id
+        ) is None
 
 
 test_version_numbers = [
@@ -905,11 +979,23 @@ test_version_numbers = [
 @pytest.mark.usefixtures("clean_project")
 @pytest.mark.parametrize("version_numbers", test_version_numbers)
 def test_create_delete_versions(project_entity_fixture, version_numbers):
+    """Tests the creation and deletion of versions within a product hierarchy.
+
+    Verifies:
+        - A folder and product can be created as a prerequisite hierarchy.
+        - Versions can be added to a product, with their IDs correctly
+            reflected in the product's children.
+        - Versions exist in the local `hub` after creation.
+        - Versions can be successfully deleted, and their removal is confirmed
+            both in the `hub` and in the product's children.
+
+    """
+    project_name = project_entity_fixture["name"]
     # prepare hierarchy
     folder_types = [
         type["name"] for type in project_entity_fixture["folderTypes"]
     ]
-    hub = EntityHub(project_entity_fixture["name"])
+    hub = EntityHub(project_name)
 
     folder = hub.add_new_folder(
         folder_type=folder_types[0],
@@ -919,7 +1005,7 @@ def test_create_delete_versions(project_entity_fixture, version_numbers):
     product = hub.add_new_product(
         name="test_product",
         product_type="animation",
-        folder_id=folder["id"]
+        folder_id=folder.id
     )
 
     assert product.get_children_ids() == set()
@@ -930,7 +1016,7 @@ def test_create_delete_versions(project_entity_fixture, version_numbers):
         versions.append(
             hub.add_new_version(
                 version,
-                product["id"]
+                product.id
             )
         )
 
@@ -940,16 +1026,15 @@ def test_create_delete_versions(project_entity_fixture, version_numbers):
 
     assert len(versions) == len(res)
     for version in versions:
-        assert version
-        assert hub.get_version_by_id(version["id"])
-        assert version["id"] in res
+        assert hub.get_version_by_id(version.id)
+        assert version.id in res
 
         # delete
-        hub.delete_entity(hub.get_version_by_id(version["id"]))
+        hub.delete_entity(version)
         hub.commit_changes()
 
-        assert hub.get_version_by_id(version["id"]) is None
-        # assert
+        assert hub.get_version_by_id(version.id) is None
+        assert ayon_api.get_version_by_id(project_name, version.id) is None
 
 
 test_invalid_version_number = [
@@ -1147,34 +1232,56 @@ test_icon = [
     ("done_outline"),
 ]
 
+test_color = [
+    ("#ff0000"),
+    ("#00ff00"),
+    ("#0000ff"),
+]
+
 
 @pytest.mark.parametrize("status_name", test_statuses)
 @pytest.mark.parametrize("icon_name", test_icon)
+@pytest.mark.parametrize("color", test_color)
 def test_status_definition_on_project(
     project_entity_fixture,
     status_name,
-    icon_name
+    icon_name,
+    color
 ):
     hub = EntityHub(project_entity_fixture["name"])
+    statuses = hub.project_entity.get_statuses()
 
-    project = hub.project_entity
-    project.get_statuses().create(
-        status_name,
-        icon_name
+    # create status
+    statuses.create(
+        name=status_name,
+        icon=icon_name,
+        color=color
     )
-    assert status_name == project.get_statuses().get(status_name).get_name()
-    assert icon_name == project.get_statuses().get(status_name).get_icon()
+    assert status_name == statuses.get(status_name).get_name()
+    assert icon_name == statuses.get(status_name).get_icon()
+    assert color == statuses.get(status_name).get_color()
 
-    # print(project.status)
-
-    # project.set_status()
-    # project_status_obj = hub.project_entity.get_statuses()
-    # project_status_obj.set_state()
-    # print(type(project_status_obj), project_status_obj)
+    # delete status
+    statuses.remove_by_name(status_name)
+    assert statuses.get(status_name) is None
 
 
-# definice status na projects
-# zmena statusu a tagu na entitach - verzich
-# vytvareni a mazani produktu a verzi
+def test_status_definition_on_project_with_invalid_values(project_entity_fixture):
+    hub = EntityHub(project_entity_fixture["name"])
+    statuses = hub.project_entity.get_statuses()
 
+    # invalid color
+    with pytest.raises(ValueError):
+        statuses.create(
+            name="status2",
+            icon="arrow_forward",
+            color="invalid_color"
+        )
 
+    # invalid name
+    with pytest.raises(ValueError):
+        statuses.create(
+            name="&_invalid_name",
+            icon="invalid_icon",
+            color="invalid_color"
+        )
