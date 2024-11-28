@@ -1455,17 +1455,17 @@ class ServerAPI(object):
 
     def get_events(
         self,
-        topics=None,
-        event_ids=None,
-        project_names=None,
-        statuses=None,
-        users=None,
-        include_logs=None,
-        has_children=None,
-        newer_than=None,
-        older_than=None,
-        fields=None,
-        states=None,
+        topics: Optional[Iterable[str]] = None,
+        event_ids: Optional[Iterable[str]] = None,
+        project_names: Optional[Iterable[str]] = None,
+        statuses: Optional[Iterable[str]] = None,
+        users: Optional[Iterable[str]] = None,
+        include_logs: Optional[bool] = None,
+        has_children: Optional[bool] = None,
+        newer_than: Optional[str] = None,
+        older_than: Optional[str] = None,
+        fields: Optional[Iterable[str]] = None,
+        states: Optional[Iterable[str]] = None,
     ):
         """Get events from server with filtering options.
 
