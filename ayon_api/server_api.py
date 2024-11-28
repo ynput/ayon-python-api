@@ -1458,13 +1458,14 @@ class ServerAPI(object):
         topics=None,
         event_ids=None,
         project_names=None,
-        states=None,
+        statuses=None,
         users=None,
         include_logs=None,
         has_children=None,
         newer_than=None,
         older_than=None,
-        fields=None
+        fields=None,
+        states=None,
     ):
         """Get events from server with filtering options.
 
@@ -1476,7 +1477,7 @@ class ServerAPI(object):
             event_ids (Optional[Iterable[str]]): Event ids.
             project_names (Optional[Iterable[str]]): Project on which
                 event happened.
-            states (Optional[Iterable[str]]): Filtering by states.
+            statuses (Optional[Iterable[str]]): Filtering by statuses.
             users (Optional[Iterable[str]]): Filtering by users
                 who created/triggered an event.
             include_logs (Optional[bool]): Query also log events.
@@ -1488,18 +1489,31 @@ class ServerAPI(object):
                 iso datetime string.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each event.
+            states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
+                Use 'statuses' instead.
 
         Returns:
             Generator[dict[str, Any]]: Available events matching filters.
 
         """
+        if statuses is None and states is not None:
+            warnings.warn(
+                (
+                    "Used deprecated argument 'states' in 'get_events'."
+                    " Use 'statuses' instead."
+                ),
+                DeprecationWarning
+            )
+            statuses = states
+
+
         filters = {}
         if not _prepare_list_filters(
             filters,
             ("eventTopics", topics),
             ("eventIds", event_ids),
             ("projectNames", project_names),
-            ("eventStates", states),
+            ("eventStatuses", statuses),
             ("eventUsers", users),
         ):
             return
@@ -1519,7 +1533,10 @@ class ServerAPI(object):
         if not fields:
             fields = self.get_default_fields_for_type("event")
 
-        query = events_graphql_query(set(fields))
+        major, minor, patch, _, _ = self.server_version_tuple
+        use_states = (major, minor, patch) <= (1, 5, 6)
+
+        query = events_graphql_query(set(fields), use_states)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
