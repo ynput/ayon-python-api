@@ -842,13 +842,15 @@ class ServerAPI(object):
             self._update_session_headers()
 
     @contextmanager
-    def as_username(self, username):
+    def as_username(self, username, ignore_service_error=False):
         """Service API will temporarily work as other user.
 
         This method can be used only if service API key is logged in.
 
         Args:
             username (Union[str, None]): Username to work as when service.
+            ignore_service_error (Optional[bool]): Ignore error when service
+                API key is not used.
 
         Raises:
             ValueError: When connection is not yet authenticated or api key
@@ -861,6 +863,9 @@ class ServerAPI(object):
             )
 
         if not self._access_token_is_service:
+            if ignore_service_error:
+                yield None
+                return
             raise ValueError(
                 "Can't set service username. API key is not a service token."
             )
