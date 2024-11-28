@@ -825,6 +825,8 @@ class EntityHub(object):
         parent = self._entities_by_id.get(parent_id)
         if parent is not None:
             parent.remove_child(entity.id)
+        else:
+            self.unset_entity_parent(entity.id, parent_id)
 
     def reset_immutable_for_hierarchy_cache(
         self, entity_id: Optional[str], bottom_to_top: Optional[bool] = True
