@@ -1216,8 +1216,8 @@ def test_set_tag_on_version(project_entity_fixture, tags):
         assert tag in version.get_tags()
 
 
-def test_set_invalid_tag_on_version():
-    raise NotImplementedError()
+# def test_set_invalid_tag_on_version():
+#     raise NotImplementedError()
 
 
 test_statuses = [
