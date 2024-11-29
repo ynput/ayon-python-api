@@ -1466,9 +1466,9 @@ class ServerAPI(object):
         newer_than: Optional[str] = None,
         older_than: Optional[str] = None,
         fields: Optional[Iterable[str]] = None,
-        states: Optional[Iterable[str]] = None,
         limit: Optional[int] = None,
         order: Optional[SortOrder] = None,
+        states: Optional[Iterable[str]] = None,
     ):
         """Get events from server with filtering options.
 
@@ -1492,12 +1492,12 @@ class ServerAPI(object):
                 iso datetime string.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each event.
+            limit (Optional[int]): Limit number of events to be fetched.
+            order (Optional[SortOrder]): Order events in ascending
+                or descending order. It is recommended to set 'limit'
+                when used descending.
             states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
                 Use 'statuses' instead.
-            limit (Optional[int]): Limit number of events to be fetched.
-            order (Optional[SortOrder]): Order activities in ascending
-                or descending order. It is recommended to set 'limit'
-                when used.
 
         Returns:
             Generator[dict[str, Any]]: Available events matching filters.
@@ -1856,7 +1856,7 @@ class ServerAPI(object):
             limit (Optional[int]): Limit number of activities to be fetched.
             order (Optional[SortOrder]): Order activities in ascending
                 or descending order. It is recommended to set 'limit'
-                when used.
+                when used descending.
 
         Returns:
             Generator[dict[str, Any]]: Available activities matching filters.
