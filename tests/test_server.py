@@ -340,7 +340,7 @@ def test_get_events_invalid_data(
     res = list(get_events(
         topics=topics,
         project_names=project_names,
-        states=states,
+        statuses=states,
         users=users,
         newer_than=newer_than
     ))
