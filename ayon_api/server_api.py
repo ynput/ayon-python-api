@@ -5486,7 +5486,7 @@ class ServerAPI(object):
             **create_data
         )
         response.raise_for_status()
-        return folder_id
+        return task_id
 
     def update_task(
         self,
