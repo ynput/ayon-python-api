@@ -22,6 +22,7 @@ from .server_api import ServerAPI, _PLACEHOLDER
 from .exceptions import FailedServiceInit
 from .utils import (
     NOT_SET,
+    SortOrder,
     get_default_settings_variant as _get_default_settings_variant,
 )
 
@@ -882,7 +883,7 @@ def get_events(
     older_than: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
     limit: Optional[int] = None,
-    order: "Optional[ayon_api.utils.SortOrder]" = None,
+    order: Optional[SortOrder] = None,
     states: Optional[Iterable[str]] = None,
 ):
     """Get events from server with filtering options.
@@ -1149,7 +1150,7 @@ def get_activities(
     reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
     fields: Optional[Iterable[str]] = None,
     limit: Optional[int] = None,
-    order: "Optional[ayon_api.utils.SortOrder]" = None,
+    order: Optional[SortOrder] = None,
 ) -> Generator[Dict[str, Any], None, None]:
     """Get activities from server with filtering options.
 
