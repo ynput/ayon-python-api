@@ -570,23 +570,26 @@ def workfiles_info_graphql_query(fields):
     return query
 
 
-def events_graphql_query(fields):
+def events_graphql_query(fields, use_states=False):
     query = GraphQlQuery("Events")
     topics_var = query.add_variable("eventTopics", "[String!]")
     ids_var = query.add_variable("eventIds", "[String!]")
     projects_var = query.add_variable("projectNames", "[String!]")
-    states_var = query.add_variable("eventStates", "[String!]")
+    statuses_var = query.add_variable("eventStatuses", "[String!]")
     users_var = query.add_variable("eventUsers", "[String!]")
     include_logs_var = query.add_variable("includeLogsFilter", "Boolean!")
     has_children_var = query.add_variable("hasChildrenFilter", "Boolean!")
     newer_than_var = query.add_variable("newerThanFilter", "String!")
     older_than_var = query.add_variable("olderThanFilter", "String!")
 
+    statuses_filter_name = "statuses"
+    if use_states:
+        statuses_filter_name = "states"
     events_field = query.add_field_with_edges("events")
     events_field.set_filter("ids", ids_var)
     events_field.set_filter("topics", topics_var)
     events_field.set_filter("projects", projects_var)
-    events_field.set_filter("states", states_var)
+    events_field.set_filter(statuses_filter_name, statuses_var)
     events_field.set_filter("users", users_var)
     events_field.set_filter("includeLogs", include_logs_var)
     events_field.set_filter("hasChildren", has_children_var)
