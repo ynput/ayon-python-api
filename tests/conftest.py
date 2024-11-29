@@ -7,6 +7,7 @@ from ayon_api import (
     create_project,
     update_project,
     delete_project,
+    get_events,
     get_folders,
     get_products,
     get_tasks
@@ -76,10 +77,10 @@ def clean_project(project_name_fixture):
         project_name_fixture
     ):
         # delete tasks
-        for task in get_tasks(
+        for task in list(get_tasks(
             project_name_fixture,
             folder_ids=[folder["id"]]
-        ):
+        )):
             hub.delete_entity(hub.get_task_by_id(task["id"]))
 
         # delete products
@@ -90,9 +91,41 @@ def clean_project(project_name_fixture):
             hub.delete_entity(product_entity)
 
         entity = hub.get_folder_by_id(folder["id"])
-        hub.delete_entity(entity)
+        if not entity:
+            continue
 
+        hub.delete_entity(entity)
         hub.commit_changes()
+
+
+@pytest.fixture(params=[3, 4, 5])
+def event_ids(request):
+    length = request.param
+    if length == 0:
+        return None
+
+    recent_events = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    ))
+
+    return [recent_event["id"] for recent_event in recent_events[:length]]
+
+
+@pytest.fixture
+def event_id():
+    """Fixture that retrieves the ID of a recent event created within
+    the last 5 days.
+
+    Returns:
+        - The event ID of the most recent event within the last 5 days
+          if available.
+        - `None` if no recent events are found within this time frame.
+
+    """
+    recent_events = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    ))
+    return recent_events[0]["id"] if recent_events else None
 
 
 class TestEventFilters:
@@ -247,4 +280,18 @@ class TestUpdateEventData:
         (1),
         (0),
         (10),
+    ]
+
+
+class TestProductData:
+    names = [
+        ("test_name"),
+        ("test_123"),
+    ]
+
+    product_types = [
+        ("animation"),
+        ("camera"),
+        ("render"),
+        ("workfile"),
     ]
