@@ -71,30 +71,42 @@ def project_entity_fixture(project_name_fixture):
 @pytest.fixture
 def clean_project(project_name_fixture):
     hub = EntityHub(project_name_fixture)
+    hub.fetch_hierarchy_entities()
 
-    for folder in get_folders(
-        project_name_fixture
-    ):
-        # delete tasks
-        for task in list(get_tasks(
-            project_name_fixture,
-            folder_ids=[folder["id"]]
-        )):
-            hub.delete_entity(hub.get_task_by_id(task["id"]))
+    folder_ids = {
+        folder["id"]
+        for folder in get_folders(project_name_fixture, fields={"id"})
+    }
+    task_ids = {
+        task["id"]
+        for task in get_tasks(
+            project_name_fixture, folder_ids=folder_ids, fields={"id"}
+        )
+    }
+    product_ids = {
+        product["id"]
+        for product in get_products(
+            project_name_fixture, folder_ids=folder_ids, fields={"id"}
+        )
+    }
+    for product_id in product_ids:
+        product = hub.get_product_by_id(product_id)
+        if product is not None:
+            hub.delete_entity(product)
 
-        # delete products
-        for product in list(get_products(
-            project_name_fixture, folder_ids=[folder["id"]]
-        )):
-            product_entity = hub.get_product_by_id(product["id"])
-            hub.delete_entity(product_entity)
+    for task_id in task_ids:
+        task = hub.get_task_by_id(task_id)
+        if task is not None:
+            hub.delete_entity(task)
 
-        entity = hub.get_folder_by_id(folder["id"])
-        if not entity:
-            continue
+    hub.commit_changes()
 
-        hub.delete_entity(entity)
-        hub.commit_changes()
+    for folder_id in folder_ids:
+        folder = hub.get_folder_by_id(folder_id)
+        if folder is not None:
+            hub.delete_entity(folder)
+
+    hub.commit_changes()
 
 
 @pytest.fixture(params=[3, 4, 5])
