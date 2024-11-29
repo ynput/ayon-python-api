@@ -1,8 +1,10 @@
 import copy
 import numbers
 from abc import ABC, abstractmethod
+from typing import Optional, Iterable
 
 from .exceptions import GraphQlQueryFailed
+from .utils import SortOrder
 
 FIELD_VALUE = object()
 
@@ -76,11 +78,12 @@ class GraphQlQuery:
     """
     offset = 2
 
-    def __init__(self, name):
+    def __init__(self, name, order=None):
         self._name = name
         self._variables = {}
         self._children = []
         self._has_multiple_edge_fields = None
+        self._order = SortOrder.parse_value(order, SortOrder.ascending)
 
     @property
     def indent(self):
@@ -247,7 +250,7 @@ class GraphQlQuery:
             GraphQlQueryEdgeField: Created field object.
 
         """
-        item = GraphQlQueryEdgeField(name, self)
+        item = GraphQlQueryEdgeField(name, self, self._order)
         self.add_obj_field(item)
         return item
 
@@ -261,9 +264,27 @@ class GraphQlQuery:
             GraphQlQueryField: Created field object.
 
         """
-        item = GraphQlQueryField(name, self)
+        item = GraphQlQueryField(name, self, self._order)
         self.add_obj_field(item)
         return item
+
+    def get_field_by_keys(
+        self, keys: Iterable[str]
+    ) -> Optional["BaseGraphQlQueryField"]:
+        keys = list(keys)
+        if not keys:
+            return None
+
+        key = keys.pop(0)
+        for child in self._children:
+            if child.name == key:
+                return child.get_field_by_keys(keys)
+        return None
+
+    def get_field_by_path(
+        self, path: str
+    ) -> Optional["BaseGraphQlQueryField"]:
+        return self.get_field_by_keys(path.split("/"))
 
     def calculate_query(self):
         """Calculate query string which is sent to server.
@@ -393,7 +414,7 @@ class BaseGraphQlQueryField(ABC):
             field.
 
     """
-    def __init__(self, name, parent):
+    def __init__(self, name, parent, order):
         if isinstance(parent, GraphQlQuery):
             query_item = parent
         else:
@@ -412,8 +433,48 @@ class BaseGraphQlQueryField(ABC):
 
         self._path = None
 
+        self._limit = None
+        self._order = order
+        self._fetched_counter = 0
+
     def __repr__(self):
         return "<{} {}>".format(self.__class__.__name__, self.path)
+
+    def get_name(self) -> str:
+        return self._name
+
+    name = property(get_name)
+
+    def get_field_by_keys(self, keys: Iterable[str]):
+        keys = list(keys)
+        if not keys:
+            return self
+
+        key = keys.pop(0)
+        for child in self._children:
+            if child.name == key:
+                return child.get_field_by_keys(keys)
+        return None
+
+    def set_limit(self, limit: Optional[int]):
+        self._limit = limit
+
+    def set_order(self, order):
+        order = SortOrder.parse_value(order)
+        if order is None:
+            raise ValueError(
+                f"Got invalid value {order}."
+                f" Expected {SortOrder.ascending} or {SortOrder.descending}"
+            )
+        self._order = order
+
+    def set_ascending_order(self, enabled=True):
+        self.set_order(
+            SortOrder.ascending if enabled else SortOrder.descending
+        )
+
+    def set_descending_order(self, enabled=True):
+        self.set_ascending_order(not enabled)
 
     def add_variable(self, key, value_type, value=None):
         """Add variable to query.
@@ -575,12 +636,12 @@ class BaseGraphQlQueryField(ABC):
         field.set_parent(self)
 
     def add_field_with_edges(self, name):
-        item = GraphQlQueryEdgeField(name, self)
+        item = GraphQlQueryEdgeField(name, self, self._order)
         self.add_obj_field(item)
         return item
 
     def add_field(self, name):
-        item = GraphQlQueryField(name, self)
+        item = GraphQlQueryField(name, self, self._order)
         self.add_obj_field(item)
         return item
 
@@ -728,7 +789,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
     has_edges = True
 
     def __init__(self, *args, **kwargs):
-        super(GraphQlQueryEdgeField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._cursor = None
         self._edge_children = []
 
@@ -738,7 +799,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         return self.indent + offset
 
     def _children_iter(self):
-        for child in super(GraphQlQueryEdgeField, self)._children_iter():
+        for child in super()._children_iter():
             yield child
 
         for child in self._edge_children:
@@ -748,7 +809,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         if field in self._edge_children:
             return
 
-        super(GraphQlQueryEdgeField, self).add_obj_field(field)
+        super().add_obj_field(field)
 
     def add_obj_edge_field(self, field):
         if field in self._edge_children or field in self._children:
@@ -758,7 +819,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         field.set_parent(self)
 
     def add_edge_field(self, name):
-        item = GraphQlQueryField(name, self)
+        item = GraphQlQueryField(name, self, self._order)
         self.add_obj_edge_field(item)
         return item
 
@@ -767,7 +828,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         self._cursor = None
         self._need_query = True
 
-        super(GraphQlQueryEdgeField, self).reset_cursor()
+        super().reset_cursor()
 
     def parse_result(self, data, output, progress_data):
         if not isinstance(data, dict):
@@ -804,6 +865,10 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         if not edges:
             self._fake_children_parse()
 
+        self._fetched_counter += len(edges)
+        if self._limit and self._fetched_counter >= self._limit:
+            self._need_query = False
+
         for edge in edges:
             if not handle_cursors:
                 edge_value = {}
@@ -839,9 +904,19 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         return "{}/__cursor__".format(self.path)
 
     def get_filters(self):
-        filters = super(GraphQlQueryEdgeField, self).get_filters()
+        filters = super().get_filters()
+        limit_key = "first"
+        if self._order == SortOrder.descending:
+            limit_key = "last"
 
-        filters["first"] = 300
+        limit_amount = 300
+        if self._limit:
+            total = self._fetched_counter + limit_amount
+            if total > self._limit:
+                limit_amount = self._limit - self._fetched_counter
+
+        filters[limit_key] = limit_amount
+
         if self._cursor:
             filters["after"] = self._cursor
         return filters
