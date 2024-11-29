@@ -842,13 +842,15 @@ class ServerAPI(object):
             self._update_session_headers()
 
     @contextmanager
-    def as_username(self, username):
+    def as_username(self, username, ignore_service_error=False):
         """Service API will temporarily work as other user.
 
         This method can be used only if service API key is logged in.
 
         Args:
             username (Union[str, None]): Username to work as when service.
+            ignore_service_error (Optional[bool]): Ignore error when service
+                API key is not used.
 
         Raises:
             ValueError: When connection is not yet authenticated or api key
@@ -861,6 +863,9 @@ class ServerAPI(object):
             )
 
         if not self._access_token_is_service:
+            if ignore_service_error:
+                yield None
+                return
             raise ValueError(
                 "Can't set service username. API key is not a service token."
             )
@@ -1450,16 +1455,17 @@ class ServerAPI(object):
 
     def get_events(
         self,
-        topics=None,
-        event_ids=None,
-        project_names=None,
-        states=None,
-        users=None,
-        include_logs=None,
-        has_children=None,
-        newer_than=None,
-        older_than=None,
-        fields=None
+        topics: Optional[Iterable[str]] = None,
+        event_ids: Optional[Iterable[str]] = None,
+        project_names: Optional[Iterable[str]] = None,
+        statuses: Optional[Iterable[str]] = None,
+        users: Optional[Iterable[str]] = None,
+        include_logs: Optional[bool] = None,
+        has_children: Optional[bool] = None,
+        newer_than: Optional[str] = None,
+        older_than: Optional[str] = None,
+        fields: Optional[Iterable[str]] = None,
+        states: Optional[Iterable[str]] = None,
     ):
         """Get events from server with filtering options.
 
@@ -1471,7 +1477,7 @@ class ServerAPI(object):
             event_ids (Optional[Iterable[str]]): Event ids.
             project_names (Optional[Iterable[str]]): Project on which
                 event happened.
-            states (Optional[Iterable[str]]): Filtering by states.
+            statuses (Optional[Iterable[str]]): Filtering by statuses.
             users (Optional[Iterable[str]]): Filtering by users
                 who created/triggered an event.
             include_logs (Optional[bool]): Query also log events.
@@ -1483,18 +1489,31 @@ class ServerAPI(object):
                 iso datetime string.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each event.
+            states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
+                Use 'statuses' instead.
 
         Returns:
             Generator[dict[str, Any]]: Available events matching filters.
 
         """
+        if statuses is None and states is not None:
+            warnings.warn(
+                (
+                    "Used deprecated argument 'states' in 'get_events'."
+                    " Use 'statuses' instead."
+                ),
+                DeprecationWarning
+            )
+            statuses = states
+
+
         filters = {}
         if not _prepare_list_filters(
             filters,
             ("eventTopics", topics),
             ("eventIds", event_ids),
             ("projectNames", project_names),
-            ("eventStates", states),
+            ("eventStatuses", statuses),
             ("eventUsers", users),
         ):
             return
@@ -1514,7 +1533,10 @@ class ServerAPI(object):
         if not fields:
             fields = self.get_default_fields_for_type("event")
 
-        query = events_graphql_query(set(fields))
+        major, minor, patch, _, _ = self.server_version_tuple
+        use_states = (major, minor, patch) <= (1, 5, 6)
+
+        query = events_graphql_query(set(fields), use_states)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
@@ -5464,7 +5486,7 @@ class ServerAPI(object):
             **create_data
         )
         response.raise_for_status()
-        return folder_id
+        return task_id
 
     def update_task(
         self,
