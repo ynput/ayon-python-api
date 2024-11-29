@@ -881,6 +881,8 @@ def get_events(
     newer_than: Optional[str] = None,
     older_than: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
+    limit: Optional[int] = None,
+    order: "Optional[ayon_api.utils.SortOrder]" = None,
     states: Optional[Iterable[str]] = None,
 ):
     """Get events from server with filtering options.
@@ -905,6 +907,10 @@ def get_events(
             iso datetime string.
         fields (Optional[Iterable[str]]): Fields that should be received
             for each event.
+        limit (Optional[int]): Limit number of events to be fetched.
+        order (Optional[SortOrder]): Order events in ascending
+            or descending order. It is recommended to set 'limit'
+            when used descending.
         states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
             Use 'statuses' instead.
 
@@ -924,6 +930,8 @@ def get_events(
         newer_than=newer_than,
         older_than=older_than,
         fields=fields,
+        limit=limit,
+        order=order,
         states=states,
     )
 
@@ -1140,6 +1148,8 @@ def get_activities(
     changed_before: Optional[str] = None,
     reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
     fields: Optional[Iterable[str]] = None,
+    limit: Optional[int] = None,
+    order: "Optional[ayon_api.utils.SortOrder]" = None,
 ) -> Generator[Dict[str, Any], None, None]:
     """Get activities from server with filtering options.
 
@@ -1158,6 +1168,10 @@ def get_activities(
             Reference types filter. Defaults to `['origin']`.
         fields (Optional[Iterable[str]]): Fields that should be received
             for each activity.
+        limit (Optional[int]): Limit number of activities to be fetched.
+        order (Optional[SortOrder]): Order activities in ascending
+            or descending order. It is recommended to set 'limit'
+            when used descending.
 
     Returns:
         Generator[dict[str, Any]]: Available activities matching filters.
@@ -1175,6 +1189,8 @@ def get_activities(
         changed_before=changed_before,
         reference_types=reference_types,
         fields=fields,
+        limit=limit,
+        order=order,
     )
 
 
