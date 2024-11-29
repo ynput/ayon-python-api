@@ -570,8 +570,8 @@ def workfiles_info_graphql_query(fields):
     return query
 
 
-def events_graphql_query(fields, use_states=False):
-    query = GraphQlQuery("Events")
+def events_graphql_query(fields, order, use_states=False):
+    query = GraphQlQuery("Events", order=order)
     topics_var = query.add_variable("eventTopics", "[String!]")
     ids_var = query.add_variable("eventIds", "[String!]")
     projects_var = query.add_variable("projectNames", "[String!]")
@@ -581,6 +581,8 @@ def events_graphql_query(fields, use_states=False):
     has_children_var = query.add_variable("hasChildrenFilter", "Boolean!")
     newer_than_var = query.add_variable("newerThanFilter", "String!")
     older_than_var = query.add_variable("olderThanFilter", "String!")
+    first_var = query.add_variable("firstFilter", "Int")
+    last_var = query.add_variable("lastFilter", "Int")
 
     statuses_filter_name = "statuses"
     if use_states:
@@ -595,6 +597,8 @@ def events_graphql_query(fields, use_states=False):
     events_field.set_filter("hasChildren", has_children_var)
     events_field.set_filter("newerThan", newer_than_var)
     events_field.set_filter("olderThan", older_than_var)
+    events_field.set_filter("first", first_var)
+    events_field.set_filter("last", last_var)
 
     nested_fields = fields_to_dict(set(fields))
 
@@ -641,8 +645,8 @@ def users_graphql_query(fields):
     return query
 
 
-def activities_graphql_query(fields):
-    query = GraphQlQuery("Activities")
+def activities_graphql_query(fields, order):
+    query = GraphQlQuery("Activities", order=order)
     project_name_var = query.add_variable("projectName", "String!")
     activity_ids_var = query.add_variable("activityIds", "[String!]")
     activity_types_var = query.add_variable("activityTypes", "[String!]")
