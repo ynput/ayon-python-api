@@ -1266,7 +1266,9 @@ def test_status_definition_on_project(
     assert statuses.get(status_name) is None
 
 
-def test_status_definition_on_project_with_invalid_values(project_entity_fixture):
+def test_status_definition_on_project_with_invalid_values(
+        project_entity_fixture
+):
     hub = EntityHub(project_entity_fixture["name"])
     statuses = hub.project_entity.get_statuses()
 
