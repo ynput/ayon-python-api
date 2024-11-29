@@ -96,6 +96,7 @@ from .utils import (
     get_default_site_id,
     NOT_SET,
     get_media_mime_type,
+    SortOrder,
 )
 
 if typing.TYPE_CHECKING:
@@ -1466,6 +1467,8 @@ class ServerAPI(object):
         older_than: Optional[str] = None,
         fields: Optional[Iterable[str]] = None,
         states: Optional[Iterable[str]] = None,
+        limit: Optional[int] = None,
+        order: Optional[SortOrder] = None,
     ):
         """Get events from server with filtering options.
 
@@ -1491,6 +1494,10 @@ class ServerAPI(object):
                 for each event.
             states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
                 Use 'statuses' instead.
+            limit (Optional[int]): Limit number of events to be fetched.
+            order (Optional[SortOrder]): Order activities in ascending
+                or descending order. It is recommended to set 'limit'
+                when used.
 
         Returns:
             Generator[dict[str, Any]]: Available events matching filters.
@@ -1536,9 +1543,13 @@ class ServerAPI(object):
         major, minor, patch, _, _ = self.server_version_tuple
         use_states = (major, minor, patch) <= (1, 5, 6)
 
-        query = events_graphql_query(set(fields), use_states)
+        query = events_graphql_query(set(fields), order, use_states)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
+
+        if limit:
+            events_field = query.get_field_by_path("events")
+            events_field.set_limit(limit)
 
         for parsed_data in query.continuous_query(self):
             for event in parsed_data["events"]:
@@ -1822,6 +1833,8 @@ class ServerAPI(object):
         changed_before: Optional[str] = None,
         reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
         fields: Optional[Iterable[str]] = None,
+        limit: Optional[int] = None,
+        order: Optional[SortOrder] = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """Get activities from server with filtering options.
 
@@ -1840,6 +1853,10 @@ class ServerAPI(object):
                 Reference types filter. Defaults to `['origin']`.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each activity.
+            limit (Optional[int]): Limit number of activities to be fetched.
+            order (Optional[SortOrder]): Order activities in ascending
+                or descending order. It is recommended to set 'limit'
+                when used.
 
         Returns:
             Generator[dict[str, Any]]: Available activities matching filters.
@@ -1874,9 +1891,13 @@ class ServerAPI(object):
         if not fields:
             fields = self.get_default_fields_for_type("activity")
 
-        query = activities_graphql_query(set(fields))
+        query = activities_graphql_query(set(fields), order)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
+
+        if limit:
+            activities_field = query.get_field_by_path("activities")
+            activities_field.set_limit(limit)
 
         for parsed_data in query.continuous_query(self):
             for activity in parsed_data["project"]["activities"]:
