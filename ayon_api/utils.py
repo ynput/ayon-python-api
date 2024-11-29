@@ -7,6 +7,7 @@ import platform
 import collections
 from urllib.parse import urlparse, urlencode
 from typing import Optional, Dict, Any
+from enum import IntEnum
 
 import requests
 import unidecode
@@ -39,6 +40,20 @@ RepresentationHierarchy = collections.namedtuple(
         "representation",
     )
 )
+
+
+class SortOrder(IntEnum):
+    """Sort order for GraphQl requests."""
+    ascending = 0
+    descending = 1
+
+    @classmethod
+    def parse_value(cls, value, default=None):
+        if value in (cls.ascending, "ascending", "asc"):
+            return cls.ascending
+        if value in (cls.descending, "descending", "desc"):
+            return cls.descending
+        return default
 
 
 def get_default_timeout():

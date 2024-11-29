@@ -570,8 +570,8 @@ def workfiles_info_graphql_query(fields):
     return query
 
 
-def events_graphql_query(fields, use_states=False):
-    query = GraphQlQuery("Events")
+def events_graphql_query(fields, order, use_states=False):
+    query = GraphQlQuery("Events", order=order)
     topics_var = query.add_variable("eventTopics", "[String!]")
     ids_var = query.add_variable("eventIds", "[String!]")
     projects_var = query.add_variable("projectNames", "[String!]")
@@ -641,8 +641,8 @@ def users_graphql_query(fields):
     return query
 
 
-def activities_graphql_query(fields):
-    query = GraphQlQuery("Activities")
+def activities_graphql_query(fields, order):
+    query = GraphQlQuery("Activities", order=order)
     project_name_var = query.add_variable("projectName", "String!")
     activity_ids_var = query.add_variable("activityIds", "[String!]")
     activity_types_var = query.add_variable("activityTypes", "[String!]")

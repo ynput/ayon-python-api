@@ -9,6 +9,7 @@ from .utils import (
     login_to_server,
     take_web_action_event,
     abort_web_action_event,
+    SortOrder,
 )
 from .server_api import (
     RequestTypes,
@@ -255,6 +256,7 @@ __all__ = (
     "login_to_server",
     "take_web_action_event",
     "abort_web_action_event",
+    "SortOrder",
 
     "RequestTypes",
     "ServerAPI",
