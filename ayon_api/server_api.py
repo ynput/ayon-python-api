@@ -1799,7 +1799,7 @@ class ServerAPI(object):
         ):
             kwargs["ignoreOlderThan"] = ignore_older_than
         if ignore_sender_types is not None:
-            if (major, minor, patch) > (1, 5, 4):
+            if (major, minor, patch) <= (1, 5, 4):
                 raise ValueError(
                     "Ignore sender types are not supported for"
                     f" your version of server {self.server_version}."
