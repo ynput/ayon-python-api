@@ -10,24 +10,57 @@ automatically, and changing them manually can cause issues.
 """
 
 import os
+import io
 import socket
 import typing
-from typing import Optional, List, Dict, Iterable, Generator, Any
+from typing import Optional, Set, List, Tuple, Dict, Iterable, Generator, Any
+import requests
 
 from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_API_ENV_KEY,
 )
-from .server_api import ServerAPI, _PLACEHOLDER
+from .server_api import (
+    ServerAPI,
+    RequestType,
+    GraphQlResponse,
+    _PLACEHOLDER,
+)
 from .exceptions import FailedServiceInit
 from .utils import (
     NOT_SET,
     SortOrder,
+    TransferProgress,
     get_default_settings_variant as _get_default_settings_variant,
 )
 
 if typing.TYPE_CHECKING:
-    from ._typing import ActivityType, ActivityReferenceType
+    from typing import Union
+    from ._typing import (
+        ActivityType,
+        ActivityReferenceType,
+        EventFilter,
+        AttributeScope,
+        AttributeSchemaDataDict,
+        AttributeSchemaDict,
+        AttributesSchemaDict,
+        AddonsInfoDict,
+        InstallersInfoDict,
+        DependencyPackagesDict,
+        DevBundleAddonInfoDict,
+        BundlesInfoDict,
+        AnatomyPresetDict,
+        SecretDict,
+        AnyEntity,
+        ProjectEntity,
+        FolderEntity,
+        TaskEntity,
+        ProductEntity,
+        VersionEntity,
+        RepresentationEntity,
+        FlatFolderEntity,
+        ProjectHierarchyDict,
+    )
 
 
 class GlobalServerAPI(ServerAPI):
@@ -418,7 +451,7 @@ def set_cert(
     )
 
 
-def get_timeout():
+def get_timeout() -> float:
     """Current value for requests timeout.
 
     Returns:
@@ -430,12 +463,12 @@ def get_timeout():
 
 
 def set_timeout(
-    timeout,
+    timeout: Optional[float],
 ):
     """Change timeout value for requests.
 
     Args:
-        timeout (Union[float, None]): Timeout value in seconds.
+        timeout (Optional[float]): Timeout value in seconds.
 
     """
     con = get_server_api_connection()
@@ -444,7 +477,7 @@ def set_timeout(
     )
 
 
-def get_max_retries():
+def get_max_retries() -> int:
     """Current value for requests max retries.
 
     Returns:
@@ -456,12 +489,12 @@ def get_max_retries():
 
 
 def set_max_retries(
-    max_retries,
+    max_retries: Optional[int],
 ):
     """Change max retries value for requests.
 
     Args:
-        max_retries (Union[int, None]): Max retries value.
+        max_retries (Optional[int]): Max retries value.
 
     """
     con = get_server_api_connection()
@@ -470,7 +503,7 @@ def set_max_retries(
     )
 
 
-def is_service_user():
+def is_service_user() -> bool:
     """Check if connection is using service API key.
 
     Returns:
@@ -481,14 +514,14 @@ def is_service_user():
     return con.is_service_user()
 
 
-def get_site_id():
+def get_site_id() -> Optional[str]:
     """Site id used for connection.
 
     Site id tells server from which machine/site is connection created and
     is used for default site overrides when settings are received.
 
     Returns:
-        Union[str, None]: Site id value or None if not filled.
+        Optional[str]: Site id value or None if not filled.
 
     """
     con = get_server_api_connection()
@@ -496,7 +529,7 @@ def get_site_id():
 
 
 def set_site_id(
-    site_id,
+    site_id: Optional[str],
 ):
     """Change site id of connection.
 
@@ -504,7 +537,7 @@ def set_site_id(
     settings getter methods.
 
     Args:
-        site_id (Union[str, None]): Site id value, or 'None' to unset.
+        site_id (Optional[str]): Site id value, or 'None' to unset.
 
     """
     con = get_server_api_connection()
@@ -513,7 +546,7 @@ def set_site_id(
     )
 
 
-def get_client_version():
+def get_client_version() -> Optional[str]:
     """Version of client used to connect to server.
 
     Client version is AYON client build desktop application.
@@ -527,14 +560,14 @@ def get_client_version():
 
 
 def set_client_version(
-    client_version,
+    client_version: Optional[str],
 ):
     """Set version of client used to connect to server.
 
     Client version is AYON client build desktop application.
 
     Args:
-        client_version (Union[str, None]): Client version string.
+        client_version (Optional[str]): Client version string.
 
     """
     con = get_server_api_connection()
@@ -544,7 +577,7 @@ def set_client_version(
 
 
 def set_default_settings_variant(
-    variant,
+    variant: str,
 ):
     """Change default variant for addon settings.
 
@@ -563,7 +596,7 @@ def set_default_settings_variant(
     )
 
 
-def get_sender():
+def get_sender() -> str:
     """Sender used to send requests.
 
     Returns:
@@ -575,12 +608,12 @@ def get_sender():
 
 
 def set_sender(
-    sender,
+    sender: Optional[str],
 ):
     """Change sender used for requests.
 
     Args:
-        sender (Union[str, None]): Sender name or None.
+        sender (Optional[str]): Sender name or None.
 
     """
     con = get_server_api_connection()
@@ -589,13 +622,13 @@ def set_sender(
     )
 
 
-def get_sender_type():
+def get_sender_type() -> Optional[str]:
     """Sender type used to send requests.
 
     Sender type is supported since AYON server 1.5.5 .
 
     Returns:
-        Union[str, None]: Sender type or None.
+        Optional[str]: Sender type or None.
 
     """
     con = get_server_api_connection()
@@ -603,12 +636,12 @@ def get_sender_type():
 
 
 def set_sender_type(
-    sender_type,
+    sender_type: Optional[str],
 ):
     """Change sender type used for requests.
 
     Args:
-        sender_type (Union[str, None]): Sender type or None.
+        sender_type (Optional[str]): Sender type or None.
 
     """
     con = get_server_api_connection()
@@ -648,7 +681,7 @@ def get_server_version():
     return con.get_server_version()
 
 
-def get_server_version_tuple():
+def get_server_version_tuple() -> Tuple[int, int, int, str, str]:
     """Get server version as tuple.
 
     Version should match semantic version (https://semver.org/).
@@ -981,18 +1014,18 @@ def update_event(
 
 
 def dispatch_event(
-    topic,
-    sender=None,
-    event_hash=None,
-    project_name=None,
-    username=None,
-    depends_on=None,
-    description=None,
-    summary=None,
-    payload=None,
-    finished=True,
-    store=True,
-    dependencies=None,
+    topic: str,
+    sender: Optional[str] = None,
+    event_hash: Optional[str] = None,
+    project_name: Optional[str] = None,
+    username: Optional[str] = None,
+    depends_on: Optional[str] = None,
+    description: Optional[str] = None,
+    summary: Optional[Dict[str, Any]] = None,
+    payload: Optional[Dict[str, Any]] = None,
+    finished: bool = True,
+    store: bool = True,
+    dependencies: Optional[List[str]] = None,
 ):
     """Dispatch event to server.
 
@@ -1057,15 +1090,15 @@ def delete_event(
 
 
 def enroll_event_job(
-    source_topic,
-    target_topic,
-    sender,
-    description=None,
-    sequential=None,
-    events_filter=None,
-    max_retries=None,
-    ignore_older_than=None,
-    ignore_sender_types=None,
+    source_topic: "Union[str, List[str]]",
+    target_topic: str,
+    sender: str,
+    description: Optional[str] = None,
+    sequential: Optional[bool] = None,
+    events_filter: Optional["EventFilter"] = None,
+    max_retries: Optional[int] = None,
+    ignore_older_than: Optional[str] = None,
+    ignore_sender_types: Optional[str] = None,
 ):
     """Enroll job based on events.
 
@@ -1101,7 +1134,8 @@ def enroll_event_job(
             - 'sequential' should be 'False'
 
     Args:
-        source_topic (str): Source topic to enroll.
+        source_topic (Union[str, List[str]]): Source topic to enroll with
+            wildcards '*', or explicit list of topics.
         target_topic (str): Topic of dependent event.
         sender (str): Identifier of sender (e.g. service name or username).
         description (Optional[str]): Human readable text shown
@@ -1317,10 +1351,10 @@ def delete_activity(
 
 
 def download_file_to_stream(
-    endpoint,
-    stream,
-    chunk_size=None,
-    progress=None,
+    endpoint: str,
+    stream: "Union[io.BytesIO, BinaryIO]",
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
 ):
     """Download file from AYON server to IOStream.
 
@@ -1354,10 +1388,10 @@ def download_file_to_stream(
 
 
 def download_file(
-    endpoint,
-    filepath,
-    chunk_size=None,
-    progress=None,
+    endpoint: str,
+    filepath: str,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
 ):
     """Download file from AYON server.
 
@@ -1390,12 +1424,12 @@ def download_file(
 
 
 def upload_file_from_stream(
-    endpoint,
-    stream,
-    progress,
-    request_type,
+    endpoint: str,
+    stream: "Union[io.BytesIO, BinaryIO]",
+    progress: Optional[TransferProgress] = None,
+    request_type: Optional[RequestType] = None,
     **kwargs,
-):
+) -> requests.Response:
     """Upload file to server from bytes.
 
     Todos:
@@ -1427,12 +1461,12 @@ def upload_file_from_stream(
 
 
 def upload_file(
-    endpoint,
-    filepath,
-    progress=None,
-    request_type=None,
+    endpoint: str,
+    filepath: str,
+    progress: Optional[TransferProgress] = None,
+    request_type: Optional[RequestType] = None,
     **kwargs,
-):
+) -> requests.Response:
     """Upload file to server.
 
     Todos:
@@ -1464,16 +1498,16 @@ def upload_file(
 
 
 def upload_reviewable(
-    project_name,
-    version_id,
-    filepath,
-    label=None,
-    content_type=None,
-    filename=None,
-    progress=None,
-    headers=None,
+    project_name: str,
+    version_id: str,
+    filepath: str,
+    label: Optional[str] = None,
+    content_type: Optional[str] = None,
+    filename: Optional[str] = None,
+    progress: Optional[TransferProgress] = None,
+    headers: Optional[Dict[str, Any]] = None,
     **kwargs,
-):
+) -> requests.Response:
     """Upload reviewable file to server.
 
     Args:
@@ -1489,7 +1523,7 @@ def upload_reviewable(
         headers (Optional[Dict[str, Any]]): Headers.
 
     Returns:
-        RestApiResponse: Server response.
+        requests.Response: Server response.
 
     """
     con = get_server_api_connection()
@@ -1518,9 +1552,9 @@ def trigger_server_restart():
 
 
 def query_graphql(
-    query,
-    variables=None,
-):
+    query: str,
+    variables: Optional[Dict[str, Any]] = None,
+) -> GraphQlResponse:
     """Execute GraphQl query.
 
     Args:
@@ -1539,12 +1573,12 @@ def query_graphql(
     )
 
 
-def get_graphql_schema():
+def get_graphql_schema() -> Dict[str, Any]:
     con = get_server_api_connection()
     return con.get_graphql_schema()
 
 
-def get_server_schema():
+def get_server_schema() -> Optional[Dict[str, Any]]:
     """Get server schema with info, url paths, components etc.
 
     Todos:
@@ -1558,7 +1592,7 @@ def get_server_schema():
     return con.get_server_schema()
 
 
-def get_schemas():
+def get_schemas() -> Dict[str, Any]:
     """Get components schema.
 
     Name of components does not match entity type names e.g. 'project' is
@@ -1575,8 +1609,8 @@ def get_schemas():
 
 
 def get_attributes_schema(
-    use_cache=True,
-):
+    use_cache: bool = True,
+) -> "AttributesSchemaDict":
     con = get_server_api_connection()
     return con.get_attributes_schema(
         use_cache=use_cache,
@@ -1589,11 +1623,11 @@ def reset_attributes_schema():
 
 
 def set_attribute_config(
-    attribute_name,
-    data,
-    scope,
-    position=None,
-    builtin=False,
+    attribute_name: str,
+    data: "AttributeSchemaDataDict",
+    scope: List["AttributeScope"],
+    position: Optional[int] = None,
+    builtin: bool = False,
 ):
     con = get_server_api_connection()
     return con.set_attribute_config(
@@ -1606,7 +1640,7 @@ def set_attribute_config(
 
 
 def remove_attribute_config(
-    attribute_name,
+    attribute_name: str,
 ):
     """Remove attribute from server.
 
@@ -1623,8 +1657,8 @@ def remove_attribute_config(
 
 
 def get_attributes_for_type(
-    entity_type,
-):
+    entity_type: "AttributeScope",
+) -> Dict[str, "AttributeSchemaDict"]:
     """Get attribute schemas available for an entity type.
 
     Example::
@@ -1668,8 +1702,8 @@ def get_attributes_for_type(
 
 
 def get_attributes_fields_for_type(
-    entity_type,
-):
+    entity_type: "AttributeScope",
+) -> Set[str]:
     """Prepare attribute fields for entity type.
 
     Returns:
@@ -1683,8 +1717,8 @@ def get_attributes_fields_for_type(
 
 
 def get_default_fields_for_type(
-    entity_type,
-):
+    entity_type: str,
+) -> Set[str]:
     """Default fields for entity type.
 
     Returns most of commonly used fields from server.
@@ -1703,8 +1737,8 @@ def get_default_fields_for_type(
 
 
 def get_addons_info(
-    details=True,
-):
+    details: bool = True,
+) -> "AddonsInfoDict":
     """Get information about addons available on server.
 
     Args:
@@ -1719,10 +1753,10 @@ def get_addons_info(
 
 
 def get_addon_endpoint(
-    addon_name,
-    addon_version,
+    addon_name: str,
+    addon_version: str,
     *subpaths,
-):
+) -> str:
     """Calculate endpoint to addon route.
 
     Examples:
@@ -1751,11 +1785,11 @@ def get_addon_endpoint(
 
 
 def get_addon_url(
-    addon_name,
-    addon_version,
+    addon_name: str,
+    addon_version: str,
     *subpaths,
-    use_rest=True,
-):
+    use_rest: bool = True,
+) -> str:
     """Calculate url to addon route.
 
     Examples:
@@ -1786,14 +1820,14 @@ def get_addon_url(
 
 
 def download_addon_private_file(
-    addon_name,
-    addon_version,
-    filename,
-    destination_dir,
-    destination_filename=None,
-    chunk_size=None,
-    progress=None,
-):
+    addon_name: str,
+    addon_version: str,
+    filename: str,
+    destination_dir: str,
+    destination_filename: Optional[str] = None,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> str:
     """Download a file from addon private files.
 
     This method requires to have authorized token available. Private files
@@ -1827,9 +1861,9 @@ def download_addon_private_file(
 
 
 def get_installers(
-    version=None,
-    platform_name=None,
-):
+    version: Optional[str] = None,
+    platform_name: Optional[str] = None,
+) -> "InstallersInfoDict":
     """Information about desktop application installers on server.
 
     Desktop application installers are helpers to download/update AYON
@@ -1840,7 +1874,7 @@ def get_installers(
         platform_name (Optional[str]): Filter installers by platform name.
 
     Returns:
-        list[dict[str, Any]]:
+        InstallersInfoDict: Information about installers known for server.
 
     """
     con = get_server_api_connection()
@@ -1851,16 +1885,16 @@ def get_installers(
 
 
 def create_installer(
-    filename,
-    version,
-    python_version,
-    platform_name,
-    python_modules,
-    runtime_python_modules,
-    checksum,
-    checksum_algorithm,
-    file_size,
-    sources=None,
+    filename: str,
+    version: str,
+    python_version: str,
+    platform_name: str,
+    python_modules: Dict[str, str],
+    runtime_python_modules: Dict[str, str],
+    checksum: str,
+    checksum_algorithm: str,
+    file_size: int,
+    sources: Optional[List[Dict[str, Any]]] = None,
 ):
     """Create new installer information on server.
 
@@ -1903,8 +1937,8 @@ def create_installer(
 
 
 def update_installer(
-    filename,
-    sources,
+    filename: str,
+    sources: List[Dict[str, Any]],
 ):
     """Update installer information on server.
 
@@ -1922,7 +1956,7 @@ def update_installer(
 
 
 def delete_installer(
-    filename,
+    filename: str,
 ):
     """Delete installer from server.
 
@@ -1937,10 +1971,10 @@ def delete_installer(
 
 
 def download_installer(
-    filename,
-    dst_filepath,
-    chunk_size=None,
-    progress=None,
+    filename: str,
+    dst_filepath: str,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
 ):
     """Download installer file from server.
 
@@ -1962,9 +1996,9 @@ def download_installer(
 
 
 def upload_installer(
-    src_filepath,
-    dst_filename,
-    progress=None,
+    src_filepath: str,
+    dst_filename: str,
+    progress: Optional[TransferProgress] = None,
 ):
     """Upload installer file to server.
 
@@ -1986,7 +2020,7 @@ def upload_installer(
     )
 
 
-def get_dependency_packages():
+def get_dependency_packages() -> "DependencyPackagesDict":
     """Information about dependency packages on server.
 
     To download dependency package, use 'download_dependency_package'
@@ -2010,8 +2044,8 @@ def get_dependency_packages():
         }
 
     Returns:
-        dict[str, Any]: Information about dependency packages known for
-            server.
+        DependencyPackagesDict: Information about dependency packages
+            known for server.
 
     """
     con = get_server_api_connection()
@@ -2019,15 +2053,15 @@ def get_dependency_packages():
 
 
 def create_dependency_package(
-    filename,
-    python_modules,
-    source_addons,
-    installer_version,
-    checksum,
-    checksum_algorithm,
-    file_size,
-    sources=None,
-    platform_name=None,
+    filename: str,
+    python_modules: Dict[str, str],
+    source_addons: Dict[str, str],
+    installer_version: str,
+    checksum: str,
+    checksum_algorithm: str,
+    file_size: int,
+    sources: Optional[List[Dict[str, Any]]] = None,
+    platform_name: Optional[str] = None,
 ):
     """Create dependency package on server.
 
@@ -2073,8 +2107,8 @@ def create_dependency_package(
 
 
 def update_dependency_package(
-    filename,
-    sources,
+    filename: str,
+    sources: List[Dict[str, Any]],
 ):
     """Update dependency package metadata on server.
 
@@ -2093,8 +2127,8 @@ def update_dependency_package(
 
 
 def delete_dependency_package(
-    filename,
-    platform_name=None,
+    filename: str,
+    platform_name: Optional[str] = None,
 ):
     """Remove dependency package for specific platform.
 
@@ -2111,13 +2145,13 @@ def delete_dependency_package(
 
 
 def download_dependency_package(
-    src_filename,
-    dst_directory,
-    dst_filename,
-    platform_name=None,
-    chunk_size=None,
-    progress=None,
-):
+    src_filename: str,
+    dst_directory: str,
+    dst_filename: str,
+    platform_name: Optional[str] = None,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> str:
     """Download dependency package from server.
 
     This method requires to have authorized token available. The package
@@ -2150,10 +2184,10 @@ def download_dependency_package(
 
 
 def upload_dependency_package(
-    src_filepath,
-    dst_filename,
-    platform_name=None,
-    progress=None,
+    src_filepath: str,
+    dst_filename: str,
+    platform_name: Optional[str] = None,
+    progress: Optional[TransferProgress] = None,
 ):
     """Upload dependency package to server.
 
@@ -2219,8 +2253,8 @@ def delete_addon_version(
 
 
 def upload_addon_zip(
-    src_filepath,
-    progress=None,
+    src_filepath: str,
+    progress: Optional[TransferProgress] = None,
 ):
     """Upload addon zip file to server.
 
@@ -2248,7 +2282,7 @@ def upload_addon_zip(
     )
 
 
-def get_bundles():
+def get_bundles() -> "BundlesInfoDict":
     """Server bundles with basic information.
 
     This is example output::
@@ -2284,15 +2318,15 @@ def get_bundles():
 
 
 def create_bundle(
-    name,
-    addon_versions,
-    installer_version,
-    dependency_packages=None,
-    is_production=None,
-    is_staging=None,
-    is_dev=None,
-    dev_active_user=None,
-    dev_addons_config=None,
+    name: str,
+    addon_versions: Dict[str, str],
+    installer_version: str,
+    dependency_packages: Optional[Dict[str, str]] = None,
+    is_production: Optional[bool] = None,
+    is_staging: Optional[bool] = None,
+    is_dev: Optional[bool] = None,
+    dev_active_user: Optional[str] = None,
+    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
 ):
     """Create bundle on server.
 
@@ -2347,15 +2381,15 @@ def create_bundle(
 
 
 def update_bundle(
-    bundle_name,
-    addon_versions=None,
-    installer_version=None,
-    dependency_packages=None,
-    is_production=None,
-    is_staging=None,
-    is_dev=None,
-    dev_active_user=None,
-    dev_addons_config=None,
+    bundle_name: str,
+    addon_versions: Optional[Dict[str, str]] = None,
+    installer_version: Optional[str] = None,
+    dependency_packages: Optional[Dict[str, str]] = None,
+    is_production: Optional[bool] = None,
+    is_staging: Optional[bool] = None,
+    is_dev: Optional[bool] = None,
+    dev_active_user: Optional[str] = None,
+    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
 ):
     """Update bundle on server.
 
@@ -2396,16 +2430,16 @@ def update_bundle(
 
 
 def check_bundle_compatibility(
-    name,
-    addon_versions,
-    installer_version,
-    dependency_packages=None,
-    is_production=None,
-    is_staging=None,
-    is_dev=None,
-    dev_active_user=None,
-    dev_addons_config=None,
-):
+    name: str,
+    addon_versions: Dict[str, str],
+    installer_version: str,
+    dependency_packages: Optional[Dict[str, str]] = None,
+    is_production: Optional[bool] = None,
+    is_staging: Optional[bool] = None,
+    is_dev: Optional[bool] = None,
+    dev_active_user: Optional[str] = None,
+    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
+) -> Dict[str, Any]:
     """Check bundle compatibility.
 
     Can be used as per-flight validation before creating bundle.
@@ -2445,7 +2479,7 @@ def check_bundle_compatibility(
 
 
 def delete_bundle(
-    bundle_name,
+    bundle_name: str,
 ):
     """Delete bundle from server.
 
@@ -2459,7 +2493,7 @@ def delete_bundle(
     )
 
 
-def get_project_anatomy_presets():
+def get_project_anatomy_presets() -> List["AnatomyPresetDict"]:
     """Anatomy presets available on server.
 
     Content has basic information about presets. Example output::
@@ -2484,7 +2518,7 @@ def get_project_anatomy_presets():
     return con.get_project_anatomy_presets()
 
 
-def get_default_anatomy_preset_name():
+def get_default_anatomy_preset_name() -> str:
     """Name of default anatomy preset.
 
     Primary preset is used as default preset. But when primary preset is
@@ -2500,8 +2534,8 @@ def get_default_anatomy_preset_name():
 
 
 def get_project_anatomy_preset(
-    preset_name=None,
-):
+    preset_name: Optional[str] = None,
+) -> "AnatomyPresetDict":
     """Anatomy preset values by name.
 
     Get anatomy preset values by preset name. Primary preset is returned
@@ -2511,7 +2545,7 @@ def get_project_anatomy_preset(
         preset_name (Optional[str]): Preset name.
 
     Returns:
-        dict[str, Any]: Anatomy preset values.
+        AnatomyPresetDict: Anatomy preset values.
 
     """
     con = get_server_api_connection()
@@ -2520,20 +2554,25 @@ def get_project_anatomy_preset(
     )
 
 
-def get_build_in_anatomy_preset():
+def get_built_in_anatomy_preset() -> "AnatomyPresetDict":
     """Get built-in anatomy preset.
 
     Returns:
-        dict[str, Any]: Built-in anatomy preset.
+        AnatomyPresetDict: Built-in anatomy preset.
 
     """
+    con = get_server_api_connection()
+    return con.get_built_in_anatomy_preset()
+
+
+def get_build_in_anatomy_preset() -> "AnatomyPresetDict":
     con = get_server_api_connection()
     return con.get_build_in_anatomy_preset()
 
 
 def get_project_root_overrides(
-    project_name,
-):
+    project_name: str,
+) -> Dict[str, Dict[str, str]]:
     """Root overrides per site name.
 
     Method is based on logged user and can't be received for any other
@@ -2555,8 +2594,8 @@ def get_project_root_overrides(
 
 
 def get_project_roots_by_site(
-    project_name,
-):
+    project_name: str,
+) -> Dict[str, Dict[str, str]]:
     """Root overrides per site name.
 
     Method is based on logged user and can't be received for any other
@@ -2582,9 +2621,9 @@ def get_project_roots_by_site(
 
 
 def get_project_root_overrides_by_site_id(
-    project_name,
-    site_id=None,
-):
+    project_name: str,
+    site_id: Optional[str] = None,
+) -> Dict[str, str]:
     """Root overrides for site.
 
     If site id is not passed a site set in current api object is used
@@ -2608,9 +2647,9 @@ def get_project_root_overrides_by_site_id(
 
 
 def get_project_roots_for_site(
-    project_name,
-    site_id=None,
-):
+    project_name: str,
+    site_id: Optional[str] = None,
+) -> Dict[str, str]:
     """Root overrides for site.
 
     If site id is not passed a site set in current api object is used
@@ -2637,9 +2676,9 @@ def get_project_roots_for_site(
 
 
 def get_project_roots_by_site_id(
-    project_name,
-    site_id=None,
-):
+    project_name: str,
+    site_id: Optional[str] = None,
+) -> Dict[str, str]:
     """Root values for a site.
 
     If site id is not passed a site set in current api object is used
@@ -2663,9 +2702,9 @@ def get_project_roots_by_site_id(
 
 
 def get_project_roots_by_platform(
-    project_name,
-    platform_name=None,
-):
+    project_name: str,
+    platform_name: Optional[str] = None,
+) -> Dict[str, str]:
     """Root values for a site.
 
     If platform name is not passed current platform name is used instead.
@@ -2691,10 +2730,10 @@ def get_project_roots_by_platform(
 
 
 def get_addon_settings_schema(
-    addon_name,
-    addon_version,
-    project_name=None,
-):
+    addon_name: str,
+    addon_version: str,
+    project_name: Optional[str] = None,
+) -> Dict[str, Any]:
     """Sudio/Project settings schema of an addon.
 
     Project schema may look differently as some enums are based on project
@@ -2719,9 +2758,9 @@ def get_addon_settings_schema(
 
 
 def get_addon_site_settings_schema(
-    addon_name,
-    addon_version,
-):
+    addon_name: str,
+    addon_version: str,
+) -> Dict[str, Any]:
     """Site settings schema of an addon.
 
     Args:
@@ -2740,10 +2779,10 @@ def get_addon_site_settings_schema(
 
 
 def get_addon_studio_settings(
-    addon_name,
-    addon_version,
-    variant=None,
-):
+    addon_name: str,
+    addon_version: str,
+    variant: Optional[str] = None,
+) -> Dict[str, Any]:
     """Addon studio settings.
 
     Receive studio settings for specific version of an addon.
@@ -2767,13 +2806,13 @@ def get_addon_studio_settings(
 
 
 def get_addon_project_settings(
-    addon_name,
-    addon_version,
-    project_name,
-    variant=None,
-    site_id=None,
-    use_site=True,
-):
+    addon_name: str,
+    addon_version: str,
+    project_name: str,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+    use_site: bool = True,
+) -> Dict[str, Any]:
     """Addon project settings.
 
     Receive project settings for specific version of an addon. The settings
@@ -2812,13 +2851,13 @@ def get_addon_project_settings(
 
 
 def get_addon_settings(
-    addon_name,
-    addon_version,
-    project_name=None,
-    variant=None,
-    site_id=None,
-    use_site=True,
-):
+    addon_name: str,
+    addon_version: str,
+    project_name: Optional[str] = None,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+    use_site: bool = True,
+) -> Dict[str, Any]:
     """Receive addon settings.
 
     Receive addon settings based on project name value. Some arguments may
@@ -2855,10 +2894,10 @@ def get_addon_settings(
 
 
 def get_addon_site_settings(
-    addon_name,
-    addon_version,
-    site_id=None,
-):
+    addon_name: str,
+    addon_version: str,
+    site_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Site settings of an addon.
 
     If site id is not available an empty dictionary is returned.
@@ -2882,12 +2921,12 @@ def get_addon_site_settings(
 
 
 def get_bundle_settings(
-    bundle_name=None,
-    project_name=None,
-    variant=None,
-    site_id=None,
-    use_site=True,
-):
+    bundle_name: Optional[str] = None,
+    project_name: Optional[str] = None,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+    use_site: bool = True,
+) -> Dict[str, Any]:
     """Get complete set of settings for given data.
 
     If project is not passed then studio settings are returned. If variant
@@ -2930,12 +2969,12 @@ def get_bundle_settings(
 
 
 def get_addons_studio_settings(
-    bundle_name=None,
-    variant=None,
-    site_id=None,
-    use_site=True,
-    only_values=True,
-):
+    bundle_name: Optional[str] = None,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+    use_site: bool = True,
+    only_values: bool = True,
+) -> Dict[str, Any]:
     """All addons settings in one bulk.
 
     Warnings:
@@ -2971,13 +3010,13 @@ def get_addons_studio_settings(
 
 
 def get_addons_project_settings(
-    project_name,
-    bundle_name=None,
-    variant=None,
-    site_id=None,
-    use_site=True,
-    only_values=True,
-):
+    project_name: str,
+    bundle_name: Optional[str] = None,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+    use_site: bool = True,
+    only_values: bool = True,
+) -> Dict[str, Any]:
     """Project settings of all addons.
 
     Server returns information about used addon versions, so full output
@@ -3031,13 +3070,13 @@ def get_addons_project_settings(
 
 
 def get_addons_settings(
-    bundle_name=None,
-    project_name=None,
-    variant=None,
-    site_id=None,
-    use_site=True,
-    only_values=True,
-):
+    bundle_name: Optional[str] = None,
+    project_name: Optional[str] = None,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+    use_site: bool = True,
+    only_values: bool = True,
+) -> Dict[str, Any]:
     """Universal function to receive all addon settings.
 
     Based on 'project_name' will receive studio settings or project
@@ -3075,7 +3114,7 @@ def get_addons_settings(
     )
 
 
-def get_secrets():
+def get_secrets() -> List["SecretDict"]:
     """Get all secrets.
 
     Example output::
@@ -3092,7 +3131,7 @@ def get_secrets():
         ]
 
     Returns:
-        list[dict[str, str]]: List of secret entities.
+        list[SecretDict]: List of secret entities.
 
     """
     con = get_server_api_connection()
@@ -3100,8 +3139,8 @@ def get_secrets():
 
 
 def get_secret(
-    secret_name,
-):
+    secret_name: str,
+) -> "SecretDict":
     """Get secret by name.
 
     Example output::
@@ -3125,8 +3164,8 @@ def get_secret(
 
 
 def save_secret(
-    secret_name,
-    secret_value,
+    secret_name: str,
+    secret_value: str,
 ):
     """Save secret.
 
@@ -3145,7 +3184,7 @@ def save_secret(
 
 
 def delete_secret(
-    secret_name,
+    secret_name: str,
 ):
     """Delete secret by name.
 
@@ -3160,8 +3199,8 @@ def delete_secret(
 
 
 def get_rest_project(
-    project_name,
-):
+    project_name: str,
+) -> Optional["ProjectEntity"]:
     """Query project by name.
 
     This call returns project with anatomy data.
@@ -3181,9 +3220,9 @@ def get_rest_project(
 
 
 def get_rest_projects(
-    active=True,
-    library=None,
-):
+    active: Optional[bool] = True,
+    library: Optional[bool] = None,
+) -> Generator["ProjectEntity", None, None]:
     """Query available project entities.
 
     User must be logged in.
@@ -3195,7 +3234,7 @@ def get_rest_projects(
             are returned if 'None' is passed.
 
     Returns:
-        Generator[dict[str, Any]]: Available projects.
+        Generator[ProjectEntity, None, None]: Available projects.
 
     """
     con = get_server_api_connection()
@@ -3206,10 +3245,10 @@ def get_rest_projects(
 
 
 def get_rest_entity_by_id(
-    project_name,
-    entity_type,
-    entity_id,
-):
+    project_name: str,
+    entity_type: str,
+    entity_id: str,
+) -> Optional["AnyEntity"]:
     """Get entity using REST on a project by its id.
 
     Args:
@@ -3219,7 +3258,7 @@ def get_rest_entity_by_id(
         entity_id (str): Id of entity.
 
     Returns:
-        dict[str, Any]: Received entity data.
+        Optional[AnyEntity]: Received entity data.
 
     """
     con = get_server_api_connection()
@@ -3231,9 +3270,9 @@ def get_rest_entity_by_id(
 
 
 def get_rest_folder(
-    project_name,
-    folder_id,
-):
+    project_name: str,
+    folder_id: str,
+) -> Optional["FolderEntity"]:
     con = get_server_api_connection()
     return con.get_rest_folder(
         project_name=project_name,
@@ -3242,9 +3281,9 @@ def get_rest_folder(
 
 
 def get_rest_folders(
-    project_name,
-    include_attrib=False,
-):
+    project_name: str,
+    include_attrib: bool = False,
+) -> List["FlatFolderEntity"]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -3293,9 +3332,9 @@ def get_rest_folders(
 
 
 def get_rest_task(
-    project_name,
-    task_id,
-):
+    project_name: str,
+    task_id: str,
+) -> Optional["TaskEntity"]:
     con = get_server_api_connection()
     return con.get_rest_task(
         project_name=project_name,
@@ -3304,9 +3343,9 @@ def get_rest_task(
 
 
 def get_rest_product(
-    project_name,
-    product_id,
-):
+    project_name: str,
+    product_id: str,
+) -> Optional["ProductEntity"]:
     con = get_server_api_connection()
     return con.get_rest_product(
         project_name=project_name,
@@ -3315,9 +3354,9 @@ def get_rest_product(
 
 
 def get_rest_version(
-    project_name,
-    version_id,
-):
+    project_name: str,
+    version_id: str,
+) -> Optional["VersionEntity"]:
     con = get_server_api_connection()
     return con.get_rest_version(
         project_name=project_name,
@@ -3326,9 +3365,9 @@ def get_rest_version(
 
 
 def get_rest_representation(
-    project_name,
-    representation_id,
-):
+    project_name: str,
+    representation_id: str,
+) -> Optional["RepresentationEntity"]:
     con = get_server_api_connection()
     return con.get_rest_representation(
         project_name=project_name,
@@ -3337,17 +3376,17 @@ def get_rest_representation(
 
 
 def get_project_names(
-    active=True,
-    library=None,
-):
+    active: "Union[bool, None]" = True,
+    library: "Union[bool, None]" = None,
+) -> List[str]:
     """Receive available project names.
 
     User must be logged in.
 
     Args:
-        active (Optional[bool]): Filter active/inactive projects. Both
+        active (Union[bool, None]): Filter active/inactive projects. Both
             are returned if 'None' is passed.
-        library (Optional[bool]): Filter standard/library projects. Both
+        library (Union[bool, None]): Filter standard/library projects. Both
             are returned if 'None' is passed.
 
     Returns:
@@ -3362,11 +3401,11 @@ def get_project_names(
 
 
 def get_projects(
-    active=True,
-    library=None,
-    fields=None,
-    own_attributes=False,
-):
+    active: "Union[bool, None]" = True,
+    library: "Union[bool, None]" = None,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Generator["ProjectEntity", None, None]:
     """Get projects.
 
     Args:
@@ -3380,7 +3419,7 @@ def get_projects(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Generator[dict[str, Any]]: Queried projects.
+        Generator[ProjectEntity, None, None]: Queried projects.
 
     """
     con = get_server_api_connection()
@@ -3393,10 +3432,10 @@ def get_projects(
 
 
 def get_project(
-    project_name,
-    fields=None,
-    own_attributes=False,
-):
+    project_name: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["ProjectEntity"]:
     """Get project.
 
     Args:
@@ -3407,7 +3446,7 @@ def get_project(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Union[dict[str, Any], None]: Project entity data or None
+        Optional[ProjectEntity]: Project entity data or None
             if project was not found.
 
     """
@@ -3420,10 +3459,10 @@ def get_project(
 
 
 def get_folders_hierarchy(
-    project_name,
-    search_string=None,
-    folder_types=None,
-):
+    project_name: str,
+    search_string: Optional[str] = None,
+    folder_types: Optional[Iterable[str]] = None,
+) -> "ProjectHierarchyDict":
     """Get project hierarchy.
 
     All folders in project in hierarchy data structure.
@@ -3465,9 +3504,9 @@ def get_folders_hierarchy(
 
 
 def get_folders_rest(
-    project_name,
-    include_attrib=False,
-):
+    project_name: str,
+    include_attrib: bool = False,
+) -> List["FlatFolderEntity"]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
