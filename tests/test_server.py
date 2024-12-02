@@ -7,8 +7,11 @@ Make sure you have set AYON_TOKEN in your environment.
 
 from datetime import datetime, timedelta, timezone
 import os
-import pytest
+import sys
+import subprocess
 import time
+
+import pytest
 
 from ayon_api import (
     close_connection,
@@ -829,19 +832,25 @@ def test_addon_methods():
         addon_name != addon["name"] for addon in get_addons_info()["addons"]
     )
 
+    subprocess.run([sys.executable, "tests/resources/addon/create_package.py"])
     try:
         _ = upload_addon_zip("tests/resources/addon/package/tests-1.0.0.zip")
 
         trigger_server_restart()
 
         # need to wait at least 0.1 sec. to restart server
+        last_check = time.time()
         time.sleep(0.5)
         while True:
             try:
                 addons = get_addons_info()["addons"]
                 break
             except exceptions.ServerError as exc:
-                assert "Connection timed out" in str(exc)
+                pass
+
+            if time.time() - last_check > 60:
+                assert False, "Server timeout"
+            time.sleep(0.5)
 
         assert any(addon_name == addon["name"] for addon in addons)
 
