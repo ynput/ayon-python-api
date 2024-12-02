@@ -120,15 +120,22 @@ def _get_typehint(annotation, api_globals):
 
     typehint = (
         str(annotation)
-        .replace("typing.", "")
         .replace("NoneType", "None")
     )
+    full_path_regex = re.compile(
+        r"(?P<full>(?P<name>[a-zA-Z0-9_\.]+))"
+    )
+    for item in full_path_regex.finditer(str(typehint)):
+        groups = item.groupdict()
+        name = groups["name"].split(".")[-1]
+        typehint = typehint.replace(groups["full"], name)
+
     forwardref_regex = re.compile(
         r"(?P<full>ForwardRef\('(?P<name>[a-zA-Z0-9]+)'\))"
     )
     for item in forwardref_regex.finditer(str(typehint)):
         groups = item.groupdict()
-        name = groups["name"]
+        name = groups["name"].split(".")[-1]
         typehint = typehint.replace(groups["full"], f'"{name}"')
 
     try:
