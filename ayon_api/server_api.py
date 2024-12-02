@@ -2121,9 +2121,6 @@ class ServerAPI(object):
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
-        if endpoint.startswith(self._base_url):
-            url = endpoint
-
         url = self._endpoint_to_url(endpoint)
 
         if progress is None:
@@ -2270,7 +2267,7 @@ class ServerAPI(object):
         return response
 
     def upload_file_from_stream(
-        self, endpoint, stream, progress, request_type, **kwargs
+        self, endpoint, stream, progress=None, request_type=None, **kwargs
     ):
         """Upload file to server from bytes.
 
