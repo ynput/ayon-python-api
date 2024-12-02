@@ -827,7 +827,7 @@ def test_create_delete_products_bonus(
     Verifies:
         - the product is created and can be retrieved by its ID
         - the product name, type, and folder ID are set correctly
-        - the product is deleted with a new EntityHub and cannot be retrieved 
+        - the product is deleted with a new EntityHub and cannot be retrieved
             by its ID
     """
     project_name = project_entity_fixture["name"]
