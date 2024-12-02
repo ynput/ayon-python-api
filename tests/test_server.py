@@ -846,10 +846,8 @@ def test_addon_methods():
                 addons = get_addons_info()["addons"]
                 break
             except exceptions.ServerError as exc:
-                pass
-
-            if time.time() - last_check > 60:
-                assert False, "Server timeout"
+                if time.time() - last_check > 60:
+                    raise AssertionError(f"Server restart failed {exc}")
             time.sleep(0.5)
 
         assert any(addon_name == addon["name"] for addon in addons)
