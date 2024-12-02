@@ -453,10 +453,10 @@ class ServerAPI(object):
             raise ValueError("Invalid server URL {}".format(str(base_url)))
 
         base_url = base_url.rstrip("/")
-        self._log = None
         self._base_url: str = base_url
         self._rest_url: str = "{}/api".format(base_url)
         self._graphql_url: str = "{}/graphql".format(base_url)
+        self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
         self._access_token: Optional[str] = token
         # Allow to have 'site_id' to 'None'
         if site_id is NOT_SET:
@@ -522,8 +522,6 @@ class ServerAPI(object):
 
     @property
     def log(self) -> logging.Logger:
-        if self._log is None:
-            self._log = logging.getLogger(self.__class__.__name__)
         return self._log
 
     def get_base_url(self):
