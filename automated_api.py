@@ -20,8 +20,14 @@ import inspect
 import typing
 
 # Fake modules to avoid import errors
-for module_name in ("requests", "unidecode"):
-    sys.modules[module_name] = object()
+
+requests = type(sys)("requests")
+requests.__dict__["Response"] = type(
+    "Response", (), {"__module__": "requests"}
+)
+
+sys.modules["requests"] = requests
+sys.modules["unidecode"] = type(sys)("unidecode")
 
 import ayon_api  # noqa: E402
 from ayon_api.server_api import ServerAPI, _PLACEHOLDER  # noqa: E402
@@ -116,7 +122,32 @@ def prepare_docstring(func):
 
 def _get_typehint(annotation, api_globals):
     if inspect.isclass(annotation):
-        return annotation.__name__
+        module_name_parts = list(str(annotation.__module__).split("."))
+        module_name_parts.append(annotation.__name__)
+        module_name_parts.reverse()
+        options = []
+        _name = None
+        for name in module_name_parts:
+            if _name is None:
+                _name = name
+                options.append(name)
+            else:
+                _name = f"{name}.{_name}"
+                options.append(_name)
+
+        options.reverse()
+        for option in options:
+            try:
+                # Test if typehint is valid for known '_api' content
+                exec(f"_: {option} = None", api_globals)
+                return option
+            except NameError:
+                pass
+
+        typehint = options[0]
+        print("Unknown typehint:", typehint)
+        typehint = f'"{typehint}"'
+        return typehint
 
     typehint = (
         str(annotation)
@@ -127,8 +158,9 @@ def _get_typehint(annotation, api_globals):
     )
     for item in full_path_regex.finditer(str(typehint)):
         groups = item.groupdict()
-        name = groups["name"].split(".")[-1]
-        typehint = typehint.replace(groups["full"], name)
+        if groups["full"] not in {"io.BytesIO"}:
+            name = groups["name"].split(".")[-1]
+            typehint = typehint.replace(groups["full"], name)
 
     forwardref_regex = re.compile(
         r"(?P<full>ForwardRef\('(?P<name>[a-zA-Z0-9]+)'\))"
