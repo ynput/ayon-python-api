@@ -63,7 +63,7 @@ def test_get_events_all_filter_combinations(
             topics=topics,
             event_ids=event_ids,
             project_names=project_names,
-            states=states,
+            statuses=states,
             users=users,
             include_logs=include_logs,
             has_children=has_children,
@@ -97,7 +97,7 @@ def test_get_events_all_filter_combinations(
         list(get_events(
             topics=[topic],
             project_names=project_names,
-            states=states,
+            statuses=states,
             users=users,
             include_logs=include_logs,
             has_children=has_children,
@@ -111,7 +111,7 @@ def test_get_events_all_filter_combinations(
         list(get_events(
             topics=topics,
             project_names=[project_name],
-            states=states,
+            statuses=states,
             users=users,
             include_logs=include_logs,
             has_children=has_children,
@@ -125,7 +125,7 @@ def test_get_events_all_filter_combinations(
         list(get_events(
             topics=topics,
             project_names=project_names,
-            states=[state],
+            statuses=[state],
             users=users,
             include_logs=include_logs,
             has_children=has_children,
@@ -139,7 +139,7 @@ def test_get_events_all_filter_combinations(
         list(get_events(
             topics=topics,
             project_names=project_names,
-            states=states,
+            statuses=states,
             users=[user],
             include_logs=include_logs,
             has_children=has_children,

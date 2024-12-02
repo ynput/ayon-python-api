@@ -7,8 +7,11 @@ Make sure you have set AYON_TOKEN in your environment.
 
 from datetime import datetime, timedelta, timezone
 import os
-import pytest
+import sys
+import subprocess
 import time
+
+import pytest
 
 from ayon_api import (
     close_connection,
@@ -180,7 +183,7 @@ def test_get_events_project_name(project_names):
         assert item.get("project") in project_names
 
     # test if the legths are equal
-    assert project_names is None or len(res) == sum(len(
+    assert len(res) == sum(len(
         list(get_events(
             project_names=[project_name]
         )) or []
@@ -292,12 +295,12 @@ def test_get_events_timestamps(newer_than, older_than):
 
     for item in res:
         assert (newer_than is None) or (
-            datetime.fromisoformat(item.get("createdAt")
-                                   > datetime.fromisoformat(newer_than))
+            datetime.fromisoformat(item.get("createdAt"))
+            > datetime.fromisoformat(newer_than)
         )
         assert (older_than is None) or (
-            datetime.fromisoformat(item.get("createdAt")
-                                   < datetime.fromisoformat(older_than))
+            datetime.fromisoformat(item.get("createdAt"))
+            < datetime.fromisoformat(older_than)
         )
 
 
@@ -340,7 +343,7 @@ def test_get_events_invalid_data(
     res = list(get_events(
         topics=topics,
         project_names=project_names,
-        states=states,
+        statuses=states,
         users=users,
         newer_than=newer_than
     ))
@@ -820,25 +823,32 @@ def test_addon_methods():
     addon_version = "1.0.0"
     download_path = "tests/resources/tmp_downloads"
     private_file_path = os.path.join(download_path, "ayon-symbol.png")
+    for addon in get_addons_info()["addons"]:
+        if addon["name"] == addon_name and addon["version"] == addon_version:
+            delete_addon_version(addon_name, addon_version)
+            break
 
-    delete_addon_version(addon_name, addon_version)
     assert all(
         addon_name != addon["name"] for addon in get_addons_info()["addons"]
     )
 
+    subprocess.run([sys.executable, "tests/resources/addon/create_package.py"])
     try:
         _ = upload_addon_zip("tests/resources/addon/package/tests-1.0.0.zip")
 
         trigger_server_restart()
 
         # need to wait at least 0.1 sec. to restart server
+        last_check = time.time()
         time.sleep(0.5)
         while True:
             try:
                 addons = get_addons_info()["addons"]
                 break
             except exceptions.ServerError as exc:
-                assert "Connection timed out" in str(exc)
+                if time.time() - last_check > 60:
+                    raise AssertionError(f"Server restart failed {exc}")
+            time.sleep(0.5)
 
         assert any(addon_name == addon["name"] for addon in addons)
 

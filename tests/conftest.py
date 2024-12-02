@@ -6,6 +6,7 @@ from ayon_api import (
     create_project,
     update_project,
     delete_project,
+    get_events,
     get_folders,
     get_products,
     get_tasks
@@ -70,33 +71,76 @@ def project_entity_fixture(project_name_fixture):
 @pytest.fixture
 def clean_project(project_name_fixture):
     hub = EntityHub(project_name_fixture)
+    hub.fetch_hierarchy_entities()
 
-    for folder in get_folders(
-        project_name_fixture
-    ):
-        # delete tasks
+    folder_ids = {
+        folder["id"]
+        for folder in get_folders(project_name_fixture, fields={"id"})
+    }
+    task_ids = {
+        task["id"]
         for task in get_tasks(
-            project_name_fixture,
-            folder_ids=[folder["id"]]
-        ):
-            hub.delete_entity(hub.get_task_by_id(task["id"]))
+            project_name_fixture, folder_ids=folder_ids, fields={"id"}
+        )
+    }
+    product_ids = {
+        product["id"]
+        for product in get_products(
+            project_name_fixture, folder_ids=folder_ids, fields={"id"}
+        )
+    }
+    for product_id in product_ids:
+        product = hub.get_product_by_id(product_id)
+        if product is not None:
+            hub.delete_entity(product)
 
-        # delete products
-        for product in list(get_products(
-            project_name_fixture, folder_ids=[folder["id"]]
-        )):
-            product_entity = hub.get_product_by_id(product["id"])
-            hub.delete_entity(product_entity)
+    for task_id in task_ids:
+        task = hub.get_task_by_id(task_id)
+        if task is not None:
+            hub.delete_entity(task)
 
-        entity = hub.get_folder_by_id(folder["id"])
-        hub.delete_entity(entity)
+    hub.commit_changes()
 
-        hub.commit_changes()
+    for folder_id in folder_ids:
+        folder = hub.get_folder_by_id(folder_id)
+        if folder is not None:
+            hub.delete_entity(folder)
+
+    hub.commit_changes()
+
+
+@pytest.fixture(params=[3, 4, 5])
+def event_ids(request):
+    length = request.param
+    if length == 0:
+        return None
+
+    recent_events = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    ))
+
+    return [recent_event["id"] for recent_event in recent_events[:length]]
+
+
+@pytest.fixture
+def event_id():
+    """Fixture that retrieves the ID of a recent event created within
+    the last 5 days.
+
+    Returns:
+        - The event ID of the most recent event within the last 5 days
+          if available.
+        - `None` if no recent events are found within this time frame.
+
+    """
+    recent_events = list(get_events(
+        newer_than=(datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    ))
+    return recent_events[0]["id"] if recent_events else None
 
 
 class TestEventFilters:
     project_names = [
-        (None),
         ([]),
         (["demo_Big_Episodic"]),
         (["demo_Big_Feature"]),
@@ -111,7 +155,6 @@ class TestEventFilters:
     ]
 
     topics = [
-        (None),
         ([]),
         (["entity.folder.attrib_changed"]),
         (["entity.task.created", "entity.project.created"]),
@@ -261,4 +304,18 @@ class TestUpdateEventData:
         (1),
         (0),
         (10),
+    ]
+
+
+class TestProductData:
+    names = [
+        ("test_name"),
+        ("test_123"),
+    ]
+
+    product_types = [
+        ("animation"),
+        ("camera"),
+        ("render"),
+        ("workfile"),
     ]
