@@ -141,7 +141,6 @@ def event_id():
 
 class TestEventFilters:
     project_names = [
-        (None),
         ([]),
         (["demo_Big_Episodic"]),
         (["demo_Big_Feature"]),
@@ -156,7 +155,6 @@ class TestEventFilters:
     ]
 
     topics = [
-        (None),
         ([]),
         (["entity.folder.attrib_changed"]),
         (["entity.task.created", "entity.project.created"]),

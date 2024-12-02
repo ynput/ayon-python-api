@@ -180,7 +180,7 @@ def test_get_events_project_name(project_names):
         assert item.get("project") in project_names
 
     # test if the legths are equal
-    assert project_names is None or len(res) == sum(len(
+    assert len(res) == sum(len(
         list(get_events(
             project_names=[project_name]
         )) or []
