@@ -5707,7 +5707,7 @@ class ServerAPI(object):
             warnings.warn(
                 (
                     "'own_attributes' is not supported for products. The"
-                    " argument will be removed form function signature in"
+                    " argument will be removed from function signature in"
                     " future (apx. version 1.0.10 or 1.1.0)."
                 ),
                 DeprecationWarning
