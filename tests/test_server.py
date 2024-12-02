@@ -292,12 +292,12 @@ def test_get_events_timestamps(newer_than, older_than):
 
     for item in res:
         assert (newer_than is None) or (
-            datetime.fromisoformat(item.get("createdAt")
-                                   > datetime.fromisoformat(newer_than))
+            datetime.fromisoformat(item.get("createdAt"))
+            > datetime.fromisoformat(newer_than)
         )
         assert (older_than is None) or (
-            datetime.fromisoformat(item.get("createdAt")
-                                   < datetime.fromisoformat(older_than))
+            datetime.fromisoformat(item.get("createdAt"))
+            < datetime.fromisoformat(older_than)
         )
 
 
