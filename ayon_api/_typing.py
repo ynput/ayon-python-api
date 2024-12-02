@@ -18,8 +18,6 @@ ActivityReferenceType = Literal[
     "watching",
 ]
 
-BaseEntity = Dict[str, Any]
-
 EventFilterValueType = Union[
     None,
     str, int, float,
@@ -164,3 +162,173 @@ class DependencyPackageDict(TypedDict):
 
 class DependencyPackagesDict(TypedDict):
     packages: List[DependencyPackageDict]
+
+
+class DevBundleAddonInfoDict(TypedDict):
+    enabled: bool
+    path: str
+
+
+class BundleInfoDict(TypedDict):
+    name: str
+    createdAt: str
+    addons: Dict[str, str]
+    installerVersion: str
+    dependencyPackages: Dict[str, str]
+    addonDevelopment: Dict[str, DevBundleAddonInfoDict]
+    isProduction: bool
+    isStaging: bool
+    isArchived: bool
+    isDev: bool
+    activeUser: Optional[str]
+
+
+class BundlesInfoDict(TypedDict):
+    bundles: List[BundleInfoDict]
+    productionBundle: str
+    devBundles: List[str]
+
+
+class AnatomyPresetInfoDict(TypedDict):
+    name: str
+    primary: bool
+    version: str
+
+
+class AnatomyPresetRootDict(TypedDict):
+    name: str
+    windows: str
+    linux: str
+    darwin: str
+
+
+class AnatomyPresetTemplateDict(TypedDict):
+    name: str
+    directory: str
+    file: str
+
+
+class AnatomyPresetTemplatesDict(TypedDict):
+    version_padding: int
+    version: str
+    frame_padding: int
+    frame: str
+    work: List[AnatomyPresetTemplateDict]
+    publish: List[AnatomyPresetTemplateDict]
+    hero: List[AnatomyPresetTemplateDict]
+    delivery: List[AnatomyPresetTemplateDict]
+    staging: List[AnatomyPresetTemplateDict]
+    others: List[AnatomyPresetTemplateDict]
+
+
+class AnatomyPresetSubtypeDict(TypedDict):
+    name: str
+    shortName: str
+    icon: str
+    original_name: str
+
+
+class AnatomyPresetLinkTypeDict(TypedDict):
+    link_type: str
+    input_type: str
+    output_type: str
+    color: str
+    style: str
+
+
+StatusScope = Literal[
+    "folder",
+    "task",
+    "product",
+    "version",
+    "representation",
+    "workfile"
+]
+
+
+class AnatomyPresetStatusDict(TypedDict):
+    name: str
+    shortName: str
+    state: str
+    icon: str
+    color: str
+    scope: List[StatusScope]
+    original_name: str
+
+
+class AnatomyPresetTagDict(TypedDict):
+    name: str
+    color: str
+    original_name: str
+
+
+class AnatomyPresetDict(TypedDict):
+    roots: List[AnatomyPresetRootDict]
+    templates: AnatomyPresetTemplatesDict
+    attributes: Dict[str, Any]
+    folder_types: List[AnatomyPresetSubtypeDict]
+    task_types: List[AnatomyPresetSubtypeDict]
+    link_types: List[AnatomyPresetLinkTypeDict]
+    statuses: List[AnatomyPresetStatusDict]
+    tags: List[AnatomyPresetTagDict]
+
+
+class SecretDict(TypedDict):
+    name: str
+    value: str
+
+ProjectEntity = Dict[str, Any]
+FolderEntity = Dict[str, Any]
+TaskEntity = Dict[str, Any]
+ProductEntity = Dict[str, Any]
+VersionEntity = Dict[str, Any]
+RepresentationEntity = Dict[str, Any]
+WorkfileEntity = Dict[str, Any]
+EventEntity = Dict[str, Any]
+ActivityEntity = Dict[str, Any]
+AnyEntity = Union[
+    ProjectEntity,
+    FolderEntity,
+    TaskEntity,
+    ProductEntity,
+    VersionEntity,
+    RepresentationEntity,
+    WorkfileEntity,
+    EventEntity,
+    ActivityEntity,
+]
+BaseEntity = Dict[str, Any]
+
+
+class FlatFolderEntity(TypedDict):
+    id: str
+    parentId: Optional[str]
+    path: str
+    parents: List[str]
+    name: str
+    label: Optional[str]
+    folderType: str
+    hasTasks: bool
+    hasChildren: bool
+    taskNames: List[str]
+    status: str
+    attrib: Dict[str, Any]
+    ownAttrib: List[str]
+    updatedAt: str
+
+
+class ProjectHierarchyItemDict(TypedDict):
+    id: str
+    name: str
+    label: str
+    status: str
+    folderType: str
+    hasTasks: bool
+    taskNames: List[str]
+    parents: List[str]
+    parentId: Optional[str]
+    children: List["ProjectHierarchyItemDict"]
+
+
+class ProjectHierarchyDict(TypedDict):
+    hierarchy: List[ProjectHierarchyItemDict]

@@ -112,6 +112,19 @@ if typing.TYPE_CHECKING:
         AddonsInfoDict,
         InstallersInfoDict,
         DependencyPackagesDict,
+        DevBundleAddonInfoDict,
+        BundlesInfoDict,
+        AnatomyPresetDict,
+        SecretDict,
+        AnyEntity,
+        ProjectEntity,
+        FolderEntity,
+        TaskEntity,
+        ProductEntity,
+        VersionEntity,
+        RepresentationEntity,
+        FlatFolderEntity,
+        ProjectHierarchyDict,
     )
 
 PatternType = type(re.compile(""))
@@ -3325,7 +3338,7 @@ class ServerAPI(object):
         )
         return response.json()
 
-    def get_bundles(self):
+    def get_bundles(self) -> "BundlesInfoDict":
         """Server bundles with basic information.
 
         This is example output::
@@ -3362,15 +3375,16 @@ class ServerAPI(object):
 
     def create_bundle(
         self,
-        name,
-        addon_versions,
-        installer_version,
-        dependency_packages=None,
-        is_production=None,
-        is_staging=None,
-        is_dev=None,
-        dev_active_user=None,
-        dev_addons_config=None,
+        name: str,
+        addon_versions: Dict[str, str],
+        installer_version: str,
+        dependency_packages: Optional[Dict[str, str]] = None,
+        is_production: Optional[bool] = None,
+        is_staging: Optional[bool] = None,
+        is_dev: Optional[bool] = None,
+        dev_active_user: Optional[str] = None,
+        dev_addons_config: Optional[
+            Dict[str, "DevBundleAddonInfoDict"]] = None,
     ):
         """Create bundle on server.
 
@@ -3432,15 +3446,16 @@ class ServerAPI(object):
 
     def update_bundle(
         self,
-        bundle_name,
-        addon_versions=None,
-        installer_version=None,
-        dependency_packages=None,
-        is_production=None,
-        is_staging=None,
-        is_dev=None,
-        dev_active_user=None,
-        dev_addons_config=None,
+        bundle_name: str,
+        addon_versions: Optional[Dict[str, str]] = None,
+        installer_version: Optional[str] = None,
+        dependency_packages: Optional[Dict[str, str]] = None,
+        is_production: Optional[bool] = None,
+        is_staging: Optional[bool] = None,
+        is_dev: Optional[bool] = None,
+        dev_active_user: Optional[str] = None,
+        dev_addons_config: Optional[
+            Dict[str, "DevBundleAddonInfoDict"]] = None,
     ):
         """Update bundle on server.
 
@@ -3480,24 +3495,26 @@ class ServerAPI(object):
             )
             if value is not None
         }
+
         response = self.patch(
-            "{}/{}".format("bundles", bundle_name),
+            f"bundles/{bundle_name}",
             **body
         )
         response.raise_for_status()
 
     def check_bundle_compatibility(
         self,
-        name,
-        addon_versions,
-        installer_version,
-        dependency_packages=None,
-        is_production=None,
-        is_staging=None,
-        is_dev=None,
-        dev_active_user=None,
-        dev_addons_config=None,
-    ):
+        name: str,
+        addon_versions: Dict[str, str],
+        installer_version: str,
+        dependency_packages: Optional[Dict[str, str]] = None,
+        is_production: Optional[bool] = None,
+        is_staging: Optional[bool] = None,
+        is_dev: Optional[bool] = None,
+        dev_active_user: Optional[str] = None,
+        dev_addons_config: Optional[
+            Dict[str, "DevBundleAddonInfoDict"]] = None,
+    ) -> Dict[str, Any]:
         """Check bundle compatibility.
 
         Can be used as per-flight validation before creating bundle.
@@ -3543,20 +3560,18 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def delete_bundle(self, bundle_name):
+    def delete_bundle(self, bundle_name: str):
         """Delete bundle from server.
 
         Args:
             bundle_name (str): Name of bundle to delete.
 
         """
-        response = self.delete(
-            "{}/{}".format("bundles", bundle_name)
-        )
+        response = self.delete(f"bundles/{bundle_name}")
         response.raise_for_status()
 
     # Anatomy presets
-    def get_project_anatomy_presets(self):
+    def get_project_anatomy_presets(self) -> List["AnatomyPresetDict"]:
         """Anatomy presets available on server.
 
         Content has basic information about presets. Example output::
@@ -3581,7 +3596,7 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data.get("presets") or []
 
-    def get_default_anatomy_preset_name(self):
+    def get_default_anatomy_preset_name(self) -> str:
         """Name of default anatomy preset.
 
         Primary preset is used as default preset. But when primary preset is
@@ -3597,7 +3612,9 @@ class ServerAPI(object):
                 return preset["name"]
         return "_"
 
-    def get_project_anatomy_preset(self, preset_name=None):
+    def get_project_anatomy_preset(
+        self, preset_name: Optional[str] = None
+    ) -> "AnatomyPresetDict":
         """Anatomy preset values by name.
 
         Get anatomy preset values by preset name. Primary preset is returned
@@ -3607,7 +3624,7 @@ class ServerAPI(object):
             preset_name (Optional[str]): Preset name.
 
         Returns:
-            dict[str, Any]: Anatomy preset values.
+            AnatomyPresetDict: Anatomy preset values.
 
         """
         if preset_name is None:
@@ -3620,11 +3637,11 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data
 
-    def get_build_in_anatomy_preset(self):
+    def get_built_in_anatomy_preset(self) -> "AnatomyPresetDict":
         """Get built-in anatomy preset.
 
         Returns:
-            dict[str, Any]: Built-in anatomy preset.
+            AnatomyPresetDict: Built-in anatomy preset.
 
         """
         preset_name = "__builtin__"
@@ -3633,7 +3650,19 @@ class ServerAPI(object):
             preset_name = "_"
         return self.get_project_anatomy_preset(preset_name)
 
-    def get_project_root_overrides(self, project_name):
+    def get_build_in_anatomy_preset(self) -> "AnatomyPresetDict":
+        warnings.warn(
+            (
+                "Used deprecated 'get_build_in_anatomy_preset' use"
+                " 'get_built_in_anatomy_preset' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_built_in_anatomy_preset()
+
+    def get_project_root_overrides(
+        self, project_name: str
+    ) -> Dict[str, Dict[str, str]]:
         """Root overrides per site name.
 
         Method is based on logged user and can't be received for any other
@@ -3652,7 +3681,9 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data
 
-    def get_project_roots_by_site(self, project_name):
+    def get_project_roots_by_site(
+        self, project_name: str
+    ) -> Dict[str, Dict[str, str]]:
         """Root overrides per site name.
 
         Method is based on logged user and can't be received for any other
@@ -3681,8 +3712,8 @@ class ServerAPI(object):
         return self.get_project_root_overrides(project_name)
 
     def get_project_root_overrides_by_site_id(
-        self, project_name, site_id=None
-    ):
+        self, project_name: str, site_id: Optional[str] = None
+    ) -> Dict[str, str]:
         """Root overrides for site.
 
         If site id is not passed a site set in current api object is used
@@ -3706,7 +3737,9 @@ class ServerAPI(object):
         roots = self.get_project_root_overrides(project_name)
         return roots.get(site_id, {})
 
-    def get_project_roots_for_site(self, project_name, site_id=None):
+    def get_project_roots_for_site(
+        self, project_name: str, site_id: Optional[str] = None
+    ) -> Dict[str, str]:
         """Root overrides for site.
 
         If site id is not passed a site set in current api object is used
@@ -3735,8 +3768,11 @@ class ServerAPI(object):
         return self.get_project_root_overrides_by_site_id(project_name)
 
     def _get_project_roots_values(
-        self, project_name, site_id=None, platform_name=None
-    ):
+        self,
+        project_name: str,
+        site_id: Optional[str] = None,
+        platform_name: Optional[str] = None,
+    ) -> Dict[str, str]:
         """Root values for site or platform.
 
         Helper function that treats 'siteRoots' endpoint. The endpoint
@@ -3779,7 +3815,9 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_project_roots_by_site_id(self, project_name, site_id=None):
+    def get_project_roots_by_site_id(
+        self, project_name: str, site_id: Optional[str] = None
+    ) -> Dict[str, str]:
         """Root values for a site.
 
         If site id is not passed a site set in current api object is used
@@ -3800,7 +3838,9 @@ class ServerAPI(object):
 
         return self._get_project_roots_values(project_name, site_id=site_id)
 
-    def get_project_roots_by_platform(self, project_name, platform_name=None):
+    def get_project_roots_by_platform(
+        self, project_name: str, platform_name: Optional[str] = None
+    ) -> Dict[str, str]:
         """Root values for a site.
 
         If platform name is not passed current platform name is used instead.
@@ -3823,8 +3863,11 @@ class ServerAPI(object):
         )
 
     def get_addon_settings_schema(
-        self, addon_name, addon_version, project_name=None
-    ):
+        self,
+        addon_name: str,
+        addon_version: str,
+        project_name: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Sudio/Project settings schema of an addon.
 
         Project schema may look differently as some enums are based on project
@@ -3851,7 +3894,9 @@ class ServerAPI(object):
         result.raise_for_status()
         return result.data
 
-    def get_addon_site_settings_schema(self, addon_name, addon_version):
+    def get_addon_site_settings_schema(
+        self, addon_name: str, addon_version: str
+    ) -> Dict[str, Any]:
         """Site settings schema of an addon.
 
         Args:
@@ -3870,10 +3915,10 @@ class ServerAPI(object):
 
     def get_addon_studio_settings(
         self,
-        addon_name,
-        addon_version,
-        variant=None
-    ):
+        addon_name: str,
+        addon_version: str,
+        variant: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Addon studio settings.
 
         Receive studio settings for specific version of an addon.
@@ -3904,13 +3949,13 @@ class ServerAPI(object):
 
     def get_addon_project_settings(
         self,
-        addon_name,
-        addon_version,
-        project_name,
-        variant=None,
-        site_id=None,
-        use_site=True
-    ):
+        addon_name: str,
+        addon_version: str,
+        project_name: str,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+        use_site: bool = True
+    ) -> Dict[str, Any]:
         """Addon project settings.
 
         Receive project settings for specific version of an addon. The settings
@@ -3963,13 +4008,13 @@ class ServerAPI(object):
 
     def get_addon_settings(
         self,
-        addon_name,
-        addon_version,
-        project_name=None,
-        variant=None,
-        site_id=None,
-        use_site=True
-    ):
+        addon_name: str,
+        addon_version: str,
+        project_name: Optional[str] = None,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+        use_site: bool = True
+    ) -> Dict[str, Any]:
         """Receive addon settings.
 
         Receive addon settings based on project name value. Some arguments may
@@ -4003,8 +4048,11 @@ class ServerAPI(object):
         )
 
     def get_addon_site_settings(
-        self, addon_name, addon_version, site_id=None
-    ):
+        self,
+        addon_name: str,
+        addon_version: str,
+        site_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Site settings of an addon.
 
         If site id is not available an empty dictionary is returned.
@@ -4034,12 +4082,12 @@ class ServerAPI(object):
 
     def get_bundle_settings(
         self,
-        bundle_name=None,
-        project_name=None,
-        variant=None,
-        site_id=None,
-        use_site=True
-    ):
+        bundle_name: Optional[str] = None,
+        project_name: Optional[str] = None,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+        use_site: bool = True,
+    ) -> Dict[str, Any]:
         """Get complete set of settings for given data.
 
         If project is not passed then studio settings are returned. If variant
@@ -4093,12 +4141,12 @@ class ServerAPI(object):
 
     def get_addons_studio_settings(
         self,
-        bundle_name=None,
-        variant=None,
-        site_id=None,
-        use_site=True,
-        only_values=True
-    ):
+        bundle_name: Optional[str] = None,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+        use_site: bool = True,
+        only_values: bool = True,
+    ) -> Dict[str, Any]:
         """All addons settings in one bulk.
 
         Warnings:
@@ -4138,13 +4186,13 @@ class ServerAPI(object):
 
     def get_addons_project_settings(
         self,
-        project_name,
-        bundle_name=None,
-        variant=None,
-        site_id=None,
-        use_site=True,
-        only_values=True
-    ):
+        project_name: str,
+        bundle_name: Optional[str] = None,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+        use_site: bool = True,
+        only_values: bool = True,
+    ) -> Dict[str, Any]:
         """Project settings of all addons.
 
         Server returns information about used addon versions, so full output
@@ -4205,13 +4253,13 @@ class ServerAPI(object):
 
     def get_addons_settings(
         self,
-        bundle_name=None,
-        project_name=None,
-        variant=None,
-        site_id=None,
-        use_site=True,
-        only_values=True
-    ):
+        bundle_name: Optional[str] = None,
+        project_name: Optional[str] = None,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+        use_site: bool = True,
+        only_values: bool = True,
+    ) -> Dict[str, Any]:
         """Universal function to receive all addon settings.
 
         Based on 'project_name' will receive studio settings or project
@@ -4256,7 +4304,7 @@ class ServerAPI(object):
             only_values=only_values
         )
 
-    def get_secrets(self):
+    def get_secrets(self) -> List["SecretDict"]:
         """Get all secrets.
 
         Example output::
@@ -4273,14 +4321,14 @@ class ServerAPI(object):
             ]
 
         Returns:
-            list[dict[str, str]]: List of secret entities.
+            list[SecretDict]: List of secret entities.
 
         """
         response = self.get("secrets")
         response.raise_for_status()
         return response.data
 
-    def get_secret(self, secret_name):
+    def get_secret(self, secret_name: str) -> "SecretDict":
         """Get secret by name.
 
         Example output::
@@ -4301,7 +4349,7 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def save_secret(self, secret_name, secret_value):
+    def save_secret(self, secret_name: str, secret_value: str):
         """Save secret.
 
         This endpoint can create and update secret.
@@ -4319,7 +4367,7 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def delete_secret(self, secret_name):
+    def delete_secret(self, secret_name: str):
         """Delete secret by name.
 
         Args:
@@ -4331,7 +4379,9 @@ class ServerAPI(object):
         return response.data
 
     # Entity getters
-    def get_rest_project(self, project_name):
+    def get_rest_project(
+        self, project_name: str
+    ) -> Optional["ProjectEntity"]:
         """Query project by name.
 
         This call returns project with anatomy data.
@@ -4366,7 +4416,11 @@ class ServerAPI(object):
                 ]
         return project
 
-    def get_rest_projects(self, active=True, library=None):
+    def get_rest_projects(
+        self,
+        active: Optional[bool] = True,
+        library: Optional[bool] = None,
+    ) -> Generator["ProjectEntity", None, None]:
         """Query available project entities.
 
         User must be logged in.
@@ -4378,7 +4432,7 @@ class ServerAPI(object):
                 are returned if 'None' is passed.
 
         Returns:
-            Generator[dict[str, Any]]: Available projects.
+            Generator[ProjectEntity, None, None]: Available projects.
 
         """
         for project_name in self.get_project_names(active, library):
@@ -4386,7 +4440,12 @@ class ServerAPI(object):
             if project:
                 yield project
 
-    def get_rest_entity_by_id(self, project_name, entity_type, entity_id):
+    def get_rest_entity_by_id(
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+    ) -> Optional["AnyEntity"]:
         """Get entity using REST on a project by its id.
 
         Args:
@@ -4396,7 +4455,7 @@ class ServerAPI(object):
             entity_id (str): Id of entity.
 
         Returns:
-            dict[str, Any]: Received entity data.
+            Optional[AnyEntity]: Received entity data.
 
         """
         if not all((project_name, entity_type, entity_id)):
@@ -4410,10 +4469,16 @@ class ServerAPI(object):
             return response.data
         return None
 
-    def get_rest_folder(self, project_name, folder_id):
-        return self.get_rest_entity_by_id(project_name, "folder", folder_id)
+    def get_rest_folder(
+        self, project_name: str, folder_id: str
+    ) -> Optional["FolderEntity"]:
+        return self.get_rest_entity_by_id(
+            project_name, "folder", folder_id
+        )
 
-    def get_rest_folders(self, project_name, include_attrib=False):
+    def get_rest_folders(
+        self, project_name: str, include_attrib: bool = False
+    ) -> List["FlatFolderEntity"]:
         """Get simplified flat list of all project folders.
 
         Get all project folders in single REST call. This can be faster than
@@ -4469,29 +4534,41 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data["folders"]
 
-    def get_rest_task(self, project_name, task_id):
+    def get_rest_task(
+        self, project_name: str, task_id: str
+    ) -> Optional["TaskEntity"]:
         return self.get_rest_entity_by_id(project_name, "task", task_id)
 
-    def get_rest_product(self, project_name, product_id):
+    def get_rest_product(
+        self, project_name: str, product_id: str
+    ) -> Optional["ProductEntity"]:
         return self.get_rest_entity_by_id(project_name, "product", product_id)
 
-    def get_rest_version(self, project_name, version_id):
+    def get_rest_version(
+        self, project_name: str, version_id: str
+    ) -> Optional["VersionEntity"]:
         return self.get_rest_entity_by_id(project_name, "version", version_id)
 
-    def get_rest_representation(self, project_name, representation_id):
+    def get_rest_representation(
+        self, project_name: str, representation_id: str
+    ) -> Optional["RepresentationEntity"]:
         return self.get_rest_entity_by_id(
             project_name, "representation", representation_id
         )
 
-    def get_project_names(self, active=True, library=None):
+    def get_project_names(
+        self,
+        active: "Union[bool, None]" = True,
+        library: "Union[bool, None]" = None,
+    ) -> List[str]:
         """Receive available project names.
 
         User must be logged in.
 
         Args:
-            active (Optional[bool]): Filter active/inactive projects. Both
+            active (Union[bool, None]): Filter active/inactive projects. Both
                 are returned if 'None' is passed.
-            library (Optional[bool]): Filter standard/library projects. Both
+            library (Union[bool, None]): Filter standard/library projects. Both
                 are returned if 'None' is passed.
 
         Returns:
@@ -4520,7 +4597,9 @@ class ServerAPI(object):
                 project_names.append(project["name"])
         return project_names
 
-    def _should_use_rest_project(self, fields=None):
+    def _should_use_rest_project(
+        self, fields: Optional[Iterable[str]] = None
+    ) -> bool:
         """Fetch of project must be done using REST endpoint.
 
         Returns:
@@ -4535,8 +4614,12 @@ class ServerAPI(object):
         return False
 
     def get_projects(
-        self, active=True, library=None, fields=None, own_attributes=False
-    ):
+        self,
+        active: "Union[bool, None]" = True,
+        library: "Union[bool, None]" = None,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Generator["ProjectEntity", None, None]:
         """Get projects.
 
         Args:
@@ -4550,7 +4633,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[dict[str, Any]]: Queried projects.
+            Generator[ProjectEntity, None, None]: Queried projects.
 
         """
         if fields is not None:
@@ -4573,7 +4656,12 @@ class ServerAPI(object):
                     fill_own_attribs(project)
                 yield project
 
-    def get_project(self, project_name, fields=None, own_attributes=False):
+    def get_project(
+        self,
+        project_name: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Optional["ProjectEntity"]:
         """Get project.
 
         Args:
@@ -4584,7 +4672,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict[str, Any], None]: Project entity data or None
+            Optional[ProjectEntity]: Project entity data or None
                 if project was not found.
 
         """
@@ -4615,10 +4703,10 @@ class ServerAPI(object):
 
     def get_folders_hierarchy(
         self,
-        project_name,
-        search_string=None,
-        folder_types=None
-    ):
+        project_name: str,
+        search_string: Optional[str] = None,
+        folder_types: Optional[Iterable[str]] = None
+    ) -> "ProjectHierarchyDict":
         """Get project hierarchy.
 
         All folders in project in hierarchy data structure.
@@ -4672,7 +4760,9 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_folders_rest(self, project_name, include_attrib=False):
+    def get_folders_rest(
+        self, project_name: str, include_attrib: bool = False
+    ) -> List["FlatFolderEntity"]:
         """Get simplified flat list of all project folders.
 
         Get all project folders in single REST call. This can be faster than

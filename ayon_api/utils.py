@@ -21,8 +21,8 @@ from .constants import (
 from .exceptions import UrlError
 
 if typing.TYPE_CHECKING:
-    from typing import BaseEntity, Union
-    from ._typing import BaseEntity
+    from typing import Union
+    from ._typing import AnyEntity
 
 REMOVED_VALUE = object()
 NOT_SET = object()
@@ -250,8 +250,8 @@ def failed_json_default(value: Any) -> str:
 
 
 def prepare_attribute_changes(
-    old_entity: "BaseEntity",
-    new_entity: "BaseEntity",
+    old_entity: "AnyEntity",
+    new_entity: "AnyEntity",
     replace: int = False,
 ):
     attrib_changes = {}
