@@ -820,8 +820,11 @@ def test_addon_methods():
     addon_version = "1.0.0"
     download_path = "tests/resources/tmp_downloads"
     private_file_path = os.path.join(download_path, "ayon-symbol.png")
+    for addon in get_addons_info()["addons"]:
+        if addon["name"] == addon_name and addon["version"] == addon_version:
+            delete_addon_version(addon_name, addon_version)
+            break
 
-    delete_addon_version(addon_name, addon_version)
     assert all(
         addon_name != addon["name"] for addon in get_addons_info()["addons"]
     )
