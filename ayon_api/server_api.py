@@ -17,7 +17,7 @@ import warnings
 import itertools
 from contextlib import contextmanager
 import typing
-from typing import Optional, Iterable, Generator, Dict, List, Any
+from typing import Optional, Iterable, Tuple, Generator, Dict, List, Set, Any
 
 try:
     from http import HTTPStatus
@@ -100,7 +100,19 @@ from .utils import (
 )
 
 if typing.TYPE_CHECKING:
-    from ._typing import ActivityType, ActivityReferenceType
+    from typing import Union, BinaryIO
+    from ._typing import (
+        ActivityType,
+        ActivityReferenceType,
+        EventFilter,
+        AttributeScope,
+        AttributeSchemaDataDict,
+        AttributeSchemaDict,
+        AttributesSchemaDict,
+        AddonsInfoDict,
+        InstallersInfoDict,
+        DependencyPackagesDict,
+    )
 
 PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
@@ -150,8 +162,8 @@ def _get_description(response):
 
 
 class RequestType:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name: str):
+        self.name: str = name
 
     def __hash__(self):
         return self.name.__hash__()
@@ -209,7 +221,7 @@ class RestApiResponse(object):
         return self._response.content
 
     @property
-    def content_type(self):
+    def content_type(self) -> Optional[str]:
         return self.headers.get("Content-Type")
 
     @property
@@ -220,7 +232,7 @@ class RestApiResponse(object):
         return _get_description(self)
 
     @property
-    def status_code(self):
+    def status_code(self) -> int:
         return self.status
 
     def raise_for_status(self, message=None):
@@ -405,7 +417,7 @@ class ServerAPI(object):
         sender (Optional[str]): Sender of requests, more specific than
             sender type (e.g. machine name). Used in server logs and
             propagated into events.
-        ssl_verify (Union[bool, str, None]): Verify SSL certificate
+        ssl_verify (Optional[Union[bool, str]]): Verify SSL certificate
             Looks for env variable value ``AYON_CA_FILE`` by default. If not
             available then 'True' is used.
         cert (Optional[str]): Path to certificate file. Looks for env
@@ -424,42 +436,42 @@ class ServerAPI(object):
 
     def __init__(
         self,
-        base_url,
-        token=None,
-        site_id=NOT_SET,
-        client_version=None,
-        default_settings_variant=None,
-        sender_type=None,
-        sender=None,
-        ssl_verify=None,
-        cert=None,
-        create_session=True,
-        timeout=None,
-        max_retries=None,
+        base_url: str,
+        token: Optional[str] = None,
+        site_id: Optional[str] = NOT_SET,
+        client_version: Optional[str] = None,
+        default_settings_variant: Optional[str] = None,
+        sender_type: Optional[str] = None,
+        sender: Optional[str] = None,
+        ssl_verify: Optional["Union[bool, str]"]=None,
+        cert: Optional[str] = None,
+        create_session: bool = True,
+        timeout: Optional[float] = None,
+        max_retries: Optional[int] = None,
     ):
         if not base_url:
             raise ValueError("Invalid server URL {}".format(str(base_url)))
 
         base_url = base_url.rstrip("/")
-        self._base_url = base_url
-        self._rest_url = "{}/api".format(base_url)
-        self._graphql_url = "{}/graphql".format(base_url)
         self._log = None
-        self._access_token = token
+        self._base_url: str = base_url
+        self._rest_url: str = "{}/api".format(base_url)
+        self._graphql_url: str = "{}/graphql".format(base_url)
+        self._access_token: Optional[str] = token
         # Allow to have 'site_id' to 'None'
         if site_id is NOT_SET:
             site_id = get_default_site_id()
-        self._site_id = site_id
-        self._client_version = client_version
-        self._default_settings_variant = (
+        self._site_id: Optional[str] = site_id
+        self._client_version: Optional[str] = client_version
+        self._default_settings_variant: str = (
             default_settings_variant
             or get_default_settings_variant()
         )
-        self._sender = sender
-        self._sender_type = sender_type
+        self._sender: Optional[str] = sender
+        self._sender_type: Optional[str] = sender_type
 
-        self._timeout = None
-        self._max_retries = None
+        self._timeout: float = 0.0
+        self._max_retries: int = 0
 
         # Set timeout and max retries based on passed values
         self.set_timeout(timeout)
@@ -509,7 +521,7 @@ class ServerAPI(object):
             self.create_session()
 
     @property
-    def log(self):
+    def log(self) -> logging.Logger:
         if self._log is None:
             self._log = logging.getLogger(self.__class__.__name__)
         return self._log
@@ -602,7 +614,7 @@ class ServerAPI(object):
 
         return cls._default_max_retries
 
-    def get_timeout(self):
+    def get_timeout(self) -> float:
         """Current value for requests timeout.
 
         Returns:
@@ -611,18 +623,18 @@ class ServerAPI(object):
         """
         return self._timeout
 
-    def set_timeout(self, timeout):
+    def set_timeout(self, timeout: Optional[float]):
         """Change timeout value for requests.
 
         Args:
-            timeout (Union[float, None]): Timeout value in seconds.
+            timeout (Optional[float]): Timeout value in seconds.
 
         """
         if timeout is None:
             timeout = self.get_default_timeout()
         self._timeout = float(timeout)
 
-    def get_max_retries(self):
+    def get_max_retries(self) -> int:
         """Current value for requests max retries.
 
         Returns:
@@ -631,11 +643,11 @@ class ServerAPI(object):
         """
         return self._max_retries
 
-    def set_max_retries(self, max_retries):
+    def set_max_retries(self, max_retries: Optional[int]):
         """Change max retries value for requests.
 
         Args:
-            max_retries (Union[int, None]): Max retries value.
+            max_retries (Optional[int]): Max retries value.
 
         """
         if max_retries is None:
@@ -646,16 +658,16 @@ class ServerAPI(object):
     max_retries = property(get_max_retries, set_max_retries)
 
     @property
-    def access_token(self):
+    def access_token(self) -> Optional[str]:
         """Access token used for authorization to server.
 
         Returns:
-            Union[str, None]: Token string or None if not authorized yet.
+            Optional[str]: Token string or None if not authorized yet.
 
         """
         return self._access_token
 
-    def is_service_user(self):
+    def is_service_user(self) -> bool:
         """Check if connection is using service API key.
 
         Returns:
@@ -666,26 +678,26 @@ class ServerAPI(object):
             raise ValueError("User is not logged in.")
         return bool(self._access_token_is_service)
 
-    def get_site_id(self):
+    def get_site_id(self) -> Optional[str]:
         """Site id used for connection.
 
         Site id tells server from which machine/site is connection created and
         is used for default site overrides when settings are received.
 
         Returns:
-            Union[str, None]: Site id value or None if not filled.
+            Optional[str]: Site id value or None if not filled.
 
         """
         return self._site_id
 
-    def set_site_id(self, site_id):
+    def set_site_id(self, site_id: Optional[str]):
         """Change site id of connection.
 
         Behave as specific site for server. It affects default behavior of
         settings getter methods.
 
         Args:
-            site_id (Union[str, None]): Site id value, or 'None' to unset.
+            site_id (Optional[str]): Site id value, or 'None' to unset.
 
         """
         if self._site_id == site_id:
@@ -696,7 +708,7 @@ class ServerAPI(object):
 
     site_id = property(get_site_id, set_site_id)
 
-    def get_client_version(self):
+    def get_client_version(self) -> Optional[str]:
         """Version of client used to connect to server.
 
         Client version is AYON client build desktop application.
@@ -707,13 +719,13 @@ class ServerAPI(object):
         """
         return self._client_version
 
-    def set_client_version(self, client_version):
+    def set_client_version(self, client_version: Optional[str]):
         """Set version of client used to connect to server.
 
         Client version is AYON client build desktop application.
 
         Args:
-            client_version (Union[str, None]): Client version string.
+            client_version (Optional[str]): Client version string.
 
         """
         if self._client_version == client_version:
@@ -724,7 +736,7 @@ class ServerAPI(object):
 
     client_version = property(get_client_version, set_client_version)
 
-    def get_default_settings_variant(self):
+    def get_default_settings_variant(self) -> str:
         """Default variant used for settings.
 
         Returns:
@@ -733,7 +745,7 @@ class ServerAPI(object):
         """
         return self._default_settings_variant
 
-    def set_default_settings_variant(self, variant):
+    def set_default_settings_variant(self, variant: str):
         """Change default variant for addon settings.
 
         Note:
@@ -752,7 +764,7 @@ class ServerAPI(object):
         set_default_settings_variant
     )
 
-    def get_sender(self):
+    def get_sender(self) -> str:
         """Sender used to send requests.
 
         Returns:
@@ -761,11 +773,11 @@ class ServerAPI(object):
         """
         return self._sender
 
-    def set_sender(self, sender):
+    def set_sender(self, sender: Optional[str]):
         """Change sender used for requests.
 
         Args:
-            sender (Union[str, None]): Sender name or None.
+            sender (Optional[str]): Sender name or None.
 
         """
         if sender == self._sender:
@@ -775,22 +787,22 @@ class ServerAPI(object):
 
     sender = property(get_sender, set_sender)
 
-    def get_sender_type(self):
+    def get_sender_type(self) -> Optional[str]:
         """Sender type used to send requests.
 
         Sender type is supported since AYON server 1.5.5 .
 
         Returns:
-            Union[str, None]: Sender type or None.
+            Optional[str]: Sender type or None.
 
         """
         return self._sender_type
 
-    def set_sender_type(self, sender_type):
+    def set_sender_type(self, sender_type: Optional[str]):
         """Change sender type used for requests.
 
         Args:
-            sender_type (Union[str, None]): Sender type or None.
+            sender_type (Optional[str]): Sender type or None.
 
         """
         if sender_type == self._sender_type:
@@ -1027,7 +1039,7 @@ class ServerAPI(object):
             self._server_version = self.get_info()["version"]
         return self._server_version
 
-    def get_server_version_tuple(self):
+    def get_server_version_tuple(self) -> Tuple[int, int, int, str, str]:
         """Get server version as tuple.
 
         Version should match semantic version (https://semver.org/).
@@ -1052,7 +1064,9 @@ class ServerAPI(object):
         return self._server_version_tuple
 
     server_version = property(get_server_version)
-    server_version_tuple = property(get_server_version_tuple)
+    server_version_tuple: Tuple[int, int, int, str, str] = property(
+        get_server_version_tuple
+    )
 
     @property
     def graphql_allows_data_in_query(self):
@@ -1623,18 +1637,18 @@ class ServerAPI(object):
 
     def dispatch_event(
         self,
-        topic,
-        sender=None,
-        event_hash=None,
-        project_name=None,
-        username=None,
-        depends_on=None,
-        description=None,
-        summary=None,
-        payload=None,
-        finished=True,
-        store=True,
-        dependencies=None,
+        topic: str,
+        sender: Optional[str] = None,
+        event_hash: Optional[str] = None,
+        project_name: Optional[str] = None,
+        username: Optional[str] = None,
+        depends_on: Optional[str] = None,
+        description: Optional[str] = None,
+        summary: Optional[Dict[str, Any]] = None,
+        payload: Optional[Dict[str, Any]] = None,
+        finished: bool = True,
+        store: bool = True,
+        dependencies: Optional[List[str]] = None,
     ):
         """Dispatch event to server.
 
@@ -1712,15 +1726,15 @@ class ServerAPI(object):
 
     def enroll_event_job(
         self,
-        source_topic,
-        target_topic,
-        sender,
-        description=None,
-        sequential=None,
-        events_filter=None,
-        max_retries=None,
-        ignore_older_than=None,
-        ignore_sender_types=None,
+        source_topic: "Union[str, List[str]]",
+        target_topic: str,
+        sender: str,
+        description: Optional[str] = None,
+        sequential: Optional[bool] = None,
+        events_filter: Optional["EventFilter"] = None,
+        max_retries: Optional[int] = None,
+        ignore_older_than: Optional[str] = None,
+        ignore_sender_types: Optional[str] = None,
     ):
         """Enroll job based on events.
 
@@ -1756,7 +1770,8 @@ class ServerAPI(object):
                 - 'sequential' should be 'False'
 
         Args:
-            source_topic (str): Source topic to enroll.
+            source_topic (Union[str, List[str]]): Source topic to enroll with
+                wildcards '*', or explicit list of topics.
             target_topic (str): Topic of dependent event.
             sender (str): Identifier of sender (e.g. service name or username).
             description (Optional[str]): Human readable text shown
@@ -2094,7 +2109,11 @@ class ServerAPI(object):
                 progress.add_transferred_chunk(len(chunk))
 
     def download_file_to_stream(
-        self, endpoint, stream, chunk_size=None, progress=None
+        self,
+        endpoint: str,
+        stream: "Union[io.BytesIO, BinaryIO]",
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
     ):
         """Download file from AYON server to IOStream.
 
@@ -2146,7 +2165,11 @@ class ServerAPI(object):
         return progress
 
     def download_file(
-        self, endpoint, filepath, chunk_size=None, progress=None
+        self,
+        endpoint: str,
+        filepath: str,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
     ):
         """Download file from AYON server.
 
@@ -2192,7 +2215,11 @@ class ServerAPI(object):
         return progress
 
     @staticmethod
-    def _upload_chunks_iter(file_stream, progress, chunk_size):
+    def _upload_chunks_iter(
+        file_stream: "Union[io.BytesIO, BinaryIO]",
+        progress: TransferProgress,
+        chunk_size: int,
+    ) -> Generator[bytes, None, None]:
         """Generator that yields chunks of file.
 
         Args:
@@ -2220,13 +2247,13 @@ class ServerAPI(object):
 
     def _upload_file(
         self,
-        url,
-        stream,
-        progress,
-        request_type=None,
-        chunk_size=None,
+        url: str,
+        stream: "Union[io.BytesIO, BinaryIO]",
+        progress: TransferProgress,
+        request_type: Optional[RequestType] = None,
+        chunk_size: Optional[int] = None,
         **kwargs
-    ):
+    ) -> requests.Response:
         """Upload file to server.
 
         Args:
@@ -2242,7 +2269,7 @@ class ServerAPI(object):
                 to request function.
 
         Returns:
-            RestApiResponse: Server response.
+            requests.Response: Server response.
 
         """
         if request_type is None:
@@ -2270,8 +2297,13 @@ class ServerAPI(object):
         return response
 
     def upload_file_from_stream(
-        self, endpoint, stream, progress, request_type, **kwargs
-    ):
+        self,
+        endpoint: str,
+        stream: "Union[io.BytesIO, BinaryIO]",
+        progress: Optional[TransferProgress] = None,
+        request_type: Optional[RequestType] = None,
+        **kwargs
+    ) -> requests.Response:
         """Upload file to server from bytes.
 
         Todos:
@@ -2315,8 +2347,13 @@ class ServerAPI(object):
             progress.set_transfer_done()
 
     def upload_file(
-        self, endpoint, filepath, progress=None, request_type=None, **kwargs
-    ):
+        self,
+        endpoint: str,
+        filepath: str,
+        progress: Optional[TransferProgress] = None,
+        request_type: Optional[RequestType] = None,
+        **kwargs
+    ) -> requests.Response:
         """Upload file to server.
 
         Todos:
@@ -2349,16 +2386,16 @@ class ServerAPI(object):
 
     def upload_reviewable(
         self,
-        project_name,
-        version_id,
-        filepath,
-        label=None,
-        content_type=None,
-        filename=None,
-        progress=None,
-        headers=None,
+        project_name: str,
+        version_id: str,
+        filepath: str,
+        label: Optional[str] = None,
+        content_type: Optional[str] = None,
+        filename: Optional[str] = None,
+        progress: Optional[TransferProgress] = None,
+        headers: Optional[Dict[str, Any]] = None,
         **kwargs
-    ):
+    ) -> requests.Response:
         """Upload reviewable file to server.
 
         Args:
@@ -2374,7 +2411,7 @@ class ServerAPI(object):
             headers (Optional[Dict[str, Any]]): Headers.
 
         Returns:
-            RestApiResponse: Server response.
+            requests.Response: Server response.
 
         """
         if not content_type:
@@ -2430,7 +2467,11 @@ class ServerAPI(object):
             # TODO add better exception
             raise ValueError("Failed to restart server")
 
-    def query_graphql(self, query, variables=None):
+    def query_graphql(
+        self,
+        query: str,
+        variables: Optional[Dict[str, Any]] = None,
+    ) -> GraphQlResponse:
         """Execute GraphQl query.
 
         Args:
@@ -2451,10 +2492,10 @@ class ServerAPI(object):
         response.raise_for_status()
         return GraphQlResponse(response)
 
-    def get_graphql_schema(self):
-        return self.query_graphql(INTROSPECTION_QUERY).data
+    def get_graphql_schema(self) -> Dict[str, Any]:
+        return self.query_graphql(INTROSPECTION_QUERY).data["data"]
 
-    def get_server_schema(self):
+    def get_server_schema(self) -> Optional[Dict[str, Any]]:
         """Get server schema with info, url paths, components etc.
 
         Todos:
@@ -2470,7 +2511,7 @@ class ServerAPI(object):
             return response.data
         return None
 
-    def get_schemas(self):
+    def get_schemas(self) -> Dict[str, Any]:
         """Get components schema.
 
         Name of components does not match entity type names e.g. 'project' is
@@ -2485,7 +2526,9 @@ class ServerAPI(object):
         server_schema = self.get_server_schema()
         return server_schema["components"]["schemas"]
 
-    def get_attributes_schema(self, use_cache=True):
+    def get_attributes_schema(
+        self, use_cache: bool = True
+    ) -> "AttributesSchemaDict":
         if not use_cache:
             self.reset_attributes_schema()
 
@@ -2500,7 +2543,12 @@ class ServerAPI(object):
         self._entity_type_attributes_cache = {}
 
     def set_attribute_config(
-        self, attribute_name, data, scope, position=None, builtin=False
+        self,
+        attribute_name: str,
+        data: "AttributeSchemaDataDict",
+        scope: List["AttributeScope"],
+        position: Optional[int] = None,
+        builtin: bool = False,
     ):
         if position is None:
             attributes = self.get("attributes").data["attributes"]
@@ -2533,7 +2581,7 @@ class ServerAPI(object):
 
         self.reset_attributes_schema()
 
-    def remove_attribute_config(self, attribute_name):
+    def remove_attribute_config(self, attribute_name: str):
         """Remove attribute from server.
 
         This can't be un-done, please use carefully.
@@ -2551,7 +2599,9 @@ class ServerAPI(object):
 
         self.reset_attributes_schema()
 
-    def get_attributes_for_type(self, entity_type):
+    def get_attributes_for_type(
+        self, entity_type: "AttributeScope"
+    ) -> Dict[str, "AttributeSchemaDict"]:
         """Get attribute schemas available for an entity type.
 
         Example::
@@ -2602,7 +2652,9 @@ class ServerAPI(object):
 
         return copy.deepcopy(attributes)
 
-    def get_attributes_fields_for_type(self, entity_type):
+    def get_attributes_fields_for_type(
+        self, entity_type: "AttributeScope"
+    ) -> Set[str]:
         """Prepare attribute fields for entity type.
 
         Returns:
@@ -2615,7 +2667,7 @@ class ServerAPI(object):
             for attr in attributes
         }
 
-    def get_default_fields_for_type(self, entity_type):
+    def get_default_fields_for_type(self, entity_type: str) -> Set[str]:
         """Default fields for entity type.
 
         Returns most of commonly used fields from server.
@@ -2691,7 +2743,7 @@ class ServerAPI(object):
             | self.get_attributes_fields_for_type(entity_type)
         )
 
-    def get_addons_info(self, details=True):
+    def get_addons_info(self, details: bool = True) -> "AddonsInfoDict":
         """Get information about addons available on server.
 
         Args:
@@ -2706,7 +2758,12 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_addon_endpoint(self, addon_name, addon_version, *subpaths):
+    def get_addon_endpoint(
+        self,
+        addon_name: str,
+        addon_version: str,
+        *subpaths: str,
+    ) -> str:
         """Calculate endpoint to addon route.
 
         Examples:
@@ -2736,8 +2793,12 @@ class ServerAPI(object):
         )
 
     def get_addon_url(
-        self, addon_name, addon_version, *subpaths, use_rest=True
-    ):
+        self,
+        addon_name: str,
+        addon_version: str,
+        *subpaths: str,
+        use_rest: bool = True,
+    ) -> str:
         """Calculate url to addon route.
 
         Examples:
@@ -2766,14 +2827,14 @@ class ServerAPI(object):
 
     def download_addon_private_file(
         self,
-        addon_name,
-        addon_version,
-        filename,
-        destination_dir,
-        destination_filename=None,
-        chunk_size=None,
-        progress=None,
-    ):
+        addon_name: str,
+        addon_version: str,
+        filename: str,
+        destination_dir: str,
+        destination_filename: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> str:
         """Download a file from addon private files.
 
         This method requires to have authorized token available. Private files
@@ -2813,7 +2874,11 @@ class ServerAPI(object):
         )
         return dst_filepath
 
-    def get_installers(self, version=None, platform_name=None):
+    def get_installers(
+        self,
+        version: Optional[str] = None,
+        platform_name: Optional[str] = None,
+    ) -> "InstallersInfoDict":
         """Information about desktop application installers on server.
 
         Desktop application installers are helpers to download/update AYON
@@ -2824,7 +2889,7 @@ class ServerAPI(object):
             platform_name (Optional[str]): Filter installers by platform name.
 
         Returns:
-            list[dict[str, Any]]:
+            InstallersInfoDict: Information about installers known for server.
 
         """
         query_fields = [
@@ -2845,16 +2910,16 @@ class ServerAPI(object):
 
     def create_installer(
         self,
-        filename,
-        version,
-        python_version,
-        platform_name,
-        python_modules,
-        runtime_python_modules,
-        checksum,
-        checksum_algorithm,
-        file_size,
-        sources=None,
+        filename: str,
+        version: str,
+        python_version: str,
+        platform_name: str,
+        python_modules: Dict[str, str],
+        runtime_python_modules: Dict[str, str],
+        checksum: str,
+        checksum_algorithm: str,
+        file_size: int,
+        sources: Optional[List[Dict[str, Any]]] = None,
     ):
         """Create new installer information on server.
 
@@ -2898,7 +2963,7 @@ class ServerAPI(object):
         response = self.post("desktop/installers", **body)
         response.raise_for_status()
 
-    def update_installer(self, filename, sources):
+    def update_installer(self, filename: str, sources: List[Dict[str, Any]]):
         """Update installer information on server.
 
         Args:
@@ -2913,7 +2978,7 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
-    def delete_installer(self, filename):
+    def delete_installer(self, filename: str):
         """Delete installer from server.
 
         Args:
@@ -2925,10 +2990,10 @@ class ServerAPI(object):
 
     def download_installer(
         self,
-        filename,
-        dst_filepath,
-        chunk_size=None,
-        progress=None
+        filename: str,
+        dst_filepath: str,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None
     ):
         """Download installer file from server.
 
@@ -2947,7 +3012,12 @@ class ServerAPI(object):
             progress=progress
         )
 
-    def upload_installer(self, src_filepath, dst_filename, progress=None):
+    def upload_installer(
+        self,
+        src_filepath: str,
+        dst_filename: str,
+        progress: Optional[TransferProgress] = None,
+    ):
         """Upload installer file to server.
 
         Args:
@@ -2966,13 +3036,15 @@ class ServerAPI(object):
             progress=progress
         )
 
-    def _get_dependency_package_route(self, filename=None):
+    def _get_dependency_package_route(
+        self, filename: Optional[str] = None
+    ) -> str:
         endpoint = "desktop/dependencyPackages"
         if filename:
             return "{}/{}".format(endpoint, filename)
         return endpoint
 
-    def get_dependency_packages(self):
+    def get_dependency_packages(self) -> "DependencyPackagesDict":
         """Information about dependency packages on server.
 
         To download dependency package, use 'download_dependency_package'
@@ -2996,8 +3068,8 @@ class ServerAPI(object):
             }
 
         Returns:
-            dict[str, Any]: Information about dependency packages known for
-                server.
+            DependencyPackagesDict: Information about dependency packages
+                known for server.
 
         """
         endpoint = self._get_dependency_package_route()
@@ -3007,15 +3079,15 @@ class ServerAPI(object):
 
     def create_dependency_package(
         self,
-        filename,
-        python_modules,
-        source_addons,
-        installer_version,
-        checksum,
-        checksum_algorithm,
-        file_size,
-        sources=None,
-        platform_name=None,
+        filename: str,
+        python_modules: Dict[str, str],
+        source_addons: Dict[str, str],
+        installer_version: str,
+        checksum: str,
+        checksum_algorithm: str,
+        file_size: int,
+        sources: Optional[List[Dict[str, Any]]] = None,
+        platform_name: Optional[str] = None,
     ):
         """Create dependency package on server.
 
@@ -3063,7 +3135,9 @@ class ServerAPI(object):
         response = self.post(route, **post_body)
         response.raise_for_status()
 
-    def update_dependency_package(self, filename, sources):
+    def update_dependency_package(
+        self, filename: str, sources: List[Dict[str, Any]]
+    ):
         """Update dependency package metadata on server.
 
         Args:
@@ -3079,7 +3153,9 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
-    def delete_dependency_package(self, filename, platform_name=None):
+    def delete_dependency_package(
+        self, filename: str, platform_name: Optional[str] = None
+    ):
         """Remove dependency package for specific platform.
 
         Args:
@@ -3104,13 +3180,13 @@ class ServerAPI(object):
 
     def download_dependency_package(
         self,
-        src_filename,
-        dst_directory,
-        dst_filename,
-        platform_name=None,
-        chunk_size=None,
-        progress=None,
-    ):
+        src_filename: str,
+        dst_directory: str,
+        dst_filename: str,
+        platform_name: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> str:
         """Download dependency package from server.
 
         This method requires to have authorized token available. The package
@@ -3151,7 +3227,11 @@ class ServerAPI(object):
         return package_filepath
 
     def upload_dependency_package(
-        self, src_filepath, dst_filename, platform_name=None, progress=None
+        self,
+        src_filepath: str,
+        dst_filename: str,
+        platform_name: Optional[str] = None,
+        progress: Optional[TransferProgress] = None,
     ):
         """Upload dependency package to server.
 
@@ -3218,7 +3298,11 @@ class ServerAPI(object):
         response = self.delete(f"addons/{addon_name}/{addon_version}{query}")
         response.raise_for_status()
 
-    def upload_addon_zip(self, src_filepath, progress=None):
+    def upload_addon_zip(
+        self,
+        src_filepath: str,
+        progress: Optional[TransferProgress] = None,
+    ):
         """Upload addon zip file to server.
 
         File is validated on server. If it is valid, it is installed. It will
