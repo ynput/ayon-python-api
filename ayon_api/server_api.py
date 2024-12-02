@@ -2138,9 +2138,6 @@ class ServerAPI(object):
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
-        if endpoint.startswith(self._base_url):
-            url = endpoint
-
         url = self._endpoint_to_url(endpoint)
 
         if progress is None:
