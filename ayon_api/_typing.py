@@ -1,4 +1,14 @@
-from typing import Literal, Dict, List, Any, TypedDict, Union, Optional
+import io
+from typing import (
+    Literal,
+    Dict,
+    List,
+    Any,
+    TypedDict,
+    Union,
+    Optional,
+    BinaryIO,
+)
 
 ActivityType = Literal[
     "comment",
@@ -60,6 +70,7 @@ AttributeScope = Literal[
     "workfile",
     "user"
 ]
+
 AttributeType = Literal[
     "string",
     "integer",
@@ -72,6 +83,8 @@ AttributeType = Literal[
     "list_of_submodels",
     "dict",
 ]
+
+LinkDirection = Literal["in", "out"]
 
 
 class AttributeEnumItemDict(TypedDict):
@@ -332,3 +345,12 @@ class ProjectHierarchyItemDict(TypedDict):
 
 class ProjectHierarchyDict(TypedDict):
     hierarchy: List[ProjectHierarchyItemDict]
+
+
+class ProductTypeDict(TypedDict):
+    name: str
+    color: Optional[str]
+    icon: Optional[str]
+
+
+StreamType = Union[io.BytesIO, BinaryIO]
