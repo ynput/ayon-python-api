@@ -8098,7 +8098,7 @@ class ServerAPI(object):
         link_types: Optional[List[Dict[str, Any]]] = None,
         statuses: Optional[List[Dict[str, Any]]] = None,
         tags: Optional[List[Dict[str, Any]]] = None,
-        config: Optional[Dict[Dict[str, Any]]] = None,
+        config: Optional[Dict[str, Any]] = None,
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
         active: Optional[bool] = None,
@@ -8119,7 +8119,7 @@ class ServerAPI(object):
             statuses (Optional[list[dict[str, Any]]]): Status definitions.
             tags (Optional[list[dict[str, Any]]]): List of tags available to
                 set on entities.
-            config (Optional[dict[dict[str, Any]]]): Project anatomy config
+            config (Optional[dict[str, Any]]): Project anatomy config
                 with templates and roots.
             attrib (Optional[dict[str, Any]]): Project attributes to change.
             data (Optional[dict[str, Any]]): Custom data of a project. This
