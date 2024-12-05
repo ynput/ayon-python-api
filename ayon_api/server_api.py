@@ -100,10 +100,11 @@ from .utils import (
 )
 
 if typing.TYPE_CHECKING:
-    from typing import Union, BinaryIO
+    from typing import Union
     from ._typing import (
         ActivityType,
         ActivityReferenceType,
+        LinkDirection,
         EventFilter,
         AttributeScope,
         AttributeSchemaDataDict,
@@ -116,6 +117,7 @@ if typing.TYPE_CHECKING:
         BundlesInfoDict,
         AnatomyPresetDict,
         SecretDict,
+
         AnyEntity,
         ProjectEntity,
         FolderEntity,
@@ -123,8 +125,12 @@ if typing.TYPE_CHECKING:
         ProductEntity,
         VersionEntity,
         RepresentationEntity,
+        WorkfileEntity,
         FlatFolderEntity,
+
         ProjectHierarchyDict,
+        ProductTypeDict,
+        StreamType,
     )
 
 PatternType = type(re.compile(""))
@@ -823,7 +829,7 @@ class ServerAPI(object):
 
     sender_type = property(get_sender_type, set_sender_type)
 
-    def get_default_service_username(self):
+    def get_default_service_username(self) -> Optional[str]:
         """Default username used for callbacks when used with service API key.
 
         Returns:
@@ -832,7 +838,7 @@ class ServerAPI(object):
         """
         return self._as_user_stack.get_default_username()
 
-    def set_default_service_username(self, username=None):
+    def set_default_service_username(self, username: Optional[str] = None):
         """Service API will work as other user.
 
         Service API keys can work as other user. It can be temporary using
@@ -866,7 +872,11 @@ class ServerAPI(object):
             self._update_session_headers()
 
     @contextmanager
-    def as_username(self, username, ignore_service_error=False):
+    def as_username(
+        self,
+        username: "Union[str, None]",
+        ignore_service_error: bool = False,
+    ):
         """Service API will temporarily work as other user.
 
         This method can be used only if service API key is logged in.
@@ -902,7 +912,7 @@ class ServerAPI(object):
             self._update_session_headers()
 
     @property
-    def is_server_available(self):
+    def is_server_available(self) -> bool:
         if self._server_available is None:
             response = requests.get(
                 self._base_url,
@@ -913,7 +923,7 @@ class ServerAPI(object):
         return self._server_available
 
     @property
-    def has_valid_token(self):
+    def has_valid_token(self) -> bool:
         if self._access_token is None:
             return False
 
@@ -927,7 +937,7 @@ class ServerAPI(object):
                 self._base_url
             ))
 
-    def validate_token(self):
+    def validate_token(self) -> bool:
         try:
             self._token_validation_started = True
             # TODO add other possible validations
@@ -944,7 +954,7 @@ class ServerAPI(object):
             self._token_validation_started = False
         return self._token_is_valid
 
-    def set_token(self, token):
+    def set_token(self, token: Optional[str]):
         self.reset_token()
         self._access_token = token
         self.get_user()
@@ -954,7 +964,9 @@ class ServerAPI(object):
         self._token_is_valid = None
         self.close_session()
 
-    def create_session(self, ignore_existing=True, force=False):
+    def create_session(
+        self, ignore_existing: bool = True, force: bool = False
+    ):
         """Create a connection session.
 
         Session helps to keep connection with server without
@@ -1019,7 +1031,7 @@ class ServerAPI(object):
             elif key in self._session.headers:
                 self._session.headers.pop(key)
 
-    def get_info(self):
+    def get_info(self) -> Dict[str, Any]:
         """Get information about current used api key.
 
         By default, the 'info' contains only 'uptime' and 'version'. With
@@ -1037,7 +1049,7 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_server_version(self):
+    def get_server_version(self) -> str:
         """Get server version.
 
         Version should match semantic version (https://semver.org/).
@@ -1080,7 +1092,7 @@ class ServerAPI(object):
     )
 
     @property
-    def graphql_allows_data_in_query(self):
+    def graphql_allows_data_in_query(self) -> bool:
         """GraphQl query can support 'data' field.
 
         This applies only to project hierarchy entities 'project', 'folder',
@@ -1099,7 +1111,7 @@ class ServerAPI(object):
             self._graphql_allows_data_in_query = graphql_allows_data_in_query
         return self._graphql_allows_data_in_query
 
-    def _get_user_info(self):
+    def _get_user_info(self) -> Optional[Dict[str, Any]]:
         if self._access_token is None:
             return None
 
@@ -1122,7 +1134,12 @@ class ServerAPI(object):
         self._access_token_is_service = None
         return None
 
-    def get_users(self, project_name=None, usernames=None, fields=None):
+    def get_users(
+        self,
+        project_name: Optional[str] = None,
+        usernames: Optional[Iterable[str]] = None,
+        fields: Optional[Iterable[str]] = None,
+    ) -> Generator[Dict[str, Any], None, None]:
         """Get Users.
 
         Only administrators and managers can fetch all users. For other users
@@ -1161,7 +1178,12 @@ class ServerAPI(object):
                     user["accessGroups"])
                 yield user
 
-    def get_user_by_name(self, username, project_name=None, fields=None):
+    def get_user_by_name(
+        self,
+        username: str,
+        project_name: Optional[str] = None,
+        fields: Optional[Iterable[str]] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Get user by name using GraphQl.
 
         Only administrators and managers can fetch all users. For other users
@@ -1189,14 +1211,16 @@ class ServerAPI(object):
             return user
         return None
 
-    def get_user(self, username=None):
+    def get_user(
+        self, username: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """Get user info using REST endpoit.
 
         Args:
             username (Optional[str]): Username.
 
         Returns:
-            Union[dict[str, Any], None]: User info or None if user is not
+            Optional[Dict[str, Any]]: User info or None if user is not
                 found.
 
         """
@@ -1210,7 +1234,9 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def get_headers(self, content_type=None):
+    def get_headers(
+        self, content_type: Optional[str] = None
+    ) -> Dict[str, str]:
         if content_type is None:
             content_type = "application/json"
 
@@ -1242,7 +1268,9 @@ class ServerAPI(object):
                     self._access_token)
         return headers
 
-    def login(self, username, password, create_session=True):
+    def login(
+        self, username: str, password: str, create_session: bool = True
+    ):
         """Login to server.
 
         Args:
@@ -1299,7 +1327,7 @@ class ServerAPI(object):
         if create_session:
             self.create_session()
 
-    def logout(self, soft=False):
+    def logout(self, soft: bool = False):
         if self._access_token:
             if not soft:
                 self._logout()
@@ -1402,7 +1430,7 @@ class ServerAPI(object):
         self.log.debug("Response {}".format(str(new_response)))
         return new_response
 
-    def raw_post(self, entrypoint, **kwargs):
+    def raw_post(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
         self.log.debug("Executing [POST] {}".format(url))
         return self._do_rest_request(
@@ -1411,7 +1439,7 @@ class ServerAPI(object):
             **kwargs
         )
 
-    def raw_put(self, entrypoint, **kwargs):
+    def raw_put(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
         self.log.debug("Executing [PUT] {}".format(url))
         return self._do_rest_request(
@@ -1420,7 +1448,7 @@ class ServerAPI(object):
             **kwargs
         )
 
-    def raw_patch(self, entrypoint, **kwargs):
+    def raw_patch(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
         self.log.debug("Executing [PATCH] {}".format(url))
         return self._do_rest_request(
@@ -1429,7 +1457,7 @@ class ServerAPI(object):
             **kwargs
         )
 
-    def raw_get(self, entrypoint, **kwargs):
+    def raw_get(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
         self.log.debug("Executing [GET] {}".format(url))
         return self._do_rest_request(
@@ -1438,7 +1466,7 @@ class ServerAPI(object):
             **kwargs
         )
 
-    def raw_delete(self, entrypoint, **kwargs):
+    def raw_delete(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
         self.log.debug("Executing [DELETE] {}".format(url))
         return self._do_rest_request(
@@ -1447,22 +1475,22 @@ class ServerAPI(object):
             **kwargs
         )
 
-    def post(self, entrypoint, **kwargs):
+    def post(self, entrypoint: str, **kwargs):
         return self.raw_post(entrypoint, json=kwargs)
 
-    def put(self, entrypoint, **kwargs):
+    def put(self, entrypoint: str, **kwargs):
         return self.raw_put(entrypoint, json=kwargs)
 
-    def patch(self, entrypoint, **kwargs):
+    def patch(self, entrypoint: str, **kwargs):
         return self.raw_patch(entrypoint, json=kwargs)
 
-    def get(self, entrypoint, **kwargs):
+    def get(self, entrypoint: str, **kwargs):
         return self.raw_get(entrypoint, params=kwargs)
 
-    def delete(self, entrypoint, **kwargs):
+    def delete(self, entrypoint: str, **kwargs):
         return self.raw_delete(entrypoint, params=kwargs)
 
-    def get_event(self, event_id):
+    def get_event(self, event_id: str) -> Optional[Dict[str, Any]]:
         """Query full event data by id.
 
         Events received using event server do not contain full information. To
@@ -1494,7 +1522,7 @@ class ServerAPI(object):
         limit: Optional[int] = None,
         order: Optional[SortOrder] = None,
         states: Optional[Iterable[str]] = None,
-    ):
+    ) -> Generator[Dict[str, Any], None, None]:
         """Get events from server with filtering options.
 
         Notes:
@@ -1582,16 +1610,16 @@ class ServerAPI(object):
 
     def update_event(
         self,
-        event_id,
-        sender=None,
-        project_name=None,
-        username=None,
-        status=None,
-        description=None,
-        summary=None,
-        payload=None,
-        progress=None,
-        retries=None
+        event_id: str,
+        sender: Optional[str] = None,
+        project_name: Optional[str] = None,
+        username: Optional[str] = None,
+        status: Optional[str] = None,
+        description: Optional[str] = None,
+        summary: Optional[Dict[str, Any]] = None,
+        payload: Optional[Dict[str, Any]] = None,
+        progress: Optional[int] = None,
+        retries: Optional[int] = None,
     ):
         """Update event data.
 
@@ -2084,7 +2112,7 @@ class ServerAPI(object):
         self,
         endpoint: str,
         use_rest: Optional[bool] = True
-    ):
+    ) -> str:
         """Cleanup endpoint and return full url to AYON server.
 
         If endpoint already starts with server url only slashes are removed.
@@ -2104,7 +2132,9 @@ class ServerAPI(object):
         base_url = self._rest_url if use_rest else self._graphql_url
         return f"{base_url}/{endpoint}"
 
-    def _download_file_to_stream(self, url, stream, chunk_size, progress):
+    def _download_file_to_stream(
+        self, url: str, stream, chunk_size, progress
+    ):
         kwargs = {"stream": True}
         if self._session is None:
             kwargs["headers"] = self.get_headers()
@@ -2122,10 +2152,10 @@ class ServerAPI(object):
     def download_file_to_stream(
         self,
         endpoint: str,
-        stream: "Union[io.BytesIO, BinaryIO]",
+        stream: "StreamType",
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
-    ):
+    ) -> TransferProgress:
         """Download file from AYON server to IOStream.
 
         Endpoint can be full url (must start with 'base_url' of api object).
@@ -2140,7 +2170,7 @@ class ServerAPI(object):
 
         Args:
             endpoint (str): Endpoint or URL to file that should be downloaded.
-            stream (Union[io.BytesIO, BinaryIO]): Stream where output will
+            stream (StreamType): Stream where output will
                 be stored.
             chunk_size (Optional[int]): Size of chunks that are received
                 in single loop.
@@ -2178,7 +2208,7 @@ class ServerAPI(object):
         filepath: str,
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
-    ):
+    ) -> TransferProgress:
         """Download file from AYON server.
 
         Endpoint can be full url (must start with 'base_url' of api object).
@@ -2224,14 +2254,14 @@ class ServerAPI(object):
 
     @staticmethod
     def _upload_chunks_iter(
-        file_stream: "Union[io.BytesIO, BinaryIO]",
+        file_stream: "StreamType",
         progress: TransferProgress,
         chunk_size: int,
     ) -> Generator[bytes, None, None]:
         """Generator that yields chunks of file.
 
         Args:
-            file_stream (Union[io.BytesIO, BinaryIO]): Byte stream.
+            file_stream (StreamType): Byte stream.
             progress (TransferProgress): Object to track upload progress.
             chunk_size (int): Size of chunks that are uploaded at once.
 
@@ -2256,7 +2286,7 @@ class ServerAPI(object):
     def _upload_file(
         self,
         url: str,
-        stream: "Union[io.BytesIO, BinaryIO]",
+        stream: "StreamType",
         progress: TransferProgress,
         request_type: Optional[RequestType] = None,
         chunk_size: Optional[int] = None,
@@ -2266,7 +2296,7 @@ class ServerAPI(object):
 
         Args:
             url (str): Url where file will be uploaded.
-            stream (Union[io.BytesIO, BinaryIO]): File stream.
+            stream (StreamType): File stream.
             progress (TransferProgress): Object that gives ability to track
                 progress.
             request_type (Optional[RequestType]): Type of request that will
@@ -2307,7 +2337,7 @@ class ServerAPI(object):
     def upload_file_from_stream(
         self,
         endpoint: str,
-        stream: "Union[io.BytesIO, BinaryIO]",
+        stream: "StreamType",
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
         **kwargs
@@ -2320,7 +2350,7 @@ class ServerAPI(object):
 
         Args:
             endpoint (str): Endpoint or url where file will be uploaded.
-            stream (Union[io.BytesIO, BinaryIO]): File content stream.
+            stream (StreamType): File content stream.
             progress (Optional[TransferProgress]): Object that gives ability
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
@@ -3942,7 +3972,7 @@ class ServerAPI(object):
         query = prepare_query_string(query_items)
 
         result = self.get(
-            "addons/{}/{}/settings{}".format(addon_name, addon_version, query)
+            f"addons/{addon_name}/{addon_version}/settings{query}"
         )
         result.raise_for_status()
         return result.data
@@ -4345,7 +4375,7 @@ class ServerAPI(object):
             dict[str, str]: Secret entity data.
 
         """
-        response = self.get("secrets/{}".format(secret_name))
+        response = self.get(f"secrets/{secret_name}")
         response.raise_for_status()
         return response.data
 
@@ -4360,7 +4390,7 @@ class ServerAPI(object):
 
         """
         response = self.put(
-            "secrets/{}".format(secret_name),
+            f"secrets/{secret_name}",
             name=secret_name,
             value=secret_value,
         )
@@ -4390,7 +4420,7 @@ class ServerAPI(object):
             project_name (str): Name of project.
 
         Returns:
-            Union[dict[str, Any], None]: Project entity data or 'None' if
+            Optional[ProjectEntity]: Project entity data or 'None' if
                 project was not found.
 
         """
@@ -4461,10 +4491,9 @@ class ServerAPI(object):
         if not all((project_name, entity_type, entity_id)):
             return None
 
-        entity_endpoint = "{}s".format(entity_type)
-        response = self.get("projects/{}/{}/{}".format(
-            project_name, entity_endpoint, entity_id
-        ))
+        response = self.get(
+            f"projects/{project_name}/{entity_type}s/{entity_id}"
+        )
         if response.status == 200:
             return response.data
         return None
@@ -4516,7 +4545,7 @@ class ServerAPI(object):
                 in output. Slower to query.
 
         Returns:
-            list[dict[str, Any]]: List of folder entities.
+            List[FlatFolderEntity]: List of folder entities.
 
         """
         major, minor, patch, _, _ = self.server_version_tuple
@@ -4584,11 +4613,11 @@ class ServerAPI(object):
         query = ""
         if query_keys:
             query = "?{}".format(",".join([
-                "{}={}".format(key, value)
+                f"{key}={value}"
                 for key, value in query_keys.items()
             ]))
 
-        response = self.get("projects{}".format(query), **query_keys)
+        response = self.get(f"projects{query}", **query_keys)
         response.raise_for_status()
         data = response.data
         project_names = []
@@ -4755,7 +4784,7 @@ class ServerAPI(object):
             query = "?{}".format(",".join(query_fields))
 
         response = self.get(
-            "projects/{}/hierarchy{}".format(project_name, query)
+            f"projects/{project_name}/hierarchy{query}"
         )
         response.raise_for_status()
         return response.data
@@ -4806,7 +4835,7 @@ class ServerAPI(object):
                 in output. Slower to query.
 
         Returns:
-            list[dict[str, Any]]: List of folder entities.
+            List[FlatFolderEntity]: List of folder entities.
 
         """
         warnings.warn(
@@ -4820,24 +4849,24 @@ class ServerAPI(object):
 
     def get_folders(
         self,
-        project_name,
-        folder_ids=None,
-        folder_paths=None,
-        folder_names=None,
-        folder_types=None,
-        parent_ids=None,
-        folder_path_regex=None,
-        has_products=None,
-        has_tasks=None,
-        has_children=None,
-        statuses=None,
-        assignees_all=None,
-        tags=None,
-        active=True,
-        has_links=None,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_ids: Optional[Iterable[str]] = None,
+        folder_paths: Optional[Iterable[str]] = None,
+        folder_names: Optional[Iterable[str]] = None,
+        folder_types: Optional[Iterable[str]] = None,
+        parent_ids: Optional[Iterable[str]] = None,
+        folder_path_regex: Optional[str] = None,
+        has_products: Optional[bool] = None,
+        has_tasks: Optional[bool] = None,
+        has_children: Optional[bool] = None,
+        statuses: Optional[Iterable[str]] = None,
+        assignees_all: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        has_links: Optional[bool] = None,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False
+    ) -> Generator["FolderEntity", None, None]:
         """Query folders from server.
 
         Todos:
@@ -4883,7 +4912,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[dict[str, Any]]: Queried folder entities.
+            Generator[FolderEntity, None, None]: Queried folder entities.
 
         """
         if not project_name:
@@ -4971,11 +5000,11 @@ class ServerAPI(object):
 
     def get_folder_by_id(
         self,
-        project_name,
-        folder_id,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_id: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Optional["FolderEntity"]:
         """Query folder entity by id.
 
         Args:
@@ -4988,7 +5017,8 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict, None]: Folder entity data or None if was not found.
+            Optional[FolderEntity]: Folder entity data or None
+                if was not found.
 
         """
         folders = self.get_folders(
@@ -5004,11 +5034,11 @@ class ServerAPI(object):
 
     def get_folder_by_path(
         self,
-        project_name,
-        folder_path,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_path: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Optional["FolderEntity"]:
         """Query folder entity by path.
 
         Folder path is a path to folder with all parent names joined by slash.
@@ -5023,7 +5053,8 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict, None]: Folder entity data or None if was not found.
+            Optional[FolderEntity]: Folder entity data or None
+                if was not found.
 
         """
         folders = self.get_folders(
@@ -5039,11 +5070,11 @@ class ServerAPI(object):
 
     def get_folder_by_name(
         self,
-        project_name,
-        folder_name,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_name: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Optional["FolderEntity"]:
         """Query folder entity by path.
 
         Warnings:
@@ -5060,7 +5091,8 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict, None]: Folder entity data or None if was not found.
+            Optional[FolderEntity]: Folder entity data or None
+                if was not found.
 
         """
         folders = self.get_folders(
@@ -5074,7 +5106,9 @@ class ServerAPI(object):
             return folder
         return None
 
-    def get_folder_ids_with_products(self, project_name, folder_ids=None):
+    def get_folder_ids_with_products(
+        self, project_name: str, folder_ids: Optional[Iterable[str]] = None
+    ) -> Set[str]:
         """Find folders which have at least one product.
 
         Folders that have at least one product should be immutable, so they
@@ -5111,19 +5145,19 @@ class ServerAPI(object):
 
     def create_folder(
         self,
-        project_name,
-        name,
-        folder_type=None,
-        parent_id=None,
-        label=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=None,
-        folder_id=None,
-    ):
+        project_name: str,
+        name: str,
+        folder_type: Optional[str] = None,
+        parent_id: Optional[str] = None,
+        label: Optional[str] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = None,
+        folder_id: Optional[str] = None,
+    ) -> str:
         """Create new folder.
 
         Args:
@@ -5175,18 +5209,18 @@ class ServerAPI(object):
 
     def update_folder(
         self,
-        project_name,
-        folder_id,
-        name=None,
-        folder_type=None,
-        parent_id=NOT_SET,
-        label=NOT_SET,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=NOT_SET,
+        project_name: str,
+        folder_id: str,
+        name: Optional[str] = None,
+        folder_type: Optional[str] = None,
+        parent_id: Optional[str] = NOT_SET,
+        label: Optional[str] = NOT_SET,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
     ):
         """Update folder entity on server.
 
@@ -5236,12 +5270,14 @@ class ServerAPI(object):
                 update_data[key] = value
 
         response = self.patch(
-            "projects/{}/folders/{}".format(project_name, folder_id),
+            f"projects/{project_name}/folders/{folder_id}",
             **update_data
         )
         response.raise_for_status()
 
-    def delete_folder(self, project_name, folder_id, force=False):
+    def delete_folder(
+        self, project_name: str, folder_id: str, force: bool = False
+    ):
         """Delete folder.
 
         Args:
@@ -5259,19 +5295,19 @@ class ServerAPI(object):
 
     def get_tasks(
         self,
-        project_name,
-        task_ids=None,
-        task_names=None,
-        task_types=None,
-        folder_ids=None,
-        assignees=None,
-        assignees_all=None,
-        statuses=None,
-        tags=None,
-        active=True,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        task_ids: Optional[Iterable[str]] = None,
+        task_names: Optional[Iterable[str]] = None,
+        task_types: Optional[Iterable[str]] = None,
+        folder_ids: Optional[Iterable[str]] = None,
+        assignees: Optional[Iterable[str]] = None,
+        assignees_all: Optional[Iterable[str]] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False
+    ) -> Generator["TaskEntity", None, None]:
         """Query task entities from server.
 
         Args:
@@ -5300,7 +5336,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Generator[dict[str, Any]]: Queried task entities.
+            Generator[TaskEntity, None, None]: Queried task entities.
 
         """
         if not project_name:
@@ -5356,12 +5392,12 @@ class ServerAPI(object):
 
     def get_task_by_name(
         self,
-        project_name,
-        folder_id,
-        task_name,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_id: str,
+        task_name: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Optional["TaskEntity"]:
         """Query task entity by name and folder id.
 
         Args:
@@ -5375,7 +5411,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict, None]: Task entity data or None if was not found.
+            Optional[TaskEntity]: Task entity data or None if was not found.
 
         """
         for task in self.get_tasks(
@@ -5391,11 +5427,11 @@ class ServerAPI(object):
 
     def get_task_by_id(
         self,
-        project_name,
-        task_id,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        task_id: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False
+    ) -> Optional["TaskEntity"]:
         """Query task entity by id.
 
         Args:
@@ -5408,7 +5444,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict, None]: Task entity data or None if was not found.
+            Optional[TaskEntity]: Task entity data or None if was not found.
 
         """
         for task in self.get_tasks(
@@ -5423,18 +5459,18 @@ class ServerAPI(object):
 
     def get_tasks_by_folder_paths(
         self,
-        project_name,
-        folder_paths,
-        task_names=None,
-        task_types=None,
-        assignees=None,
-        assignees_all=None,
-        statuses=None,
-        tags=None,
-        active=True,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_paths: Iterable[str],
+        task_names: Optional[Iterable[str]] = None,
+        task_types: Optional[Iterable[str]] = None,
+        assignees: Optional[Iterable[str]] = None,
+        assignees_all: Optional[Iterable[str]] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False
+    ) -> Dict[str, List["TaskEntity"]]:
         """Query task entities from server by folder paths.
 
         Args:
@@ -5461,13 +5497,13 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            dict[dict[str, list[dict[str, Any]]]: Task entities by
+            Dict[str, List[TaskEntity]]: Task entities by
                 folder path.
 
         """
         folder_paths = set(folder_paths)
         if not project_name or not folder_paths:
-            return
+            return {}
 
         filters = {
             "projectName": project_name,
@@ -5482,7 +5518,7 @@ class ServerAPI(object):
             ("taskStatuses", statuses),
             ("taskTags", tags),
         ):
-            return
+            return {}
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -5525,18 +5561,18 @@ class ServerAPI(object):
 
     def get_tasks_by_folder_path(
         self,
-        project_name,
-        folder_path,
-        task_names=None,
-        task_types=None,
-        assignees=None,
-        assignees_all=None,
-        statuses=None,
-        tags=None,
-        active=True,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_path: str,
+        task_names: Optional[Iterable[str]] = None,
+        task_types: Optional[Iterable[str]] = None,
+        assignees: Optional[Iterable[str]] = None,
+        assignees_all: Optional[Iterable[str]] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False
+    ) -> List["TaskEntity"]:
         """Query task entities from server by folder path.
 
         Args:
@@ -5579,12 +5615,12 @@ class ServerAPI(object):
 
     def get_task_by_folder_path(
         self,
-        project_name,
-        folder_path,
-        task_name,
-        fields=None,
-        own_attributes=False
-    ):
+        project_name: str,
+        folder_path: str,
+        task_name: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False
+    ) -> Optional["TaskEntity"]:
         """Query task entity by folder path and task name.
 
         Args:
@@ -5597,8 +5633,7 @@ class ServerAPI(object):
                 not explicitly set on entity will have 'None' value.
 
         Returns:
-            Union[dict[str, Any], None]: Task entity data or None if was
-                not found.
+            Optional[TaskEntity]: Task entity data or None if was not found.
 
         """
         for task in self.get_tasks_by_folder_path(
@@ -5614,20 +5649,20 @@ class ServerAPI(object):
 
     def create_task(
         self,
-        project_name,
-        name,
-        task_type,
-        folder_id,
-        label=None,
-        assignees=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=None,
-        task_id=None,
-    ):
+        project_name: str,
+        name: str,
+        task_type: str,
+        folder_id: str,
+        label: Optional[str] = None,
+        assignees: Optional[Iterable[str]] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+    ) -> str:
         """Create new task.
 
         Args:
@@ -5680,19 +5715,19 @@ class ServerAPI(object):
 
     def update_task(
         self,
-        project_name,
-        task_id,
-        name=None,
-        task_type=None,
-        folder_id=None,
-        label=NOT_SET,
-        assignees=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=NOT_SET,
+        project_name: str,
+        task_id: str,
+        name: Optional[str] = None,
+        task_type: Optional[str] = None,
+        folder_id: Optional[str] = None,
+        label: Optional[str] = NOT_SET,
+        assignees: Optional[List[str]] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
     ):
         """Update task entity on server.
 
@@ -5749,7 +5784,7 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
-    def delete_task(self, project_name, task_id):
+    def delete_task(self, project_name: str, task_id: str):
         """Delete task.
 
         Args:
@@ -5763,8 +5798,12 @@ class ServerAPI(object):
         response.raise_for_status()
 
     def _filter_product(
-        self, project_name, product, active, use_rest
-    ):
+        self,
+        project_name: str,
+        product: "ProductEntity",
+        active: "Union[bool, None]",
+        use_rest: bool,
+    ) -> Optional["ProductEntity"]:
         if active is not None and product["active"] is not active:
             return None
 
@@ -5777,20 +5816,20 @@ class ServerAPI(object):
 
     def get_products(
         self,
-        project_name,
-        product_ids=None,
-        product_names=None,
-        folder_ids=None,
-        product_types=None,
-        product_name_regex=None,
-        product_path_regex=None,
-        names_by_folder_ids=None,
-        statuses=None,
-        tags=None,
-        active=True,
-        fields=None,
+        project_name: str,
+        product_ids: Optional[Iterable[str]] = None,
+        product_names: Optional[Iterable[str]]=None,
+        folder_ids: Optional[Iterable[str]]=None,
+        product_types: Optional[Iterable[str]]=None,
+        product_name_regex: Optional[str] = None,
+        product_path_regex: Optional[str] = None,
+        names_by_folder_ids: Optional[Dict[str, Iterable[str]]] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Generator["ProductEntity", None, None]:
         """Query products from server.
 
         Todos:
@@ -5824,7 +5863,7 @@ class ServerAPI(object):
                 products.
 
         Returns:
-            Generator[dict[str, Any]]: Queried product entities.
+            Generator[ProductEntity, None, None]: Queried product entities.
 
         """
         if not project_name:
@@ -5947,11 +5986,11 @@ class ServerAPI(object):
 
     def get_product_by_id(
         self,
-        project_name,
-        product_id,
-        fields=None,
+        project_name: str,
+        product_id: str,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Optional["ProductEntity"]:
         """Query product entity by id.
 
         Args:
@@ -5964,7 +6003,8 @@ class ServerAPI(object):
                 products.
 
         Returns:
-            Union[dict, None]: Product entity data or None if was not found.
+            Optional[ProductEntity]: Product entity data or None
+                if was not found.
 
         """
         products = self.get_products(
@@ -5980,12 +6020,12 @@ class ServerAPI(object):
 
     def get_product_by_name(
         self,
-        project_name,
-        product_name,
-        folder_id,
-        fields=None,
+        project_name: str,
+        product_name: str,
+        folder_id: str,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Optional["ProductEntity"]:
         """Query product entity by name and folder id.
 
         Args:
@@ -5999,7 +6039,8 @@ class ServerAPI(object):
                 products.
 
         Returns:
-            Union[dict, None]: Product entity data or None if was not found.
+            Optional[ProductEntity]: Product entity data or None
+                if was not found.
 
         """
         products = self.get_products(
@@ -6014,7 +6055,9 @@ class ServerAPI(object):
             return product
         return None
 
-    def get_product_types(self, fields=None):
+    def get_product_types(
+        self, fields: Optional[Iterable[str]] = None
+    ) -> List["ProductTypeDict"]:
         """Types of products.
 
         This is server wide information. Product types have 'name', 'icon' and
@@ -6024,7 +6067,7 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Product types fields to query.
 
         Returns:
-            list[dict[str, Any]]: Product types information.
+            list[ProductTypeDict]: Product types information.
 
         """
         if not fields:
@@ -6036,7 +6079,9 @@ class ServerAPI(object):
 
         return parsed_data.get("productTypes", [])
 
-    def get_project_product_types(self, project_name, fields=None):
+    def get_project_product_types(
+        self, project_name: str, fields: Optional[Iterable[str]] = None
+    ) -> List["ProductTypeDict"]:
         """Types of products available on a project.
 
         Filter only product types available on project.
@@ -6047,7 +6092,7 @@ class ServerAPI(object):
             fields (Optional[Iterable[str]]): Product types fields to query.
 
         Returns:
-            list[dict[str, Any]]: Product types information.
+            List[ProductTypeDict]: Product types information.
 
         """
         if not fields:
@@ -6060,7 +6105,11 @@ class ServerAPI(object):
 
         return parsed_data.get("project", {}).get("productTypes", [])
 
-    def get_product_type_names(self, project_name=None, product_ids=None):
+    def get_product_type_names(
+        self,
+        project_name: Optional[str] = None,
+        product_ids: Optional[Iterable[str]] = None,
+    ) -> Set[str]:
         """Product type names.
 
         Warnings:
@@ -6098,17 +6147,17 @@ class ServerAPI(object):
 
     def create_product(
         self,
-        project_name,
-        name,
-        product_type,
-        folder_id,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        product_id=None,
-    ):
+        project_name: str,
+        name: str,
+        product_type: str,
+        folder_id: str,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] =None,
+        status: Optional[str] = None,
+        active: "Union[bool, None]" = None,
+        product_id: Optional[str] = None,
+    ) -> str:
         """Create new product.
 
         Args:
@@ -6155,16 +6204,16 @@ class ServerAPI(object):
 
     def update_product(
         self,
-        project_name,
-        product_id,
-        name=None,
-        folder_id=None,
-        product_type=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
+        project_name: str,
+        product_id: str,
+        name: Optional[str] = None,
+        folder_id: Optional[str] = None,
+        product_type: Optional[str] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
     ):
         """Update product entity on server.
 
@@ -6206,7 +6255,7 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
-    def delete_product(self, project_name, product_id):
+    def delete_product(self, project_name: str, product_id: str):
         """Delete product.
 
         Args:
@@ -6221,20 +6270,20 @@ class ServerAPI(object):
 
     def get_versions(
         self,
-        project_name,
-        version_ids=None,
-        product_ids=None,
-        task_ids=None,
-        versions=None,
-        hero=True,
-        standard=True,
-        latest=None,
-        statuses=None,
-        tags=None,
-        active=True,
-        fields=None,
+        project_name: str,
+        version_ids: Optional[Iterable[str]] = None,
+        product_ids: Optional[Iterable[str]] = None,
+        task_ids: Optional[Iterable[str]] = None,
+        versions: Optional[Iterable[str]] = None,
+        hero: bool = True,
+        standard: bool = True,
+        latest: Optional[bool] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Generator["VersionEntity", None, None]:
         """Get version entities based on passed filters from server.
 
         Args:
@@ -6265,7 +6314,7 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Generator[dict[str, Any]]: Queried version entities.
+            Generator[VersionEntity, None, None]: Queried version entities.
 
         """
         if not fields:
@@ -6365,11 +6414,11 @@ class ServerAPI(object):
 
     def get_version_by_id(
         self,
-        project_name,
-        version_id,
-        fields=None,
+        project_name: str,
+        version_id: str,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Optional["VersionEntity"]:
         """Query version entity by id.
 
         Args:
@@ -6382,7 +6431,7 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Union[dict, None]: Version entity data or None if was not found.
+            Optional[VersionEntity]: Version entity data or None if was not found.
 
         """
         versions = self.get_versions(
@@ -6399,12 +6448,12 @@ class ServerAPI(object):
 
     def get_version_by_name(
         self,
-        project_name,
-        version,
-        product_id,
-        fields=None,
+        project_name: str,
+        version: int,
+        product_id: str,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Optional["VersionEntity"]:
         """Query version entity by version and product id.
 
         Args:
@@ -6418,7 +6467,8 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Union[dict, None]: Version entity data or None if was not found.
+            Optional[VersionEntity]: Version entity data or None
+                if was not found.
 
         """
         versions = self.get_versions(
@@ -6435,11 +6485,11 @@ class ServerAPI(object):
 
     def get_hero_version_by_id(
         self,
-        project_name,
-        version_id,
-        fields=None,
+        project_name: str,
+        version_id: str,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Optional["VersionEntity"]:
         """Query hero version entity by id.
 
         Args:
@@ -6452,7 +6502,8 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Union[dict, None]: Version entity data or None if was not found.
+            Optional[VersionEntity]: Version entity data or None
+                if was not found.
 
         """
         versions = self.get_hero_versions(
@@ -6467,11 +6518,11 @@ class ServerAPI(object):
 
     def get_hero_version_by_product_id(
         self,
-        project_name,
-        product_id,
-        fields=None,
+        project_name: str,
+        product_id: str,
+        fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ):
+    ) -> Optional["VersionEntity"]:
         """Query hero version entity by product id.
 
         Only one hero version is available on a product.
@@ -6486,7 +6537,8 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Union[dict, None]: Version entity data or None if was not found.
+            Optional[VersionEntity]: Version entity data or None
+                if was not found.
 
         """
         versions = self.get_hero_versions(
@@ -6501,13 +6553,13 @@ class ServerAPI(object):
 
     def get_hero_versions(
         self,
-        project_name,
-        product_ids=None,
-        version_ids=None,
-        active=True,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        product_ids: Optional[Iterable[str]] = None,
+        version_ids: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Generator["VersionEntity", None, None]:
         """Query hero versions by multiple filters.
 
         Only one hero version is available on a product.
@@ -6525,7 +6577,8 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Union[dict, None]: Version entity data or None if was not found.
+            Optional[VersionEntity]: Version entity data or None
+                if was not found.
 
         """
         return self.get_versions(
@@ -6541,12 +6594,12 @@ class ServerAPI(object):
 
     def get_last_versions(
         self,
-        project_name,
-        product_ids,
-        active=True,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        product_ids: Iterable[str],
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Dict[str, Optional["VersionEntity"]]:
         """Query last version entities by product ids.
 
         Args:
@@ -6560,13 +6613,13 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            dict[str, dict[str, Any]]: Last versions by product id.
+            dict[str, Optional[VersionEntity]]: Last versions by product id.
 
         """
         if fields:
             fields = set(fields)
             fields.add("productId")
-
+        product_ids = set(product_ids)
         versions = self.get_versions(
             project_name,
             product_ids=product_ids,
@@ -6576,19 +6629,22 @@ class ServerAPI(object):
             fields=fields,
             own_attributes=own_attributes
         )
-        return {
+        output = {
             version["productId"]: version
             for version in versions
         }
+        for product_id in product_ids:
+            output.setdefault(product_id, None)
+        return output
 
     def get_last_version_by_product_id(
         self,
-        project_name,
-        product_id,
-        active=True,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        product_id: str,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional["VersionEntity"]:
         """Query last version entity by product id.
 
         Args:
@@ -6602,7 +6658,7 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Union[dict[str, Any], None]: Queried version entity or None.
+            Optional[VersionEntity]: Queried version entity or None.
 
         """
         versions = self.get_versions(
@@ -6620,13 +6676,13 @@ class ServerAPI(object):
 
     def get_last_version_by_product_name(
         self,
-        project_name,
-        product_name,
-        folder_id,
-        active=True,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        product_name: str,
+        folder_id: str,
+        active: "Union[bool, None]" = True,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional["VersionEntity"]:
         """Query last version entity by product name and folder id.
 
         Args:
@@ -6641,7 +6697,7 @@ class ServerAPI(object):
                 representations.
 
         Returns:
-            Union[dict[str, Any], None]: Queried version entity or None.
+            Optional[VersionEntity]: Queried version entity or None.
 
         """
         if not folder_id:
@@ -6660,7 +6716,7 @@ class ServerAPI(object):
             own_attributes=own_attributes
         )
 
-    def version_is_latest(self, project_name, version_id):
+    def version_is_latest(self, project_name: str, version_id: str) -> bool:
         """Is version latest from a product.
 
         Args:
@@ -6694,19 +6750,19 @@ class ServerAPI(object):
 
     def create_version(
         self,
-        project_name,
-        version,
-        product_id,
-        task_id=None,
-        author=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=None,
-        version_id=None,
-    ):
+        project_name: str,
+        version: int,
+        product_id: str,
+        task_id: Optional[str] = None,
+        author: Optional[str] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = None,
+        version_id: Optional[str] = None,
+    ) -> str:
         """Create new version.
 
         Args:
@@ -6757,18 +6813,18 @@ class ServerAPI(object):
 
     def update_version(
         self,
-        project_name,
-        version_id,
-        version=None,
-        product_id=None,
-        task_id=NOT_SET,
-        author=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=NOT_SET,
+        project_name: str,
+        version_id: str,
+        version: Optional[int] = None,
+        product_id: Optional[str] = None,
+        task_id: Optional[str] = NOT_SET,
+        author: Optional[str] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
     ):
         """Update version entity on server.
 
@@ -6819,12 +6875,12 @@ class ServerAPI(object):
                 update_data[key] = value
 
         response = self.patch(
-            "projects/{}/versions/{}".format(project_name, version_id),
+            f"projects/{project_name}/versions/{version_id}",
             **update_data
         )
         response.raise_for_status()
 
-    def delete_version(self, project_name, version_id):
+    def delete_version(self, project_name: str, version_id: str):
         """Delete version.
 
         Args:
@@ -6833,11 +6889,13 @@ class ServerAPI(object):
 
         """
         response = self.delete(
-            "projects/{}/versions/{}".format(project_name, version_id)
+            f"projects/{project_name}/versions/{version_id}"
         )
         response.raise_for_status()
 
-    def _representation_conversion(self, representation):
+    def _representation_conversion(
+        self, representation: "RepresentationEntity"
+    ):
         if "context" in representation:
             orig_context = representation["context"]
             context = {}
@@ -6856,18 +6914,18 @@ class ServerAPI(object):
 
     def get_representations(
         self,
-        project_name,
-        representation_ids=None,
-        representation_names=None,
-        version_ids=None,
-        names_by_version_ids=None,
-        statuses=None,
-        tags=None,
-        active=True,
-        has_links=None,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        representation_ids: Optional[Iterable[str]] = None,
+        representation_names: Optional[Iterable[str]] = None,
+        version_ids: Optional[Iterable[str]] = None,
+        names_by_version_ids: Optional[Dict[str, Iterable[str]]] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        active: "Union[bool, None]" = True,
+        has_links: Optional[str] = None,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Generator["RepresentationEntity", None, None]:
         """Get representation entities based on passed filters from server.
 
         .. todo::
@@ -6884,7 +6942,7 @@ class ServerAPI(object):
             version_ids (Optional[Iterable[str]]): Version ids used for
                 representation filtering. Versions are parents of
                 representations.
-            names_by_version_ids (Optional[Dict[str, Iterable[str]]): Find
+            names_by_version_ids (Optional[Dict[str, Iterable[str]]]): Find
                 representations by names and version ids. This filter
                 discards all other filters.
             statuses (Optional[Iterable[str]]): Representation statuses used
@@ -6902,7 +6960,8 @@ class ServerAPI(object):
                 representations.
 
         Returns:
-            Generator[dict[str, Any]]: Queried representation entities.
+            Generator[RepresentationEntity, None, None]: Queried
+                representation entities.
 
         """
         if not fields:
@@ -7010,11 +7069,11 @@ class ServerAPI(object):
 
     def get_representation_by_id(
         self,
-        project_name,
-        representation_id,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        representation_id: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional["RepresentationEntity"]:
         """Query representation entity from server based on id filter.
 
         Args:
@@ -7026,7 +7085,7 @@ class ServerAPI(object):
                 representations.
 
         Returns:
-            Union[dict[str, Any], None]: Queried representation entity or None.
+            Optional[RepresentationEntity]: Queried representation entity or None.
 
         """
         representations = self.get_representations(
@@ -7042,12 +7101,12 @@ class ServerAPI(object):
 
     def get_representation_by_name(
         self,
-        project_name,
-        representation_name,
-        version_id,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        representation_name: str,
+        version_id: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional["RepresentationEntity"]:
         """Query representation entity by name and version id.
 
         Args:
@@ -7060,7 +7119,8 @@ class ServerAPI(object):
                 representations.
 
         Returns:
-            Union[dict[str, Any], None]: Queried representation entity or None.
+            Optional[RepresentationEntity]: Queried representation entity
+                or None.
 
         """
         representations = self.get_representations(
@@ -7077,15 +7137,15 @@ class ServerAPI(object):
 
     def get_representations_hierarchy(
         self,
-        project_name,
-        representation_ids,
-        project_fields=None,
-        folder_fields=None,
-        task_fields=None,
-        product_fields=None,
-        version_fields=None,
-        representation_fields=None,
-    ):
+        project_name: str,
+        representation_ids: Iterable[str],
+        project_fields: Optional[Iterable[str]] = None,
+        folder_fields: Optional[Iterable[str]] = None,
+        task_fields: Optional[Iterable[str]] = None,
+        product_fields: Optional[Iterable[str]] = None,
+        version_fields: Optional[Iterable[str]] = None,
+        representation_fields: Optional[Iterable[str]] = None,
+    ) -> Dict[str, RepresentationHierarchy]:
         """Find representation with parents by representation id.
 
         Representation entity with parent entities up to project.
@@ -7207,15 +7267,15 @@ class ServerAPI(object):
 
     def get_representation_hierarchy(
         self,
-        project_name,
-        representation_id,
-        project_fields=None,
-        folder_fields=None,
-        task_fields=None,
-        product_fields=None,
-        version_fields=None,
-        representation_fields=None,
-    ):
+        project_name: str,
+        representation_id: str,
+        project_fields: Optional[Iterable[str]] = None,
+        folder_fields: Optional[Iterable[str]] = None,
+        task_fields: Optional[Iterable[str]] = None,
+        product_fields: Optional[Iterable[str]] = None,
+        version_fields: Optional[Iterable[str]] = None,
+        representation_fields: Optional[Iterable[str]] = None,
+    ) -> Optional[RepresentationHierarchy]:
         """Find representation parents by representation id.
 
         Representation parent entities up to project.
@@ -7252,13 +7312,13 @@ class ServerAPI(object):
 
     def get_representations_parents(
         self,
-        project_name,
-        representation_ids,
-        project_fields=None,
-        folder_fields=None,
-        product_fields=None,
-        version_fields=None,
-    ):
+        project_name: str,
+        representation_ids: Iterable[str],
+        project_fields: Optional[Iterable[str]] = None,
+        folder_fields: Optional[Iterable[str]] = None,
+        product_fields: Optional[Iterable[str]] = None,
+        version_fields: Optional[Iterable[str]] = None,
+    ) -> Dict[str, RepresentationParents]:
         """Find representations parents by representation id.
 
         Representation parent entities up to project.
@@ -7298,13 +7358,13 @@ class ServerAPI(object):
 
     def get_representation_parents(
         self,
-        project_name,
-        representation_id,
-        project_fields=None,
-        folder_fields=None,
-        product_fields=None,
-        version_fields=None,
-    ):
+        project_name: str,
+        representation_id: str,
+        project_fields: Optional[Iterable[str]] = None,
+        folder_fields: Optional[Iterable[str]] = None,
+        product_fields: Optional[Iterable[str]] = None,
+        version_fields: Optional[Iterable[str]] = None,
+    ) -> Optional["RepresentationParents"]:
         """Find representation parents by representation id.
 
         Representation parent entities up to project.
@@ -7336,11 +7396,11 @@ class ServerAPI(object):
 
     def get_repre_ids_by_context_filters(
         self,
-        project_name,
-        context_filters,
-        representation_names=None,
-        version_ids=None
-    ):
+        project_name: str,
+        context_filters: Optional[Dict[str, Iterable[str]]],
+        representation_names: Optional[Iterable[str]] = None,
+        version_ids: Optional[Iterable[str]] = None,
+    ) -> List[str]:
         """Find representation ids which match passed context filters.
 
         Each representation has context integrated on representation entity in
@@ -7424,17 +7484,17 @@ class ServerAPI(object):
 
     def create_representation(
         self,
-        project_name,
-        name,
-        version_id,
-        files=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        representation_id=None,
-    ):
+        project_name: str,
+        name: str,
+        version_id: str,
+        files: Optional[List[Dict[str, Any]]] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]]=None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        representation_id: Optional[str] = None,
+    ) -> str:
         """Create new representation.
 
         Args:
@@ -7481,16 +7541,16 @@ class ServerAPI(object):
 
     def update_representation(
         self,
-        project_name,
-        representation_id,
-        name=None,
-        version_id=None,
-        files=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
+        project_name: str,
+        representation_id: str,
+        name: Optional[str] = None,
+        version_id: Optional[str] = None,
+        files: Optional[List[Dict[str, Any]]] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
     ):
         """Update representation entity on server.
 
@@ -7535,7 +7595,9 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
-    def delete_representation(self, project_name, representation_id):
+    def delete_representation(
+        self, project_name: str, representation_id: str
+    ):
         """Delete representation.
 
         Args:
@@ -7552,17 +7614,17 @@ class ServerAPI(object):
 
     def get_workfiles_info(
         self,
-        project_name,
-        workfile_ids=None,
-        task_ids=None,
-        paths=None,
-        path_regex=None,
-        statuses=None,
-        tags=None,
-        has_links=None,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        workfile_ids: Optional[Iterable[str]] = None,
+        task_ids: Optional[Iterable[str]] =None,
+        paths: Optional[Iterable[str]] =None,
+        path_regex: Optional[str] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        has_links: Optional[str]=None,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Generator["WorkfileEntity", None, None]:
         """Workfile info entities by passed filters.
 
         Args:
@@ -7584,7 +7646,8 @@ class ServerAPI(object):
                 workfiles.
 
         Returns:
-            Generator[dict[str, Any]]: Queried workfile info entites.
+            Generator[WorkfileEntity, None, None]: Queried workfile info
+                entites.
 
         """
         filters = {"projectName": project_name}
@@ -7652,12 +7715,12 @@ class ServerAPI(object):
 
     def get_workfile_info(
         self,
-        project_name,
-        task_id,
-        path,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        task_id: str,
+        path: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional["WorkfileEntity"]:
         """Workfile info entity by task id and workfile path.
 
         Args:
@@ -7671,7 +7734,7 @@ class ServerAPI(object):
                 workfiles.
 
         Returns:
-            Union[dict[str, Any], None]: Workfile info entity or None.
+            Optional[WorkfileEntity]: Workfile info entity or None.
 
         """
         if not task_id or not path:
@@ -7689,11 +7752,11 @@ class ServerAPI(object):
 
     def get_workfile_info_by_id(
         self,
-        project_name,
-        workfile_id,
-        fields=None,
-        own_attributes=_PLACEHOLDER
-    ):
+        project_name: str,
+        workfile_id: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional["WorkfileEntity"]:
         """Workfile info entity by id.
 
         Args:
@@ -7706,7 +7769,7 @@ class ServerAPI(object):
                 workfiles.
 
         Returns:
-            Union[dict[str, Any], None]: Workfile info entity or None.
+            Optional[WorkfileEntity]: Workfile info entity or None.
 
         """
         if not workfile_id:
@@ -7721,7 +7784,11 @@ class ServerAPI(object):
             return workfile_info
         return None
 
-    def _prepare_thumbnail_content(self, project_name, response):
+    def _prepare_thumbnail_content(
+        self,
+        project_name: str,
+        response: requests.Response,
+    ) -> ThumbnailContent:
         content = None
         content_type = response.content_type
 
@@ -7735,7 +7802,9 @@ class ServerAPI(object):
             project_name, thumbnail_id, content, content_type
         )
 
-    def get_thumbnail_by_id(self, project_name, thumbnail_id):
+    def get_thumbnail_by_id(
+        self, project_name: str, thumbnail_id: str
+    ) -> ThumbnailContent:
         """Get thumbnail from server by id.
 
         Permissions of thumbnails are related to entities so thumbnails must
@@ -7761,16 +7830,17 @@ class ServerAPI(object):
 
         """
         response = self.raw_get(
-            "projects/{}/thumbnails/{}".format(
-                project_name,
-                thumbnail_id
-            )
+            f"projects/{project_name}/thumbnails/{thumbnail_id}"
         )
         return self._prepare_thumbnail_content(project_name, response)
 
     def get_thumbnail(
-        self, project_name, entity_type, entity_id, thumbnail_id=None
-    ):
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+        thumbnail_id: Optional[str] = None,
+    ) -> ThumbnailContent:
         """Get thumbnail from server.
 
         Permissions of thumbnails are related to entities so thumbnails must
@@ -7815,8 +7885,11 @@ class ServerAPI(object):
         return self._prepare_thumbnail_content(project_name, response)
 
     def get_folder_thumbnail(
-        self, project_name, folder_id, thumbnail_id=None
-    ):
+        self,
+        project_name: str,
+        folder_id: str,
+        thumbnail_id: Optional[str] = None,
+    ) -> ThumbnailContent:
         """Prepared method to receive thumbnail for folder entity.
 
         Args:
@@ -7826,8 +7899,8 @@ class ServerAPI(object):
                 Used only to check if thumbnail was already cached.
 
         Returns:
-            Union[str, None]: Path to downloaded thumbnail or none if entity
-                does not have any (or if user does not have permissions).
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
 
         """
         return self.get_thumbnail(
@@ -7835,8 +7908,11 @@ class ServerAPI(object):
         )
 
     def get_version_thumbnail(
-        self, project_name, version_id, thumbnail_id=None
-    ):
+        self,
+        project_name: str,
+        version_id: str,
+        thumbnail_id: Optional[str] = None,
+    ) -> ThumbnailContent:
         """Prepared method to receive thumbnail for version entity.
 
         Args:
@@ -7847,8 +7923,8 @@ class ServerAPI(object):
                 Used only to check if thumbnail was already cached.
 
         Returns:
-            Union[str, None]: Path to downloaded thumbnail or none if entity
-                does not have any (or if user does not have permissions).
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
 
         """
         return self.get_thumbnail(
@@ -7856,8 +7932,11 @@ class ServerAPI(object):
         )
 
     def get_workfile_thumbnail(
-        self, project_name, workfile_id, thumbnail_id=None
-    ):
+        self,
+        project_name: str,
+        workfile_id: str,
+        thumbnail_id: Optional[str] = None,
+    ) -> ThumbnailContent:
         """Prepared method to receive thumbnail for workfile entity.
 
         Args:
@@ -7868,15 +7947,20 @@ class ServerAPI(object):
                 Used only to check if thumbnail was already cached.
 
         Returns:
-            Union[str, None]: Path to downloaded thumbnail or none if entity
-                does not have any (or if user does not have permissions).
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
 
         """
         return self.get_thumbnail(
             project_name, "workfile", workfile_id, thumbnail_id
         )
 
-    def create_thumbnail(self, project_name, src_filepath, thumbnail_id=None):
+    def create_thumbnail(
+        self,
+        project_name: str,
+        src_filepath: str,
+        thumbnail_id: Optional[str] = None,
+    ) -> str:
         """Create new thumbnail on server from passed path.
 
         Args:
@@ -7913,7 +7997,9 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.json()["id"]
 
-    def update_thumbnail(self, project_name, thumbnail_id, src_filepath):
+    def update_thumbnail(
+        self, project_name: str, thumbnail_id: str, src_filepath: str
+    ):
         """Change thumbnail content by id.
 
         Update can be also used to create new thumbnail.
@@ -7933,7 +8019,7 @@ class ServerAPI(object):
 
         mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
-            "projects/{}/thumbnails/{}".format(project_name, thumbnail_id),
+            f"projects/{project_name}/thumbnails/{thumbnail_id}",
             src_filepath,
             request_type=RequestTypes.put,
             headers={"Content-Type": mime_type},
@@ -7942,11 +8028,11 @@ class ServerAPI(object):
 
     def create_project(
         self,
-        project_name,
-        project_code,
-        library_project=False,
-        preset_name=None
-    ):
+        project_name: str,
+        project_code: str,
+        library_project: bool = False,
+        preset_name: Optional[str] = None,
+    ) -> "ProjectEntity":
         """Create project using AYON settings.
 
         This project creation function is not validating project entity on
@@ -7970,8 +8056,7 @@ class ServerAPI(object):
             ValueError: When project name already exists.
 
         Returns:
-            dict[str, Any]: Created project entity.
-
+            ProjectEntity: Created project entity.
 
         """
         if self.get_project(project_name):
@@ -8006,18 +8091,18 @@ class ServerAPI(object):
 
     def update_project(
         self,
-        project_name,
-        library=None,
-        folder_types=None,
-        task_types=None,
-        link_types=None,
-        statuses=None,
-        tags=None,
-        config=None,
-        attrib=None,
-        data=None,
-        active=None,
-        project_code=None,
+        project_name: str,
+        library: Optional[bool] = None,
+        folder_types: Optional[List[Dict[str, Any]]] = None,
+        task_types: Optional[List[Dict[str, Any]]] = None,
+        link_types: Optional[List[Dict[str, Any]]] = None,
+        statuses: Optional[List[Dict[str, Any]]] = None,
+        tags: Optional[List[Dict[str, Any]]] = None,
+        config: Optional[Dict[Dict[str, Any]]] = None,
+        attrib: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        active: Optional[bool] = None,
+        project_code: Optional[str] = None,
         **changes
     ):
         """Update project entity on server.
@@ -8068,7 +8153,7 @@ class ServerAPI(object):
         )
         response.raise_for_status()
 
-    def delete_project(self, project_name):
+    def delete_project(self, project_name: str):
         """Delete project from server.
 
         This will completely remove project from server without any step back.
@@ -8091,7 +8176,9 @@ class ServerAPI(object):
             )
 
     # --- Links ---
-    def get_full_link_type_name(self, link_type_name, input_type, output_type):
+    def get_full_link_type_name(
+        self, link_type_name: str, input_type: str, output_type: str
+    ) -> str:
         """Calculate full link type name used for query from server.
 
         Args:
@@ -8105,7 +8192,7 @@ class ServerAPI(object):
         """
         return "|".join([link_type_name, input_type, output_type])
 
-    def get_link_types(self, project_name):
+    def get_link_types(self, project_name: str) -> List[Dict[str, Any]]:
         """All link types available on a project.
 
         Example output:
@@ -8131,8 +8218,12 @@ class ServerAPI(object):
         return response.data["types"]
 
     def get_link_type(
-        self, project_name, link_type_name, input_type, output_type
-    ):
+        self,
+        project_name: str,
+        link_type_name: str,
+        input_type: str,
+        output_type: str,
+    ) -> Optional[str]:
         """Get link type data.
 
         There is not dedicated REST endpoint to get single link type,
@@ -8166,7 +8257,12 @@ class ServerAPI(object):
         return None
 
     def create_link_type(
-        self, project_name, link_type_name, input_type, output_type, data=None
+        self,
+        project_name: str,
+        link_type_name: str,
+        input_type: str,
+        output_type: str,
+        data: Optional[Dict[str, Any]] = None,
     ):
         """Create or update link type on server.
 
@@ -8196,7 +8292,11 @@ class ServerAPI(object):
         response.raise_for_status()
 
     def delete_link_type(
-        self, project_name, link_type_name, input_type, output_type
+        self,
+        project_name: str,
+        link_type_name: str,
+        input_type: str,
+        output_type: str,
     ):
         """Remove link type from project.
 
@@ -8218,7 +8318,12 @@ class ServerAPI(object):
         response.raise_for_status()
 
     def make_sure_link_type_exists(
-        self, project_name, link_type_name, input_type, output_type, data=None
+        self,
+        project_name: str,
+        link_type_name: str,
+        input_type: str,
+        output_type: str,
+        data: Optional[Dict[str, Any]] = None,
     ):
         """Make sure link type exists on a project.
 
@@ -8243,13 +8348,13 @@ class ServerAPI(object):
 
     def create_link(
         self,
-        project_name,
-        link_type_name,
-        input_id,
-        input_type,
-        output_id,
-        output_type,
-        link_name=None,
+        project_name: str,
+        link_type_name: str,
+        input_id: str,
+        input_type: str,
+        output_id: str,
+        output_type: str,
+        link_name: Optional[str] = None,
     ):
         """Create link between 2 entities.
 
@@ -8309,7 +8414,7 @@ class ServerAPI(object):
         response.raise_for_status()
         return response.data
 
-    def delete_link(self, project_name, link_id):
+    def delete_link(self, project_name: str, link_id: str):
         """Remove link by id.
 
         Args:
@@ -8326,8 +8431,13 @@ class ServerAPI(object):
         response.raise_for_status()
 
     def _prepare_link_filters(
-        self, filters, link_types, link_direction, link_names, link_name_regex
-    ):
+        self,
+        filters: Dict[str, Any],
+        link_types: "Union[Iterable[str], None]",
+        link_direction: "Union[LinkDirection, None]",
+        link_names: "Union[Iterable[str], None]",
+        link_name_regex: "Union[str, None]",
+    ) -> bool:
         """Add links filters for GraphQl queries.
 
         Args:
@@ -8365,14 +8475,14 @@ class ServerAPI(object):
 
     def get_entities_links(
         self,
-        project_name,
-        entity_type,
-        entity_ids=None,
-        link_types=None,
-        link_direction=None,
-        link_names=None,
-        link_name_regex=None,
-    ):
+        project_name: str,
+        entity_type: str,
+        entity_ids: Optional[Iterable[str]] = None,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+        link_names: Optional[Iterable[str]] = None,
+        link_name_regex: Optional[str] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Helper method to get links from server for entity types.
 
         .. highlight:: text
@@ -8399,12 +8509,12 @@ class ServerAPI(object):
         Args:
             project_name (str): Project where links are.
             entity_type (Literal["folder", "task", "product",
-            |    "version", "representations"]): Entity type.
+                "version", "representations"]): Entity type.
             entity_ids (Optional[Iterable[str]]): Ids of entities for which
-            |    links should be received.
+                links should be received.
             link_types (Optional[Iterable[str]]): Link type filters.
             link_direction (Optional[Literal["in", "out"]]): Link direction
-            |    filter.
+                filter.
             link_names (Optional[Iterable[str]]): Link name filters.
             link_name_regex (Optional[str]): Regex filter for link name.
 
@@ -8485,11 +8595,11 @@ class ServerAPI(object):
 
     def get_folders_links(
         self,
-        project_name,
-        folder_ids=None,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        folder_ids: Optional[Iterable[str]] = None,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Query folders links from server.
 
         Args:
@@ -8510,11 +8620,11 @@ class ServerAPI(object):
 
     def get_folder_links(
         self,
-        project_name,
-        folder_id,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        folder_id: str,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> List[Dict[str, Any]]:
         """Query folder links from server.
 
         Args:
@@ -8534,11 +8644,11 @@ class ServerAPI(object):
 
     def get_tasks_links(
         self,
-        project_name,
-        task_ids=None,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        task_ids: Optional[Iterable[str]] = None,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Query tasks links from server.
 
         Args:
@@ -8559,11 +8669,11 @@ class ServerAPI(object):
 
     def get_task_links(
         self,
-        project_name,
-        task_id,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        task_id: str,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> List[Dict[str, Any]]:
         """Query task links from server.
 
         Args:
@@ -8583,11 +8693,11 @@ class ServerAPI(object):
 
     def get_products_links(
         self,
-        project_name,
-        product_ids=None,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        product_ids: Optional[Iterable[str]] = None,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Query products links from server.
 
         Args:
@@ -8608,11 +8718,11 @@ class ServerAPI(object):
 
     def get_product_links(
         self,
-        project_name,
-        product_id,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        product_id: str,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> List[Dict[str, Any]]:
         """Query product links from server.
 
         Args:
@@ -8632,11 +8742,11 @@ class ServerAPI(object):
 
     def get_versions_links(
         self,
-        project_name,
-        version_ids=None,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        version_ids: Optional[Iterable[str]] = None,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Query versions links from server.
 
         Args:
@@ -8657,11 +8767,11 @@ class ServerAPI(object):
 
     def get_version_links(
         self,
-        project_name,
-        version_id,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        version_id: str,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> List[Dict[str, Any]]:
         """Query version links from server.
 
         Args:
@@ -8681,11 +8791,11 @@ class ServerAPI(object):
 
     def get_representations_links(
         self,
-        project_name,
-        representation_ids=None,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        representation_ids: Optional[Iterable[str]] = None,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Query representations links from server.
 
         Args:
@@ -8710,11 +8820,11 @@ class ServerAPI(object):
 
     def get_representation_links(
         self,
-        project_name,
-        representation_id,
-        link_types=None,
-        link_direction=None
-    ):
+        project_name: str,
+        representation_id: str,
+        link_types: Optional[Iterable[str]] = None,
+        link_direction: Optional["LinkDirection"] = None
+    ) -> List[Dict[str, Any]]:
         """Query representation links from server.
 
         Args:
@@ -8736,11 +8846,11 @@ class ServerAPI(object):
     # --- Batch operations processing ---
     def send_batch_operations(
         self,
-        project_name,
-        operations,
-        can_fail=False,
-        raise_on_fail=True
-    ):
+        project_name: str,
+        operations: List[Dict[str, Any]],
+        can_fail: bool = False,
+        raise_on_fail: bool = True
+    ) -> List[Dict[str, Any]]:
         """Post multiple CRUD operations to server.
 
         When multiple changes should be made on server side this is the best
@@ -8775,11 +8885,11 @@ class ServerAPI(object):
 
     def send_activities_batch_operations(
         self,
-        project_name,
-        operations,
-        can_fail=False,
-        raise_on_fail=True
-    ):
+        project_name: str,
+        operations: List[Dict[str, Any]],
+        can_fail: bool = False,
+        raise_on_fail: bool = True
+    ) -> List[Dict[str, Any]]:
         """Post multiple CRUD activities operations to server.
 
         When multiple changes should be made on server side this is the best
@@ -8818,7 +8928,7 @@ class ServerAPI(object):
         operations: List[Dict[str, Any]],
         can_fail: bool,
         raise_on_fail: bool
-    ):
+    ) -> List[Dict[str, Any]]:
         if not operations:
             return []
 
@@ -8877,7 +8987,9 @@ class ServerAPI(object):
                 ))
         return op_results
 
-    def _prepare_fields(self, entity_type, fields, own_attributes=False):
+    def _prepare_fields(
+        self, entity_type: str, fields: Set[str], own_attributes: bool = False
+    ):
         if not fields:
             return
 
@@ -8912,7 +9024,7 @@ class ServerAPI(object):
                     )
                 }
 
-    def _convert_entity_data(self, entity):
+    def _convert_entity_data(self, entity: "AnyEntity"):
         if not entity or "data" not in entity:
             return
 
