@@ -1972,6 +1972,8 @@ class ServerAPI(object):
         Args:
             project_name (str): Project on which activity happened.
             activity_id (str): Activity id.
+            reference_types: Optional[Iterable[ActivityReferenceType]]: Filter
+                by reference types.
             fields (Optional[Iterable[str]]): Fields that should be received
                 for each activity.
 
