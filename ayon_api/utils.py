@@ -22,7 +22,7 @@ from .exceptions import UrlError
 
 if typing.TYPE_CHECKING:
     from typing import Union
-    from ._typing import AnyEntity
+    from ._typing import AnyEntityDict, StreamType
 
 REMOVED_VALUE = object()
 NOT_SET = object()
@@ -250,8 +250,8 @@ def failed_json_default(value: Any) -> str:
 
 
 def prepare_attribute_changes(
-    old_entity: "AnyEntity",
-    new_entity: "AnyEntity",
+    old_entity: "AnyEntityDict",
+    new_entity: "AnyEntityDict",
     replace: int = False,
 ):
     attrib_changes = {}
@@ -881,7 +881,7 @@ def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
     return _get_svg_mime_type(content)
 
 
-def get_media_mime_type_for_stream(stream) -> Optional[str]:
+def get_media_mime_type_for_stream(stream: "StreamType") -> Optional[str]:
     # Read only 12 bytes to determine mime type
     content = stream.read(12)
     if len(content) < 12:

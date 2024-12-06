@@ -290,30 +290,29 @@ class SecretDict(TypedDict):
     name: str
     value: str
 
-ProjectEntity = Dict[str, Any]
-FolderEntity = Dict[str, Any]
-TaskEntity = Dict[str, Any]
-ProductEntity = Dict[str, Any]
-VersionEntity = Dict[str, Any]
-RepresentationEntity = Dict[str, Any]
-WorkfileEntity = Dict[str, Any]
-EventEntity = Dict[str, Any]
-ActivityEntity = Dict[str, Any]
-AnyEntity = Union[
-    ProjectEntity,
-    FolderEntity,
-    TaskEntity,
-    ProductEntity,
-    VersionEntity,
-    RepresentationEntity,
-    WorkfileEntity,
-    EventEntity,
-    ActivityEntity,
+ProjectDict = Dict[str, Any]
+FolderDict = Dict[str, Any]
+TaskDict = Dict[str, Any]
+ProductDict = Dict[str, Any]
+VersionDict = Dict[str, Any]
+RepresentationDict = Dict[str, Any]
+WorkfileInfoDict = Dict[str, Any]
+EventDict = Dict[str, Any]
+ActivityDict = Dict[str, Any]
+AnyEntityDict = Union[
+    ProjectDict,
+    FolderDict,
+    TaskDict,
+    ProductDict,
+    VersionDict,
+    RepresentationDict,
+    WorkfileInfoDict,
+    EventDict,
+    ActivityDict,
 ]
-BaseEntity = Dict[str, Any]
 
 
-class FlatFolderEntity(TypedDict):
+class FlatFolderDict(TypedDict):
     id: str
     parentId: Optional[str]
     path: str

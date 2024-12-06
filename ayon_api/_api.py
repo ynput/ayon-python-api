@@ -51,15 +51,15 @@ if typing.TYPE_CHECKING:
         BundlesInfoDict,
         AnatomyPresetDict,
         SecretDict,
-        AnyEntity,
-        ProjectEntity,
-        FolderEntity,
-        TaskEntity,
-        ProductEntity,
-        VersionEntity,
-        RepresentationEntity,
-        WorkfileEntity,
-        FlatFolderEntity,
+        AnyEntityDict,
+        ProjectDict,
+        FolderDict,
+        TaskDict,
+        ProductDict,
+        VersionDict,
+        RepresentationDict,
+        WorkfileInfoDict,
+        FlatFolderDict,
         ProjectHierarchyDict,
         ProductTypeDict,
         StreamType,
@@ -3205,7 +3205,7 @@ def delete_secret(
 
 def get_rest_project(
     project_name: str,
-) -> Optional["ProjectEntity"]:
+) -> Optional["ProjectDict"]:
     """Query project by name.
 
     This call returns project with anatomy data.
@@ -3214,7 +3214,7 @@ def get_rest_project(
         project_name (str): Name of project.
 
     Returns:
-        Optional[ProjectEntity]: Project entity data or 'None' if
+        Optional[ProjectDict]: Project entity data or 'None' if
             project was not found.
 
     """
@@ -3227,7 +3227,7 @@ def get_rest_project(
 def get_rest_projects(
     active: Optional[bool] = True,
     library: Optional[bool] = None,
-) -> Generator["ProjectEntity", None, None]:
+) -> Generator["ProjectDict", None, None]:
     """Query available project entities.
 
     User must be logged in.
@@ -3239,7 +3239,7 @@ def get_rest_projects(
             are returned if 'None' is passed.
 
     Returns:
-        Generator[ProjectEntity, None, None]: Available projects.
+        Generator[ProjectDict, None, None]: Available projects.
 
     """
     con = get_server_api_connection()
@@ -3253,7 +3253,7 @@ def get_rest_entity_by_id(
     project_name: str,
     entity_type: str,
     entity_id: str,
-) -> Optional["AnyEntity"]:
+) -> Optional["AnyEntityDict"]:
     """Get entity using REST on a project by its id.
 
     Args:
@@ -3263,7 +3263,7 @@ def get_rest_entity_by_id(
         entity_id (str): Id of entity.
 
     Returns:
-        Optional[AnyEntity]: Received entity data.
+        Optional[AnyEntityDict]: Received entity data.
 
     """
     con = get_server_api_connection()
@@ -3277,7 +3277,7 @@ def get_rest_entity_by_id(
 def get_rest_folder(
     project_name: str,
     folder_id: str,
-) -> Optional["FolderEntity"]:
+) -> Optional["FolderDict"]:
     con = get_server_api_connection()
     return con.get_rest_folder(
         project_name=project_name,
@@ -3288,7 +3288,7 @@ def get_rest_folder(
 def get_rest_folders(
     project_name: str,
     include_attrib: bool = False,
-) -> List["FlatFolderEntity"]:
+) -> List["FlatFolderDict"]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -3326,7 +3326,7 @@ def get_rest_folders(
             in output. Slower to query.
 
     Returns:
-        List[FlatFolderEntity]: List of folder entities.
+        List[FlatFolderDict]: List of folder entities.
 
     """
     con = get_server_api_connection()
@@ -3339,7 +3339,7 @@ def get_rest_folders(
 def get_rest_task(
     project_name: str,
     task_id: str,
-) -> Optional["TaskEntity"]:
+) -> Optional["TaskDict"]:
     con = get_server_api_connection()
     return con.get_rest_task(
         project_name=project_name,
@@ -3350,7 +3350,7 @@ def get_rest_task(
 def get_rest_product(
     project_name: str,
     product_id: str,
-) -> Optional["ProductEntity"]:
+) -> Optional["ProductDict"]:
     con = get_server_api_connection()
     return con.get_rest_product(
         project_name=project_name,
@@ -3361,7 +3361,7 @@ def get_rest_product(
 def get_rest_version(
     project_name: str,
     version_id: str,
-) -> Optional["VersionEntity"]:
+) -> Optional["VersionDict"]:
     con = get_server_api_connection()
     return con.get_rest_version(
         project_name=project_name,
@@ -3372,7 +3372,7 @@ def get_rest_version(
 def get_rest_representation(
     project_name: str,
     representation_id: str,
-) -> Optional["RepresentationEntity"]:
+) -> Optional["RepresentationDict"]:
     con = get_server_api_connection()
     return con.get_rest_representation(
         project_name=project_name,
@@ -3410,7 +3410,7 @@ def get_projects(
     library: "Union[bool, None]" = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["ProjectEntity", None, None]:
+) -> Generator["ProjectDict", None, None]:
     """Get projects.
 
     Args:
@@ -3424,7 +3424,7 @@ def get_projects(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Generator[ProjectEntity, None, None]: Queried projects.
+        Generator[ProjectDict, None, None]: Queried projects.
 
     """
     con = get_server_api_connection()
@@ -3440,7 +3440,7 @@ def get_project(
     project_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["ProjectEntity"]:
+) -> Optional["ProjectDict"]:
     """Get project.
 
     Args:
@@ -3451,7 +3451,7 @@ def get_project(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Optional[ProjectEntity]: Project entity data or None
+        Optional[ProjectDict]: Project entity data or None
             if project was not found.
 
     """
@@ -3511,7 +3511,7 @@ def get_folders_hierarchy(
 def get_folders_rest(
     project_name: str,
     include_attrib: bool = False,
-) -> List["FlatFolderEntity"]:
+) -> List["FlatFolderDict"]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -3555,7 +3555,7 @@ def get_folders_rest(
             in output. Slower to query.
 
     Returns:
-        List[FlatFolderEntity]: List of folder entities.
+        List[FlatFolderDict]: List of folder entities.
 
     """
     con = get_server_api_connection()
@@ -3583,7 +3583,7 @@ def get_folders(
     has_links: Optional[bool] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["FolderEntity", None, None]:
+) -> Generator["FolderDict", None, None]:
     """Query folders from server.
 
     Todos:
@@ -3629,7 +3629,7 @@ def get_folders(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Generator[FolderEntity, None, None]: Queried folder entities.
+        Generator[FolderDict, None, None]: Queried folder entities.
 
     """
     con = get_server_api_connection()
@@ -3659,7 +3659,7 @@ def get_folder_by_id(
     folder_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderEntity"]:
+) -> Optional["FolderDict"]:
     """Query folder entity by id.
 
     Args:
@@ -3672,7 +3672,7 @@ def get_folder_by_id(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Optional[FolderEntity]: Folder entity data or None
+        Optional[FolderDict]: Folder entity data or None
             if was not found.
 
     """
@@ -3690,7 +3690,7 @@ def get_folder_by_path(
     folder_path: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderEntity"]:
+) -> Optional["FolderDict"]:
     """Query folder entity by path.
 
     Folder path is a path to folder with all parent names joined by slash.
@@ -3705,7 +3705,7 @@ def get_folder_by_path(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Optional[FolderEntity]: Folder entity data or None
+        Optional[FolderDict]: Folder entity data or None
             if was not found.
 
     """
@@ -3723,7 +3723,7 @@ def get_folder_by_name(
     folder_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderEntity"]:
+) -> Optional["FolderDict"]:
     """Query folder entity by path.
 
     Warnings:
@@ -3740,7 +3740,7 @@ def get_folder_by_name(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Optional[FolderEntity]: Folder entity data or None
+        Optional[FolderDict]: Folder entity data or None
             if was not found.
 
     """
@@ -3925,7 +3925,7 @@ def get_tasks(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["TaskEntity", None, None]:
+) -> Generator["TaskDict", None, None]:
     """Query task entities from server.
 
     Args:
@@ -3954,7 +3954,7 @@ def get_tasks(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Generator[TaskEntity, None, None]: Queried task entities.
+        Generator[TaskDict, None, None]: Queried task entities.
 
     """
     con = get_server_api_connection()
@@ -3980,7 +3980,7 @@ def get_task_by_name(
     task_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskEntity"]:
+) -> Optional["TaskDict"]:
     """Query task entity by name and folder id.
 
     Args:
@@ -3994,7 +3994,7 @@ def get_task_by_name(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Optional[TaskEntity]: Task entity data or None if was not found.
+        Optional[TaskDict]: Task entity data or None if was not found.
 
     """
     con = get_server_api_connection()
@@ -4012,7 +4012,7 @@ def get_task_by_id(
     task_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskEntity"]:
+) -> Optional["TaskDict"]:
     """Query task entity by id.
 
     Args:
@@ -4025,7 +4025,7 @@ def get_task_by_id(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Optional[TaskEntity]: Task entity data or None if was not found.
+        Optional[TaskDict]: Task entity data or None if was not found.
 
     """
     con = get_server_api_connection()
@@ -4049,7 +4049,7 @@ def get_tasks_by_folder_paths(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Dict[str, List["TaskEntity"]]:
+) -> Dict[str, List["TaskDict"]]:
     """Query task entities from server by folder paths.
 
     Args:
@@ -4076,7 +4076,7 @@ def get_tasks_by_folder_paths(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Dict[str, List[TaskEntity]]: Task entities by
+        Dict[str, List[TaskDict]]: Task entities by
             folder path.
 
     """
@@ -4108,7 +4108,7 @@ def get_tasks_by_folder_path(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> List["TaskEntity"]:
+) -> List["TaskDict"]:
     """Query task entities from server by folder path.
 
     Args:
@@ -4157,7 +4157,7 @@ def get_task_by_folder_path(
     task_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskEntity"]:
+) -> Optional["TaskDict"]:
     """Query task entity by folder path and task name.
 
     Args:
@@ -4170,7 +4170,7 @@ def get_task_by_folder_path(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Optional[TaskEntity]: Task entity data or None if was not found.
+        Optional[TaskDict]: Task entity data or None if was not found.
 
     """
     con = get_server_api_connection()
@@ -4330,7 +4330,7 @@ def get_products(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["ProductEntity", None, None]:
+) -> Generator["ProductDict", None, None]:
     """Query products from server.
 
     Todos:
@@ -4364,7 +4364,7 @@ def get_products(
             products.
 
     Returns:
-        Generator[ProductEntity, None, None]: Queried product entities.
+        Generator[ProductDict, None, None]: Queried product entities.
 
     """
     con = get_server_api_connection()
@@ -4390,7 +4390,7 @@ def get_product_by_id(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["ProductEntity"]:
+) -> Optional["ProductDict"]:
     """Query product entity by id.
 
     Args:
@@ -4403,7 +4403,7 @@ def get_product_by_id(
             products.
 
     Returns:
-        Optional[ProductEntity]: Product entity data or None
+        Optional[ProductDict]: Product entity data or None
             if was not found.
 
     """
@@ -4422,7 +4422,7 @@ def get_product_by_name(
     folder_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["ProductEntity"]:
+) -> Optional["ProductDict"]:
     """Query product entity by name and folder id.
 
     Args:
@@ -4436,7 +4436,7 @@ def get_product_by_name(
             products.
 
     Returns:
-        Optional[ProductEntity]: Product entity data or None
+        Optional[ProductDict]: Product entity data or None
             if was not found.
 
     """
@@ -4647,7 +4647,7 @@ def get_versions(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["VersionEntity", None, None]:
+) -> Generator["VersionDict", None, None]:
     """Get version entities based on passed filters from server.
 
     Args:
@@ -4678,7 +4678,7 @@ def get_versions(
             versions.
 
     Returns:
-        Generator[VersionEntity, None, None]: Queried version entities.
+        Generator[VersionDict, None, None]: Queried version entities.
 
     """
     con = get_server_api_connection()
@@ -4704,7 +4704,7 @@ def get_version_by_id(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionEntity"]:
+) -> Optional["VersionDict"]:
     """Query version entity by id.
 
     Args:
@@ -4717,7 +4717,7 @@ def get_version_by_id(
             versions.
 
     Returns:
-        Optional[VersionEntity]: Version entity data or None if was not found.
+        Optional[VersionDict]: Version entity data or None if was not found.
 
     """
     con = get_server_api_connection()
@@ -4735,7 +4735,7 @@ def get_version_by_name(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionEntity"]:
+) -> Optional["VersionDict"]:
     """Query version entity by version and product id.
 
     Args:
@@ -4749,7 +4749,7 @@ def get_version_by_name(
             versions.
 
     Returns:
-        Optional[VersionEntity]: Version entity data or None
+        Optional[VersionDict]: Version entity data or None
             if was not found.
 
     """
@@ -4768,7 +4768,7 @@ def get_hero_version_by_id(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionEntity"]:
+) -> Optional["VersionDict"]:
     """Query hero version entity by id.
 
     Args:
@@ -4781,7 +4781,7 @@ def get_hero_version_by_id(
             versions.
 
     Returns:
-        Optional[VersionEntity]: Version entity data or None
+        Optional[VersionDict]: Version entity data or None
             if was not found.
 
     """
@@ -4799,7 +4799,7 @@ def get_hero_version_by_product_id(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionEntity"]:
+) -> Optional["VersionDict"]:
     """Query hero version entity by product id.
 
     Only one hero version is available on a product.
@@ -4814,7 +4814,7 @@ def get_hero_version_by_product_id(
             versions.
 
     Returns:
-        Optional[VersionEntity]: Version entity data or None
+        Optional[VersionDict]: Version entity data or None
             if was not found.
 
     """
@@ -4834,7 +4834,7 @@ def get_hero_versions(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["VersionEntity", None, None]:
+) -> Generator["VersionDict", None, None]:
     """Query hero versions by multiple filters.
 
     Only one hero version is available on a product.
@@ -4852,7 +4852,7 @@ def get_hero_versions(
             versions.
 
     Returns:
-        Optional[VersionEntity]: Version entity data or None
+        Optional[VersionDict]: Version entity data or None
             if was not found.
 
     """
@@ -4873,7 +4873,7 @@ def get_last_versions(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Dict[str, Optional["VersionEntity"]]:
+) -> Dict[str, Optional["VersionDict"]]:
     """Query last version entities by product ids.
 
     Args:
@@ -4887,7 +4887,7 @@ def get_last_versions(
             versions.
 
     Returns:
-        dict[str, Optional[VersionEntity]]: Last versions by product id.
+        dict[str, Optional[VersionDict]]: Last versions by product id.
 
     """
     con = get_server_api_connection()
@@ -4906,7 +4906,7 @@ def get_last_version_by_product_id(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionEntity"]:
+) -> Optional["VersionDict"]:
     """Query last version entity by product id.
 
     Args:
@@ -4920,7 +4920,7 @@ def get_last_version_by_product_id(
             versions.
 
     Returns:
-        Optional[VersionEntity]: Queried version entity or None.
+        Optional[VersionDict]: Queried version entity or None.
 
     """
     con = get_server_api_connection()
@@ -4940,7 +4940,7 @@ def get_last_version_by_product_name(
     active: "Union[bool, None]" = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionEntity"]:
+) -> Optional["VersionDict"]:
     """Query last version entity by product name and folder id.
 
     Args:
@@ -4955,7 +4955,7 @@ def get_last_version_by_product_name(
             representations.
 
     Returns:
-        Optional[VersionEntity]: Queried version entity or None.
+        Optional[VersionDict]: Queried version entity or None.
 
     """
     con = get_server_api_connection()
@@ -5129,7 +5129,7 @@ def get_representations(
     has_links: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["RepresentationEntity", None, None]:
+) -> Generator["RepresentationDict", None, None]:
     """Get representation entities based on passed filters from server.
 
     .. todo::
@@ -5164,7 +5164,7 @@ def get_representations(
             representations.
 
     Returns:
-        Generator[RepresentationEntity, None, None]: Queried
+        Generator[RepresentationDict, None, None]: Queried
             representation entities.
 
     """
@@ -5189,7 +5189,7 @@ def get_representation_by_id(
     representation_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["RepresentationEntity"]:
+) -> Optional["RepresentationDict"]:
     """Query representation entity from server based on id filter.
 
     Args:
@@ -5201,7 +5201,7 @@ def get_representation_by_id(
             representations.
 
     Returns:
-        Optional[RepresentationEntity]: Queried representation entity or None.
+        Optional[RepresentationDict]: Queried representation entity or None.
 
     """
     con = get_server_api_connection()
@@ -5219,7 +5219,7 @@ def get_representation_by_name(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["RepresentationEntity"]:
+) -> Optional["RepresentationDict"]:
     """Query representation entity by name and version id.
 
     Args:
@@ -5232,7 +5232,7 @@ def get_representation_by_name(
             representations.
 
     Returns:
-        Optional[RepresentationEntity]: Queried representation entity
+        Optional[RepresentationDict]: Queried representation entity
             or None.
 
     """
@@ -5583,7 +5583,7 @@ def get_workfiles_info(
     has_links: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["WorkfileEntity", None, None]:
+) -> Generator["WorkfileInfoDict", None, None]:
     """Workfile info entities by passed filters.
 
     Args:
@@ -5605,7 +5605,7 @@ def get_workfiles_info(
             workfiles.
 
     Returns:
-        Generator[WorkfileEntity, None, None]: Queried workfile info
+        Generator[WorkfileInfoDict, None, None]: Queried workfile info
             entites.
 
     """
@@ -5630,7 +5630,7 @@ def get_workfile_info(
     path: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["WorkfileEntity"]:
+) -> Optional["WorkfileInfoDict"]:
     """Workfile info entity by task id and workfile path.
 
     Args:
@@ -5644,7 +5644,7 @@ def get_workfile_info(
             workfiles.
 
     Returns:
-        Optional[WorkfileEntity]: Workfile info entity or None.
+        Optional[WorkfileInfoDict]: Workfile info entity or None.
 
     """
     con = get_server_api_connection()
@@ -5662,7 +5662,7 @@ def get_workfile_info_by_id(
     workfile_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["WorkfileEntity"]:
+) -> Optional["WorkfileInfoDict"]:
     """Workfile info entity by id.
 
     Args:
@@ -5675,7 +5675,7 @@ def get_workfile_info_by_id(
             workfiles.
 
     Returns:
-        Optional[WorkfileEntity]: Workfile info entity or None.
+        Optional[WorkfileInfoDict]: Workfile info entity or None.
 
     """
     con = get_server_api_connection()
@@ -5903,7 +5903,7 @@ def create_project(
     project_code: str,
     library_project: bool = False,
     preset_name: Optional[str] = None,
-) -> "ProjectEntity":
+) -> "ProjectDict":
     """Create project using AYON settings.
 
     This project creation function is not validating project entity on
@@ -5927,7 +5927,7 @@ def create_project(
         ValueError: When project name already exists.
 
     Returns:
-        ProjectEntity: Created project entity.
+        ProjectDict: Created project entity.
 
     """
     con = get_server_api_connection()
