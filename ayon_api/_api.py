@@ -32,6 +32,8 @@ from .utils import (
     TransferProgress,
     ThumbnailContent,
     get_default_settings_variant as _get_default_settings_variant,
+    RepresentationParents,
+    RepresentationHierarchy,
 )
 
 if typing.TYPE_CHECKING:
@@ -4718,7 +4720,8 @@ def get_version_by_id(
             versions.
 
     Returns:
-        Optional[VersionDict]: Version entity data or None if was not found.
+        Optional[VersionDict]: Version entity data or None
+            if was not found.
 
     """
     con = get_server_api_connection()
@@ -5202,7 +5205,8 @@ def get_representation_by_id(
             representations.
 
     Returns:
-        Optional[RepresentationDict]: Queried representation entity or None.
+        Optional[RepresentationDict]: Queried representation
+            entity or None.
 
     """
     con = get_server_api_connection()
@@ -5256,7 +5260,7 @@ def get_representations_hierarchy(
     product_fields: Optional[Iterable[str]] = None,
     version_fields: Optional[Iterable[str]] = None,
     representation_fields: Optional[Iterable[str]] = None,
-) -> "Dict[str, RepresentationHierarchy]":
+) -> Dict[str, RepresentationHierarchy]:
     """Find representation with parents by representation id.
 
     Representation entity with parent entities up to project.
@@ -5303,7 +5307,7 @@ def get_representation_hierarchy(
     product_fields: Optional[Iterable[str]] = None,
     version_fields: Optional[Iterable[str]] = None,
     representation_fields: Optional[Iterable[str]] = None,
-) -> "Optional[RepresentationHierarchy]":
+) -> Optional[RepresentationHierarchy]:
     """Find representation parents by representation id.
 
     Representation parent entities up to project.
@@ -5343,7 +5347,7 @@ def get_representations_parents(
     folder_fields: Optional[Iterable[str]] = None,
     product_fields: Optional[Iterable[str]] = None,
     version_fields: Optional[Iterable[str]] = None,
-) -> "Dict[str, RepresentationParents]":
+) -> Dict[str, RepresentationParents]:
     """Find representations parents by representation id.
 
     Representation parent entities up to project.

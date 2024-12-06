@@ -6433,7 +6433,8 @@ class ServerAPI(object):
                 versions.
 
         Returns:
-            Optional[VersionDict]: Version entity data or None if was not found.
+            Optional[VersionDict]: Version entity data or None
+                if was not found.
 
         """
         versions = self.get_versions(
@@ -7087,7 +7088,8 @@ class ServerAPI(object):
                 representations.
 
         Returns:
-            Optional[RepresentationDict]: Queried representation entity or None.
+            Optional[RepresentationDict]: Queried representation
+                entity or None.
 
         """
         representations = self.get_representations(
