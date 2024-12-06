@@ -30,6 +30,7 @@ from .utils import (
     NOT_SET,
     SortOrder,
     TransferProgress,
+    ThumbnailContent,
     get_default_settings_variant as _get_default_settings_variant,
 )
 
@@ -5690,7 +5691,7 @@ def get_workfile_info_by_id(
 def get_thumbnail_by_id(
     project_name: str,
     thumbnail_id: str,
-) -> "ayon_api.utils.ThumbnailContent":
+) -> ThumbnailContent:
     """Get thumbnail from server by id.
 
     Permissions of thumbnails are related to entities so thumbnails must
@@ -5727,7 +5728,7 @@ def get_thumbnail(
     entity_type: str,
     entity_id: str,
     thumbnail_id: Optional[str] = None,
-) -> "ayon_api.utils.ThumbnailContent":
+) -> ThumbnailContent:
     """Get thumbnail from server.
 
     Permissions of thumbnails are related to entities so thumbnails must
@@ -5767,7 +5768,7 @@ def get_folder_thumbnail(
     project_name: str,
     folder_id: str,
     thumbnail_id: Optional[str] = None,
-) -> "ayon_api.utils.ThumbnailContent":
+) -> ThumbnailContent:
     """Prepared method to receive thumbnail for folder entity.
 
     Args:
@@ -5793,7 +5794,7 @@ def get_version_thumbnail(
     project_name: str,
     version_id: str,
     thumbnail_id: Optional[str] = None,
-) -> "ayon_api.utils.ThumbnailContent":
+) -> ThumbnailContent:
     """Prepared method to receive thumbnail for version entity.
 
     Args:
@@ -5820,7 +5821,7 @@ def get_workfile_thumbnail(
     project_name: str,
     workfile_id: str,
     thumbnail_id: Optional[str] = None,
-) -> "ayon_api.utils.ThumbnailContent":
+) -> ThumbnailContent:
     """Prepared method to receive thumbnail for workfile entity.
 
     Args:
