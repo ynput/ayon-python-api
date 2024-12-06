@@ -158,9 +158,8 @@ def _get_typehint(annotation, api_globals):
     )
     for item in full_path_regex.finditer(str(typehint)):
         groups = item.groupdict()
-        if groups["full"] not in {"io.BytesIO"}:
-            name = groups["name"].split(".")[-1]
-            typehint = typehint.replace(groups["full"], name)
+        name = groups["name"].split(".")[-1]
+        typehint = typehint.replace(groups["full"], name)
 
     forwardref_regex = re.compile(
         r"(?P<full>ForwardRef\('(?P<name>[a-zA-Z0-9]+)'\))"
