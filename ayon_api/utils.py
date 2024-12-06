@@ -278,7 +278,11 @@ def prepare_attribute_changes(
     return attrib_changes
 
 
-def prepare_entity_changes(old_entity, new_entity, replace=False):
+def prepare_entity_changes(
+    old_entity: "AnyEntityDict",
+    new_entity: "AnyEntityDict",
+    replace: bool = False,
+) -> Dict[str, Any]:
     """Prepare changes of entities."""
     changes = {}
     for key, new_value in new_entity.items():
