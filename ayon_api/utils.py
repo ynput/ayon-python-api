@@ -22,7 +22,7 @@ from .exceptions import UrlError
 
 if typing.TYPE_CHECKING:
     from typing import Union
-    from ._typing import AnyEntityDict, StreamType
+    from .typing import AnyEntityDict, StreamType
 
 REMOVED_VALUE = object()
 NOT_SET = object()

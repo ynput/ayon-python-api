@@ -101,7 +101,7 @@ from .utils import (
 
 if typing.TYPE_CHECKING:
     from typing import Union
-    from ._typing import (
+    from .typing import (
         ActivityType,
         ActivityReferenceType,
         LinkDirection,
