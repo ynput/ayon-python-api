@@ -7789,7 +7789,7 @@ class ServerAPI(object):
     def _prepare_thumbnail_content(
         self,
         project_name: str,
-        response: requests.Response,
+        response: RestApiResponse,
     ) -> ThumbnailContent:
         content = None
         content_type = response.content_type
@@ -8247,7 +8247,7 @@ class ServerAPI(object):
             output_type (str): Output entity type of link.
 
         Returns:
-            Union[None, dict[str, Any]]: Link type information.
+            Optional[str]: Link type information.
 
         """
         full_type_name = self.get_full_link_type_name(

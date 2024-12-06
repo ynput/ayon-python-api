@@ -6094,7 +6094,7 @@ def get_link_type(
         output_type (str): Output entity type of link.
 
     Returns:
-        Union[None, dict[str, Any]]: Link type information.
+        Optional[str]: Link type information.
 
     """
     con = get_server_api_connection()
