@@ -6,7 +6,8 @@ import string
 import platform
 import collections
 from urllib.parse import urlparse, urlencode
-from typing import Optional, Dict, Any
+import typing
+from typing import Optional, Dict, Set, Any, Iterable
 from enum import IntEnum
 
 import requests
@@ -18,6 +19,10 @@ from .constants import (
     SITE_ID_ENV_KEY,
 )
 from .exceptions import UrlError
+
+if typing.TYPE_CHECKING:
+    from typing import Union
+    from .typing import AnyEntityDict, StreamType
 
 REMOVED_VALUE = object()
 NOT_SET = object()
@@ -56,7 +61,7 @@ class SortOrder(IntEnum):
         return default
 
 
-def get_default_timeout():
+def get_default_timeout() -> float:
     """Default value for requests timeout.
 
     First looks for environment variable SERVER_TIMEOUT_ENV_KEY which
@@ -73,7 +78,7 @@ def get_default_timeout():
     return 10.0
 
 
-def get_default_settings_variant():
+def get_default_settings_variant() -> str:
     """Default settings variant.
 
     Returns:
@@ -83,11 +88,11 @@ def get_default_settings_variant():
     return os.environ.get(DEFAULT_VARIANT_ENV_KEY) or "production"
 
 
-def get_default_site_id():
+def get_default_site_id() -> Optional[str]:
     """Site id used for server connection.
 
     Returns:
-        Union[str, None]: Site id from environment variable or None.
+        Optional[str]: Site id from environment variable or None.
 
     """
     return os.environ.get(SITE_ID_ENV_KEY)
@@ -98,24 +103,30 @@ class ThumbnailContent:
 
     Args:
         project_name (str): Project name.
-        thumbnail_id (Union[str, None]): Thumbnail id.
-        content_type (Union[str, None]): Content type e.g. 'image/png'.
-        content (Union[bytes, None]): Thumbnail content.
+        thumbnail_id (Optional[str]): Thumbnail id.
+        content (Optional[bytes]): Thumbnail content.
+        content_type (Optional[str]): Content type e.g. 'image/png'.
 
     """
-    def __init__(self, project_name, thumbnail_id, content, content_type):
-        self.project_name = project_name
-        self.thumbnail_id = thumbnail_id
-        self.content_type = content_type
-        self.content = content or b""
+    def __init__(
+        self,
+        project_name: str,
+        thumbnail_id: Optional[str],
+        content: Optional[bytes],
+        content_type: Optional[str],
+    ):
+        self.project_name: str = project_name
+        self.thumbnail_id: Optional[str] = thumbnail_id
+        self.content_type: Optional[str] = content_type
+        self.content: bytes = content or b""
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Wrapper for thumbnail id."""
         return self.thumbnail_id
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """Content of thumbnail is valid.
 
         Returns:
@@ -128,7 +139,7 @@ class ThumbnailContent:
         )
 
 
-def prepare_query_string(key_values):
+def prepare_query_string(key_values: Dict[str, Any]):
     """Prepare data to query string.
 
     If there are any values a query starting with '?' is returned otherwise
@@ -146,11 +157,11 @@ def prepare_query_string(key_values):
     return "?{}".format(urlencode(key_values))
 
 
-def create_entity_id():
+def create_entity_id() -> str:
     return uuid.uuid1().hex
 
 
-def convert_entity_id(entity_id):
+def convert_entity_id(entity_id) -> Optional[str]:
     if not entity_id:
         return None
 
@@ -165,14 +176,14 @@ def convert_entity_id(entity_id):
     return None
 
 
-def convert_or_create_entity_id(entity_id=None):
+def convert_or_create_entity_id(entity_id: Optional[str] = None) -> str:
     output = convert_entity_id(entity_id)
     if output is None:
         output = create_entity_id()
     return output
 
 
-def entity_data_json_default(value):
+def entity_data_json_default(value: Any) -> Any:
     if isinstance(value, datetime.datetime):
         return int(value.timestamp())
 
@@ -182,14 +193,14 @@ def entity_data_json_default(value):
 
 
 def slugify_string(
-    input_string,
-    separator="_",
-    slug_whitelist=SLUGIFY_WHITELIST,
-    split_chars=SLUGIFY_SEP_WHITELIST,
-    min_length=1,
-    lower=False,
-    make_set=False,
-):
+    input_string: str,
+    separator: Optional[str] = "_",
+    slug_whitelist: Optional[Iterable[str]] = SLUGIFY_WHITELIST,
+    split_chars: Optional[Iterable[str]] = SLUGIFY_SEP_WHITELIST,
+    min_length: int = 1,
+    lower: bool = False,
+    make_set: bool = False,
+) -> "Union[str, Set[str]]":
     """Slugify a text string.
 
     This function removes transliterates input string to ASCII, removes
@@ -234,11 +245,15 @@ def slugify_string(
     return separator.join(filtered_parts)
 
 
-def failed_json_default(value):
+def failed_json_default(value: Any) -> str:
     return "< Failed value {} > {}".format(type(value), str(value))
 
 
-def prepare_attribute_changes(old_entity, new_entity, replace=False):
+def prepare_attribute_changes(
+    old_entity: "AnyEntityDict",
+    new_entity: "AnyEntityDict",
+    replace: int = False,
+):
     attrib_changes = {}
     new_attrib = new_entity.get("attrib")
     old_attrib = old_entity.get("attrib")
@@ -263,7 +278,11 @@ def prepare_attribute_changes(old_entity, new_entity, replace=False):
     return attrib_changes
 
 
-def prepare_entity_changes(old_entity, new_entity, replace=False):
+def prepare_entity_changes(
+    old_entity: "AnyEntityDict",
+    new_entity: "AnyEntityDict",
+    replace: bool = False,
+) -> Dict[str, Any]:
     """Prepare changes of entities."""
     changes = {}
     for key, new_value in new_entity.items():
@@ -285,14 +304,16 @@ def prepare_entity_changes(old_entity, new_entity, replace=False):
     return changes
 
 
-def _try_parse_url(url):
+def _try_parse_url(url: str) -> Optional[str]:
     try:
         return urlparse(url)
     except BaseException:
         return None
 
 
-def _try_connect_to_server(url, timeout=None):
+def _try_connect_to_server(
+    url: str, timeout: Optional[float] = None
+) -> bool:
     if timeout is None:
         timeout = get_default_timeout()
     try:
@@ -305,7 +326,12 @@ def _try_connect_to_server(url, timeout=None):
     return True
 
 
-def login_to_server(url, username, password, timeout=None):
+def login_to_server(
+    url: str,
+    username: str,
+    password: str,
+    timeout: Optional[float] = None,
+) -> Optional[str]:
     """Use login to the server to receive token.
 
     Args:
@@ -316,7 +342,7 @@ def login_to_server(url, username, password, timeout=None):
             'get_default_timeout' is used if not specified.
 
     Returns:
-        Union[str, None]: User's token if login was successfull.
+        Optional[str]: User's token if login was successfull.
             Otherwise 'None'.
 
     """
@@ -341,7 +367,7 @@ def login_to_server(url, username, password, timeout=None):
     return token
 
 
-def logout_from_server(url, token, timeout=None):
+def logout_from_server(url: str, token: str, timeout: Optional[float] = None):
     """Logout from server and throw token away.
 
     Args:
@@ -364,7 +390,11 @@ def logout_from_server(url, token, timeout=None):
     )
 
 
-def get_user_by_token(url, token, timeout=None):
+def get_user_by_token(
+    url: str,
+    token: str,
+    timeout: Optional[float] = None,
+) -> Optional[Dict[str, Any]]:
     """Get user information by url and token.
 
     Args:
@@ -399,7 +429,11 @@ def get_user_by_token(url, token, timeout=None):
     return None
 
 
-def is_token_valid(url, token, timeout=None):
+def is_token_valid(
+    url: str,
+    token: str,
+    timeout: Optional[float] = None,
+) -> bool:
     """Check if token is valid.
 
     Token can be a user token or service api key.
@@ -419,7 +453,7 @@ def is_token_valid(url, token, timeout=None):
     return False
 
 
-def validate_url(url, timeout=None):
+def validate_url(url: str, timeout: Optional[int] = None) -> str:
     """Validate url if is valid and server is available.
 
     Validation checks if can be parsed as url and contains scheme.
@@ -504,16 +538,16 @@ class TransferProgress:
     """Object to store progress of download/upload from/to server."""
 
     def __init__(self):
-        self._started = False
-        self._transfer_done = False
-        self._transferred = 0
-        self._content_size = None
+        self._started: bool = False
+        self._transfer_done: bool = False
+        self._transferred: int = 0
+        self._content_size: Optional[int] = None
 
-        self._failed = False
-        self._fail_reason = None
+        self._failed: bool = False
+        self._fail_reason: Optional[str] = None
 
-        self._source_url = "N/A"
-        self._destination_url = "N/A"
+        self._source_url: str = "N/A"
+        self._destination_url: str = "N/A"
 
     def get_content_size(self):
         """Content size in bytes.
@@ -525,7 +559,7 @@ class TransferProgress:
         """
         return self._content_size
 
-    def set_content_size(self, content_size):
+    def set_content_size(self, content_size: int):
         """Set content size in bytes.
 
         Args:
@@ -539,7 +573,7 @@ class TransferProgress:
             raise ValueError("Content size was set more then once")
         self._content_size = content_size
 
-    def get_started(self):
+    def get_started(self) -> bool:
         """Transfer was started.
 
         Returns:
@@ -559,7 +593,7 @@ class TransferProgress:
             raise ValueError("Progress already started")
         self._started = True
 
-    def get_transfer_done(self):
+    def get_transfer_done(self) -> bool:
         """Transfer finished.
 
         Returns:
@@ -582,7 +616,7 @@ class TransferProgress:
             raise ValueError("Progress didn't start yet")
         self._transfer_done = True
 
-    def get_failed(self):
+    def get_failed(self) -> bool:
         """Transfer failed.
 
         Returns:
@@ -591,17 +625,17 @@ class TransferProgress:
         """
         return self._failed
 
-    def get_fail_reason(self):
+    def get_fail_reason(self) -> Optional[str]:
         """Get reason why transfer failed.
 
         Returns:
-            Union[str, None]: Reason why transfer
+            Optional[str]: Reason why transfer
                 failed or None.
 
         """
         return self._fail_reason
 
-    def set_failed(self, reason):
+    def set_failed(self, reason: str):
         """Mark progress as failed.
 
         Args:
@@ -611,7 +645,7 @@ class TransferProgress:
         self._fail_reason = reason
         self._failed = True
 
-    def get_transferred_size(self):
+    def get_transferred_size(self) -> int:
         """Already transferred size in bytes.
 
         Returns:
@@ -620,7 +654,7 @@ class TransferProgress:
         """
         return self._transferred
 
-    def set_transferred_size(self, transferred):
+    def set_transferred_size(self, transferred: int):
         """Set already transferred size in bytes.
 
         Args:
@@ -629,7 +663,7 @@ class TransferProgress:
         """
         self._transferred = transferred
 
-    def add_transferred_chunk(self, chunk_size):
+    def add_transferred_chunk(self, chunk_size: int):
         """Add transferred chunk size in bytes.
 
         Args:
@@ -639,7 +673,7 @@ class TransferProgress:
         """
         self._transferred += chunk_size
 
-    def get_source_url(self):
+    def get_source_url(self) -> str:
         """Source url from where transfer happens.
 
         Note:
@@ -652,7 +686,7 @@ class TransferProgress:
         """
         return self._source_url
 
-    def set_source_url(self, url):
+    def set_source_url(self, url: str):
         """Set source url from where transfer happens.
 
         Args:
@@ -661,7 +695,7 @@ class TransferProgress:
         """
         self._source_url = url
 
-    def get_destination_url(self):
+    def get_destination_url(self) -> str:
         """Destination url where transfer happens.
 
         Note:
@@ -674,7 +708,7 @@ class TransferProgress:
         """
         return self._destination_url
 
-    def set_destination_url(self, url):
+    def set_destination_url(self, url: str):
         """Set destination url where transfer happens.
 
         Args:
@@ -684,7 +718,7 @@ class TransferProgress:
         self._destination_url = url
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         """Check if transfer is running.
 
         Returns:
@@ -700,11 +734,11 @@ class TransferProgress:
         return True
 
     @property
-    def transfer_progress(self):
+    def transfer_progress(self) -> Optional[float]:
         """Get transfer progress in percents.
 
         Returns:
-            Union[float, None]: Transfer progress in percents or 'None'
+            Optional[float]: Transfer progress in percents or 'None'
                 if content size is unknown.
 
         """
@@ -722,7 +756,9 @@ class TransferProgress:
     transferred_size = property(get_transferred_size, set_transferred_size)
 
 
-def create_dependency_package_basename(platform_name=None):
+def create_dependency_package_basename(
+    platform_name: Optional[str] = None
+) -> str:
     """Create basename for dependency package file.
 
     Args:
@@ -742,7 +778,7 @@ def create_dependency_package_basename(platform_name=None):
 
 
 
-def _get_media_mime_type_from_ftyp(content):
+def _get_media_mime_type_from_ftyp(content: bytes) -> Optional[str]:
     if content[8:10] == b"qt" or content[8:12] == b"MSNV":
         return "video/quicktime"
 
@@ -849,7 +885,7 @@ def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
     return _get_svg_mime_type(content)
 
 
-def get_media_mime_type_for_stream(stream) -> Optional[str]:
+def get_media_mime_type_for_stream(stream: "StreamType") -> Optional[str]:
     # Read only 12 bytes to determine mime type
     content = stream.read(12)
     if len(content) < 12:
@@ -905,7 +941,7 @@ def abort_web_action_event(
     server_url: str,
     action_token: str,
     reason: str
-):
+) -> requests.Response:
     """Abort web action event using action token.
 
     A web action event could not be processed for some reason.
