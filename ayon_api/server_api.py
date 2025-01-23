@@ -2936,7 +2936,7 @@ class ServerAPI(object):
         if query_fields:
             query = "?{}".format(",".join(query_fields))
 
-        response = self.get("desktop/installers{}".format(query))
+        response = self.get(f"desktop/installers{query}")
         response.raise_for_status()
         return response.data
 
@@ -4158,7 +4158,7 @@ class ServerAPI(object):
                 query_values["site_id"] = site_id
 
         query = prepare_query_string(query_values)
-        response = self.get("settings{}".format(query))
+        response = self.get(f"settings{query}")
         response.raise_for_status()
         return response.data
 
