@@ -254,6 +254,12 @@ class RestApiResponse(object):
     def status_code(self) -> int:
         return self.status
 
+    @property
+    def ok(self) -> bool:
+        if self._response is not None:
+            return self._response.ok
+        return False
+
     def raise_for_status(self, message=None):
         if self._response is None:
             if self._data and self._data.get("detail"):
