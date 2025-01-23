@@ -6859,7 +6859,6 @@ class ServerAPI(object):
         for key, value in (
             ("version", version),
             ("productId", product_id),
-            ("taskId", task_id),
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
