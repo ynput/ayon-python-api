@@ -8971,8 +8971,11 @@ class ServerAPI(object):
 
         op_results = result.get("operations")
         if op_results is None:
+            detail = result.get("detail")
+            if detail:
+                raise FailedOperations(f"Operation failed. Detail: {detail}")
             raise FailedOperations(
-                "Operation failed. Content: {}".format(str(result))
+                f"Operation failed. Content: {result.text}"
             )
 
         if result.get("success") or not raise_on_fail:
