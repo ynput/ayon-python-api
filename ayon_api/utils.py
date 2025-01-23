@@ -139,19 +139,29 @@ class ThumbnailContent:
         )
 
 
-def prepare_query_string(key_values: Dict[str, Any]):
+def prepare_query_string(
+    key_values: Dict[str, Any], skip_none: bool = True
+) -> str:
     """Prepare data to query string.
 
     If there are any values a query starting with '?' is returned otherwise
     an empty string.
 
     Args:
-         dict[str, Any]: Query values.
+         key_values (dict[str, Any]): Query values.
+         skip_none (bool): Filter values which are 'None'.
 
     Returns:
         str: Query string.
 
     """
+    if skip_none:
+        key_values = {
+            key: value
+            for key, value in key_values.items()
+            if value is not None
+        }
+
     if not key_values:
         return ""
     return "?{}".format(urlencode(key_values))

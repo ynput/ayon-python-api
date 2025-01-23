@@ -2479,7 +2479,7 @@ class ServerAPI(object):
             filename = os.path.basename(filepath)
         headers["x-file-name"] = filename
 
-        query = f"?label={label}" if label else ""
+        query = prepare_query_string({"label": label or None})
         endpoint = (
             f"/projects/{project_name}"
             f"/versions/{version_id}/reviewables{query}"
@@ -2924,18 +2924,10 @@ class ServerAPI(object):
             InstallersInfoDict: Information about installers known for server.
 
         """
-        query_fields = [
-            "{}={}".format(key, value)
-            for key, value in (
-                ("version", version),
-                ("platform", platform_name),
-            )
-            if value
-        ]
-        query = ""
-        if query_fields:
-            query = "?{}".format(",".join(query_fields))
-
+        query = prepare_query_string({
+            "version": version or None,
+            "platform": platform_name or None,
+        })
         response = self.get(f"desktop/installers{query}")
         response.raise_for_status()
         return response.data
@@ -3299,10 +3291,9 @@ class ServerAPI(object):
             purge (Optional[bool]): Purge all data related to the addon.
 
         """
-        query_data = {}
         if purge is not None:
-            query_data["purge"] = "true" if purge else "false"
-        query = prepare_query_string(query_data)
+            purge = "true" if purge else "false"
+        query = prepare_query_string({"purge": purge})
 
         response = self.delete(f"addons/{addon_name}{query}")
         response.raise_for_status()
@@ -3323,10 +3314,9 @@ class ServerAPI(object):
             purge (Optional[bool]): Purge all data related to the addon.
 
         """
-        query_data = {}
         if purge is not None:
-            query_data["purge"] = "true" if purge else "false"
-        query = prepare_query_string(query_data)
+            purge = "true" if purge else "false"
+        query = prepare_query_string({"purge": purge})
         response = self.delete(f"addons/{addon_name}/{addon_version}{query}")
         response.raise_for_status()
 
@@ -3829,10 +3819,7 @@ class ServerAPI(object):
                 platform_name = platform.system()
             query_data["platform"] = platform_name.lower()
 
-        query = "?{}".format(",".join([
-            "{}={}".format(key, value)
-            for key, value in query_data.items()
-        ]))
+        query = prepare_query_string(query_data)
         response = self.get(
             f"projects/{project_name}/siteRoots{query}"
         )
@@ -3960,10 +3947,7 @@ class ServerAPI(object):
         if variant is None:
             variant = self.default_settings_variant
 
-        query_items = {}
-        if variant:
-            query_items["variant"] = variant
-        query = prepare_query_string(query_items)
+        query = prepare_query_string({"variant": variant or None})
 
         result = self.get(
             f"addons/{addon_name}/{addon_version}/settings{query}"
@@ -4011,17 +3995,13 @@ class ServerAPI(object):
         elif not site_id:
             site_id = self.site_id
 
-        query_items = {}
-        if site_id:
-            query_items["site"] = site_id
-
         if variant is None:
             variant = self.default_settings_variant
 
-        if variant:
-            query_items["variant"] = variant
-
-        query = prepare_query_string(query_items)
+        query = prepare_query_string({
+            "site": site_id or None,
+            "variant": variant or None,
+        })
         result = self.get(
             f"addons/{addon_name}/{addon_version}"
             f"/settings/{project_name}{query}"
@@ -4142,22 +4122,17 @@ class ServerAPI(object):
             dict[str, Any]: All settings for single bundle.
 
         """
-        query_values = {
-            key: value
-            for key, value in (
-                ("project_name", project_name),
-                ("variant", variant or self.default_settings_variant),
-                ("bundle_name", bundle_name),
-            )
-            if value
-        }
-        if use_site:
-            if not site_id:
-                site_id = self.site_id
-            if site_id:
-                query_values["site_id"] = site_id
+        if not use_site:
+            site_id = None
+        elif not site_id:
+            site_id = self.site_id
 
-        query = prepare_query_string(query_values)
+        query = prepare_query_string({
+            "project_name": project_name or None,
+            "bundle_name": bundle_name or None,
+            "variant": variant or self.default_settings_variant or None,
+            "site_id": site_id,
+        })
         response = self.get(f"settings{query}")
         response.raise_for_status()
         return response.data
@@ -4547,9 +4522,9 @@ class ServerAPI(object):
                 "Function 'get_folders_rest' is supported"
                 " for AYON server 1.0.8 and above."
             )
-        query = "?attrib={}".format(
-            "true" if include_attrib else "false"
-        )
+        query = prepare_query_string({
+            "attrib": "true" if include_attrib else "false"
+        })
         response = self.get(
             f"projects/{project_name}/folders{query}"
         )
@@ -4597,15 +4572,15 @@ class ServerAPI(object):
             list[str]: List of available project names.
 
         """
-        query_keys = {}
         if active is not None:
-            query_keys["active"] = "true" if active else "false"
+            active = "true" if active else "false"
 
         if library is not None:
-            query_keys["library"] = "true" if library else "false"
-        query = prepare_query_string(query_keys)
+            library = "true" if library else "false"
 
-        response = self.get(f"projects{query}", **query_keys)
+        query = prepare_query_string({"active": active, "library": library})
+
+        response = self.get(f"projects{query}")
         response.raise_for_status()
         data = response.data
         project_names = []
@@ -4759,18 +4734,10 @@ class ServerAPI(object):
         if folder_types:
             folder_types = ",".join(folder_types)
 
-        query_fields = [
-            "{}={}".format(key, value)
-            for key, value in (
-                ("search", search_string),
-                ("types", folder_types),
-            )
-            if value
-        ]
-        query = ""
-        if query_fields:
-            query = "?{}".format(",".join(query_fields))
-
+        query = prepare_query_string({
+            "search": search_string or None,
+            "types": folder_types or None,
+        })
         response = self.get(
             f"projects/{project_name}/hierarchy{query}"
         )
