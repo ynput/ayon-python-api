@@ -254,6 +254,12 @@ class RestApiResponse(object):
     def status_code(self) -> int:
         return self.status
 
+    @property
+    def ok(self) -> bool:
+        if self._response is not None:
+            return self._response.ok
+        return False
+
     def raise_for_status(self, message=None):
         if self._response is None:
             if self._data and self._data.get("detail"):
@@ -8918,8 +8924,11 @@ class ServerAPI(object):
 
         op_results = result.get("operations")
         if op_results is None:
+            detail = result.get("detail")
+            if detail:
+                raise FailedOperations(f"Operation failed. Detail: {detail}")
             raise FailedOperations(
-                f"Operation failed. Content: {str(result)}"
+                f"Operation failed. Content: {result.text}"
             )
 
         if result.get("success") or not raise_on_fail:
