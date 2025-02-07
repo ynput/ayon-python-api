@@ -1,0 +1,543 @@
+
+	
+
+<!DOCTYPE html>
+<html class="writer-html5 " lang="en" >
+<head>
+	<meta charset="utf-8">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+		<title>ayon_api.typing &mdash; ayon-python-api 1.0.12 documentation</title>
+	
+	
+	
+	<link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+	<link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+	
+	
+		<link rel="shortcut icon" href="../../_static/favicon.ico"/>
+	
+	
+	
+		<link rel="canonical" href="https://github.com/ynput/ayon-python-api_modules/ayon_api/typing.html"/>
+	
+
+	
+	<!--[if lt IE 9]>
+		<script src="../../_static/js/html5shiv.min.js"></script>
+	<![endif]-->
+	
+		
+			<script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+				<script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+				<script src="../../_static/jquery.js"></script>
+				<script src="../../_static/underscore.js"></script>
+				<script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+				<script src="../../_static/doctools.js"></script>
+				<script src="../../_static/sphinx_highlight.js"></script>
+		
+		<script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+		
+		<link rel="index" title="Index" href="../../genindex.html" />
+		<link rel="search" title="Search" href="../../search.html" /> 
+</head>
+<body class="wy-body-for-nav">
+
+
+	 
+	<div class="wy-grid-for-nav">
+		
+		<nav data-toggle="wy-nav-shift" class="wy-nav-side">
+			<div class="wy-side-scroll">
+				<div class="wy-side-nav-search">
+					
+						<div class="brand">
+							<a href="../../index.html">
+							
+								<img src="../../_static/AYON_blackG_dot.svg" class="logo" alt="Logo"/>
+							
+							</a>
+						</div>
+						
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+					
+				</div>
+				
+				<div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+					
+						
+						
+							
+						
+						
+							<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ayon_api</a></li>
+</ul>
+
+						
+					
+				</div>
+				
+			</div>
+		</nav>
+
+		<section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+			
+			<nav class="wy-nav-top" aria-label="top navigation">
+			
+				<i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+				<a href="../../index.html">
+					
+						<img src="../../_static/AYON_blackG_dot.svg" class="logo" alt="Logo"/>
+					
+				</a>
+			
+			</nav>
+
+
+			<div class="wy-nav-content">
+				
+				<div class="rst-content">
+				
+					<div role="navigation" aria-label="breadcrumbs navigation">
+
+	<ul class="wy-breadcrumbs">
+		
+			
+				<li><a href="../../index.html">ayon-python-api</a> ⁄&nbsp;</li>
+				
+					<li><a href="../index.html">Module code</a> ⁄&nbsp;</li>
+				
+				<li><a href="">ayon_api.typing</a></li>
+			
+		
+		
+			<li class="wy-breadcrumbs-aside">
+			
+				<a href="https://github.com/ynput/ayon-python-api" class="fa fa-github-alt"></a>
+			
+			</li>
+		
+	</ul>
+
+</div>
+					<div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+					 <div itemprop="articleBody">
+						
+  <h1>Source code for ayon_api.typing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Literal</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">TypedDict</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">BinaryIO</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ActivityType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;comment&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;watch&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reviewable&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;status.change&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;assignee.add&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;assignee.remove&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;version.publish&quot;</span>
+<span class="p">]</span>
+
+<span class="n">ActivityReferenceType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;origin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mention&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;author&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;relation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;watching&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">EventFilterValueType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="EventFilterCondition"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.EventFilterCondition">[docs]</a><span class="k">class</span> <span class="nc">EventFilterCondition</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">EventFilterValueType</span>
+    <span class="n">operator</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span>
+        <span class="s2">&quot;eq&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;lt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;lte&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gte&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ne&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;isnull&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;notnull&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;notin&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;contains&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;excludes&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;like&quot;</span><span class="p">,</span>
+    <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="EventFilter"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.EventFilter">[docs]</a><span class="k">class</span> <span class="nc">EventFilter</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">conditions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">EventFilterCondition</span><span class="p">]</span>
+    <span class="n">operator</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;and&quot;</span><span class="p">,</span> <span class="s2">&quot;or&quot;</span><span class="p">]</span></div>
+
+
+<span class="n">AttributeScope</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;project&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;folder&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;task&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;product&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;version&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;representation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;workfile&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;user&quot;</span>
+<span class="p">]</span>
+
+<span class="n">AttributeType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;float&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;datetime&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;list_of_strings&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;list_of_integers&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;list_of_any&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;list_of_submodels&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dict&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">LinkDirection</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="AttributeEnumItemDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AttributeEnumItemDict">[docs]</a><span class="k">class</span> <span class="nc">AttributeEnumItemDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">icon</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">color</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="AttributeSchemaDataDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AttributeSchemaDataDict">[docs]</a><span class="k">class</span> <span class="nc">AttributeSchemaDataDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">AttributeType</span>
+    <span class="n">inherit</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">example</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+    <span class="n">default</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+    <span class="n">gt</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">lt</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">ge</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">le</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">minLength</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">maxLength</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">minItems</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">maxItems</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">regex</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">enum</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">AttributeEnumItemDict</span><span class="p">]]</span></div>
+
+
+<div class="viewcode-block" id="AttributeSchemaDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AttributeSchemaDict">[docs]</a><span class="k">class</span> <span class="nc">AttributeSchemaDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">scope</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AttributeScope</span><span class="p">]</span>
+    <span class="n">builtin</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">AttributeSchemaDataDict</span></div>
+
+
+<div class="viewcode-block" id="AttributesSchemaDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AttributesSchemaDict">[docs]</a><span class="k">class</span> <span class="nc">AttributesSchemaDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">attributes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AttributeSchemaDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="AddonVersionInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AddonVersionInfoDict">[docs]</a><span class="k">class</span> <span class="nc">AddonVersionInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">hasSettings</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">hasSiteSettings</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">frontendScopes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">clientPyproject</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">clientSourceInfo</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">isBroken</span><span class="p">:</span> <span class="nb">bool</span></div>
+
+
+<div class="viewcode-block" id="AddonInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AddonInfoDict">[docs]</a><span class="k">class</span> <span class="nc">AddonInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">versions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AddonVersionInfoDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="AddonsInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AddonsInfoDict">[docs]</a><span class="k">class</span> <span class="nc">AddonsInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">addons</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AddonInfoDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="InstallerInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.InstallerInfoDict">[docs]</a><span class="k">class</span> <span class="nc">InstallerInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">platform</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">checksumAlgorithm</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sources</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">pythonVersion</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">pythonModules</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">runtimePythonModules</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="InstallersInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.InstallersInfoDict">[docs]</a><span class="k">class</span> <span class="nc">InstallersInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">installers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">InstallerInfoDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DependencyPackageDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.DependencyPackageDict">[docs]</a><span class="k">class</span> <span class="nc">DependencyPackageDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">platform</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">checksumAlgorithm</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sources</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">installerVersion</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sourceAddons</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">pythonModules</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DependencyPackagesDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.DependencyPackagesDict">[docs]</a><span class="k">class</span> <span class="nc">DependencyPackagesDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">packages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DependencyPackageDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DevBundleAddonInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.DevBundleAddonInfoDict">[docs]</a><span class="k">class</span> <span class="nc">DevBundleAddonInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="BundleInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.BundleInfoDict">[docs]</a><span class="k">class</span> <span class="nc">BundleInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">createdAt</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">addons</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">installerVersion</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">dependencyPackages</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">addonDevelopment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DevBundleAddonInfoDict</span><span class="p">]</span>
+    <span class="n">isProduction</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">isStaging</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">isArchived</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">isDev</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">activeUser</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="BundlesInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.BundlesInfoDict">[docs]</a><span class="k">class</span> <span class="nc">BundlesInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">bundles</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">BundleInfoDict</span><span class="p">]</span>
+    <span class="n">productionBundle</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">devBundles</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetInfoDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetInfoDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetInfoDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">primary</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetRootDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetRootDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetRootDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">windows</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">linux</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">darwin</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetTemplateDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetTemplateDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetTemplateDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">file</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetTemplatesDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetTemplatesDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetTemplatesDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">version_padding</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">frame_padding</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">frame</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">work</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetTemplateDict</span><span class="p">]</span>
+    <span class="n">publish</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetTemplateDict</span><span class="p">]</span>
+    <span class="n">hero</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetTemplateDict</span><span class="p">]</span>
+    <span class="n">delivery</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetTemplateDict</span><span class="p">]</span>
+    <span class="n">staging</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetTemplateDict</span><span class="p">]</span>
+    <span class="n">others</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetTemplateDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetSubtypeDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetSubtypeDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetSubtypeDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">shortName</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">icon</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">original_name</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetLinkTypeDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetLinkTypeDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetLinkTypeDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">link_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">input_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">output_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<span class="n">StatusScope</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;folder&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;task&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;product&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;version&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;representation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;workfile&quot;</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="AnatomyPresetStatusDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetStatusDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetStatusDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">shortName</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">icon</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">scope</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">StatusScope</span><span class="p">]</span>
+    <span class="n">original_name</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetTagDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetTagDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetTagDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">original_name</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="AnatomyPresetDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.AnatomyPresetDict">[docs]</a><span class="k">class</span> <span class="nc">AnatomyPresetDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">roots</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetRootDict</span><span class="p">]</span>
+    <span class="n">templates</span><span class="p">:</span> <span class="n">AnatomyPresetTemplatesDict</span>
+    <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">folder_types</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetSubtypeDict</span><span class="p">]</span>
+    <span class="n">task_types</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetSubtypeDict</span><span class="p">]</span>
+    <span class="n">link_types</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetLinkTypeDict</span><span class="p">]</span>
+    <span class="n">statuses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetStatusDict</span><span class="p">]</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnatomyPresetTagDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SecretDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.SecretDict">[docs]</a><span class="k">class</span> <span class="nc">SecretDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span></div>
+
+<span class="n">ProjectDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">FolderDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">TaskDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">ProductDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">VersionDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">RepresentationDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">WorkfileInfoDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">EventDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">ActivityDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">AnyEntityDict</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">ProjectDict</span><span class="p">,</span>
+    <span class="n">FolderDict</span><span class="p">,</span>
+    <span class="n">TaskDict</span><span class="p">,</span>
+    <span class="n">ProductDict</span><span class="p">,</span>
+    <span class="n">VersionDict</span><span class="p">,</span>
+    <span class="n">RepresentationDict</span><span class="p">,</span>
+    <span class="n">WorkfileInfoDict</span><span class="p">,</span>
+    <span class="n">EventDict</span><span class="p">,</span>
+    <span class="n">ActivityDict</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="FlatFolderDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.FlatFolderDict">[docs]</a><span class="k">class</span> <span class="nc">FlatFolderDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">parentId</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">parents</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">folderType</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">hasTasks</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">hasChildren</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">taskNames</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">attrib</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">ownAttrib</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">updatedAt</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="ProjectHierarchyItemDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.ProjectHierarchyItemDict">[docs]</a><span class="k">class</span> <span class="nc">ProjectHierarchyItemDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">folderType</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">hasTasks</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">taskNames</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">parents</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">parentId</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">children</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ProjectHierarchyItemDict&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ProjectHierarchyDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.ProjectHierarchyDict">[docs]</a><span class="k">class</span> <span class="nc">ProjectHierarchyDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">hierarchy</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProjectHierarchyItemDict</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ProductTypeDict"><a class="viewcode-back" href="../../ayon_api.typing.html#ayon_api.typing.ProductTypeDict">[docs]</a><span class="k">class</span> <span class="nc">ProductTypeDict</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">icon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+<span class="n">StreamType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">]</span>
+</pre></div>
+
+					 </div>
+					 
+					</div>
+					<footer>
+  
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2024, ynput.io <info@ynput.io>
+	  <br>
+      
+      
+      
+      Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+      
+      <a href="https://github.com/revitron/revitron-sphinx-theme">theme</a>
+      
+      provided by <a href="https://github.com/revitron">Revitron</a>.
+
+    </p>
+  </div> 
+
+</footer>
+
+				</div>
+			</div>
+
+		</section>
+
+	</div>
+	
+
+	<script type="text/javascript">
+			jQuery(function () {
+					SphinxRtdTheme.Navigation.enable(true);
+			});
+	</script>
+
+	
+	
+		
+	 
+
+ 
+</body>	
+</html>
