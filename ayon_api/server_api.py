@@ -7456,6 +7456,7 @@ class ServerAPI(object):
         status: Optional[str] = None,
         active: Optional[bool] = None,
         representation_id: Optional[str] = None,
+        traits: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create new representation.
 
@@ -7471,6 +7472,8 @@ class ServerAPI(object):
             active (Optional[bool]): Representation active state.
             representation_id (Optional[str]): Representation id. If not
                 passed new id is generated.
+            traits (Optional[dict[str, Any]]): Representation traits
+                serialized data as dict.
 
         Returns:
             str: Representation id.
@@ -7490,6 +7493,7 @@ class ServerAPI(object):
             ("tags", tags),
             ("status", status),
             ("active", active),
+            ("traits", traits),
         ):
             if value is not None:
                 create_data[key] = value
@@ -7513,6 +7517,7 @@ class ServerAPI(object):
         tags: Optional[List[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
+        traits: Optional[Dict[str, Any]] = None,
     ):
         """Update representation entity on server.
 
@@ -7545,6 +7550,7 @@ class ServerAPI(object):
             ("tags", tags),
             ("status", status),
             ("active", active),
+            ("traits", traits),
         ):
             if value is not None:
                 update_data[key] = value
