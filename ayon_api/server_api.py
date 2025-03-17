@@ -1143,6 +1143,7 @@ class ServerAPI(object):
         self,
         project_name: Optional[str] = None,
         usernames: Optional[Iterable[str]] = None,
+        emails: Optional[Iterable[str]] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """Get Users.
@@ -1153,6 +1154,7 @@ class ServerAPI(object):
         Args:
             project_name (Optional[str]): Project name.
             usernames (Optional[Iterable[str]]): Filter by usernames.
+            emails (Optional[Iterable[str]]): Filter by emails.
             fields (Optional[Iterable[str]]): Fields to be queried
                 for users.
 
@@ -1166,6 +1168,22 @@ class ServerAPI(object):
             if not usernames:
                 return
             filters["userNames"] = list(usernames)
+
+        if emails is not None:
+            emails = set(emails)
+            if not emails:
+                return
+
+            major, minor, patch, _, _ = self.server_version_tuple
+            emails_filter_available = (major, minor, patch) > (1, 7, 3)
+            if not emails_filter_available:
+                server_version = self.get_server_version()
+                raise ValueError(
+                    "Filtering by emails is not supported by"
+                    f" server version {server_version}."
+                )
+
+            filters["emails"] = list(emails)
 
         if project_name is not None:
             filters["projectName"] = project_name
