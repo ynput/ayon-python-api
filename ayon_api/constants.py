@@ -131,6 +131,7 @@ DEFAULT_REPRESENTATION_FIELDS = {
     "data",
     "status",
     "tags",
+    "traits",
 }
 
 REPRESENTATION_FILES_FIELDS = {
