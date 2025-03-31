@@ -29,7 +29,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "ayon-python-api"
-version = "1.0.13-dev"
+version = "1.0.12"
 description = "AYON Python API"
 authors = [
     "ynput.io <info@ynput.io>"
@@ -39,7 +39,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.6.5"
+python = ">=3.9.21"
 requests = "^2.27"
 Unidecode = "^1.3"
 appdirs = "^1.4"
@@ -51,3 +51,14 @@ sphinx-autoapi = "*"
 revitron-sphinx-theme = { git = "https://github.com/revitron/revitron-sphinx-theme.git", branch = "master" }
 pytest = "^6.2.5"
 pydocstyle = "^6.3.0"
+tomlkit = "^0.13.2"
+requests = "^2.32.3"
+mkdocs-material = "^9.6.7"
+mkdocs-autoapi = "^0.4.0"
+mkdocstrings-python = "^1.16.2"
+mkdocstrings-shell = "^1.0.2"
+mkdocs-minify-plugin = "^0.8.0"
+markdown-checklist = "^0.4.4"
+mdx-gh-links = "^0.4"
+pymdown-extensions = "^10.14.3"
+mike = "^2.1.3"
