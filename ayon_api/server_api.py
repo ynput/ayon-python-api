@@ -7765,9 +7765,10 @@ class ServerAPI(object):
     ) -> ThumbnailContent:
         """Get thumbnail from server by id.
 
-        Permissions of thumbnails are related to entities so thumbnails must
-        be queried per entity. So an entity type and entity type is required
-        to be passed.
+        Warnings:
+            Please keep in mind that used endpoint is allowed only for admins
+                and managers. Use 'get_thumbnail' with entity type and id
+                to allow access for artists.
 
         Notes:
             It is recommended to use one of prepared entity type specific
@@ -7802,7 +7803,7 @@ class ServerAPI(object):
         """Get thumbnail from server.
 
         Permissions of thumbnails are related to entities so thumbnails must
-        be queried per entity. So an entity type and entity type is required
+        be queried per entity. So an entity type and entity id is required
         to be passed.
 
         Notes:
