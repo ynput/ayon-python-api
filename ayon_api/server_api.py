@@ -7827,7 +7827,13 @@ class ServerAPI(object):
 
         """
         if thumbnail_id:
-            return self.get_thumbnail_by_id(project_name, thumbnail_id)
+            warnings.warn(
+                (
+                    "Function 'get_thumbnail' got 'thumbnail_id' which"
+                    " is deprecated and will be removed in future version."
+                ),
+                DeprecationWarning
+            )
 
         if entity_type in (
             "folder",
@@ -7861,8 +7867,16 @@ class ServerAPI(object):
                 valid.
 
         """
+        if thumbnail_id:
+            warnings.warn(
+                (
+                    "Function 'get_folder_thumbnail' got 'thumbnail_id' which"
+                    " is deprecated and will be removed in future version."
+                ),
+                DeprecationWarning
+            )
         return self.get_thumbnail(
-            project_name, "folder", folder_id, thumbnail_id
+            project_name, "folder", folder_id
         )
 
     def get_version_thumbnail(
@@ -7885,8 +7899,16 @@ class ServerAPI(object):
                 valid.
 
         """
+        if thumbnail_id:
+            warnings.warn(
+                (
+                    "Function 'get_version_thumbnail' got 'thumbnail_id' which"
+                    " is deprecated and will be removed in future version."
+                ),
+                DeprecationWarning
+            )
         return self.get_thumbnail(
-            project_name, "version", version_id, thumbnail_id
+            project_name, "version", version_id
         )
 
     def get_workfile_thumbnail(
@@ -7909,8 +7931,16 @@ class ServerAPI(object):
                 valid.
 
         """
+        if thumbnail_id:
+            warnings.warn(
+                (
+                    "Function 'get_workfile_thumbnail' got 'thumbnail_id' which"
+                    " is deprecated and will be removed in future version."
+                ),
+                DeprecationWarning
+            )
         return self.get_thumbnail(
-            project_name, "workfile", workfile_id, thumbnail_id
+            project_name, "workfile", workfile_id
         )
 
     def create_thumbnail(
