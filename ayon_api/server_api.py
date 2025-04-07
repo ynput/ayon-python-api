@@ -7952,8 +7952,9 @@ class ServerAPI(object):
         if thumbnail_id:
             warnings.warn(
                 (
-                    "Function 'get_workfile_thumbnail' got 'thumbnail_id' which"
-                    " is deprecated and will be removed in future version."
+                    "Function 'get_workfile_thumbnail' got 'thumbnail_id'"
+                    " which is deprecated and will be removed in future"
+                    " version."
                 ),
                 DeprecationWarning
             )
