@@ -254,6 +254,12 @@ class RestApiResponse(object):
     def status_code(self) -> int:
         return self.status
 
+    @property
+    def ok(self) -> bool:
+        if self._response is not None:
+            return self._response.ok
+        return False
+
     def raise_for_status(self, message=None):
         if self._response is None:
             if self._data and self._data.get("detail"):
@@ -276,7 +282,7 @@ class RestApiResponse(object):
         return key in self.data
 
     def __repr__(self):
-        return "<{} [{}]>".format(self.__class__.__name__, self.status)
+        return f"<{self.__class__.__name__} [{self.status}]>"
 
     def __len__(self):
         return int(200 <= self.status < 400)
@@ -308,10 +314,9 @@ class GraphQlResponse:
 
     def __repr__(self):
         if self.errors:
-            return "<{} errors={}>".format(
-                self.__class__.__name__, self.errors[0]['message']
-            )
-        return "<{}>".format(self.__class__.__name__)
+            message = self.errors[0]["message"]
+            return f"<{self.__class__.__name__} errors={message}>"
+        return f"<{self.__class__.__name__}>"
 
 
 def fill_own_attribs(entity):
@@ -469,12 +474,12 @@ class ServerAPI(object):
         max_retries: Optional[int] = None,
     ):
         if not base_url:
-            raise ValueError("Invalid server URL {}".format(str(base_url)))
+            raise ValueError(f"Invalid server URL {str(base_url)}")
 
         base_url = base_url.rstrip("/")
         self._base_url: str = base_url
-        self._rest_url: str = "{}/api".format(base_url)
-        self._graphql_url: str = "{}/graphql".format(base_url)
+        self._rest_url: str = f"{base_url}/api"
+        self._graphql_url: str = f"{base_url}/graphql"
         self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
         self._access_token: Optional[str] = token
         # Allow to have 'site_id' to 'None'
@@ -933,9 +938,9 @@ class ServerAPI(object):
 
     def validate_server_availability(self):
         if not self.is_server_available:
-            raise ServerNotReached("Server \"{}\" can't be reached".format(
-                self._base_url
-            ))
+            raise ServerNotReached(
+                f"Server \"{self._base_url}\" can't be reached"
+            )
 
     def validate_token(self) -> bool:
         try:
@@ -1230,7 +1235,7 @@ class ServerAPI(object):
                 raise UnauthorizedError("User is not authorized.")
             return output
 
-        response = self.get("users/{}".format(username))
+        response = self.get(f"users/{username}")
         response.raise_for_status()
         return response.data
 
@@ -1264,8 +1269,7 @@ class ServerAPI(object):
                 if username:
                     headers["X-as-user"] = username
             else:
-                headers["Authorization"] = "Bearer {}".format(
-                    self._access_token)
+                headers["Authorization"] = f"Bearer {self._access_token}"
         return headers
 
     def login(
@@ -1312,9 +1316,9 @@ class ServerAPI(object):
                 _detail = response.data.get("detail")
                 details = ""
                 if _detail:
-                    details = " {}".format(_detail)
+                    details = f" {_detail}"
 
-                raise AuthenticationError("Login failed {}".format(details))
+                raise AuthenticationError(f"Login failed {details}")
 
         finally:
             self._token_validation_started = False
@@ -1427,12 +1431,12 @@ class ServerAPI(object):
         else:
             new_response = RestApiResponse(response)
 
-        self.log.debug("Response {}".format(str(new_response)))
+        self.log.debug(f"Response {str(new_response)}")
         return new_response
 
     def raw_post(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
-        self.log.debug("Executing [POST] {}".format(url))
+        self.log.debug(f"Executing [POST] {url}")
         return self._do_rest_request(
             RequestTypes.post,
             url,
@@ -1441,7 +1445,7 @@ class ServerAPI(object):
 
     def raw_put(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
-        self.log.debug("Executing [PUT] {}".format(url))
+        self.log.debug(f"Executing [PUT] {url}")
         return self._do_rest_request(
             RequestTypes.put,
             url,
@@ -1450,7 +1454,7 @@ class ServerAPI(object):
 
     def raw_patch(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
-        self.log.debug("Executing [PATCH] {}".format(url))
+        self.log.debug(f"Executing [PATCH] {url}")
         return self._do_rest_request(
             RequestTypes.patch,
             url,
@@ -1459,7 +1463,7 @@ class ServerAPI(object):
 
     def raw_get(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
-        self.log.debug("Executing [GET] {}".format(url))
+        self.log.debug(f"Executing [GET] {url}")
         return self._do_rest_request(
             RequestTypes.get,
             url,
@@ -1468,7 +1472,7 @@ class ServerAPI(object):
 
     def raw_delete(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
-        self.log.debug("Executing [DELETE] {}".format(url))
+        self.log.debug(f"Executing [DELETE] {url}")
         return self._do_rest_request(
             RequestTypes.delete,
             url,
@@ -1503,7 +1507,7 @@ class ServerAPI(object):
             dict[str, Any]: Full event data.
 
         """
-        response = self.get("events/{}".format(event_id))
+        response = self.get(f"events/{event_id}")
         response.raise_for_status()
         return response.data
 
@@ -1660,16 +1664,16 @@ class ServerAPI(object):
                 args.append("progress")
             if retries is not None:
                 args.append("retries")
-            fields = ", ".join("'{}'".format(f) for f in args)
+            fields = ", ".join(f"'{f}'" for f in args)
             ending = "s" if len(args) > 1 else ""
-            raise ValueError((
-                 "Your server version '{}' does not support update"
-                 " of {} field{} on event. The fields are supported since"
-                 " server version '0.5'."
-            ).format(self.get_server_version(), fields, ending))
+            raise ValueError(
+                 f"Your server version '{self.server_version}' does not"
+                 f" support update of {fields} field{ending} on event."
+                 " The fields are supported since server version '0.5'."
+            )
 
         response = self.patch(
-            "events/{}".format(event_id),
+            f"events/{event_id}",
             **kwargs
         )
         response.raise_for_status()
@@ -2481,7 +2485,7 @@ class ServerAPI(object):
             filename = os.path.basename(filepath)
         headers["x-file-name"] = filename
 
-        query = f"?label={label}" if label else ""
+        query = prepare_query_string({"label": label or None})
         endpoint = (
             f"/projects/{project_name}"
             f"/versions/{version_id}/reviewables{query}"
@@ -2545,7 +2549,7 @@ class ServerAPI(object):
             dict[str, Any]: Full server schema.
 
         """
-        url = "{}/openapi.json".format(self._base_url)
+        url = f"{self._base_url}/openapi.json"
         response = self._do_rest_request(RequestTypes.get, url)
         if response:
             return response.data
@@ -2605,7 +2609,7 @@ class ServerAPI(object):
                 position = len(attributes)
 
         response = self.put(
-            "attributes/{}".format(attribute_name),
+            f"attributes/{attribute_name}",
             data=data,
             scope=scope,
             position=position,
@@ -2614,9 +2618,8 @@ class ServerAPI(object):
         if response.status_code != 204:
             # TODO raise different exception
             raise ValueError(
-                "Attribute \"{}\" was not created/updated. {}".format(
-                    attribute_name, response.detail
-                )
+                f"Attribute \"{attribute_name}\" was not created/updated."
+                f" {response.detail}"
             )
 
         self.reset_attributes_schema()
@@ -2630,11 +2633,10 @@ class ServerAPI(object):
             attribute_name (str): Name of attribute to remove.
 
         """
-        response = self.delete("attributes/{}".format(attribute_name))
+        response = self.delete(f"attributes/{attribute_name}")
         response.raise_for_status(
-            "Attribute \"{}\" was not created/updated. {}".format(
-                attribute_name, response.detail
-            )
+            f"Attribute \"{attribute_name}\" was not created/updated."
+            f" {response.detail}"
         )
 
         self.reset_attributes_schema()
@@ -2703,7 +2705,7 @@ class ServerAPI(object):
         """
         attributes = self.get_attributes_for_type(entity_type)
         return {
-            "attrib.{}".format(attr)
+            f"attrib.{attr}"
             for attr in attributes
         }
 
@@ -2777,7 +2779,7 @@ class ServerAPI(object):
             entity_type_defaults = set(DEFAULT_USER_FIELDS)
 
         else:
-            raise ValueError("Unknown entity type \"{}\"".format(entity_type))
+            raise ValueError(f"Unknown entity type \"{entity_type}\"")
         return (
             entity_type_defaults
             | self.get_attributes_fields_for_type(entity_type)
@@ -2826,11 +2828,7 @@ class ServerAPI(object):
         ending = ""
         if subpaths:
             ending = "/{}".format("/".join(subpaths))
-        return "addons/{}/{}{}".format(
-            addon_name,
-            addon_version,
-            ending
-        )
+        return f"addons/{addon_name}/{addon_version}{ending}"
 
     def get_addon_url(
         self,
@@ -2932,19 +2930,11 @@ class ServerAPI(object):
             InstallersInfoDict: Information about installers known for server.
 
         """
-        query_fields = [
-            "{}={}".format(key, value)
-            for key, value in (
-                ("version", version),
-                ("platform", platform_name),
-            )
-            if value
-        ]
-        query = ""
-        if query_fields:
-            query = "?{}".format(",".join(query_fields))
-
-        response = self.get("desktop/installers{}".format(query))
+        query = prepare_query_string({
+            "version": version or None,
+            "platform": platform_name or None,
+        })
+        response = self.get(f"desktop/installers{query}")
         response.raise_for_status()
         return response.data
 
@@ -3013,7 +3003,7 @@ class ServerAPI(object):
 
         """
         response = self.patch(
-            "desktop/installers/{}".format(filename),
+            f"desktop/installers/{filename}",
             sources=sources
         )
         response.raise_for_status()
@@ -3025,7 +3015,7 @@ class ServerAPI(object):
             filename (str): Installer filename.
 
         """
-        response = self.delete("desktop/installers/{}".format(filename))
+        response = self.delete(f"desktop/installers/{filename}")
         response.raise_for_status()
 
     def download_installer(
@@ -3046,7 +3036,7 @@ class ServerAPI(object):
 
         """
         self.download_file(
-            "desktop/installers/{}".format(filename),
+            f"desktop/installers/{filename}",
             dst_filepath,
             chunk_size=chunk_size,
             progress=progress
@@ -3071,7 +3061,7 @@ class ServerAPI(object):
 
         """
         return self.upload_file(
-            "desktop/installers/{}".format(dst_filename),
+            f"desktop/installers/{dst_filename}",
             src_filepath,
             progress=progress
         )
@@ -3081,7 +3071,7 @@ class ServerAPI(object):
     ) -> str:
         endpoint = "desktop/dependencyPackages"
         if filename:
-            return "{}/{}".format(endpoint, filename)
+            return f"{endpoint}/{filename}"
         return endpoint
 
     def get_dependency_packages(self) -> "DependencyPackagesDict":
@@ -3307,10 +3297,9 @@ class ServerAPI(object):
             purge (Optional[bool]): Purge all data related to the addon.
 
         """
-        query_data = {}
         if purge is not None:
-            query_data["purge"] = "true" if purge else "false"
-        query = prepare_query_string(query_data)
+            purge = "true" if purge else "false"
+        query = prepare_query_string({"purge": purge})
 
         response = self.delete(f"addons/{addon_name}{query}")
         response.raise_for_status()
@@ -3331,10 +3320,9 @@ class ServerAPI(object):
             purge (Optional[bool]): Purge all data related to the addon.
 
         """
-        query_data = {}
         if purge is not None:
-            query_data["purge"] = "true" if purge else "false"
-        query = prepare_query_string(query_data)
+            purge = "true" if purge else "false"
+        query = prepare_query_string({"purge": purge})
         response = self.delete(f"addons/{addon_name}/{addon_version}{query}")
         response.raise_for_status()
 
@@ -3665,7 +3653,7 @@ class ServerAPI(object):
             if (major, minor, patch) < (1, 0, 8):
                 preset_name = self.get_default_anatomy_preset_name()
 
-        result = self.get("anatomy/presets/{}".format(preset_name))
+        result = self.get(f"anatomy/presets/{preset_name}")
         result.raise_for_status()
         return result.data
 
@@ -3709,7 +3697,7 @@ class ServerAPI(object):
              dict[str, dict[str, str]]: Root values by root name by site id.
 
         """
-        result = self.get("projects/{}/roots".format(project_name))
+        result = self.get(f"projects/{project_name}/roots")
         result.raise_for_status()
         return result.data
 
@@ -3837,12 +3825,9 @@ class ServerAPI(object):
                 platform_name = platform.system()
             query_data["platform"] = platform_name.lower()
 
-        query = "?{}".format(",".join([
-            "{}={}".format(key, value)
-            for key, value in query_data.items()
-        ]))
+        query = prepare_query_string(query_data)
         response = self.get(
-            "projects/{}/siteRoots{}".format(project_name, query)
+            f"projects/{project_name}/siteRoots{query}"
         )
         response.raise_for_status()
         return response.data
@@ -3939,9 +3924,9 @@ class ServerAPI(object):
             dict[str, Any]: Schema of site settings.
 
         """
-        result = self.get("addons/{}/{}/siteSettings/schema".format(
-            addon_name, addon_version
-        ))
+        result = self.get(
+            f"addons/{addon_name}/{addon_version}/siteSettings/schema"
+        )
         result.raise_for_status()
         return result.data
 
@@ -3968,10 +3953,7 @@ class ServerAPI(object):
         if variant is None:
             variant = self.default_settings_variant
 
-        query_items = {}
-        if variant:
-            query_items["variant"] = variant
-        query = prepare_query_string(query_items)
+        query = prepare_query_string({"variant": variant or None})
 
         result = self.get(
             f"addons/{addon_name}/{addon_version}/settings{query}"
@@ -4019,21 +4001,16 @@ class ServerAPI(object):
         elif not site_id:
             site_id = self.site_id
 
-        query_items = {}
-        if site_id:
-            query_items["site"] = site_id
-
         if variant is None:
             variant = self.default_settings_variant
 
-        if variant:
-            query_items["variant"] = variant
-
-        query = prepare_query_string(query_items)
+        query = prepare_query_string({
+            "site": site_id or None,
+            "variant": variant or None,
+        })
         result = self.get(
-            "addons/{}/{}/settings/{}{}".format(
-                addon_name, addon_version, project_name, query
-            )
+            f"addons/{addon_name}/{addon_version}"
+            f"/settings/{project_name}{query}"
         )
         result.raise_for_status()
         return result.data
@@ -4106,9 +4083,9 @@ class ServerAPI(object):
             return {}
 
         query = prepare_query_string({"site": site_id})
-        result = self.get("addons/{}/{}/siteSettings{}".format(
-            addon_name, addon_version, query
-        ))
+        result = self.get(
+            f"addons/{addon_name}/{addon_version}/siteSettings{query}"
+        )
         result.raise_for_status()
         return result.data
 
@@ -4151,23 +4128,18 @@ class ServerAPI(object):
             dict[str, Any]: All settings for single bundle.
 
         """
-        query_values = {
-            key: value
-            for key, value in (
-                ("project_name", project_name),
-                ("variant", variant or self.default_settings_variant),
-                ("bundle_name", bundle_name),
-            )
-            if value
-        }
-        if use_site:
-            if not site_id:
-                site_id = self.site_id
-            if site_id:
-                query_values["site_id"] = site_id
+        if not use_site:
+            site_id = None
+        elif not site_id:
+            site_id = self.site_id
 
-        query = prepare_query_string(query_values)
-        response = self.get("settings{}".format(query))
+        query = prepare_query_string({
+            "project_name": project_name or None,
+            "bundle_name": bundle_name or None,
+            "variant": variant or self.default_settings_variant or None,
+            "site_id": site_id,
+        })
+        response = self.get(f"settings{query}")
         response.raise_for_status()
         return response.data
 
@@ -4406,7 +4378,7 @@ class ServerAPI(object):
             secret_name (str): Name of secret to delete.
 
         """
-        response = self.delete("secrets/{}".format(secret_name))
+        response = self.delete(f"secrets/{secret_name}")
         response.raise_for_status()
         return response.data
 
@@ -4429,7 +4401,7 @@ class ServerAPI(object):
         if not project_name:
             return None
 
-        response = self.get("projects/{}".format(project_name))
+        response = self.get(f"projects/{project_name}")
         # TODO ignore only error about not existing project
         if response.status != 200:
             return None
@@ -4556,11 +4528,11 @@ class ServerAPI(object):
                 "Function 'get_folders_rest' is supported"
                 " for AYON server 1.0.8 and above."
             )
-        query = "?attrib={}".format(
-            "true" if include_attrib else "false"
-        )
+        query = prepare_query_string({
+            "attrib": "true" if include_attrib else "false"
+        })
         response = self.get(
-            "projects/{}/folders{}".format(project_name, query)
+            f"projects/{project_name}/folders{query}"
         )
         response.raise_for_status()
         return response.data["folders"]
@@ -4606,20 +4578,15 @@ class ServerAPI(object):
             list[str]: List of available project names.
 
         """
-        query_keys = {}
         if active is not None:
-            query_keys["active"] = "true" if active else "false"
+            active = "true" if active else "false"
 
         if library is not None:
-            query_keys["library"] = "true" if library else "false"
-        query = ""
-        if query_keys:
-            query = "?{}".format(",".join([
-                f"{key}={value}"
-                for key, value in query_keys.items()
-            ]))
+            library = "true" if library else "false"
 
-        response = self.get(f"projects{query}", **query_keys)
+        query = prepare_query_string({"active": active, "library": library})
+
+        response = self.get(f"projects{query}")
         response.raise_for_status()
         data = response.data
         project_names = []
@@ -4773,18 +4740,10 @@ class ServerAPI(object):
         if folder_types:
             folder_types = ",".join(folder_types)
 
-        query_fields = [
-            "{}={}".format(key, value)
-            for key, value in (
-                ("search", search_string),
-                ("types", folder_types),
-            )
-            if value
-        ]
-        query = ""
-        if query_fields:
-            query = "?{}".format(",".join(query_fields))
-
+        query = prepare_query_string({
+            "search": search_string or None,
+            "types": folder_types or None,
+        })
         response = self.get(
             f"projects/{project_name}/hierarchy{query}"
         )
@@ -5203,7 +5162,7 @@ class ServerAPI(object):
                 create_data[key] = value
 
         response = self.post(
-            "projects/{}/folders".format(project_name),
+            f"projects/{project_name}/folders",
             **create_data
         )
         response.raise_for_status()
@@ -5289,7 +5248,7 @@ class ServerAPI(object):
                 folder, products, versions and representations.
 
         """
-        url = "projects/{}/folders/{}".format(project_name, folder_id)
+        url = f"projects/{project_name}/folders/{folder_id}"
         if force:
             url += "?force=true"
         response = self.delete(url)
@@ -5709,7 +5668,7 @@ class ServerAPI(object):
                 create_data[key] = value
 
         response = self.post(
-            "projects/{}/tasks".format(project_name),
+            f"projects/{project_name}/tasks",
             **create_data
         )
         response.raise_for_status()
@@ -5781,7 +5740,7 @@ class ServerAPI(object):
                 update_data[key] = value
 
         response = self.patch(
-            "projects/{}/tasks/{}".format(project_name, task_id),
+            f"projects/{project_name}/tasks/{task_id}",
             **update_data
         )
         response.raise_for_status()
@@ -5795,7 +5754,7 @@ class ServerAPI(object):
 
         """
         response = self.delete(
-            "projects/{}/tasks/{}".format(project_name, task_id)
+            f"projects/{project_name}/tasks/{task_id}"
         )
         response.raise_for_status()
 
@@ -6198,7 +6157,7 @@ class ServerAPI(object):
                 create_data[key] = value
 
         response = self.post(
-            "projects/{}/products".format(project_name),
+            f"projects/{project_name}/products",
             **create_data
         )
         response.raise_for_status()
@@ -6252,7 +6211,7 @@ class ServerAPI(object):
                 update_data[key] = value
 
         response = self.patch(
-            "projects/{}/products/{}".format(project_name, product_id),
+            f"projects/{project_name}/products/{product_id}",
             **update_data
         )
         response.raise_for_status()
@@ -6266,7 +6225,7 @@ class ServerAPI(object):
 
         """
         response = self.delete(
-            "projects/{}/products/{}".format(project_name, product_id)
+            f"projects/{project_name}/products/{product_id}"
         )
         response.raise_for_status()
 
@@ -6808,7 +6767,7 @@ class ServerAPI(object):
                 create_data[key] = value
 
         response = self.post(
-            "projects/{}/versions".format(project_name),
+            f"projects/{project_name}/versions",
             **create_data
         )
         response.raise_for_status()
@@ -6859,7 +6818,6 @@ class ServerAPI(object):
         for key, value in (
             ("version", version),
             ("productId", product_id),
-            ("taskId", task_id),
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
@@ -7446,7 +7404,7 @@ class ServerAPI(object):
         """
         if not isinstance(context_filters, dict):
             raise TypeError(
-                "Expected 'dict' got {}".format(str(type(context_filters)))
+                f"Expected 'dict' got {str(type(context_filters))}"
             )
 
         filter_body = {}
@@ -7479,7 +7437,7 @@ class ServerAPI(object):
             })
 
         response = self.post(
-            "projects/{}/repreContextFilter".format(project_name),
+            f"projects/{project_name}/repreContextFilter",
             context=body_context_filters,
             **filter_body
         )
@@ -7541,7 +7499,7 @@ class ServerAPI(object):
                 create_data[key] = value
 
         response = self.post(
-            "projects/{}/representations".format(project_name),
+            f"projects/{project_name}/representations",
             **create_data
         )
         response.raise_for_status()
@@ -7598,9 +7556,7 @@ class ServerAPI(object):
                 update_data[key] = value
 
         response = self.patch(
-            "projects/{}/representations/{}".format(
-                project_name, representation_id
-            ),
+            f"projects/{project_name}/representations/{representation_id}",
             **update_data
         )
         response.raise_for_status()
@@ -7616,9 +7572,7 @@ class ServerAPI(object):
 
         """
         response = self.delete(
-            "projects/{}/representation/{}".format(
-                project_name, representation_id
-            )
+            f"projects/{project_name}/representation/{representation_id}"
         )
         response.raise_for_status()
 
@@ -7887,11 +7841,9 @@ class ServerAPI(object):
         ):
             entity_type += "s"
 
-        response = self.raw_get("projects/{}/{}/{}/thumbnail".format(
-            project_name,
-            entity_type,
-            entity_id
-        ))
+        response = self.raw_get(
+            f"projects/{project_name}/{entity_type}/{entity_id}/thumbnail"
+        )
         return self._prepare_thumbnail_content(project_name, response)
 
     def get_folder_thumbnail(
@@ -7999,7 +7951,7 @@ class ServerAPI(object):
 
         mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
-            "projects/{}/thumbnails".format(project_name),
+            f"projects/{project_name}/thumbnails",
             src_filepath,
             request_type=RequestTypes.post,
             headers={"Content-Type": mime_type},
@@ -8070,14 +8022,14 @@ class ServerAPI(object):
 
         """
         if self.get_project(project_name):
-            raise ValueError("Project with name \"{}\" already exists".format(
-                project_name
-            ))
+            raise ValueError(
+                f"Project with name \"{project_name}\" already exists"
+            )
 
         if not PROJECT_NAME_REGEX.match(project_name):
-            raise ValueError((
-                "Project name \"{}\" contain invalid characters"
-            ).format(project_name))
+            raise ValueError(
+                f"Project name \"{project_name}\" contain invalid characters"
+            )
 
         preset = self.get_project_anatomy_preset(preset_name)
 
@@ -8090,12 +8042,12 @@ class ServerAPI(object):
         )
 
         if result.status != 201:
-            details = "Unknown details ({})".format(result.status)
+            details = f"Unknown details ({result.status})"
             if result.data:
                 details = result.data.get("detail") or details
-            raise ValueError("Failed to create project \"{}\": {}".format(
-                project_name, details
-            ))
+            raise ValueError(
+                f"Failed to create project \"{project_name}\": {details}"
+            )
 
         return self.get_project(project_name)
 
@@ -8158,7 +8110,7 @@ class ServerAPI(object):
             if value is not None
         })
         response = self.patch(
-            "projects/{}".format(project_name),
+            f"projects/{project_name}",
             **changes
         )
         response.raise_for_status()
@@ -8173,16 +8125,15 @@ class ServerAPI(object):
 
         """
         if not self.get_project(project_name):
-            raise ValueError("Project with name \"{}\" was not found".format(
-                project_name
-            ))
-
-        result = self.delete("projects/{}".format(project_name))
-        if result.status_code != 204:
             raise ValueError(
-                "Failed to delete project \"{}\". {}".format(
-                    project_name, result.data["detail"]
-                )
+                f"Project with name \"{project_name}\" was not found"
+            )
+
+        result = self.delete(f"projects/{project_name}")
+        if result.status_code != 204:
+            detail = result.data["detail"]
+            raise ValueError(
+                f"Failed to delete project \"{project_name}\". {detail}"
             )
 
     # --- Links ---
@@ -8223,7 +8174,7 @@ class ServerAPI(object):
             list[dict[str, Any]]: Link types available on project.
 
         """
-        response = self.get("projects/{}/links/types".format(project_name))
+        response = self.get(f"projects/{project_name}/links/types")
         response.raise_for_status()
         return response.data["types"]
 
@@ -8296,7 +8247,7 @@ class ServerAPI(object):
             link_type_name, input_type, output_type
         )
         response = self.put(
-            "projects/{}/links/types/{}".format(project_name, full_type_name),
+            f"projects/{project_name}/links/types/{full_type_name}",
             **data
         )
         response.raise_for_status()
@@ -8324,7 +8275,8 @@ class ServerAPI(object):
             link_type_name, input_type, output_type
         )
         response = self.delete(
-            "projects/{}/links/types/{}".format(project_name, full_type_name))
+            f"projects/{project_name}/links/types/{full_type_name}"
+        )
         response.raise_for_status()
 
     def make_sure_link_type_exists(
@@ -8408,10 +8360,10 @@ class ServerAPI(object):
         ):
             kwargs["link"] = full_link_type_name
             if link_name:
-                raise UnsupportedServerVersion((
+                raise UnsupportedServerVersion(
                     "Link name is not supported"
-                    " for version of AYON server {}"
-                ).format(self.server_version))
+                    f" for version of AYON server {self.server_version}"
+                )
         else:
             kwargs["linkType"] = full_link_type_name
 
@@ -8419,7 +8371,7 @@ class ServerAPI(object):
             kwargs["name"] = link_name
 
         response = self.post(
-            "projects/{}/links".format(project_name), **kwargs
+            f"projects/{project_name}/links", **kwargs
         )
         response.raise_for_status()
         return response.data
@@ -8436,7 +8388,7 @@ class ServerAPI(object):
 
         """
         response = self.delete(
-            "projects/{}/links/{}".format(project_name, link_id)
+            f"projects/{project_name}/links/{link_id}"
         )
         response.raise_for_status()
 
@@ -8588,7 +8540,7 @@ class ServerAPI(object):
             fields.discard("name")
             link_fields.discard("links")
             link_fields |= {
-                "links.{}".format(field)
+                f"links.{field}"
                 for field in fields
             }
         # ---------
@@ -8978,8 +8930,11 @@ class ServerAPI(object):
 
         op_results = result.get("operations")
         if op_results is None:
+            detail = result.get("detail")
+            if detail:
+                raise FailedOperations(f"Operation failed. Detail: {detail}")
             raise FailedOperations(
-                "Operation failed. Content: {}".format(str(result))
+                f"Operation failed. Content: {result.text}"
             )
 
         if result.get("success") or not raise_on_fail:
@@ -9014,21 +8969,21 @@ class ServerAPI(object):
             if "folderTypes" in fields:
                 fields.remove("folderTypes")
                 fields |= {
-                    "folderTypes.{}".format(name)
+                    f"folderTypes.{name}"
                     for name in self.get_default_fields_for_type("folderType")
                 }
 
             if "taskTypes" in fields:
                 fields.remove("taskTypes")
                 fields |= {
-                    "taskTypes.{}".format(name)
+                    f"taskTypes.{name}"
                     for name in self.get_default_fields_for_type("taskType")
                 }
 
             if "productTypes" in fields:
                 fields.remove("productTypes")
                 fields |= {
-                    "productTypes.{}".format(name)
+                    f"productTypes.{name}"
                     for name in self.get_default_fields_for_type(
                         "productType"
                     )
