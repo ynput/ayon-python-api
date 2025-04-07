@@ -7879,6 +7879,24 @@ class ServerAPI(object):
             project_name, "folder", folder_id
         )
 
+    def get_task_thumbnail(
+        self,
+        project_name: str,
+        task_id: str,
+    ) -> ThumbnailContent:
+        """Prepared method to receive thumbnail for task entity.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            task_id (str): Folder id for which thumbnail should be returned.
+
+        Returns:
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
+
+        """
+        return self.get_thumbnail(project_name, "folder", folder_id)
+
     def get_version_thumbnail(
         self,
         project_name: str,
