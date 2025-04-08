@@ -7854,6 +7854,7 @@ class ServerAPI(object):
 
         if entity_type in (
             "folder",
+            "task",
             "version",
             "workfile",
         ):
