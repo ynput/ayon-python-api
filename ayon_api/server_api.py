@@ -521,7 +521,7 @@ class ServerAPI(object):
         self._server_version_tuple = None
 
         self._graphql_allows_data_in_query = None
-        self._grahql_allows_traits_in_representations = None
+        self._grahql_allows_traits_in_representations: Optional[bool] = None
 
         self._session = None
 
