@@ -131,6 +131,8 @@ DEFAULT_REPRESENTATION_FIELDS = {
     "data",
     "status",
     "tags",
+    # TODO (antirotor): traits should be there in time when server
+    #   usage prior to 1.7.5 is not supported (used) anymore.
 }
 
 REPRESENTATION_FILES_FIELDS = {
