@@ -855,11 +855,11 @@ def _get_media_mime_type_for_content_base(content: bytes) -> Optional[str]:
     if content[0:4] == b"\211PNG":
         return "image/png"
 
-    # JPEG, JFIF or Exif
-    if (
-        content[0:4] == b"\xff\xd8\xff\xdb"
-        or content[6:10] in (b"JFIF", b"Exif")
-    ):
+    # JPEG
+    # - [0:2] is constant b"\xff\xd8"
+    # - [2:4] Marker identifier b"\xff{?}"
+    # NOTE: File ends with b"\xff\xd9"
+    if content[0:3] == b"\xff\xd8\xff":
         return "image/jpeg"
 
     # Webp
