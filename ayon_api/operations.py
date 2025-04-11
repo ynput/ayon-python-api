@@ -1188,7 +1188,10 @@ class OperationsSession(object):
                 update_data[key] = value
 
         return self.update_entity(
-            project_name, "product", update_data
+            project_name,
+            "product",
+            product_id,
+            update_data
         )
 
     def delete_product(self, project_name, product_id):
@@ -1456,7 +1459,10 @@ class OperationsSession(object):
                 update_data[key] = value
 
         return self.update_entity(
-            project_name, "representation", update_data
+            project_name,
+            "representation",
+            representation_id,
+            update_data
         )
 
     def delete_representation(self, project_name, representation_id):
