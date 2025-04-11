@@ -16,7 +16,6 @@ classifiers = [
 dependencies = [
     "requests >= 2.27.1",
     "Unidecode >= 1.3.0",
-    "appdirs >=1, <2",
 ]
 
 [project.urls]
@@ -42,7 +41,6 @@ packages = [
 python = ">=3.6.5"
 requests = "^2.27"
 Unidecode = "^1.3"
-appdirs = "^1.4"
 
 [tool.poetry.group.dev.dependencies]
 sphinx = "*"
