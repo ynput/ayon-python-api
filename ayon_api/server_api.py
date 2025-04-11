@@ -7471,10 +7471,10 @@ class ServerAPI(object):
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
         tags: Optional[List[str]]=None,
+        traits: Optional[Dict[str, Any]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
         representation_id: Optional[str] = None,
-        traits: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create new representation.
 
@@ -7486,12 +7486,12 @@ class ServerAPI(object):
             attrib (Optional[dict[str, Any]]): Representation attributes.
             data (Optional[dict[str, Any]]): Representation data.
             tags (Optional[Iterable[str]]): Representation tags.
+            traits (Optional[dict[str, Any]]): Representation traits
+                serialized data as dict.
             status (Optional[str]): Representation status.
             active (Optional[bool]): Representation active state.
             representation_id (Optional[str]): Representation id. If not
                 passed new id is generated.
-            traits (Optional[dict[str, Any]]): Representation traits
-                serialized data as dict.
 
         Returns:
             str: Representation id.
@@ -7508,10 +7508,10 @@ class ServerAPI(object):
             ("files", files),
             ("attrib", attrib),
             ("data", data),
+            ("traits", traits),
             ("tags", tags),
             ("status", status),
             ("active", active),
-            ("traits", traits),
         ):
             if value is not None:
                 create_data[key] = value
@@ -7533,9 +7533,9 @@ class ServerAPI(object):
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
         tags: Optional[List[str]] = None,
+        traits: Optional[Dict[str, Any]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
-        traits: Optional[Dict[str, Any]] = None,
     ):
         """Update representation entity on server.
 
@@ -7554,6 +7554,7 @@ class ServerAPI(object):
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
+            traits (Optional[dict[str, Any]]): New traits.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
 
@@ -7566,9 +7567,9 @@ class ServerAPI(object):
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
+            ("traits", traits),
             ("status", status),
             ("active", active),
-            ("traits", traits),
         ):
             if value is not None:
                 update_data[key] = value

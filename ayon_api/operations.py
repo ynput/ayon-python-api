@@ -276,8 +276,8 @@ def new_representation_entity(
     tags=None,
     attribs=None,
     data=None,
-    entity_id=None,
     traits=None,
+    entity_id=None,
 ):
     """Create skeleton data of representation entity.
 
@@ -291,9 +291,9 @@ def new_representation_entity(
         attribs (Optional[Dict[str, Any]]): Explicitly set attributes
             of representation.
         data (Optional[Dict[str, Any]]): Representation entity data.
-        entity_id (Optional[str]): Predefined id of entity. New id is created
-            if not passed.
         traits (Optional[Dict[str, Any]]): Representation traits. Empty
+            if not passed.
+        entity_id (Optional[str]): Predefined id of entity. New id is created
             if not passed.
 
     Returns:
@@ -1361,10 +1361,10 @@ class OperationsSession(object):
         attrib=None,
         data=None,
         tags=None,
+        traits=None,
         status=None,
         active=None,
         representation_id=None,
-        traits=None,
     ):
         """Create new representation.
 
@@ -1376,12 +1376,12 @@ class OperationsSession(object):
             attrib (Optional[dict[str, Any]]): Representation attributes.
             data (Optional[dict[str, Any]]): Representation data.
             tags (Optional[Iterable[str]]): Representation tags.
+            traits (Optional[Dict[str, Any]]): Representation traits. Empty
+                if not passed.
             status (Optional[str]): Representation status.
             active (Optional[bool]): Representation active state.
             representation_id (Optional[str]): Representation id. If not
                 passed new id is generated.
-            traits (Optional[Dict[str, Any]]): Representation traits. Empty
-                if not passed.
 
         Returns:
             CreateOperation: Object of create operation.
@@ -1399,9 +1399,9 @@ class OperationsSession(object):
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
+            ("traits", traits),
             ("status", status),
             ("active", active),
-            ("traits", traits),
         ):
             if value is not None:
                 create_data[key] = value
@@ -1422,9 +1422,9 @@ class OperationsSession(object):
         attrib=None,
         data=None,
         tags=None,
+        traits=None,
         status=None,
         active=None,
-        traits=None,
     ):
         """Update representation entity on server.
 
@@ -1443,9 +1443,9 @@ class OperationsSession(object):
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
+            traits (Optional[Dict[str, Any]]): New representation traits.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
-            traits (Optional[Dict[str, Any]]): New representation traits.
 
         Returns:
             UpdateOperation: Object of update operation.
@@ -1459,9 +1459,9 @@ class OperationsSession(object):
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
+            ("traits", traits),
             ("status", status),
             ("active", active),
-            ("traits", traits),
         ):
             if value is not None:
                 update_data[key] = value
