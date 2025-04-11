@@ -313,10 +313,11 @@ def new_representation_entity(
         "name": name,
         "data": data,
         "attrib": attribs,
-        "traits": traits or {},
     }
     if tags:
         output["tags"] = tags
+    if traits:
+        output["traits"] = traits
     if status:
         output["status"] = status
     return output
