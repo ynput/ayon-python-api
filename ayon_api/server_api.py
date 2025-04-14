@@ -521,7 +521,7 @@ class ServerAPI(object):
         self._server_version_tuple = None
 
         self._graphql_allows_data_in_query = None
-        self._representation_traits_available: Optional[bool] = None
+        self._graphql_allows_traits_in_representations: Optional[bool] = None
 
         self._session = None
 
@@ -1119,14 +1119,14 @@ class ServerAPI(object):
 
 
     @property
-    def representation_traits_available(self) -> bool:
+    def graphql_allows_traits_in_representations(self) -> bool:
         """Check server support for representation traits."""
-        if self._representation_traits_available is None:
+        if self._graphql_allows_traits_in_representations is None:
             major, minor, patch, _, _ = self.server_version_tuple
-            self._representation_traits_available = (
+            self._graphql_allows_traits_in_representations = (
                 (major, minor, patch) >= (1, 7, 5)
             )
-        return self._representation_traits_available
+        return self._graphql_allows_traits_in_representations
 
 
     def _get_user_info(self) -> Optional[Dict[str, Any]]:
@@ -2774,7 +2774,7 @@ class ServerAPI(object):
             if not self.graphql_allows_data_in_query:
                 entity_type_defaults.discard("data")
 
-            if not self.representation_traits_available:
+            if not self.graphql_allows_traits_in_representations:
                 entity_type_defaults.discard("traits")
 
         elif entity_type == "folderType":
