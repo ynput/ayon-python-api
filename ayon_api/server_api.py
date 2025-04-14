@@ -7472,8 +7472,8 @@ class ServerAPI(object):
         files: Optional[List[Dict[str, Any]]] = None,
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]]=None,
         traits: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]]=None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
         representation_id: Optional[str] = None,
@@ -7487,9 +7487,9 @@ class ServerAPI(object):
             files (Optional[list[dict]]): Representation files information.
             attrib (Optional[dict[str, Any]]): Representation attributes.
             data (Optional[dict[str, Any]]): Representation data.
-            tags (Optional[Iterable[str]]): Representation tags.
             traits (Optional[dict[str, Any]]): Representation traits
                 serialized data as dict.
+            tags (Optional[Iterable[str]]): Representation tags.
             status (Optional[str]): Representation status.
             active (Optional[bool]): Representation active state.
             representation_id (Optional[str]): Representation id. If not
@@ -7534,8 +7534,8 @@ class ServerAPI(object):
         files: Optional[List[Dict[str, Any]]] = None,
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]] = None,
         traits: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
     ):
@@ -7555,8 +7555,8 @@ class ServerAPI(object):
                 information.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
-            tags (Optional[Iterable[str]]): New tags.
             traits (Optional[dict[str, Any]]): New traits.
+            tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
 
@@ -7568,8 +7568,8 @@ class ServerAPI(object):
             ("files", files),
             ("attrib", attrib),
             ("data", data),
-            ("tags", tags),
             ("traits", traits),
+            ("tags", tags),
             ("status", status),
             ("active", active),
         ):
