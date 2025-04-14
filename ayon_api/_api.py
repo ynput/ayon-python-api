@@ -5701,9 +5701,10 @@ def get_thumbnail_by_id(
 ) -> ThumbnailContent:
     """Get thumbnail from server by id.
 
-    Permissions of thumbnails are related to entities so thumbnails must
-    be queried per entity. So an entity type and entity type is required
-    to be passed.
+    Warnings:
+        Please keep in mind that used endpoint is allowed only for admins
+            and managers. Use 'get_thumbnail' with entity type and id
+            to allow access for artists.
 
     Notes:
         It is recommended to use one of prepared entity type specific
@@ -5739,7 +5740,7 @@ def get_thumbnail(
     """Get thumbnail from server.
 
     Permissions of thumbnails are related to entities so thumbnails must
-    be queried per entity. So an entity type and entity type is required
+    be queried per entity. So an entity type and entity id is required
     to be passed.
 
     Notes:
@@ -5794,6 +5795,28 @@ def get_folder_thumbnail(
         project_name=project_name,
         folder_id=folder_id,
         thumbnail_id=thumbnail_id,
+    )
+
+
+def get_task_thumbnail(
+    project_name: str,
+    task_id: str,
+) -> ThumbnailContent:
+    """Prepared method to receive thumbnail for task entity.
+
+    Args:
+        project_name (str): Project under which the entity is located.
+        task_id (str): Folder id for which thumbnail should be returned.
+
+    Returns:
+        ThumbnailContent: Thumbnail content wrapper. Does not have to be
+            valid.
+
+    """
+    con = get_server_api_connection()
+    return con.get_task_thumbnail(
+        project_name=project_name,
+        task_id=task_id,
     )
 
 
