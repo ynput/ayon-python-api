@@ -1336,6 +1336,10 @@ class ServerAPI(object):
 
         close_session = False
         session = self._session
+        max_retries = kwargs.get("max_retries")
+        if max_retries is None:
+            max_retries = self.max_retries
+
         if session is None:
             # Validate token if was not yet validated
             #    - ignore validation if we're in middle of
@@ -1346,7 +1350,6 @@ class ServerAPI(object):
             ):
                 self.validate_token()
 
-            max_retries = kwargs.get("max_retries")
             headers = kwargs.get("headers")
             close_session = True
             session, _ = self._create_new_session(
@@ -1355,54 +1358,40 @@ class ServerAPI(object):
 
         response = None
         new_response = None
+        if max_retries < 1:
+            max_retries = 1
+
         try:
-            response = session.request(request_type.name, url, **kwargs)
-
-        except ConnectionRefusedError:
-            if retry_idx == 0:
-                self.log.warning(
-                    "Connection error happened.", exc_info=True
-                )
-
-            # Server may be restarting
-            new_response = RestApiResponse(
-                None,
-                {
-                    "detail": (
-                        "Unable to connect the server. Connection refused"
+            for retry_idx in reversed(range(max_retries)):
+                try:
+                    response = session.request(
+                        request_type.name, url, **kwargs
                     )
-                }
-            )
 
-        except requests.exceptions.Timeout:
-            # Connection timed out
-            new_response = RestApiResponse(
-                None,
-                {"detail": "Connection timed out."}
-            )
+                except (
+                    # These are 'ConnectionError' but it doesn't make sense
+                    #   to retry
+                    requests.exceptions.ProxyError,
+                    requests.exceptions.SSLError,
+                ):
+                    raise
 
-        except requests.exceptions.ConnectionError:
-            # Log warning only on last attempt
-            if retry_idx == 0:
-                self.log.warning(
-                    "Connection error happened.", exc_info=True
-                )
+                except (
+                    ConnectionRefusedError,
+                    requests.exceptions.ConnectionError
+                ):
+                    # Log warning only on last attempt
+                    if retry_idx == 0:
+                        self.log.warning(
+                            "Connection error happened.", exc_info=True
+                        )
+                        raise
 
-            new_response = RestApiResponse(
-                None,
-                {
-                    "detail": (
-                        "Unable to connect the server. Connection error"
-                    )
-                }
-            )
+                time.sleep(0.1)
 
         finally:
             if close_session:
                 session.close()
-
-        if new_response is not None:
-            return new_response
 
         content_type = response.headers.get("Content-Type")
         if content_type == "application/json":
