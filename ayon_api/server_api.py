@@ -2145,18 +2145,22 @@ class ServerAPI(object):
         self, url: str, stream, chunk_size, progress
     ):
         kwargs = {"stream": True}
-        if self._session is None:
-            kwargs["headers"] = self.get_headers()
-            get_func = self._base_functions_mapping[RequestTypes.get]
-        else:
-            get_func = self._session_functions_mapping[RequestTypes.get]
+        session = self._session
+        close_session = False
+        if session is None:
+            close_session = True
+            session, _ = self._create_new_session()
 
-        with get_func(url, **kwargs) as response:
-            response.raise_for_status()
-            progress.set_content_size(response.headers["Content-length"])
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                stream.write(chunk)
-                progress.add_transferred_chunk(len(chunk))
+        try:
+            with session.request("GET", url, **kwargs) as response:
+                response.raise_for_status()
+                progress.set_content_size(response.headers["Content-length"])
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    stream.write(chunk)
+                    progress.add_transferred_chunk(len(chunk))
+        finally:
+            if close_session:
+                session.close()
 
     def download_file_to_stream(
         self,
@@ -2320,25 +2324,29 @@ class ServerAPI(object):
 
         """
         if request_type is None:
-            request_type = RequestTypes.put
+            request_type = "PUT"
+        elif isinstance(request_type, RequestType):
+            request_type = request_type.name
 
+        session = self._session
+        close_session = False
         if self._session is None:
-            headers = kwargs.setdefault("headers", {})
-            for key, value in self.get_headers().items():
-                if key not in headers:
-                    headers[key] = value
-            post_func = self._base_functions_mapping[request_type]
-        else:
-            post_func = self._session_functions_mapping[request_type]
+            close_session = True
+            session, _ = self._create_new_session()
 
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
 
-        response = post_func(
-            url,
-            data=self._upload_chunks_iter(stream, progress, chunk_size),
-            **kwargs
-        )
+        try:
+            response = session.request(
+                request_type,
+                url,
+                data=self._upload_chunks_iter(stream, progress, chunk_size),
+                **kwargs
+            )
+        finally:
+            if close_session:
+                session.close()
 
         response.raise_for_status()
         return response
