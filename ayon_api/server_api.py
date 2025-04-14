@@ -7899,7 +7899,7 @@ class ServerAPI(object):
                 valid.
 
         """
-        return self.get_thumbnail(project_name, "folder", task_id)
+        return self.get_thumbnail(project_name, "task", task_id)
 
     def get_version_thumbnail(
         self,
