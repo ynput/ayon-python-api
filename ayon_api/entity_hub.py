@@ -49,65 +49,21 @@ class EntityHub(object):
     Args:
         project_name (str): Name of project where changes will happen.
         connection (ServerAPI): Connection to server with logged user.
-        allow_data_changes (bool): This option gives ability to change 'data'
-            key on entities. This is not recommended as 'data' may be used for
-            secure information and would also slow down server queries. Content
-            of 'data' key can't be received only GraphQl.
 
     """
 
-    def __init__(
-        self, project_name, connection=None, allow_data_changes=None
-    ):
+    def __init__(self, project_name, connection=None):
         if not connection:
             connection = get_server_api_connection()
-        major, minor, _, _, _ = connection.server_version_tuple
-        path_start_with_slash = True
-        if (major, minor) < (0, 6):
-            path_start_with_slash = False
-
-        if allow_data_changes is None:
-            allow_data_changes = connection.graphql_allows_data_in_query
 
         self._connection = connection
-        self._path_start_with_slash = path_start_with_slash
 
         self._project_name = project_name
         self._entities_by_id = {}
         self._entities_by_parent_id = collections.defaultdict(list)
         self._project_entity = UNKNOWN_VALUE
 
-        self._allow_data_changes = allow_data_changes
-
         self._path_reset_queue = None
-
-    @property
-    def allow_data_changes(self):
-        """Entity hub allows changes of 'data' key on entities.
-
-        Data are private and not all users may have access to them.
-
-        Older version of AYON server allowed to get 'data' for entity only
-        using REST api calls, which means to query each entity on-by-one
-        from server.
-
-        Returns:
-            bool: Data changes are allowed.
-
-        """
-        return self._allow_data_changes
-
-    @property
-    def path_start_with_slash(self):
-        """Folder path should start with slash.
-
-        This changed in 0.6.x server version.
-
-        Returns:
-            bool: Path starts with slash.
-
-        """
-        return self._path_start_with_slash
 
     @property
     def project_name(self):
@@ -898,8 +854,7 @@ class EntityHub(object):
             self._connection.get_default_fields_for_type("folder")
         )
         folder_fields.add("hasProducts")
-        if self._allow_data_changes:
-            folder_fields.add("data")
+        folder_fields.add("data")
         return folder_fields
 
     def _get_task_fields(self) -> Set[str]:
@@ -1717,10 +1672,7 @@ class BaseEntity(ABC):
 
         """
         changes = {}
-        if (
-            self._entity_hub.allow_data_changes
-            and self._data is not UNKNOWN_VALUE
-        ):
+        if self._data is not UNKNOWN_VALUE:
             data_changes = self._data.get_changes()
             if data_changes:
                 changes["data"] = data_changes
@@ -3149,10 +3101,8 @@ class FolderEntity(BaseEntity):
             if parent.entity_type == "folder":
                 parent_path = parent.path
                 path = "/".join([parent_path, self.name])
-            elif self._entity_hub.path_start_with_slash:
-                path = "/{}".format(self.name)
             else:
-                path = self.name
+                path = "/{}".format(self.name)
             self._path = path
         return self._path
 
@@ -3260,10 +3210,7 @@ class FolderEntity(BaseEntity):
         if self.thumbnail_id is not UNKNOWN_VALUE:
             output["thumbnailId"] = self.thumbnail_id
 
-        if (
-            self._entity_hub.allow_data_changes
-            and self._data is not UNKNOWN_VALUE
-        ):
+        if self._data is not UNKNOWN_VALUE:
             output["data"] = self._data.get_new_entity_value()
         return output
 
@@ -3451,10 +3398,7 @@ class TaskEntity(BaseEntity):
         if self.assignees:
             output["assignees"] = self.assignees
 
-        if (
-            self._entity_hub.allow_data_changes
-            and self._data is not UNKNOWN_VALUE
-        ):
+        if self._data is not UNKNOWN_VALUE:
             output["data"] = self._data.get_new_entity_value()
         return output
 
@@ -3561,10 +3505,7 @@ class ProductEntity(BaseEntity):
         if self.tags:
             output["tags"] = self.tags
 
-        if (
-            self._entity_hub.allow_data_changes
-            and self._data is not UNKNOWN_VALUE
-        ):
+        if self._data is not UNKNOWN_VALUE:
             output["data"] = self._data.get_new_entity_value()
         return output
 
@@ -3693,9 +3634,6 @@ class VersionEntity(BaseEntity):
         if self.status:
             output["status"] = self.status
 
-        if (
-            self._entity_hub.allow_data_changes
-            and self._data is not UNKNOWN_VALUE
-        ):
+        if self._data is not UNKNOWN_VALUE:
             output["data"] = self._data.get_new_entity_value()
         return output

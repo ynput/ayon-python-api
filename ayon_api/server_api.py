@@ -52,7 +52,6 @@ from .constants import (
     DEFAULT_EVENT_FIELDS,
     DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
-    DEFAULT_LINK_FIELDS,
 )
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
@@ -520,7 +519,6 @@ class ServerAPI(object):
         self._server_version = None
         self._server_version_tuple = None
 
-        self._graphql_allows_data_in_query = None
         self._graphql_allows_traits_in_representations: Optional[bool] = None
 
         self._session = None
@@ -1098,27 +1096,6 @@ class ServerAPI(object):
     )
 
     @property
-    def graphql_allows_data_in_query(self) -> bool:
-        """GraphQl query can support 'data' field.
-
-        This applies only to project hierarchy entities 'project', 'folder',
-        'task', 'product', 'version' and 'representation'. Others like 'user'
-        still require to use rest api to access 'data'.
-
-        Returns:
-            bool: True if server supports 'data' field in GraphQl query.
-
-        """
-        if self._graphql_allows_data_in_query is None:
-            major, minor, patch, _, _ = self.server_version_tuple
-            graphql_allows_data_in_query = True
-            if (major, minor, patch) < (0, 5, 5):
-                graphql_allows_data_in_query = False
-            self._graphql_allows_data_in_query = graphql_allows_data_in_query
-        return self._graphql_allows_data_in_query
-
-
-    @property
     def graphql_allows_traits_in_representations(self) -> bool:
         """Check server support for representation traits."""
         if self._graphql_allows_traits_in_representations is None:
@@ -1687,21 +1664,6 @@ class ServerAPI(object):
             )
             if value is not None
         }
-        # 'progress' and 'retries' are available since 0.5.x server version
-        major, minor, _, _, _ = self.server_version_tuple
-        if (major, minor) < (0, 5):
-            args = []
-            if progress is not None:
-                args.append("progress")
-            if retries is not None:
-                args.append("retries")
-            fields = ", ".join(f"'{f}'" for f in args)
-            ending = "s" if len(args) > 1 else ""
-            raise ValueError(
-                 f"Your server version '{self.server_version}' does not"
-                 f" support update of {fields} field{ending} on event."
-                 " The fields are supported since server version '0.5'."
-            )
 
         response = self.patch(
             f"events/{event_id}",
@@ -2761,36 +2723,24 @@ class ServerAPI(object):
 
         if entity_type == "project":
             entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
-            if not self.graphql_allows_data_in_query:
-                entity_type_defaults.discard("data")
 
         elif entity_type == "folder":
             entity_type_defaults = set(DEFAULT_FOLDER_FIELDS)
-            if not self.graphql_allows_data_in_query:
-                entity_type_defaults.discard("data")
 
         elif entity_type == "task":
             entity_type_defaults = set(DEFAULT_TASK_FIELDS)
-            if not self.graphql_allows_data_in_query:
-                entity_type_defaults.discard("data")
 
         elif entity_type == "product":
             entity_type_defaults = set(DEFAULT_PRODUCT_FIELDS)
-            if not self.graphql_allows_data_in_query:
-                entity_type_defaults.discard("data")
 
         elif entity_type == "version":
             entity_type_defaults = set(DEFAULT_VERSION_FIELDS)
-            if not self.graphql_allows_data_in_query:
-                entity_type_defaults.discard("data")
 
         elif entity_type == "representation":
             entity_type_defaults = (
                 DEFAULT_REPRESENTATION_FIELDS
                 | REPRESENTATION_FILES_FIELDS
             )
-            if not self.graphql_allows_data_in_query:
-                entity_type_defaults.discard("data")
 
             if not self.graphql_allows_traits_in_representations:
                 entity_type_defaults.discard("traits")
@@ -2806,8 +2756,6 @@ class ServerAPI(object):
 
         elif entity_type == "workfile":
             entity_type_defaults = set(DEFAULT_WORKFILE_INFO_FIELDS)
-            if not self.graphql_allows_data_in_query:
-                entity_type_defaults.discard("data")
 
         elif entity_type == "user":
             entity_type_defaults = set(DEFAULT_USER_FIELDS)
@@ -4968,15 +4916,10 @@ class ServerAPI(object):
             fields = set(fields)
             self._prepare_fields("folder", fields)
 
-        use_rest = False
-        if "data" in fields and not self.graphql_allows_data_in_query:
-            use_rest = True
-            fields = {"id"}
-
         if active is not None:
             fields.add("active")
 
-        if own_attributes and not use_rest:
+        if own_attributes:
             fields.add("ownAttrib")
 
         query = folders_graphql_query(fields)
@@ -4988,10 +4931,7 @@ class ServerAPI(object):
                 if active is not None and active is not folder["active"]:
                     continue
 
-                if use_rest:
-                    folder = self.get_rest_folder(project_name, folder["id"])
-                else:
-                    self._convert_entity_data(folder)
+                self._convert_entity_data(folder)
 
                 if own_attributes:
                     fill_own_attribs(folder)
@@ -5363,11 +5303,6 @@ class ServerAPI(object):
             fields = set(fields)
             self._prepare_fields("task", fields, own_attributes)
 
-        use_rest = False
-        if "data" in fields and not self.graphql_allows_data_in_query:
-            use_rest = True
-            fields = {"id"}
-
         if active is not None:
             fields.add("active")
 
@@ -5380,10 +5315,7 @@ class ServerAPI(object):
                 if active is not None and active is not task["active"]:
                     continue
 
-                if use_rest:
-                    task = self.get_rest_task(project_name, task["id"])
-                else:
-                    self._convert_entity_data(task)
+                self._convert_entity_data(task)
 
                 if own_attributes:
                     fill_own_attribs(task)
@@ -5525,11 +5457,6 @@ class ServerAPI(object):
             fields = set(fields)
             self._prepare_fields("task", fields, own_attributes)
 
-        use_rest = False
-        if "data" in fields and not self.graphql_allows_data_in_query:
-            use_rest = True
-            fields = {"id"}
-
         if active is not None:
             fields.add("active")
 
@@ -5548,10 +5475,7 @@ class ServerAPI(object):
                     if active is not None and active is not task["active"]:
                         continue
 
-                    if use_rest:
-                        task = self.get_rest_task(project_name, task["id"])
-                    else:
-                        self._convert_entity_data(task)
+                    self._convert_entity_data(task)
 
                     if own_attributes:
                         fill_own_attribs(task)
@@ -5801,15 +5725,11 @@ class ServerAPI(object):
         project_name: str,
         product: "ProductDict",
         active: "Union[bool, None]",
-        use_rest: bool,
     ) -> Optional["ProductDict"]:
         if active is not None and product["active"] is not active:
             return None
 
-        if use_rest:
-            product = self.get_rest_product(project_name, product["id"])
-        else:
-            self._convert_entity_data(product)
+        self._convert_entity_data(product)
 
         return product
 
@@ -5902,11 +5822,6 @@ class ServerAPI(object):
         else:
             fields = self.get_default_fields_for_type("product")
 
-        use_rest = False
-        if "data" in fields and not self.graphql_allows_data_in_query:
-            use_rest = True
-            fields = {"id"}
-
         if active is not None:
             fields.add("active")
 
@@ -5964,7 +5879,7 @@ class ServerAPI(object):
             products_by_folder_id = collections.defaultdict(list)
             for product in products:
                 filtered_product = self._filter_product(
-                    project_name, product, active, use_rest
+                    project_name, product, active
                 )
                 if filtered_product is not None:
                     folder_id = filtered_product["folderId"]
@@ -5978,7 +5893,7 @@ class ServerAPI(object):
         else:
             for product in products:
                 filtered_product = self._filter_product(
-                    project_name, product, active, use_rest
+                    project_name, product, active
                 )
                 if filtered_product is not None:
                     yield filtered_product
@@ -6325,11 +6240,6 @@ class ServerAPI(object):
         # Make sure fields have minimum required fields
         fields |= {"id", "version"}
 
-        use_rest = False
-        if "data" in fields and not self.graphql_allows_data_in_query:
-            use_rest = True
-            fields = {"id"}
-
         if active is not None:
             fields.add("active")
 
@@ -6402,12 +6312,7 @@ class ServerAPI(object):
                     if not hero and version["version"] < 0:
                         continue
 
-                    if use_rest:
-                        version = self.get_rest_version(
-                            project_name, version["id"]
-                        )
-                    else:
-                        self._convert_entity_data(version)
+                    self._convert_entity_data(version)
 
                     yield version
 
@@ -6969,11 +6874,6 @@ class ServerAPI(object):
             fields = set(fields)
             self._prepare_fields("representation", fields)
 
-        use_rest = False
-        if "data" in fields and not self.graphql_allows_data_in_query:
-            use_rest = True
-            fields = {"id"}
-
         if active is not None:
             fields.add("active")
 
@@ -7055,12 +6955,7 @@ class ServerAPI(object):
                 if active is not None and active is not repre["active"]:
                     continue
 
-                if use_rest:
-                    repre = self.get_rest_representation(
-                        project_name, repre["id"]
-                    )
-                else:
-                    self._convert_entity_data(repre)
+                self._convert_entity_data(repre)
 
                 self._representation_conversion(repre)
 
@@ -8441,22 +8336,8 @@ class ServerAPI(object):
         kwargs = {
             "input": input_id,
             "output": output_id,
+            "linkType": full_link_type_name,
         }
-        major, minor, patch, rel, _ = self.server_version_tuple
-        rel_regex = re.compile(r"rc\.[0-5]")
-        if (
-            ((major, minor, patch) == (1, 0, 0) and rel_regex.match(rel))
-            or (major, minor, patch) < (1, 0, 0)
-        ):
-            kwargs["link"] = full_link_type_name
-            if link_name:
-                raise UnsupportedServerVersion(
-                    "Link name is not supported"
-                    f" for version of AYON server {self.server_version}"
-                )
-        else:
-            kwargs["linkType"] = full_link_type_name
-
         if link_name:
             kwargs["name"] = link_name
 
@@ -8618,23 +8499,6 @@ class ServerAPI(object):
             return output
 
         link_fields = {"id", "links"}
-        # Backwards compatibility for server version 1.0.0-rc.5 and lower
-        # ---------
-        major, minor, patch, rel, _ = self.server_version_tuple
-        rel_regex = re.compile(r"rc\.[0-5]")
-        if (
-            ((major, minor, patch) == (1, 0, 0) and rel_regex.match(rel))
-            or (major, minor, patch) < (1, 0, 0)
-        ):
-            fields = set(DEFAULT_LINK_FIELDS)
-            fields.discard("name")
-            link_fields.discard("links")
-            link_fields |= {
-                f"links.{field}"
-                for field in fields
-            }
-        # ---------
-
         query = query_func(link_fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
