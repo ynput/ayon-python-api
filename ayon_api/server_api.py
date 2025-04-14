@@ -1665,21 +1665,6 @@ class ServerAPI(object):
             )
             if value is not None
         }
-        # 'progress' and 'retries' are available since 0.5.x server version
-        major, minor, _, _, _ = self.server_version_tuple
-        if (major, minor) < (0, 5):
-            args = []
-            if progress is not None:
-                args.append("progress")
-            if retries is not None:
-                args.append("retries")
-            fields = ", ".join(f"'{f}'" for f in args)
-            ending = "s" if len(args) > 1 else ""
-            raise ValueError(
-                 f"Your server version '{self.server_version}' does not"
-                 f" support update of {fields} field{ending} on event."
-                 " The fields are supported since server version '0.5'."
-            )
 
         response = self.patch(
             f"events/{event_id}",
