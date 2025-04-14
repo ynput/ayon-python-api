@@ -1340,12 +1340,12 @@ class ServerAPI(object):
     def _logout(self):
         logout_from_server(self._base_url, self._access_token)
 
-    def _do_rest_request(self, function, url, **kwargs):
+    def _do_rest_request(self, request_type, url, **kwargs):
         kwargs.setdefault("timeout", self.timeout)
-        max_retries = kwargs.get("max_retries", self.max_retries)
-        if max_retries < 1:
-            max_retries = 1
-        if self._session is None:
+
+        close_session = False
+        session = self._session
+        if session is None:
             # Validate token if was not yet validated
             #    - ignore validation if we're in middle of
             #       validation
@@ -1355,62 +1355,60 @@ class ServerAPI(object):
             ):
                 self.validate_token()
 
-            if "headers" not in kwargs:
-                kwargs["headers"] = self.get_headers()
-
-            if isinstance(function, RequestType):
-                function = self._base_functions_mapping[function]
-
-        elif isinstance(function, RequestType):
-            function = self._session_functions_mapping[function]
+            max_retries = kwargs.get("max_retries")
+            headers = kwargs.get("headers")
+            close_session = True
+            session, _ = self._create_new_session(
+                max_retries=max_retries, headers=headers
+            )
 
         response = None
         new_response = None
-        for retry_idx in reversed(range(max_retries)):
-            try:
-                response = function(url, **kwargs)
-                break
+        try:
+            response = session.request(request_type.name, url, **kwargs)
 
-            except ConnectionRefusedError:
-                if retry_idx == 0:
-                    self.log.warning(
-                        "Connection error happened.", exc_info=True
+        except ConnectionRefusedError:
+            if retry_idx == 0:
+                self.log.warning(
+                    "Connection error happened.", exc_info=True
+                )
+
+            # Server may be restarting
+            new_response = RestApiResponse(
+                None,
+                {
+                    "detail": (
+                        "Unable to connect the server. Connection refused"
                     )
+                }
+            )
 
-                # Server may be restarting
-                new_response = RestApiResponse(
-                    None,
-                    {
-                        "detail": (
-                            "Unable to connect the server. Connection refused"
-                        )
-                    }
+        except requests.exceptions.Timeout:
+            # Connection timed out
+            new_response = RestApiResponse(
+                None,
+                {"detail": "Connection timed out."}
+            )
+
+        except requests.exceptions.ConnectionError:
+            # Log warning only on last attempt
+            if retry_idx == 0:
+                self.log.warning(
+                    "Connection error happened.", exc_info=True
                 )
 
-            except requests.exceptions.Timeout:
-                # Connection timed out
-                new_response = RestApiResponse(
-                    None,
-                    {"detail": "Connection timed out."}
-                )
-
-            except requests.exceptions.ConnectionError:
-                # Log warning only on last attempt
-                if retry_idx == 0:
-                    self.log.warning(
-                        "Connection error happened.", exc_info=True
+            new_response = RestApiResponse(
+                None,
+                {
+                    "detail": (
+                        "Unable to connect the server. Connection error"
                     )
+                }
+            )
 
-                new_response = RestApiResponse(
-                    None,
-                    {
-                        "detail": (
-                            "Unable to connect the server. Connection error"
-                        )
-                    }
-                )
-
-            time.sleep(0.1)
+        finally:
+            if close_session:
+                session.close()
 
         if new_response is not None:
             return new_response
