@@ -667,7 +667,14 @@ class ServerAPI(object):
         """
         if max_retries is None:
             max_retries = self.get_default_max_retries()
-        self._max_retries = int(max_retries)
+        max_retries = int(max_retries)
+        if max_retries < 0:
+            max_retries = 0
+        if max_retries == self._max_retries:
+            return
+        self._max_retries = max_retries
+        for handler in self._session_handlers.values():
+            handler.max_retries = Retry.from_int(max_retries)
 
     timeout = property(get_timeout, set_timeout)
     max_retries = property(get_max_retries, set_max_retries)
