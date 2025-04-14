@@ -1332,6 +1332,25 @@ class ServerAPI(object):
         logout_from_server(self._base_url, self._access_token)
 
     def _do_rest_request(self, request_type, url, **kwargs):
+        """
+
+        Args:
+            request_type (RequestType): Request type.
+            url (str): Request url.
+            max_retries (int): Does affect only connection issues or
+                when session is not created.
+            **kwargs:
+
+        Returns:
+            RestApiResponse: Response.
+
+        Raises:
+            ConnectionRefusedError: When connection is refused.
+            requests.exceptions.Timeout: When connection timed out.
+            requests.exceptions.ConnectionError: When connection error
+                happens.
+
+        """
         kwargs.setdefault("timeout", self.timeout)
 
         close_session = False
