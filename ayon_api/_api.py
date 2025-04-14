@@ -5475,6 +5475,7 @@ def create_representation(
     files: Optional[List[Dict[str, Any]]] = None,
     attrib: Optional[Dict[str, Any]] = None,
     data: Optional[Dict[str, Any]] = None,
+    traits: Optional[Dict[str, Any]] = None,
     tags: Optional[List[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
@@ -5489,6 +5490,8 @@ def create_representation(
         files (Optional[list[dict]]): Representation files information.
         attrib (Optional[dict[str, Any]]): Representation attributes.
         data (Optional[dict[str, Any]]): Representation data.
+        traits (Optional[dict[str, Any]]): Representation traits
+            serialized data as dict.
         tags (Optional[Iterable[str]]): Representation tags.
         status (Optional[str]): Representation status.
         active (Optional[bool]): Representation active state.
@@ -5507,6 +5510,7 @@ def create_representation(
         files=files,
         attrib=attrib,
         data=data,
+        traits=traits,
         tags=tags,
         status=status,
         active=active,
@@ -5522,6 +5526,7 @@ def update_representation(
     files: Optional[List[Dict[str, Any]]] = None,
     attrib: Optional[Dict[str, Any]] = None,
     data: Optional[Dict[str, Any]] = None,
+    traits: Optional[Dict[str, Any]] = None,
     tags: Optional[List[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
@@ -5542,6 +5547,7 @@ def update_representation(
             information.
         attrib (Optional[dict[str, Any]]): New attributes.
         data (Optional[dict[str, Any]]): New data.
+        traits (Optional[dict[str, Any]]): New traits.
         tags (Optional[Iterable[str]]): New tags.
         status (Optional[str]): New status.
         active (Optional[bool]): New active state.
@@ -5556,6 +5562,7 @@ def update_representation(
         files=files,
         attrib=attrib,
         data=data,
+        traits=traits,
         tags=tags,
         status=status,
         active=active,

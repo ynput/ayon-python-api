@@ -276,7 +276,8 @@ def new_representation_entity(
     tags=None,
     attribs=None,
     data=None,
-    entity_id=None
+    traits=None,
+    entity_id=None,
 ):
     """Create skeleton data of representation entity.
 
@@ -290,6 +291,8 @@ def new_representation_entity(
         attribs (Optional[Dict[str, Any]]): Explicitly set attributes
             of representation.
         data (Optional[Dict[str, Any]]): Representation entity data.
+        traits (Optional[Dict[str, Any]]): Representation traits. Empty
+            if not passed.
         entity_id (Optional[str]): Predefined id of entity. New id is created
             if not passed.
 
@@ -309,8 +312,10 @@ def new_representation_entity(
         "files": files,
         "name": name,
         "data": data,
-        "attrib": attribs
+        "attrib": attribs,
     }
+    if traits:
+        output["traits"] = traits
     if tags:
         output["tags"] = tags
     if status:
@@ -1359,6 +1364,7 @@ class OperationsSession(object):
         files=None,
         attrib=None,
         data=None,
+        traits=None,
         tags=None,
         status=None,
         active=None,
@@ -1373,6 +1379,8 @@ class OperationsSession(object):
             files (Optional[list[dict]]): Representation files information.
             attrib (Optional[dict[str, Any]]): Representation attributes.
             data (Optional[dict[str, Any]]): Representation data.
+            traits (Optional[Dict[str, Any]]): Representation traits. Empty
+                if not passed.
             tags (Optional[Iterable[str]]): Representation tags.
             status (Optional[str]): Representation status.
             active (Optional[bool]): Representation active state.
@@ -1394,6 +1402,7 @@ class OperationsSession(object):
             ("files", files),
             ("attrib", attrib),
             ("data", data),
+            ("traits", traits),
             ("tags", tags),
             ("status", status),
             ("active", active),
@@ -1416,6 +1425,7 @@ class OperationsSession(object):
         files=None,
         attrib=None,
         data=None,
+        traits=None,
         tags=None,
         status=None,
         active=None,
@@ -1436,6 +1446,7 @@ class OperationsSession(object):
                 information.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
+            traits (Optional[Dict[str, Any]]): New representation traits.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
@@ -1451,6 +1462,7 @@ class OperationsSession(object):
             ("files", files),
             ("attrib", attrib),
             ("data", data),
+            ("traits", traits),
             ("tags", tags),
             ("status", status),
             ("active", active),

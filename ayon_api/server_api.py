@@ -521,6 +521,7 @@ class ServerAPI(object):
         self._server_version_tuple = None
 
         self._graphql_allows_data_in_query = None
+        self._graphql_allows_traits_in_representations: Optional[bool] = None
 
         self._session = None
 
@@ -1115,6 +1116,18 @@ class ServerAPI(object):
                 graphql_allows_data_in_query = False
             self._graphql_allows_data_in_query = graphql_allows_data_in_query
         return self._graphql_allows_data_in_query
+
+
+    @property
+    def graphql_allows_traits_in_representations(self) -> bool:
+        """Check server support for representation traits."""
+        if self._graphql_allows_traits_in_representations is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            self._graphql_allows_traits_in_representations = (
+                (major, minor, patch) >= (1, 7, 5)
+            )
+        return self._graphql_allows_traits_in_representations
+
 
     def _get_user_info(self) -> Optional[Dict[str, Any]]:
         if self._access_token is None:
@@ -2778,6 +2791,9 @@ class ServerAPI(object):
             )
             if not self.graphql_allows_data_in_query:
                 entity_type_defaults.discard("data")
+
+            if not self.graphql_allows_traits_in_representations:
+                entity_type_defaults.discard("traits")
 
         elif entity_type == "folderType":
             entity_type_defaults = set(DEFAULT_FOLDER_TYPE_FIELDS)
@@ -7474,6 +7490,7 @@ class ServerAPI(object):
         files: Optional[List[Dict[str, Any]]] = None,
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
+        traits: Optional[Dict[str, Any]] = None,
         tags: Optional[List[str]]=None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
@@ -7488,6 +7505,8 @@ class ServerAPI(object):
             files (Optional[list[dict]]): Representation files information.
             attrib (Optional[dict[str, Any]]): Representation attributes.
             data (Optional[dict[str, Any]]): Representation data.
+            traits (Optional[dict[str, Any]]): Representation traits
+                serialized data as dict.
             tags (Optional[Iterable[str]]): Representation tags.
             status (Optional[str]): Representation status.
             active (Optional[bool]): Representation active state.
@@ -7509,6 +7528,7 @@ class ServerAPI(object):
             ("files", files),
             ("attrib", attrib),
             ("data", data),
+            ("traits", traits),
             ("tags", tags),
             ("status", status),
             ("active", active),
@@ -7532,6 +7552,7 @@ class ServerAPI(object):
         files: Optional[List[Dict[str, Any]]] = None,
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
+        traits: Optional[Dict[str, Any]] = None,
         tags: Optional[List[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
@@ -7552,6 +7573,7 @@ class ServerAPI(object):
                 information.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
+            traits (Optional[dict[str, Any]]): New traits.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
@@ -7564,6 +7586,7 @@ class ServerAPI(object):
             ("files", files),
             ("attrib", attrib),
             ("data", data),
+            ("traits", traits),
             ("tags", tags),
             ("status", status),
             ("active", active),
