@@ -1156,6 +1156,7 @@ class ServerAPI(object):
         self,
         project_name: Optional[str] = None,
         usernames: Optional[Iterable[str]] = None,
+        emails: Optional[Iterable[str]] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """Get Users.
@@ -1166,6 +1167,7 @@ class ServerAPI(object):
         Args:
             project_name (Optional[str]): Project name.
             usernames (Optional[Iterable[str]]): Filter by usernames.
+            emails (Optional[Iterable[str]]): Filter by emails.
             fields (Optional[Iterable[str]]): Fields to be queried
                 for users.
 
@@ -1179,6 +1181,22 @@ class ServerAPI(object):
             if not usernames:
                 return
             filters["userNames"] = list(usernames)
+
+        if emails is not None:
+            emails = set(emails)
+            if not emails:
+                return
+
+            major, minor, patch, _, _ = self.server_version_tuple
+            emails_filter_available = (major, minor, patch) > (1, 7, 3)
+            if not emails_filter_available:
+                server_version = self.get_server_version()
+                raise ValueError(
+                    "Filtering by emails is not supported by"
+                    f" server version {server_version}."
+                )
+
+            filters["emails"] = list(emails)
 
         if project_name is not None:
             filters["projectName"] = project_name
@@ -7792,9 +7810,10 @@ class ServerAPI(object):
     ) -> ThumbnailContent:
         """Get thumbnail from server by id.
 
-        Permissions of thumbnails are related to entities so thumbnails must
-        be queried per entity. So an entity type and entity type is required
-        to be passed.
+        Warnings:
+            Please keep in mind that used endpoint is allowed only for admins
+                and managers. Use 'get_thumbnail' with entity type and id
+                to allow access for artists.
 
         Notes:
             It is recommended to use one of prepared entity type specific
@@ -7829,7 +7848,7 @@ class ServerAPI(object):
         """Get thumbnail from server.
 
         Permissions of thumbnails are related to entities so thumbnails must
-        be queried per entity. So an entity type and entity type is required
+        be queried per entity. So an entity type and entity id is required
         to be passed.
 
         Notes:
@@ -7853,7 +7872,13 @@ class ServerAPI(object):
 
         """
         if thumbnail_id:
-            return self.get_thumbnail_by_id(project_name, thumbnail_id)
+            warnings.warn(
+                (
+                    "Function 'get_thumbnail' got 'thumbnail_id' which"
+                    " is deprecated and will be removed in future version."
+                ),
+                DeprecationWarning
+            )
 
         if entity_type in (
             "folder",
@@ -7887,9 +7912,35 @@ class ServerAPI(object):
                 valid.
 
         """
+        if thumbnail_id:
+            warnings.warn(
+                (
+                    "Function 'get_folder_thumbnail' got 'thumbnail_id' which"
+                    " is deprecated and will be removed in future version."
+                ),
+                DeprecationWarning
+            )
         return self.get_thumbnail(
-            project_name, "folder", folder_id, thumbnail_id
+            project_name, "folder", folder_id
         )
+
+    def get_task_thumbnail(
+        self,
+        project_name: str,
+        task_id: str,
+    ) -> ThumbnailContent:
+        """Prepared method to receive thumbnail for task entity.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            task_id (str): Folder id for which thumbnail should be returned.
+
+        Returns:
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
+
+        """
+        return self.get_thumbnail(project_name, "task", task_id)
 
     def get_version_thumbnail(
         self,
@@ -7911,8 +7962,16 @@ class ServerAPI(object):
                 valid.
 
         """
+        if thumbnail_id:
+            warnings.warn(
+                (
+                    "Function 'get_version_thumbnail' got 'thumbnail_id' which"
+                    " is deprecated and will be removed in future version."
+                ),
+                DeprecationWarning
+            )
         return self.get_thumbnail(
-            project_name, "version", version_id, thumbnail_id
+            project_name, "version", version_id
         )
 
     def get_workfile_thumbnail(
@@ -7935,8 +7994,17 @@ class ServerAPI(object):
                 valid.
 
         """
+        if thumbnail_id:
+            warnings.warn(
+                (
+                    "Function 'get_workfile_thumbnail' got 'thumbnail_id'"
+                    " which is deprecated and will be removed in future"
+                    " version."
+                ),
+                DeprecationWarning
+            )
         return self.get_thumbnail(
-            project_name, "workfile", workfile_id, thumbnail_id
+            project_name, "workfile", workfile_id
         )
 
     def create_thumbnail(
