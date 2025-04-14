@@ -476,6 +476,9 @@ class ServerAPI(object):
         if not base_url:
             raise ValueError(f"Invalid server URL {str(base_url)}")
 
+        self._session = None
+        self._session_handlers = {}
+
         base_url = base_url.rstrip("/")
         self._base_url: str = base_url
         self._rest_url: str = f"{base_url}/api"
@@ -521,17 +524,6 @@ class ServerAPI(object):
         self._server_version_tuple = None
 
         self._graphql_allows_data_in_query = None
-
-        self._session = None
-
-        self._base_functions_mapping = {
-            RequestTypes.get: requests.get,
-            RequestTypes.post: requests.post,
-            RequestTypes.put: requests.put,
-            RequestTypes.patch: requests.patch,
-            RequestTypes.delete: requests.delete
-        }
-        self._session_functions_mapping = {}
 
         # Attributes cache
         self._attributes_schema = None
@@ -996,19 +988,10 @@ class ServerAPI(object):
         # Validate token before session creation
         self.validate_token()
 
-        session = requests.Session()
-        session.cert = self._cert
-        session.verify = self._ssl_verify
-        session.headers.update(self.get_headers())
+        session, handlers = self._create_new_session()
 
-        self._session_functions_mapping = {
-            RequestTypes.get: session.get,
-            RequestTypes.post: session.post,
-            RequestTypes.put: session.put,
-            RequestTypes.patch: session.patch,
-            RequestTypes.delete: session.delete
-        }
         self._session = session
+        self._session_handlers = handlers
 
     def close_session(self):
         if self._session is None:
@@ -1016,7 +999,7 @@ class ServerAPI(object):
 
         session = self._session
         self._session = None
-        self._session_functions_mapping = {}
+        self._session_handlers = {}
         session.close()
 
     def _update_session_headers(self):
