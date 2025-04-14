@@ -706,6 +706,7 @@ def get_server_version_tuple() -> Tuple[int, int, int, str, str]:
 def get_users(
     project_name: Optional[str] = None,
     usernames: Optional[Iterable[str]] = None,
+    emails: Optional[Iterable[str]] = None,
     fields: Optional[Iterable[str]] = None,
 ) -> Generator[Dict[str, Any], None, None]:
     """Get Users.
@@ -716,6 +717,7 @@ def get_users(
     Args:
         project_name (Optional[str]): Project name.
         usernames (Optional[Iterable[str]]): Filter by usernames.
+        emails (Optional[Iterable[str]]): Filter by emails.
         fields (Optional[Iterable[str]]): Fields to be queried
             for users.
 
@@ -727,6 +729,7 @@ def get_users(
     return con.get_users(
         project_name=project_name,
         usernames=usernames,
+        emails=emails,
         fields=fields,
     )
 

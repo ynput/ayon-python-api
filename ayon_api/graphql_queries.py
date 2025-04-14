@@ -619,10 +619,12 @@ def events_graphql_query(fields, order, use_states=False):
 def users_graphql_query(fields):
     query = GraphQlQuery("Users")
     names_var = query.add_variable("userNames", "[String!]")
+    emails_var = query.add_variable("emails", "[String!]")
     project_name_var = query.add_variable("projectName", "String!")
 
     users_field = query.add_field_with_edges("users")
     users_field.set_filter("names", names_var)
+    users_field.set_filter("emails", emails_var)
     users_field.set_filter("projectName", project_name_var)
 
     nested_fields = fields_to_dict(set(fields))
