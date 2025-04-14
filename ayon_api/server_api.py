@@ -52,7 +52,6 @@ from .constants import (
     DEFAULT_EVENT_FIELDS,
     DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
-    DEFAULT_LINK_FIELDS,
 )
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
@@ -8340,22 +8339,8 @@ class ServerAPI(object):
         kwargs = {
             "input": input_id,
             "output": output_id,
+            "linkType": full_link_type_name,
         }
-        major, minor, patch, rel, _ = self.server_version_tuple
-        rel_regex = re.compile(r"rc\.[0-5]")
-        if (
-            ((major, minor, patch) == (1, 0, 0) and rel_regex.match(rel))
-            or (major, minor, patch) < (1, 0, 0)
-        ):
-            kwargs["link"] = full_link_type_name
-            if link_name:
-                raise UnsupportedServerVersion(
-                    "Link name is not supported"
-                    f" for version of AYON server {self.server_version}"
-                )
-        else:
-            kwargs["linkType"] = full_link_type_name
-
         if link_name:
             kwargs["name"] = link_name
 
@@ -8517,23 +8502,6 @@ class ServerAPI(object):
             return output
 
         link_fields = {"id", "links"}
-        # Backwards compatibility for server version 1.0.0-rc.5 and lower
-        # ---------
-        major, minor, patch, rel, _ = self.server_version_tuple
-        rel_regex = re.compile(r"rc\.[0-5]")
-        if (
-            ((major, minor, patch) == (1, 0, 0) and rel_regex.match(rel))
-            or (major, minor, patch) < (1, 0, 0)
-        ):
-            fields = set(DEFAULT_LINK_FIELDS)
-            fields.discard("name")
-            link_fields.discard("links")
-            link_fields |= {
-                f"links.{field}"
-                for field in fields
-            }
-        # ---------
-
         query = query_func(link_fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
