@@ -4931,10 +4931,7 @@ class ServerAPI(object):
                 if active is not None and active is not folder["active"]:
                     continue
 
-                if use_rest:
-                    folder = self.get_rest_folder(project_name, folder["id"])
-                else:
-                    self._convert_entity_data(folder)
+                self._convert_entity_data(folder)
 
                 if own_attributes:
                     fill_own_attribs(folder)
