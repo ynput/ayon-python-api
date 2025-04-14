@@ -1434,6 +1434,28 @@ class ServerAPI(object):
         self.log.debug(f"Response {str(new_response)}")
         return new_response
 
+    def _create_new_session(self, max_retries=None, headers=None):
+        if max_retries is None:
+            max_retries = self.max_retries
+        if max_retries < 0:
+            max_retries = 0
+
+        if headers is None:
+            headers = self.get_headers()
+
+        session = requests.Session()
+        session.cert = self._cert
+        session.verify = self._ssl_verify
+        session.headers.update(headers)
+        handlers = {
+            "http://": HTTPAdapter(max_retries=max_retries),
+            "https://": HTTPAdapter(max_retries=max_retries),
+        }
+        for prefix, adapter in handlers.items():
+            session.mount(prefix, adapter)
+
+        return session, handlers
+
     def raw_post(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
         self.log.debug(f"Executing [POST] {url}")
