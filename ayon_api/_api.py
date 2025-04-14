@@ -5473,10 +5473,10 @@ def create_representation(
     attrib: Optional[Dict[str, Any]] = None,
     data: Optional[Dict[str, Any]] = None,
     tags: Optional[List[str]] = None,
+    traits: Optional[Dict[str, Any]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
     representation_id: Optional[str] = None,
-    traits: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Create new representation.
 
@@ -5488,12 +5488,12 @@ def create_representation(
         attrib (Optional[dict[str, Any]]): Representation attributes.
         data (Optional[dict[str, Any]]): Representation data.
         tags (Optional[Iterable[str]]): Representation tags.
+        traits (Optional[dict[str, Any]]): Representation traits
+            serialized data as dict.
         status (Optional[str]): Representation status.
         active (Optional[bool]): Representation active state.
         representation_id (Optional[str]): Representation id. If not
             passed new id is generated.
-        traits (Optional[dict[str, Any]]): Representation traits
-            serialized as dict.
 
     Returns:
         str: Representation id.
@@ -5508,10 +5508,10 @@ def create_representation(
         attrib=attrib,
         data=data,
         tags=tags,
+        traits=traits,
         status=status,
         active=active,
         representation_id=representation_id,
-        traits=traits,
     )
 
 
@@ -5524,9 +5524,9 @@ def update_representation(
     attrib: Optional[Dict[str, Any]] = None,
     data: Optional[Dict[str, Any]] = None,
     tags: Optional[List[str]] = None,
+    traits: Optional[Dict[str, Any]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
-    traits: Optional[Dict[str, Any]] = None,
 ):
     """Update representation entity on server.
 
@@ -5545,9 +5545,9 @@ def update_representation(
         attrib (Optional[dict[str, Any]]): New attributes.
         data (Optional[dict[str, Any]]): New data.
         tags (Optional[Iterable[str]]): New tags.
+        traits (Optional[dict[str, Any]]): New traits.
         status (Optional[str]): New status.
         active (Optional[bool]): New active state.
-        traits (Optional[dict[str, Any]]): New traits.
 
     """
     con = get_server_api_connection()
@@ -5560,9 +5560,9 @@ def update_representation(
         attrib=attrib,
         data=data,
         tags=tags,
+        traits=traits,
         status=status,
         active=active,
-        traits=traits,
     )
 
 
