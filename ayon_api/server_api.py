@@ -4662,10 +4662,14 @@ class ServerAPI(object):
             return
 
         self._prepare_fields("project", fields, own_attributes)
+        if active is not None:
+            fields.add("active")
 
         query = projects_graphql_query(fields)
         for parsed_data in query.continuous_query(self):
             for project in parsed_data["projects"]:
+                if active is not None and active is not project["active"]:
+                    continue
                 if own_attributes:
                     fill_own_attribs(project)
                 yield project
