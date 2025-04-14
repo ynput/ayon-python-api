@@ -1367,6 +1367,7 @@ class ServerAPI(object):
                     response = session.request(
                         request_type.name, url, **kwargs
                     )
+                    break
 
                 except (
                     # These are 'ConnectionError' but it doesn't make sense
