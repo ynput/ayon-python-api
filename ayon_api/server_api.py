@@ -25,6 +25,7 @@ except ImportError:
     HTTPStatus = None
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
 try:
     # This should be used if 'requests' have it available
     from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
