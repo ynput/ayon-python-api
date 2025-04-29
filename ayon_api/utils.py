@@ -329,7 +329,9 @@ def _try_connect_to_server(
     try:
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
-        requests.get(url, timeout=timeout, verify=os.getenv("AYON_CERT_FILE"))
+        requests.get(
+            url, timeout=timeout, verify=os.getenv("AYON_CERT_FILE")
+        )
 
     except BaseException:
         return False
