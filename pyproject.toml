@@ -1,6 +1,6 @@
 [project]
 name = "ayon-python-api"
-version = "1.1.1"
+version = "1.1.2-dev"
 description = "AYON Python API"
 license = {file = "LICENSE"}
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -28,7 +28,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "ayon-python-api"
-version = "1.1.1"
+version = "1.1.2-dev"
 description = "AYON Python API"
 authors = [
     "ynput.io <info@ynput.io>"
