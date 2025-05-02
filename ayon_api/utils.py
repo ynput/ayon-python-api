@@ -322,18 +322,38 @@ def _try_parse_url(url: str) -> Optional[str]:
 
 
 def _try_connect_to_server(
-    url: str, timeout: Optional[float] = None
-) -> bool:
+    url: str,
+    timeout: Optional[float],
+    verify: Optional["Union[str, bool]"],
+    cert: Optional[str],
+) -> Optional[str]:
     if timeout is None:
         timeout = get_default_timeout()
+
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
     try:
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
-        requests.get(url, timeout=timeout)
+        response = requests.get(
+            url,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+        )
+        if response.history:
+            return response.history[-1].headers["location"].rstrip("/")
+        return url
 
-    except BaseException:
-        return False
-    return True
+    except Exception:
+        print(f"Failed to connect to '{url}'")
+        traceback.print_exc()
+
+    return None
 
 
 def login_to_server(
