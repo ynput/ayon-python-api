@@ -1257,6 +1257,7 @@ class ServerAPI(object):
             "Content-Type": content_type,
             "x-ayon-platform": platform.system().lower(),
             "x-ayon-hostname": platform.node(),
+            "referer": self.get_base_url(),
         }
         if self._site_id is not None:
             headers["x-ayon-site-id"] = self._site_id
