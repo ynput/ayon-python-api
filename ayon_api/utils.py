@@ -483,7 +483,12 @@ def is_token_valid(
     return False
 
 
-def validate_url(url: str, timeout: Optional[int] = None) -> str:
+def validate_url(
+    url: str,
+    timeout: Optional[int] = None,
+    verify: Optional["Union[str, bool]"] = None,
+    cert: Optional[str] = None,
+) -> str:
     """Validate url if is valid and server is available.
 
     Validation checks if can be parsed as url and contains scheme.
@@ -540,12 +545,23 @@ def validate_url(url: str, timeout: Optional[int] = None) -> str:
     # Try add 'https://' scheme if is missing
     # - this will trigger UrlError if both will crash
     if not parsed_url.scheme:
-        new_url = "https://" + modified_url
-        if _try_connect_to_server(new_url, timeout=timeout):
+        new_url = _try_connect_to_server(
+            "http://" + modified_url,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+        )
+        if new_url:
             return new_url
 
-    if _try_connect_to_server(modified_url, timeout=timeout):
-        return modified_url
+    new_url = _try_connect_to_server(
+        modified_url,
+        timeout=timeout,
+        verify=verify,
+        cert=cert,
+    )
+    if new_url:
+        return new_url
 
     hints = []
     if "/" in parsed_url.path or not parsed_url.scheme:
