@@ -4,6 +4,7 @@ import datetime
 import uuid
 import string
 import platform
+import traceback
 import collections
 from urllib.parse import urlparse, urlencode
 import typing
@@ -322,18 +323,38 @@ def _try_parse_url(url: str) -> Optional[str]:
 
 
 def _try_connect_to_server(
-    url: str, timeout: Optional[float] = None
-) -> bool:
+    url: str,
+    timeout: Optional[float],
+    verify: Optional["Union[str, bool]"],
+    cert: Optional[str],
+) -> Optional[str]:
     if timeout is None:
         timeout = get_default_timeout()
+
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
     try:
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
-        requests.get(url, timeout=timeout)
+        response = requests.get(
+            url,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+        )
+        if response.history:
+            return response.history[-1].headers["location"].rstrip("/")
+        return url
 
-    except BaseException:
-        return False
-    return True
+    except Exception:
+        print(f"Failed to connect to '{url}'")
+        traceback.print_exc()
+
+    return None
 
 
 def login_to_server(
@@ -463,7 +484,12 @@ def is_token_valid(
     return False
 
 
-def validate_url(url: str, timeout: Optional[int] = None) -> str:
+def validate_url(
+    url: str,
+    timeout: Optional[int] = None,
+    verify: Optional["Union[str, bool]"] = None,
+    cert: Optional[str] = None,
+) -> str:
     """Validate url if is valid and server is available.
 
     Validation checks if can be parsed as url and contains scheme.
@@ -520,12 +546,23 @@ def validate_url(url: str, timeout: Optional[int] = None) -> str:
     # Try add 'https://' scheme if is missing
     # - this will trigger UrlError if both will crash
     if not parsed_url.scheme:
-        new_url = "https://" + modified_url
-        if _try_connect_to_server(new_url, timeout=timeout):
+        new_url = _try_connect_to_server(
+            "http://" + modified_url,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+        )
+        if new_url:
             return new_url
 
-    if _try_connect_to_server(modified_url, timeout=timeout):
-        return modified_url
+    new_url = _try_connect_to_server(
+        modified_url,
+        timeout=timeout,
+        verify=verify,
+        cert=cert,
+    )
+    if new_url:
+        return new_url
 
     hints = []
     if "/" in parsed_url.path or not parsed_url.scheme:
