@@ -1250,7 +1250,9 @@ class ServerAPI(object):
 
         response = self.get(f"users/{username}")
         response.raise_for_status()
-        return response.data
+        user = response.data
+        fill_own_attribs(user)
+        return user
 
     def get_headers(
         self, content_type: Optional[str] = None
