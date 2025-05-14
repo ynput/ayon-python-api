@@ -1,5 +1,5 @@
 [project]
-name = "ayon_api"
+name = "ayon-python-api"
 version = "1.1.4-dev"
 description = "AYON Python API"
 license = {file = "LICENSE"}
@@ -27,7 +27,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "ayon_api"
+name = "ayon-python-api"
 version = "1.1.4-dev"
 description = "AYON Python API"
 authors = [
