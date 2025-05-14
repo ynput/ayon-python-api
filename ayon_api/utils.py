@@ -96,7 +96,6 @@ def get_machine_name() -> str:
         str: Machine name.
 
     """
-    return platform.node()
     return unidecode.unidecode(platform.node())
 
 
