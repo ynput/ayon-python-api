@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload Python Package
+name: ⬆️ Upload Python Package
 
 on:
   release:
@@ -17,8 +17,10 @@ permissions:
 
 jobs:
   deploy:
-
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ayon-python-api
 
     steps:
     - uses: actions/checkout@v3
