@@ -96,6 +96,7 @@ from .utils import (
     NOT_SET,
     get_media_mime_type,
     SortOrder,
+    get_machine_name,
 )
 
 if typing.TYPE_CHECKING:
@@ -1263,7 +1264,7 @@ class ServerAPI(object):
         headers = {
             "Content-Type": content_type,
             "x-ayon-platform": platform.system().lower(),
-            "x-ayon-hostname": platform.node(),
+            "x-ayon-hostname": get_machine_name(),
             "referer": self.get_base_url(),
         }
         if self._site_id is not None:

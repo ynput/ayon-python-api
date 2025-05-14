@@ -89,6 +89,17 @@ def get_default_settings_variant() -> str:
     return os.environ.get(DEFAULT_VARIANT_ENV_KEY) or "production"
 
 
+def get_machine_name() -> str:
+    """Get machine name.
+
+    Returns:
+        str: Machine name.
+
+    """
+    return platform.node()
+    return unidecode.unidecode(platform.node())
+
+
 def get_default_site_id() -> Optional[str]:
     """Site id used for server connection.
 
