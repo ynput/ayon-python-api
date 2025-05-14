@@ -1187,8 +1187,9 @@ class ServerAPI(object):
 
         for parsed_data in query.continuous_query(self):
             for user in parsed_data["users"]:
-                user["accessGroups"] = json.loads(
-                    user["accessGroups"])
+                access_groups = user.get("accessGroups")
+                if isinstance(access_groups, str):
+                    user["accessGroups"] = json.loads(access_groups)
                 yield user
 
     def get_user_by_name(
