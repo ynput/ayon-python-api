@@ -1188,8 +1188,13 @@ class ServerAPI(object):
 
         for parsed_data in query.continuous_query(self):
             for user in parsed_data["users"]:
-                user["accessGroups"] = json.loads(
-                    user["accessGroups"])
+                access_groups = user.get("accessGroups")
+                if isinstance(access_groups, str):
+                    user["accessGroups"] = json.loads(access_groups)
+                all_attrib = user.get("allAttrib")
+                if isinstance(all_attrib, str):
+                    user["allAttrib"] = json.loads(all_attrib)
+                fill_own_attribs(user)
                 yield user
 
     def get_user_by_name(
@@ -1246,7 +1251,9 @@ class ServerAPI(object):
 
         response = self.get(f"users/{username}")
         response.raise_for_status()
-        return response.data
+        user = response.data
+        fill_own_attribs(user)
+        return user
 
     def get_headers(
         self, content_type: Optional[str] = None
