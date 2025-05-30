@@ -6019,7 +6019,7 @@ class ServerAPI(object):
         """Types of products available in a project.
 
         Filter only product types available in a project.
-I
+
         Args:
             project_name (str): Name of the project where to look for
                 product types.
