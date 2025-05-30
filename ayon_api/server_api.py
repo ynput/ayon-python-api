@@ -40,6 +40,7 @@ from .constants import (
     SERVER_RETRIES_ENV_KEY,
     DEFAULT_FOLDER_TYPE_FIELDS,
     DEFAULT_TASK_TYPE_FIELDS,
+    DEFAULT_PRODUCT_BASE_TYPE_FIELDS,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
@@ -57,6 +58,7 @@ from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
     project_graphql_query,
     projects_graphql_query,
+    project_product_base_types_query,
     project_product_types_query,
     product_types_query,
     folders_graphql_query,
@@ -130,6 +132,7 @@ if typing.TYPE_CHECKING:
 
         ProjectHierarchyDict,
         ProductTypeDict,
+        ProductBaseTypeDict,
         StreamType,
     )
 
@@ -2759,6 +2762,9 @@ class ServerAPI(object):
 
         elif entity_type == "taskType":
             entity_type_defaults = set(DEFAULT_TASK_TYPE_FIELDS)
+
+        elif entity_type == "productBaseType":
+            entity_type_defaults = set(DEFAULT_PRODUCT_BASE_TYPE_FIELDS)
 
         elif entity_type == "productType":
             entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
@@ -5748,6 +5754,7 @@ class ServerAPI(object):
         product_ids: Optional[Iterable[str]] = None,
         product_names: Optional[Iterable[str]]=None,
         folder_ids: Optional[Iterable[str]]=None,
+        product_base_types: Optional[Iterable[str]]=None,
         product_types: Optional[Iterable[str]]=None,
         product_name_regex: Optional[str] = None,
         product_path_regex: Optional[str] = None,
@@ -5760,9 +5767,9 @@ class ServerAPI(object):
     ) -> Generator["ProductDict", None, None]:
         """Query products from server.
 
-        Todos:
-            Separate 'name_by_folder_ids' filtering to separated method. It
-                cannot be combined with some other filters.
+        Todo:
+            - Separate 'name_by_folder_ids' filtering to separated method. It
+              cannot be combined with some other filters.
 
         Args:
             project_name (str): Name of project.
@@ -5771,11 +5778,14 @@ class ServerAPI(object):
                 filtering.
             folder_ids (Optional[Iterable[str]]): Ids of task parents.
                 Use 'None' if folder is direct child of project.
+            product_base_types (Optional[Iterable[str]]): Product base types
+                filtering.
             product_types (Optional[Iterable[str]]): Product types used for
                 filtering.
             product_name_regex (Optional[str]): Filter products by name regex.
             product_path_regex (Optional[str]): Filter products by path regex.
-                Path starts with folder path and ends with product name.
+                Path starts with the folder path and ends with
+                the product name.
             names_by_folder_ids (Optional[dict[str, Iterable[str]]]): Product
                 name filtering by folder id.
             statuses (Optional[Iterable[str]]): Product statuses used
@@ -5785,7 +5795,7 @@ class ServerAPI(object):
             active (Optional[bool]): Filter active/inactive products.
                 Both are returned if is set to None.
             fields (Optional[Iterable[str]]): Fields to be queried for
-                folder. All possible folder fields are returned
+                the folder. All possible folder fields are returned
                 if 'None' is passed.
             own_attributes (Optional[bool]): DEPRECATED: Not supported for
                 products.
@@ -5863,6 +5873,7 @@ class ServerAPI(object):
         if not _prepare_list_filters(
             filters,
             ("productIds", product_ids),
+            ("productBaseTypes", product_base_types),
             ("productTypes", product_types),
             ("productStatuses", statuses),
             ("productTags", tags),
@@ -5947,7 +5958,7 @@ class ServerAPI(object):
         product_name: str,
         folder_id: str,
         fields: Optional[Iterable[str]] = None,
-        own_attributes=_PLACEHOLDER
+        own_attributes=_PLACEHOLDER,
     ) -> Optional["ProductDict"]:
         """Query product entity by name and folder id.
 
@@ -5972,7 +5983,7 @@ class ServerAPI(object):
             folder_ids=[folder_id],
             active=None,
             fields=fields,
-            own_attributes=own_attributes
+            own_attributes=own_attributes,
         )
         for product in products:
             return product
@@ -5983,8 +5994,8 @@ class ServerAPI(object):
     ) -> List["ProductTypeDict"]:
         """Types of products.
 
-        This is server wide information. Product types have 'name', 'icon' and
-            'color'.
+        This is the server-wide information. Product types have
+        'name', 'icon' and 'color'.
 
         Args:
             fields (Optional[Iterable[str]]): Product types fields to query.
@@ -6005,12 +6016,12 @@ class ServerAPI(object):
     def get_project_product_types(
         self, project_name: str, fields: Optional[Iterable[str]] = None
     ) -> List["ProductTypeDict"]:
-        """Types of products available on a project.
+        """Types of products available in a project.
 
-        Filter only product types available on project.
-
+        Filter only product types available in a project.
+I
         Args:
-            project_name (str): Name of project where to look for
+            project_name (str): Name of the project where to look for
                 product types.
             fields (Optional[Iterable[str]]): Product types fields to query.
 
@@ -6068,12 +6079,102 @@ class ServerAPI(object):
             )
         }
 
+    def get_product_base_types(
+        self, fields: Optional[Iterable[str]] = None
+    ) -> List["ProductBaseTypeDict"]:
+        """Types of product base types.
+
+        Args:
+            fields (Optional[Iterable[str]]): Product base types fields
+                to query.
+
+        Returns:
+            list[ProductBaseTypeDict]: Product base types information.
+
+        """
+        if not fields:
+            fields = self.get_default_fields_for_type("productBaseType")
+
+        query = product_types_query(fields)
+
+        parsed_data = query.query(self)
+
+        return parsed_data.get("productBaseTypes", [])
+
+
+    def get_project_product_base_types(
+        self,
+        project_name: str,
+        fields: Optional[Iterable[str]] = None
+    ) -> List["ProductBaseTypeDict"]:
+        """Product base types available in a project.
+
+        Filter only product base types available in a project.
+
+        Args:
+            project_name (str): Name of the project where to look for
+                product base types.
+            fields (Optional[Iterable[str]]): Product types fields to query.
+
+        Returns:
+            List[ProductBaseTypeDict]: Product Base types information.
+
+        """
+        if not fields:
+            fields = self.get_default_fields_for_type("productBaseType")
+
+        query = project_product_base_types_query(fields)
+        query.set_variable_value("projectName", project_name)
+
+        parsed_data = query.query(self)
+
+        return parsed_data.get("project", {}).get("productBaseTypes", [])
+
+
+    def get_product_base_type_names(
+        self,
+        project_name: Optional[str] = None,
+        product_ids: Optional[Iterable[str]] = None,
+    ) -> Set[str]:
+        """Get projects roduct base type names.
+
+        Args:
+            project_name (Optional[str]): Name of project where to look for
+                queried entities.
+            product_ids (Optional[Iterable[str]]): Product ids filter. Can be
+                used only with 'project_name'.
+
+        Returns:
+            set[str]: Product base type names used in the project.
+
+        """
+        if project_name and product_ids:
+            products = self.get_products(
+                project_name,
+                product_ids=product_ids,
+                fields=["productBaseType"],
+                active=None,
+            )
+            return {
+                product["productBaseType"]
+                for product in products
+            }
+
+        return {
+            product_info["name"]
+            for product_info in self.get_project_product_base_types(
+                project_name, fields=["name"]
+            )
+        }
+
+
     def create_product(
         self,
         project_name: str,
         name: str,
         product_type: str,
         folder_id: str,
+        product_base_type: Optional[str] = None,
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
         tags: Optional[Iterable[str]] =None,
@@ -6081,13 +6182,14 @@ class ServerAPI(object):
         active: "Union[bool, None]" = None,
         product_id: Optional[str] = None,
     ) -> str:
-        """Create new product.
+        """Create a new product.
 
         Args:
             project_name (str): Project name.
             name (str): Product name.
             product_type (str): Product type.
             folder_id (str): Parent folder id.
+            product_base_type (Optional[str]): Product base type.
             attrib (Optional[dict[str, Any]]): Product attributes.
             data (Optional[dict[str, Any]]): Product data.
             tags (Optional[Iterable[str]]): Product tags.
@@ -6095,6 +6197,11 @@ class ServerAPI(object):
             active (Optional[bool]): Product active state.
             product_id (Optional[str]): Product id. If not passed new id is
                 generated.
+
+        Todo:
+            - Once the product base type is implemented and established,
+              it should be made mandatory to pass it and product_type
+              itself should be optional.
 
         Returns:
             str: Product id.
@@ -6105,6 +6212,7 @@ class ServerAPI(object):
         create_data = {
             "id": product_id,
             "name": name,
+            "productBaseType": product_base_type,
             "productType": product_type,
             "folderId": folder_id,
         }
@@ -6131,6 +6239,7 @@ class ServerAPI(object):
         product_id: str,
         name: Optional[str] = None,
         folder_id: Optional[str] = None,
+        product_base_type: Optional[str] = None,
         product_type: Optional[str] = None,
         attrib: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
@@ -6150,6 +6259,7 @@ class ServerAPI(object):
             product_id (str): Product id.
             name (Optional[str]): New product name.
             folder_id (Optional[str]): New product id.
+            product_base_type (Optional[str]): New product base type.
             product_type (Optional[str]): New product type.
             attrib (Optional[dict[str, Any]]): New product attributes.
             data (Optional[dict[str, Any]]): New product data.
@@ -6158,20 +6268,21 @@ class ServerAPI(object):
             active (Optional[bool]): New product active state.
 
         """
-        update_data = {}
-        for key, value in (
-            ("name", name),
-            ("productType", product_type),
-            ("folderId", folder_id),
-            ("attrib", attrib),
-            ("data", data),
-            ("tags", tags),
-            ("status", status),
-            ("active", active),
-        ):
-            if value is not None:
-                update_data[key] = value
-
+        update_data = {
+            key: value
+            for key, value in (
+                ("name", name),
+                ("productBaseType", product_base_type),
+                ("productType", product_type),
+                ("folderId", folder_id),
+                ("attrib", attrib),
+                ("data", data),
+                ("tags", tags),
+                ("status", status),
+                ("active", active),
+            )
+            if value is not None
+        }
         response = self.patch(
             f"projects/{project_name}/products/{product_id}",
             **update_data

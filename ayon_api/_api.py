@@ -65,6 +65,7 @@ if typing.TYPE_CHECKING:
         FlatFolderDict,
         ProjectHierarchyDict,
         ProductTypeDict,
+        ProductBaseTypeDict,
         StreamType,
     )
 
@@ -4328,6 +4329,7 @@ def get_products(
     product_names: Optional[Iterable[str]] = None,
     folder_ids: Optional[Iterable[str]] = None,
     product_types: Optional[Iterable[str]] = None,
+    product_base_types: Optional[Iterable[str]] = None,
     product_name_regex: Optional[str] = None,
     product_path_regex: Optional[str] = None,
     names_by_folder_ids: Optional[Dict[str, Iterable[str]]] = None,
@@ -4337,21 +4339,22 @@ def get_products(
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
 ) -> Generator["ProductDict", None, None]:
-    """Query products from server.
+    """Query products from the server.
 
     Todos:
         Separate 'name_by_folder_ids' filtering to separated method. It
             cannot be combined with some other filters.
 
     Args:
-        project_name (str): Name of project.
+        project_name (str): Name of the project.
         product_ids (Optional[Iterable[str]]): Task ids to filter.
         product_names (Optional[Iterable[str]]): Task names used for
             filtering.
         folder_ids (Optional[Iterable[str]]): Ids of task parents.
-            Use 'None' if folder is direct child of project.
+            Use 'None' if folder is direct child of the project.
         product_types (Optional[Iterable[str]]): Product types used for
             filtering.
+        product_base_types (Optional[Iterable[str]]): Product base types
         product_name_regex (Optional[str]): Filter products by name regex.
         product_path_regex (Optional[str]): Filter products by path regex.
             Path starts with folder path and ends with product name.
@@ -4380,6 +4383,7 @@ def get_products(
         product_names=product_names,
         folder_ids=folder_ids,
         product_types=product_types,
+        product_base_types=product_base_types,
         product_name_regex=product_name_regex,
         product_path_regex=product_path_regex,
         names_by_folder_ids=names_by_folder_ids,
@@ -4461,7 +4465,7 @@ def get_product_types(
 ) -> List["ProductTypeDict"]:
     """Types of products.
 
-    This is server wide information. Product types have 'name', 'icon' and
+    This is the server-wide information. Product types have 'name', 'icon' and
         'color'.
 
     Args:
@@ -4473,6 +4477,27 @@ def get_product_types(
     """
     con = get_server_api_connection()
     return con.get_product_types(
+        fields=fields,
+    )
+
+
+def get_product_base_types(
+    fields: Optional[Iterable[str]] = None,
+) -> List["ProductBaseTypeDict"]:
+    """Base types of products.
+
+    This is the server-wide information. Product base types have 'name', 'icon'
+        and 'color'.
+
+    Args:
+        fields (Optional[Iterable[str]]): Product base types fields to query.
+
+    Returns:
+        list[ProductBaseTypeDict]: Product base types information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_base_types(
         fields=fields,
     )
 
@@ -4501,6 +4526,30 @@ def get_project_product_types(
     )
 
 
+def get_project_product_base_types(
+    project_name: str,
+    fields: Optional[Iterable[str]] = None,
+) -> List["ProductBaseTypeDict"]:
+    """Base types of products available in a project.
+
+    Filter only product base types available in a project.
+
+    Args:
+        project_name (str): Name of project where to look for
+            product base types.
+        fields (Optional[Iterable[str]]): Product base types fields to query.
+
+    Returns:
+        List[ProductBaseTypeDict]: Product base types information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_product_base_types(
+        project_name=project_name,
+        fields=fields,
+    )
+
+
 def get_product_type_names(
     project_name: Optional[str] = None,
     product_ids: Optional[Iterable[str]] = None,
@@ -4523,6 +4572,33 @@ def get_product_type_names(
     """
     con = get_server_api_connection()
     return con.get_product_type_names(
+        project_name=project_name,
+        product_ids=product_ids,
+    )
+
+
+def get_product_base_type_names(
+    project_name: Optional[str] = None,
+    product_ids: Optional[Iterable[str]] = None,
+) -> Set[str]:
+    """Base product type names.
+
+    Warnings:
+        Similar use case as `get_product_type_names` but for base
+        product types.
+
+    Args:
+        project_name (Optional[str]): Name of project where to look for
+            queried entities.
+        product_ids (Optional[Iterable[str]]): Product ids filter. Can be
+            used only with 'project_name'.
+
+    Returns:
+        set[str]: Base product type names.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_base_type_names(
         project_name=project_name,
         product_ids=product_ids,
     )
