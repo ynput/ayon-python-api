@@ -48,6 +48,13 @@ DEFAULT_PRODUCT_TYPE_FIELDS = {
     "color",
 }
 
+# --- Product base type ---
+DEFAULT_PRODUCT_BASE_TYPE_FIELDS = {
+    "name",
+    "icon",
+    "color",
+}
+
 # --- Project ---
 DEFAULT_PROJECT_FIELDS = {
     "active",
