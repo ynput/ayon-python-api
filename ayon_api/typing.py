@@ -352,4 +352,9 @@ class ProductTypeDict(TypedDict):
     icon: Optional[str]
 
 
+class ProductBaseTypeDict(TypedDict):
+    name: str
+    color: Optional[str]
+    icon: Optional[str]
+
 StreamType = Union[io.BytesIO, BinaryIO]

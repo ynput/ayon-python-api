@@ -435,6 +435,7 @@ class EntityHub(object):
         self,
         name: str,
         product_type: str,
+        product_base_type: Optional[str] = None,
         folder_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
@@ -443,10 +444,11 @@ class EntityHub(object):
         entity_id: Optional[str] = None,
         created: Optional[bool] = True,
     ):
-        """Create task object and add it to entity hub.
+        """Create a task object and add it to the entity hub.
 
         Args:
             name (str): Name of entity.
+            product_base_type (str): Base type of product.
             product_type (str): Type of product.
             folder_id (Union[str, None]): Parent folder id.
             tags (Optional[Iterable[str]]): Folder tags.
@@ -458,6 +460,11 @@ class EntityHub(object):
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
 
+        Todo:
+            - Once the product base type is implemented and established,
+              it should be made mandatory to pass it and product_type
+              itself should be optional.
+
         Returns:
             ProductEntity: Added product entity.
 
@@ -465,6 +472,7 @@ class EntityHub(object):
         product_entity = ProductEntity(
             name=name,
             product_type=product_type,
+            product_base_type=product_base_type,
             folder_id=folder_id,
             tags=tags,
             attribs=attribs,
@@ -3406,6 +3414,7 @@ class TaskEntity(BaseEntity):
 class ProductEntity(BaseEntity):
     _supports_name = True
     _supports_tags = True
+    _supports_base_type = True
 
     entity_type = "product"
     parent_entity_types = ["folder"]
@@ -3414,6 +3423,7 @@ class ProductEntity(BaseEntity):
         self,
         name: str,
         product_type: str,
+        product_base_type: Optional[str] = None,
         folder_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
@@ -3435,6 +3445,7 @@ class ProductEntity(BaseEntity):
             entity_hub=entity_hub,
         )
         self._product_type = product_type
+        self._product_base_type = product_base_type
 
         self._orig_product_type = product_type
 
@@ -3453,6 +3464,21 @@ class ProductEntity(BaseEntity):
         self._product_type = product_type
 
     product_type = property(get_product_type, set_product_type)
+
+    def get_product_base_type(self) -> Optional[str]:
+        """Get the product base type.
+
+        Returns:
+            Optional[str]: The product base type, or None if not set.
+
+        """
+        return self._product_base_type
+
+    def set_product_base_type(self, product_base_type: str) -> None:
+        """Set the product base type."""
+        self._product_base_type = product_base_type
+
+    product_base_type = property(get_product_base_type, set_product_base_type)
 
     def lock(self):
         super().lock()
@@ -3475,6 +3501,7 @@ class ProductEntity(BaseEntity):
         return cls(
             name=product["name"],
             product_type=product["productType"],
+            product_base_type=product["productBaseType"],
             folder_id=product["folderId"],
             tags=product["tags"],
             attribs=product["attrib"],
@@ -3492,6 +3519,7 @@ class ProductEntity(BaseEntity):
         output = {
             "name": self.name,
             "productType": self.product_type,
+            "productBaseType": self.product_base_type,
             "folderId": self.parent_id,
         }
 
