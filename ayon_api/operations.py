@@ -114,14 +114,14 @@ def new_folder_entity(
 
 def new_product_entity(
     name: str,
-    produc_base_type: str,
     product_type: str,
     folder_id: str,
     status: Optional[str] = None,
     tags: Optional[list[str]] = None,
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
-    entity_id: Optional[str] = None
+    entity_id: Optional[str] = None,
+    product_base_type: Optional[str] = None,
 ) -> dict[str, Any]:
     """Create skeleton data of the product entity.
 
@@ -158,6 +158,9 @@ def new_product_entity(
         "data": data,
         "folderId": _create_or_convert_to_id(folder_id),
     }
+    if product_base_type:
+        output["productBaseType"] = product_base_type
+
     if status:
         output["status"] = status
     if tags:
@@ -1096,7 +1099,6 @@ class OperationsSession(object):
         self,
         project_name: str,
         name: str,
-        product_base_type: str,
         product_type: str,
         folder_id: str,
         attrib: Optional[dict[str, Any]] = None,
@@ -1105,6 +1107,7 @@ class OperationsSession(object):
         status: Optional[str] = None,
         active: Optional[bool] = None,
         product_id: Optional[str] = None,
+        product_base_type: Optional[str] = None,
     ) -> CreateOperation:
         """Create a new product.
 
@@ -1112,7 +1115,6 @@ class OperationsSession(object):
             project_name (str): Project name.
             name (str): Product name.
             product_base_type (str): Base type of the product, e.g. "render",
-            product_type (str): Product type.
             folder_id (str): Parent folder id.
             attrib (Optional[dict[str, Any]]): Product attributes.
             data (Optional[dict[str, Any]]): Product data.
@@ -1121,6 +1123,7 @@ class OperationsSession(object):
             active (Optional[bool]): Product active state.
             product_id (Optional[str]): Product id. If not passed new id is
                 generated.
+            product_base_type (Optional[str]): Product base type.
 
         Returns:
             CreateOperation: Object of create operation.
@@ -1131,16 +1134,17 @@ class OperationsSession(object):
         create_data = {
             "id": product_id,
             "name": name,
-            "productBaseType": product_base_type,
             "productType": product_type,
             "folderId": folder_id,
         }
+
         for key, value in (
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
             ("status", status),
             ("active", active),
+            ("productBaseType", product_base_type)
         ):
             if value is not None:
                 create_data[key] = value
