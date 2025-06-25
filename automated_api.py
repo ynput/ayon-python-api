@@ -22,11 +22,20 @@ import typing
 # Fake modules to avoid import errors
 
 requests = type(sys)("requests")
+requests_adapters = type(sys)("requests.adapters")
 requests.__dict__["Response"] = type(
     "Response", (), {"__module__": "requests"}
 )
+requests.__dict__["adapters"] = requests_adapters
+requests_adapters.__dict__["HTTPAdapter"] = type(
+    "HTTPAdapter", (), {"__module__": "requests.adapters"}
+)
+requests_adapters.__dict__["Retry"] = type(
+    "Retry", (), {"__module__": "requests.adapters"}
+)
 
 sys.modules["requests"] = requests
+sys.modules["requests.adapters"] = requests_adapters
 sys.modules["unidecode"] = type(sys)("unidecode")
 
 import ayon_api  # noqa: E402
