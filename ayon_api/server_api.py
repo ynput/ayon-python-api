@@ -6049,7 +6049,9 @@ class ServerAPI(object):
             set[str]: Product type names.
 
         """
-        if project_name and product_ids:
+        if project_name:
+            if not product_ids:
+                return set()
             products = self.get_products(
                 project_name,
                 product_ids=product_ids,
@@ -6063,9 +6065,7 @@ class ServerAPI(object):
 
         return {
             product_info["name"]
-            for product_info in self.get_project_product_types(
-                project_name, fields=["name"]
-            )
+            for product_info in self.get_product_types(project_name)
         }
 
     def create_product(
