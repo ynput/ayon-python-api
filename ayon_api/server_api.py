@@ -1108,7 +1108,6 @@ class ServerAPI(object):
             )
         return self._graphql_allows_traits_in_representations
 
-
     def _get_user_info(self) -> Optional[Dict[str, Any]]:
         if self._access_token is None:
             return None
