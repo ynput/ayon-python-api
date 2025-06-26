@@ -30,15 +30,41 @@ DEFAULT_USER_FIELDS = {
     "attrib.fullName",
 }
 
-# --- Folder types ---
+# --- Project folder types ---
 DEFAULT_FOLDER_TYPE_FIELDS = {
     "name",
     "icon",
 }
 
-# --- Task types ---
+# --- Project task types ---
 DEFAULT_TASK_TYPE_FIELDS = {
     "name",
+}
+
+# --- Project tags ---
+DEFAULT_PROJECT_TAGS_FIELDS = {
+    "name",
+    "color",
+}
+
+# --- Project statuses ---
+DEFAULT_PROJECT_STATUSES_FIELDS = {
+    "color",
+    "icon",
+    "name",
+    "scope",
+    "shortName",
+    "state",
+}
+
+# --- Project link types ---
+DEFAULT_PROJECT_LINK_TYPES_FIELDS = {
+    "color",
+    "inputType",
+    "linkType",
+    "name",
+    "outputType",
+    "style",
 }
 
 # --- Product types ---
