@@ -4481,12 +4481,12 @@ def get_project_product_types(
     project_name: str,
     fields: Optional[Iterable[str]] = None,
 ) -> List["ProductTypeDict"]:
-    """Types of products available on a project.
+    """DEPRECATED Types of products available in a project.
 
-    Filter only product types available on project.
+    Filter only product types available in a project.
 
     Args:
-        project_name (str): Name of project where to look for
+        project_name (str): Name of the project where to look for
             product types.
         fields (Optional[Iterable[str]]): Product types fields to query.
 
@@ -4505,7 +4505,7 @@ def get_product_type_names(
     project_name: Optional[str] = None,
     product_ids: Optional[Iterable[str]] = None,
 ) -> Set[str]:
-    """Product type names.
+    """DEPRECATED Product type names.
 
     Warnings:
         This function will be probably removed. Matters if 'products_id'
