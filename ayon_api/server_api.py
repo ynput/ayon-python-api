@@ -4419,7 +4419,6 @@ class ServerAPI(object):
         for project_name in self.get_project_names(active, library):
             project = self.get_rest_project(project_name)
             if project:
-                self._fill_project_entity_data(project)
                 yield project
 
     def get_rest_entity_by_id(
@@ -4609,23 +4608,23 @@ class ServerAPI(object):
             )
             return
 
-        p_by_name = {}
         if use_graphql:
-            p_by_name = {
-                p["name"]: p
-                for p in self._get_graphql_projects(
-                    active,
-                    library,
-                    fields={"name", "productTypes"},
-                    own_attributes=own_attributes,
-                )
-            }
+            for graphql_project in self._get_graphql_projects(
+                active,
+                library,
+                fields={"name", "productTypes"},
+                own_attributes=own_attributes,
+            ):
+                project = self.get_project(graphql_project["name"])
+                if own_attributes:
+                    fill_own_attribs(project)
+                project["productTypes"] = graphql_project["productTypes"]
+                yield project
+            return
+
         for project in self.get_rest_projects(active, library):
             if own_attributes:
                 fill_own_attribs(project)
-            graphql_p = p_by_name.get(project["name"])
-            if graphql_p:
-                project["productTypes"] = graphql_p["productTypes"]
             yield project
 
     def get_project(
