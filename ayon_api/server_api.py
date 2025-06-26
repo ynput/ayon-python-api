@@ -25,6 +25,7 @@ except ImportError:
     HTTPStatus = None
 
 import requests
+
 try:
     # This should be used if 'requests' have it available
     from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
@@ -1588,7 +1589,6 @@ class ServerAPI(object):
             )
             statuses = states
 
-
         filters = {}
         if not _prepare_list_filters(
             filters,
@@ -1768,7 +1768,6 @@ class ServerAPI(object):
         response = self.delete(f"events/{event_id}")
         response.raise_for_status()
         return response
-
 
     def enroll_event_job(
         self,
@@ -9078,7 +9077,7 @@ class ServerAPI(object):
             if (maj_v, min_v, patch_v) > (1, 10, 0):
                 task_types_fields |= {"color", "icon", "shortName"}
             fields |= {f"taskTypes.{name}" for name in task_types_fields}
-        
+
         if "statuses" in fields:
             fields.remove("statuses")
             statuses_fields = set()
