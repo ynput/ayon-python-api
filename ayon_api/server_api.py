@@ -61,6 +61,7 @@ from .graphql_queries import (
     project_product_base_types_query,
     project_product_types_query,
     product_types_query,
+    product_base_types_query,
     folders_graphql_query,
     tasks_graphql_query,
     tasks_by_folder_paths_graphql_query,
@@ -6095,7 +6096,7 @@ class ServerAPI(object):
         if not fields:
             fields = self.get_default_fields_for_type("productBaseType")
 
-        query = product_types_query(fields)
+        query = product_base_types_query(fields)
 
         parsed_data = query.query(self)
 
