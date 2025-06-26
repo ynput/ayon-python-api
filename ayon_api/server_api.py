@@ -4781,6 +4781,34 @@ class ServerAPI(object):
             return project
         return None
 
+    def _get_graphql_projects(
+        self,
+        active: Optional[bool],
+        library: Optional[bool],
+        fields: Set[str],
+        own_attributes: bool,
+        project_name: Optional[str] = None
+    ):
+        if active is not None:
+            fields.add("active")
+
+        if library is not None:
+            fields.add("library")
+
+        self._prepare_fields("project", fields, own_attributes)
+
+        query = projects_graphql_query(fields)
+        if project_name is not None:
+            query.set_variable_value("projectName", project_name)
+
+        for parsed_data in query.continuous_query(self):
+            for project in parsed_data["projects"]:
+                if active is not None and active is not project["active"]:
+                    continue
+                if own_attributes:
+                    fill_own_attribs(project)
+                self._fill_project_entity_data(project)
+                yield project
 
     def get_folders_hierarchy(
         self,
