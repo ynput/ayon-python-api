@@ -4573,97 +4573,6 @@ class ServerAPI(object):
                 project_names.append(project["name"])
         return project_names
 
-    def _should_use_rest_project(
-        self, fields: Optional[Iterable[str]] = None
-    ) -> bool:
-        """Fetch of project must be done using REST endpoint.
-
-        Returns:
-            bool: REST endpoint must be used to get requested fields.
-
-        """
-        maj_v, min_v, patch_v, _, _ = self.server_version_tuple
-        # Up to 1.10.0 some project data were not available in GraphQl.
-        # - 'config', 'tags', 'linkTypes' and 'statuses' at all
-        # - 'taskTypes', 'folderTypes' with only limited data
-        if (maj_v, min_v, patch_v) > (1, 10, 0):
-            return False
-
-        for field in fields:
-            if (
-                field.startswith("config")
-                or field.startswith("folderTypes")
-                or field.startswith("taskTypes")
-                or field.startswith("linkTypes")
-                or field.startswith("statuses")
-                or field.startswith("tags")
-            ):
-                return True
-        return False
-
-    def _should_use_graphql_project(
-        self, fields: Optional[Iterable[str]] = None
-    ) -> bool:
-        """Fetch of project must be done using REST endpoint.
-
-        Returns:
-            bool: REST endpoint must be used to get requested fields.
-
-        """
-        for field in fields:
-            # Product types are available only in GraphQl
-            if field.startswith("productTypes"):
-                return True
-        return False
-
-    def _fill_project_entity_data(self, project):
-        # Add fake scope to statuses if not available
-        if "statuses" in project:
-            for status in project["statuses"]:
-                scope = status.get("scope")
-                if scope is None:
-                    status["scope"] = [
-                        "folder",
-                        "task",
-                        "product",
-                        "version",
-                        "representation",
-                        "workfile"
-                    ]
-
-        # Convert 'data' from string to dict if needed
-        if "data" in project:
-            project_data = project["data"]
-            if isinstance(project_data, str):
-                project_data = json.loads(project_data)
-                project["data"] = project_data
-
-            # Fill 'bundle' from data if is not filled
-            if "bundle" not in project:
-                bundle_data = project["data"].get("bundle", {})
-                prod_bundle = bundle_data.get("production")
-                staging_bundle = bundle_data.get("staging")
-                project["bundle"] = {
-                    "production": prod_bundle,
-                    "staging": staging_bundle,
-                }
-
-        # Convert 'config' from string to dict if needed
-        config = project.get("config")
-        if isinstance(config, str):
-            project["config"] = json.loads(config)
-
-        # Unifiy 'linkTypes' data structure from REST and GraphQL
-        if "linkTypes" in project:
-            for link_type in project["linkTypes"]:
-                if "data" in link_type:
-                    link_data = link_type.pop("data")
-                    link_type.update(link_data)
-                    if "style" not in link_type:
-                        link_type["style"] = None
-                    if "color" not in link_type:
-                        link_type["color"] = None
-
     def get_projects(
         self,
         active: "Union[bool, None]" = True,
@@ -4777,6 +4686,97 @@ class ServerAPI(object):
                 project["productTypes"] = graphql_p["productTypes"]
             return project
         return None
+
+    def _should_use_rest_project(
+        self, fields: Optional[Iterable[str]] = None
+    ) -> bool:
+        """Fetch of project must be done using REST endpoint.
+
+        Returns:
+            bool: REST endpoint must be used to get requested fields.
+
+        """
+        maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+        # Up to 1.10.0 some project data were not available in GraphQl.
+        # - 'config', 'tags', 'linkTypes' and 'statuses' at all
+        # - 'taskTypes', 'folderTypes' with only limited data
+        if (maj_v, min_v, patch_v) > (1, 10, 0):
+            return False
+
+        for field in fields:
+            if (
+                field.startswith("config")
+                or field.startswith("folderTypes")
+                or field.startswith("taskTypes")
+                or field.startswith("linkTypes")
+                or field.startswith("statuses")
+                or field.startswith("tags")
+            ):
+                return True
+        return False
+
+    def _should_use_graphql_project(
+        self, fields: Optional[Iterable[str]] = None
+    ) -> bool:
+        """Fetch of project must be done using REST endpoint.
+
+        Returns:
+            bool: REST endpoint must be used to get requested fields.
+
+        """
+        for field in fields:
+            # Product types are available only in GraphQl
+            if field.startswith("productTypes"):
+                return True
+        return False
+
+    def _fill_project_entity_data(self, project: Dict[str, Any]) -> None:
+        # Add fake scope to statuses if not available
+        if "statuses" in project:
+            for status in project["statuses"]:
+                scope = status.get("scope")
+                if scope is None:
+                    status["scope"] = [
+                        "folder",
+                        "task",
+                        "product",
+                        "version",
+                        "representation",
+                        "workfile"
+                    ]
+
+        # Convert 'data' from string to dict if needed
+        if "data" in project:
+            project_data = project["data"]
+            if isinstance(project_data, str):
+                project_data = json.loads(project_data)
+                project["data"] = project_data
+
+            # Fill 'bundle' from data if is not filled
+            if "bundle" not in project:
+                bundle_data = project["data"].get("bundle", {})
+                prod_bundle = bundle_data.get("production")
+                staging_bundle = bundle_data.get("staging")
+                project["bundle"] = {
+                    "production": prod_bundle,
+                    "staging": staging_bundle,
+                }
+
+        # Convert 'config' from string to dict if needed
+        config = project.get("config")
+        if isinstance(config, str):
+            project["config"] = json.loads(config)
+
+        # Unifiy 'linkTypes' data structure from REST and GraphQL
+        if "linkTypes" in project:
+            for link_type in project["linkTypes"]:
+                if "data" in link_type:
+                    link_data = link_type.pop("data")
+                    link_type.update(link_data)
+                    if "style" not in link_type:
+                        link_type["style"] = None
+                    if "color" not in link_type:
+                        link_type["color"] = None
 
     def _get_graphql_projects(
         self,
