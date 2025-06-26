@@ -60,7 +60,6 @@ from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
     project_graphql_query,
     projects_graphql_query,
-    project_product_types_query,
     product_types_query,
     folders_graphql_query,
     tasks_graphql_query,
@@ -6121,12 +6120,12 @@ class ServerAPI(object):
     def get_project_product_types(
         self, project_name: str, fields: Optional[Iterable[str]] = None
     ) -> List["ProductTypeDict"]:
-        """Types of products available on a project.
+        """DEPRECATED Types of products available in a project.
 
-        Filter only product types available on project.
+        Filter only product types available in a project.
 
         Args:
-            project_name (str): Name of project where to look for
+            project_name (str): Name of the project where to look for
                 product types.
             fields (Optional[Iterable[str]]): Product types fields to query.
 
@@ -6134,15 +6133,22 @@ class ServerAPI(object):
             List[ProductTypeDict]: Product types information.
 
         """
-        if not fields:
-            fields = self.get_default_fields_for_type("productType")
+        warnings.warn(
+            "Used deprecated function 'get_project_product_types'."
+            " Use 'get_project' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if fields is None:
+            fields = {"productTypes"}
+        else:
+            fields = {
+                f"productTypes.{key}"
+                for key in fields
+            }
 
-        query = project_product_types_query(fields)
-        query.set_variable_value("projectName", project_name)
-
-        parsed_data = query.query(self)
-
-        return parsed_data.get("project", {}).get("productTypes", [])
+        project = self.get_project(project_name, fields=fields)
+        return project["productTypes"]
 
     def get_product_type_names(
         self,
