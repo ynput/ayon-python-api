@@ -51,6 +51,7 @@ DEFAULT_PRODUCT_TYPE_FIELDS = {
 # --- Project ---
 DEFAULT_PROJECT_FIELDS = {
     "active",
+    "library",
     "name",
     "code",
     "config",
