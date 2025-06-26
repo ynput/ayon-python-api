@@ -6033,7 +6033,7 @@ class ServerAPI(object):
         project_name: Optional[str] = None,
         product_ids: Optional[Iterable[str]] = None,
     ) -> Set[str]:
-        """Product type names.
+        """DEPRECATED Product type names.
 
         Warnings:
             This function will be probably removed. Matters if 'products_id'
@@ -6049,6 +6049,12 @@ class ServerAPI(object):
             set[str]: Product type names.
 
         """
+        warnings.warn(
+            "Used deprecated function 'get_product_type_names'."
+            " Use 'get_product_types' or 'get_products' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if project_name:
             if not product_ids:
                 return set()
