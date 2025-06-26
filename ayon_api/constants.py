@@ -56,10 +56,14 @@ DEFAULT_PROJECT_FIELDS = {
     "code",
     "config",
     "createdAt",
+    "updatedAt",
     "data",
     "folderTypes",
     "taskTypes",
-    "productTypes",
+    "linkTypes",
+    "statuses",
+    "tags",
+    "attrib",
 }
 
 # --- Folders ---
