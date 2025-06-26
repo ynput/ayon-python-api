@@ -2732,6 +2732,9 @@ class ServerAPI(object):
 
         if entity_type == "project":
             entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
+            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+            if (maj_v, min_v, patch_v) > (1, 10, 0):
+                entity_type_defaults.add("productTypes")
 
         elif entity_type == "folder":
             entity_type_defaults = set(DEFAULT_FOLDER_FIELDS)
