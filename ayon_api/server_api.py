@@ -4598,10 +4598,37 @@ class ServerAPI(object):
             bool: REST endpoint must be used to get requested fields.
 
         """
-        if fields is None:
-            return True
+        maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+        # Up to 1.10.0 some project data were not available in GraphQl.
+        # - 'config', 'tags', 'linkTypes' and 'statuses' at all
+        # - 'taskTypes', 'folderTypes' with only limited data
+        if (maj_v, min_v, patch_v) > (1, 10, 0):
+            return False
+
         for field in fields:
-            if field.startswith("config"):
+            if (
+                field.startswith("config")
+                or field.startswith("folderTypes")
+                or field.startswith("taskTypes")
+                or field.startswith("linkTypes")
+                or field.startswith("statuses")
+                or field.startswith("tags")
+            ):
+                return True
+        return False
+
+    def _should_use_graphql_project(
+        self, fields: Optional[Iterable[str]] = None
+    ) -> bool:
+        """Fetch of project must be done using REST endpoint.
+
+        Returns:
+            bool: REST endpoint must be used to get requested fields.
+
+        """
+        for field in fields:
+            # Product types are available only in GraphQl
+            if field.startswith("productTypes"):
                 return True
         return False
 
