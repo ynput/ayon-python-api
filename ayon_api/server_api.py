@@ -6132,43 +6132,6 @@ class ServerAPI(object):
         return parsed_data.get("project", {}).get("productBaseTypes", [])
 
 
-    def get_product_base_type_names(
-        self,
-        project_name: Optional[str] = None,
-        product_ids: Optional[Iterable[str]] = None,
-    ) -> Set[str]:
-        """Get projects roduct base type names.
-
-        Args:
-            project_name (Optional[str]): Name of project where to look for
-                queried entities.
-            product_ids (Optional[Iterable[str]]): Product ids filter. Can be
-                used only with 'project_name'.
-
-        Returns:
-            set[str]: Product base type names used in the project.
-
-        """
-        if project_name and product_ids:
-            products = self.get_products(
-                project_name,
-                product_ids=product_ids,
-                fields=["productBaseType"],
-                active=None,
-            )
-            return {
-                product["productBaseType"]
-                for product in products
-            }
-
-        return {
-            product_info["name"]
-            for product_info in self.get_project_product_base_types(
-                project_name, fields=["name"]
-            )
-        }
-
-
     def create_product(
         self,
         project_name: str,
