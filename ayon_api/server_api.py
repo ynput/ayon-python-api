@@ -25,6 +25,7 @@ except ImportError:
     HTTPStatus = None
 
 import requests
+
 try:
     # This should be used if 'requests' have it available
     from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
@@ -40,6 +41,8 @@ from .constants import (
     SERVER_RETRIES_ENV_KEY,
     DEFAULT_FOLDER_TYPE_FIELDS,
     DEFAULT_TASK_TYPE_FIELDS,
+    DEFAULT_PROJECT_STATUSES_FIELDS,
+    DEFAULT_PROJECT_TAGS_FIELDS,
     DEFAULT_PRODUCT_TYPE_FIELDS,
     DEFAULT_PROJECT_FIELDS,
     DEFAULT_FOLDER_FIELDS,
@@ -55,9 +58,7 @@ from .constants import (
 )
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
-    project_graphql_query,
     projects_graphql_query,
-    project_product_types_query,
     product_types_query,
     folders_graphql_query,
     tasks_graphql_query,
@@ -1106,7 +1107,6 @@ class ServerAPI(object):
             )
         return self._graphql_allows_traits_in_representations
 
-
     def _get_user_info(self) -> Optional[Dict[str, Any]]:
         if self._access_token is None:
             return None
@@ -1587,7 +1587,6 @@ class ServerAPI(object):
             )
             statuses = states
 
-
         filters = {}
         if not _prepare_list_filters(
             filters,
@@ -1767,7 +1766,6 @@ class ServerAPI(object):
         response = self.delete(f"events/{event_id}")
         response.raise_for_status()
         return response
-
 
     def enroll_event_job(
         self,
@@ -2732,6 +2730,9 @@ class ServerAPI(object):
 
         if entity_type == "project":
             entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
+            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+            if (maj_v, min_v, patch_v) > (1, 10, 0):
+                entity_type_defaults.add("productTypes")
 
         elif entity_type == "folder":
             entity_type_defaults = set(DEFAULT_FOLDER_FIELDS)
@@ -2753,12 +2754,6 @@ class ServerAPI(object):
 
             if not self.graphql_allows_traits_in_representations:
                 entity_type_defaults.discard("traits")
-
-        elif entity_type == "folderType":
-            entity_type_defaults = set(DEFAULT_FOLDER_TYPE_FIELDS)
-
-        elif entity_type == "taskType":
-            entity_type_defaults = set(DEFAULT_TASK_TYPE_FIELDS)
 
         elif entity_type == "productType":
             entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
@@ -4397,18 +4392,7 @@ class ServerAPI(object):
         if response.status != 200:
             return None
         project = response.data
-        # Add fake scope to statuses if not available
-        for status in project["statuses"]:
-            scope = status.get("scope")
-            if scope is None:
-                status["scope"] = [
-                    "folder",
-                    "task",
-                    "product",
-                    "version",
-                    "representation",
-                    "workfile"
-                ]
+        self._fill_project_entity_data(project)
         return project
 
     def get_rest_projects(
@@ -4586,22 +4570,6 @@ class ServerAPI(object):
                 project_names.append(project["name"])
         return project_names
 
-    def _should_use_rest_project(
-        self, fields: Optional[Iterable[str]] = None
-    ) -> bool:
-        """Fetch of project must be done using REST endpoint.
-
-        Returns:
-            bool: REST endpoint must be used to get requested fields.
-
-        """
-        if fields is None:
-            return True
-        for field in fields:
-            if field.startswith("config"):
-                return True
-        return False
-
     def get_projects(
         self,
         active: "Union[bool, None]" = True,
@@ -4628,26 +4596,26 @@ class ServerAPI(object):
         if fields is not None:
             fields = set(fields)
 
-        use_rest = self._should_use_rest_project(fields)
-        if use_rest:
-            for project in self.get_rest_projects(active, library):
-                if own_attributes:
-                    fill_own_attribs(project)
-                yield project
-            return
+        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        projects_by_name = {}
+        if graphql_fields:
+            projects = list(self._get_graphql_projects(
+                active,
+                library,
+                fields=graphql_fields,
+                own_attributes=own_attributes,
+            ))
+            if not use_rest:
+                yield from projects
+                return
+            projects_by_name = {p["name"]: p for p in projects}
 
-        self._prepare_fields("project", fields, own_attributes)
-        if active is not None:
-            fields.add("active")
-
-        query = projects_graphql_query(fields)
-        for parsed_data in query.continuous_query(self):
-            for project in parsed_data["projects"]:
-                if active is not None and active is not project["active"]:
-                    continue
-                if own_attributes:
-                    fill_own_attribs(project)
-                yield project
+        for project in self.get_rest_projects(active, library):
+            name = project["name"]
+            graphql_p = projects_by_name.get(name)
+            if graphql_p:
+                project["productTypes"] = graphql_p["productTypes"]
+            yield project
 
     def get_project(
         self,
@@ -4672,27 +4640,132 @@ class ServerAPI(object):
         if fields is not None:
             fields = set(fields)
 
-        use_rest = self._should_use_rest_project(fields)
-        if use_rest:
-            project = self.get_rest_project(project_name)
-            if own_attributes:
-                fill_own_attribs(project)
-            return project
+        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        graphql_project = None
+        if graphql_fields:
+            graphql_project = next(self._get_graphql_projects(
+                None,
+                None,
+                fields=graphql_fields,
+                own_attributes=own_attributes,
+            ), None)
+            if not graphql_project or not use_rest:
+                return graphql_project
+
+        project = self.get_rest_project(project_name)
+        if own_attributes:
+            fill_own_attribs(project)
+        if graphql_project:
+            project["productTypes"] = graphql_project["productTypes"]
+        return project
+
+    def _get_project_graphql_fields(
+        self, fields: Optional[Set[str]]
+    ) -> Tuple[Set[str], bool]:
+        """Fetch of project must be done using REST endpoint.
+
+        Returns:
+            set[str]: GraphQl fields.
+
+        """
+        if fields is None:
+            return set(), True
+
+        has_product_types = False
+        graphql_fields = set()
+        for field in fields:
+            # Product types are available only in GraphQl
+            if field.startswith("productTypes"):
+                has_product_types = True
+                graphql_fields.add(field)
+
+        if not has_product_types:
+            return set(), True
+
+        inters = fields & {"name", "code", "active", "library"}
+        remainders = fields - (inters | graphql_fields)
+        if remainders:
+            graphql_fields.add("name")
+            return graphql_fields, True
+        graphql_fields |= inters
+        return graphql_fields, False
+
+    def _fill_project_entity_data(self, project: Dict[str, Any]) -> None:
+        # Add fake scope to statuses if not available
+        if "statuses" in project:
+            for status in project["statuses"]:
+                scope = status.get("scope")
+                if scope is None:
+                    status["scope"] = [
+                        "folder",
+                        "task",
+                        "product",
+                        "version",
+                        "representation",
+                        "workfile"
+                    ]
+
+        # Convert 'data' from string to dict if needed
+        if "data" in project:
+            project_data = project["data"]
+            if isinstance(project_data, str):
+                project_data = json.loads(project_data)
+                project["data"] = project_data
+
+            # Fill 'bundle' from data if is not filled
+            if "bundle" not in project:
+                bundle_data = project["data"].get("bundle", {})
+                prod_bundle = bundle_data.get("production")
+                staging_bundle = bundle_data.get("staging")
+                project["bundle"] = {
+                    "production": prod_bundle,
+                    "staging": staging_bundle,
+                }
+
+        # Convert 'config' from string to dict if needed
+        config = project.get("config")
+        if isinstance(config, str):
+            project["config"] = json.loads(config)
+
+        # Unifiy 'linkTypes' data structure from REST and GraphQL
+        if "linkTypes" in project:
+            for link_type in project["linkTypes"]:
+                if "data" in link_type:
+                    link_data = link_type.pop("data")
+                    link_type.update(link_data)
+                    if "style" not in link_type:
+                        link_type["style"] = None
+                    if "color" not in link_type:
+                        link_type["color"] = None
+
+    def _get_graphql_projects(
+        self,
+        active: Optional[bool],
+        library: Optional[bool],
+        fields: Set[str],
+        own_attributes: bool,
+        project_name: Optional[str] = None
+    ):
+        if active is not None:
+            fields.add("active")
+
+        if library is not None:
+            fields.add("library")
 
         self._prepare_fields("project", fields, own_attributes)
 
-        query = project_graphql_query(fields)
-        query.set_variable_value("projectName", project_name)
+        query = projects_graphql_query(fields)
+        if project_name is not None:
+            query.set_variable_value("projectName", project_name)
 
-        parsed_data = query.query(self)
-
-        project = parsed_data["project"]
-        if project is not None:
-            project["name"] = project_name
-            if own_attributes:
-                fill_own_attribs(project)
-
-        return project
+        for parsed_data in query.continuous_query(self):
+            for project in parsed_data["projects"]:
+                if active is not None and active is not project["active"]:
+                    continue
+                if own_attributes:
+                    fill_own_attribs(project)
+                self._fill_project_entity_data(project)
+                yield project
 
     def get_folders_hierarchy(
         self,
@@ -6005,12 +6078,12 @@ class ServerAPI(object):
     def get_project_product_types(
         self, project_name: str, fields: Optional[Iterable[str]] = None
     ) -> List["ProductTypeDict"]:
-        """Types of products available on a project.
+        """DEPRECATED Types of products available in a project.
 
-        Filter only product types available on project.
+        Filter only product types available in a project.
 
         Args:
-            project_name (str): Name of project where to look for
+            project_name (str): Name of the project where to look for
                 product types.
             fields (Optional[Iterable[str]]): Product types fields to query.
 
@@ -6018,22 +6091,29 @@ class ServerAPI(object):
             List[ProductTypeDict]: Product types information.
 
         """
-        if not fields:
-            fields = self.get_default_fields_for_type("productType")
+        warnings.warn(
+            "Used deprecated function 'get_project_product_types'."
+            " Use 'get_project' with 'productTypes' in 'fields' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if fields is None:
+            fields = {"productTypes"}
+        else:
+            fields = {
+                f"productTypes.{key}"
+                for key in fields
+            }
 
-        query = project_product_types_query(fields)
-        query.set_variable_value("projectName", project_name)
-
-        parsed_data = query.query(self)
-
-        return parsed_data.get("project", {}).get("productTypes", [])
+        project = self.get_project(project_name, fields=fields)
+        return project["productTypes"]
 
     def get_product_type_names(
         self,
         project_name: Optional[str] = None,
         product_ids: Optional[Iterable[str]] = None,
     ) -> Set[str]:
-        """Product type names.
+        """DEPRECATED Product type names.
 
         Warnings:
             This function will be probably removed. Matters if 'products_id'
@@ -6049,7 +6129,15 @@ class ServerAPI(object):
             set[str]: Product type names.
 
         """
-        if project_name and product_ids:
+        warnings.warn(
+            "Used deprecated function 'get_product_type_names'."
+            " Use 'get_product_types' or 'get_products' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if project_name:
+            if not product_ids:
+                return set()
             products = self.get_products(
                 project_name,
                 product_ids=product_ids,
@@ -6063,9 +6151,7 @@ class ServerAPI(object):
 
         return {
             product_info["name"]
-            for product_info in self.get_project_product_types(
-                project_name, fields=["name"]
-            )
+            for product_info in self.get_product_types(project_name)
         }
 
     def create_product(
@@ -8928,29 +9014,48 @@ class ServerAPI(object):
         if own_attributes and entity_type in {"project", "folder", "task"}:
             fields.add("ownAttrib")
 
-        if entity_type == "project":
-            if "folderTypes" in fields:
-                fields.remove("folderTypes")
-                fields |= {
-                    f"folderTypes.{name}"
-                    for name in self.get_default_fields_for_type("folderType")
-                }
+        if entity_type != "project":
+            return
 
-            if "taskTypes" in fields:
-                fields.remove("taskTypes")
-                fields |= {
-                    f"taskTypes.{name}"
-                    for name in self.get_default_fields_for_type("taskType")
-                }
+        # Use 'data' to fill 'bundle' data
+        if "bundle" in fields:
+            fields.remove("bundle")
+            fields.add("data")
 
-            if "productTypes" in fields:
-                fields.remove("productTypes")
-                fields |= {
-                    f"productTypes.{name}"
-                    for name in self.get_default_fields_for_type(
-                        "productType"
-                    )
-                }
+        maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+        if "folderTypes" in fields:
+            fields.remove("folderTypes")
+            folder_types_fields = set(DEFAULT_FOLDER_TYPE_FIELDS)
+            if (maj_v, min_v, patch_v) > (1, 10, 0):
+                folder_types_fields |= {"shortName"}
+            fields |= {f"folderTypes.{name}" for name in folder_types_fields}
+
+        if "taskTypes" in fields:
+            fields.remove("taskTypes")
+            task_types_fields = set(DEFAULT_TASK_TYPE_FIELDS)
+            if (maj_v, min_v, patch_v) > (1, 10, 0):
+                task_types_fields |= {"color", "icon", "shortName"}
+            fields |= {f"taskTypes.{name}" for name in task_types_fields}
+
+        for field, default_fields in (
+            ("statuses", DEFAULT_PROJECT_STATUSES_FIELDS),
+            ("tags", DEFAULT_PROJECT_TAGS_FIELDS),
+            ("linkTypes", DEFAULT_PROJECT_TAGS_FIELDS),
+        ):
+            if (maj_v, min_v, patch_v) <= (1, 10, 0):
+                break
+            if field in fields:
+                fields.remove(field)
+                fields |= {f"{field}.{name}" for name in default_fields}
+
+        if "productTypes" in fields:
+            fields.remove("productTypes")
+            fields |= {
+                f"productTypes.{name}"
+                for name in self.get_default_fields_for_type(
+                    "productType"
+                )
+            }
 
     def _convert_entity_data(self, entity: "AnyEntityDict"):
         if not entity or "data" not in entity:
