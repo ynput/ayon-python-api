@@ -41,7 +41,6 @@ from .constants import (
     SERVER_RETRIES_ENV_KEY,
     DEFAULT_FOLDER_TYPE_FIELDS,
     DEFAULT_TASK_TYPE_FIELDS,
-    DEFAULT_PROJECT_LINK_TYPES_FIELDS,
     DEFAULT_PROJECT_STATUSES_FIELDS,
     DEFAULT_PROJECT_TAGS_FIELDS,
     DEFAULT_PRODUCT_TYPE_FIELDS,
@@ -59,7 +58,6 @@ from .constants import (
 )
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
-    project_graphql_query,
     projects_graphql_query,
     product_types_query,
     folders_graphql_query,
