@@ -4595,36 +4595,28 @@ class ServerAPI(object):
             Generator[ProjectDict, None, None]: Queried projects.
 
         """
-        if fields is None:
-            fields = self.get_default_fields_for_type("project")
+        if fields is not None:
+            fields = set(fields)
 
-        fields = set(fields)
-
-        use_rest = self._should_use_rest_project(fields)
-        use_graphql = self._should_use_graphql_project(fields)
-        if not use_rest:
-            yield from self._get_graphql_projects(
-                active, library, fields, own_attributes
-            )
-            return
-
-        if use_graphql:
-            for graphql_project in self._get_graphql_projects(
+        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        projects_by_name = {}
+        if graphql_fields:
+            projects = list(self._get_graphql_projects(
                 active,
                 library,
-                fields={"name", "productTypes"},
+                fields=graphql_fields,
                 own_attributes=own_attributes,
-            ):
-                project = self.get_project(graphql_project["name"])
-                if own_attributes:
-                    fill_own_attribs(project)
-                project["productTypes"] = graphql_project["productTypes"]
-                yield project
-            return
+            ))
+            if not use_rest:
+                yield from projects
+                return
+            projects_by_name = {p["name"]: p for p in projects}
 
         for project in self.get_rest_projects(active, library):
-            if own_attributes:
-                fill_own_attribs(project)
+            name = project["name"]
+            graphql_p = projects_by_name.get(name)
+            if graphql_p:
+                project["productTypes"] = graphql_p["productTypes"]
             yield project
 
     def get_project(
@@ -4647,87 +4639,58 @@ class ServerAPI(object):
                 if project was not found.
 
         """
-        if fields is None:
-            fields = self.get_default_fields_for_type("project")
+        if fields is not None:
+            fields = set(fields)
 
-        fields = set(fields)
-
-        use_rest = self._should_use_rest_project(fields)
-        use_graphql = self._should_use_graphql_project(fields)
-        if not use_rest:
-            for project in self._get_graphql_projects(
+        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        graphql_project = None
+        if graphql_fields:
+            graphql_project = next(self._get_graphql_projects(
                 None,
                 None,
-                fields=fields,
+                fields=graphql_fields,
                 own_attributes=own_attributes,
-                project_name=project_name,
-            ):
-                return project
-            return None
+            ), None)
+            if not graphql_project or not use_rest:
+                return graphql_project
 
-        p_by_name = {}
-        if use_graphql:
-            p_by_name = {
-                p["name"]: p
-                for p in self._get_graphql_projects(
-                    None,
-                    None,
-                    fields={"name", "productTypes"},
-                    own_attributes=own_attributes,
-                    project_name=project_name,
-                )
-            }
-        for project in self.get_rest_projects(None, None):
-            if own_attributes:
-                fill_own_attribs(project)
-            graphql_p = p_by_name.get(project["name"])
-            if graphql_p:
-                project["productTypes"] = graphql_p["productTypes"]
-            return project
-        return None
+        project = self.get_rest_project(project_name)
+        if own_attributes:
+            fill_own_attribs(project)
+        if graphql_project:
+            project["productTypes"] = graphql_project["productTypes"]
+        return project
 
-    def _should_use_rest_project(
-        self, fields: Optional[Iterable[str]] = None
-    ) -> bool:
+    def _get_project_graphql_fields(
+        self, fields: Optional[Set[str]]
+    ) -> Tuple[Set[str], bool]:
         """Fetch of project must be done using REST endpoint.
 
         Returns:
-            bool: REST endpoint must be used to get requested fields.
+            set[str]: GraphQl fields.
 
         """
-        maj_v, min_v, patch_v, _, _ = self.server_version_tuple
-        # Up to 1.10.0 some project data were not available in GraphQl.
-        # - 'config', 'tags', 'linkTypes' and 'statuses' at all
-        # - 'taskTypes', 'folderTypes' with only limited data
-        if (maj_v, min_v, patch_v) > (1, 10, 0):
-            return False
+        if fields is None:
+            return set(), True
 
-        for field in fields:
-            if (
-                field.startswith("config")
-                or field.startswith("folderTypes")
-                or field.startswith("taskTypes")
-                or field.startswith("linkTypes")
-                or field.startswith("statuses")
-                or field.startswith("tags")
-            ):
-                return True
-        return False
-
-    def _should_use_graphql_project(
-        self, fields: Optional[Iterable[str]] = None
-    ) -> bool:
-        """Fetch of project must be done using REST endpoint.
-
-        Returns:
-            bool: REST endpoint must be used to get requested fields.
-
-        """
+        has_product_types = False
+        graphql_fields = set()
         for field in fields:
             # Product types are available only in GraphQl
             if field.startswith("productTypes"):
-                return True
-        return False
+                has_product_types = True
+                graphql_fields.add(field)
+
+        if not has_product_types:
+            return set(), True
+
+        inters = fields & {"name", "code", "active", "library"}
+        remainders = fields - (inters | graphql_fields)
+        if remainders:
+            graphql_fields.add("name")
+            return graphql_fields, True
+        graphql_fields |= inters
+        return graphql_fields, False
 
     def _fill_project_entity_data(self, project: Dict[str, Any]) -> None:
         # Add fake scope to statuses if not available
