@@ -6095,7 +6095,7 @@ class ServerAPI(object):
         """
         warnings.warn(
             "Used deprecated function 'get_project_product_types'."
-            " Use 'get_project' instead.",
+            " Use 'get_project' with 'productTypes' in 'fields' instead.",
             DeprecationWarning,
             stacklevel=2,
         )
