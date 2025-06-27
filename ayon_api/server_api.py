@@ -9024,10 +9024,10 @@ class ServerAPI(object):
             fields.remove("bundle")
             fields.add("data")
 
+        maj_v, min_v, patch_v, _, _ = self.server_version_tuple
         if "folderTypes" in fields:
             fields.remove("folderTypes")
             folder_types_fields = set(DEFAULT_FOLDER_TYPE_FIELDS)
-            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
             if (maj_v, min_v, patch_v) > (1, 10, 0):
                 folder_types_fields |= {"shortName"}
             fields |= {f"folderTypes.{name}" for name in folder_types_fields}
@@ -9035,34 +9035,20 @@ class ServerAPI(object):
         if "taskTypes" in fields:
             fields.remove("taskTypes")
             task_types_fields = set(DEFAULT_TASK_TYPE_FIELDS)
-            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
             if (maj_v, min_v, patch_v) > (1, 10, 0):
                 task_types_fields |= {"color", "icon", "shortName"}
             fields |= {f"taskTypes.{name}" for name in task_types_fields}
 
-        if "statuses" in fields:
-            fields.remove("statuses")
-            statuses_fields = set()
-            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
-            if (maj_v, min_v, patch_v) > (1, 10, 0):
-                statuses_fields = set(DEFAULT_PROJECT_STATUSES_FIELDS)
-            fields |= {f"statuses.{name}" for name in statuses_fields}
-
-        if "tags" in fields:
-            fields.remove("tags")
-            tags_fields = set()
-            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
-            if (maj_v, min_v, patch_v) > (1, 10, 0):
-                tags_fields = set(DEFAULT_PROJECT_TAGS_FIELDS)
-            fields |= {f"tags.{name}" for name in tags_fields}
-
-        if "linkTypes" in fields:
-            fields.remove("linkTypes")
-            link_types_fields = set()
-            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
-            if (maj_v, min_v, patch_v) > (1, 10, 0):
-                link_types_fields = set(DEFAULT_PROJECT_LINK_TYPES_FIELDS)
-            fields |= {f"linkTypes.{name}" for name in link_types_fields}
+        for field, default_fields in (
+            ("statuses", DEFAULT_PROJECT_STATUSES_FIELDS),
+            ("tags", DEFAULT_PROJECT_TAGS_FIELDS),
+            ("linkTypes", DEFAULT_PROJECT_TAGS_FIELDS),
+        ):
+            if (maj_v, min_v, patch_v) <= (1, 10, 0):
+                break
+            if field in fields:
+                fields.remove(field)
+                fields |= {f"{field}.{name}" for name in default_fields}
 
         if "productTypes" in fields:
             fields.remove("productTypes")
