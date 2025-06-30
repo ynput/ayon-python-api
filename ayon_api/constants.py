@@ -227,3 +227,21 @@ DEFAULT_ACTIVITY_FIELDS = {
     "entityType",
     "author.name",
 }
+
+
+DEFAULT_ENTITY_LIST_FIELDS = {
+    "id",
+    "count",
+    "attributes",
+    "active",
+    "createdBy",
+    "createdAt",
+    "entityListType",
+    "data",
+    "entityType",
+    "label",
+    "owner",
+    "tags",
+    "updatedAt",
+    "updatedBy",
+}
