@@ -7601,7 +7601,7 @@ class ServerAPI(object):
 
         """
         response = self.delete(
-            f"projects/{project_name}/representation/{representation_id}"
+            f"projects/{project_name}/representations/{representation_id}"
         )
         response.raise_for_status()
 
