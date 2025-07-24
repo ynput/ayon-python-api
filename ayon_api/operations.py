@@ -1489,5 +1489,5 @@ class OperationsSession(object):
 
         """
         return self.delete_entity(
-            project_name, "representaion", representation_id
+            project_name, "representation", representation_id
         )
