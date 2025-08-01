@@ -65,6 +65,12 @@ if typing.TYPE_CHECKING:
         FlatFolderDict,
         ProjectHierarchyDict,
         ProductTypeDict,
+        ActionEntityTypes,
+        ActionManifestDict,
+        ActionTriggerResponse,
+        ActionTakeResponse,
+        ActionConfigResponse,
+        ActionModeType,
         StreamType,
     )
 
@@ -6725,4 +6731,224 @@ def send_activities_batch_operations(
         operations=operations,
         can_fail=can_fail,
         raise_on_fail=raise_on_fail,
+    )
+
+
+def get_actions(
+    project_name: Optional[str] = None,
+    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_ids: Optional[List[str]] = None,
+    entity_subtypes: Optional[List[str]] = None,
+    form_data: Optional[Dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+    mode: Optional["ActionModeType"] = None,
+) -> List["ActionManifestDict"]:
+    """Get actions for a context.
+
+    Args:
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[List[str]]): List of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[List[str]]): List of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[Dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+        mode (Optional[ActionModeType]): Action modes. ('simple', 'dynamic', 'all')
+
+    Returns:
+        List[ActionManifestDict]: List of action manifests.
+
+    """
+    con = get_server_api_connection()
+    return con.get_actions(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+        mode=mode,
+    )
+
+
+def trigger_action(
+    identifier: str,
+    addon_name: str,
+    addon_version: str,
+    project_name: Optional[str] = None,
+    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_ids: Optional[List[str]] = None,
+    entity_subtypes: Optional[List[str]] = None,
+    form_data: Optional[Dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+) -> "ActionTriggerResponse":
+    """Trigger action.
+
+    Args:
+        identifier (str): Identifier of the action.
+        addon_name (str): Name of the addon.
+        addon_version (str): Version of the addon.
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[List[str]]): List of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[List[str]]): List of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[Dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+
+    """
+    con = get_server_api_connection()
+    return con.trigger_action(
+        identifier=identifier,
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+    )
+
+
+def get_action_config(
+    identifier: str,
+    addon_name: str,
+    addon_version: str,
+    project_name: Optional[str] = None,
+    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_ids: Optional[List[str]] = None,
+    entity_subtypes: Optional[List[str]] = None,
+    form_data: Optional[Dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+) -> "ActionConfigResponse":
+    """Get action configuration.
+
+    Args:
+        identifier (str): Identifier of the action.
+        addon_name (str): Name of the addon.
+        addon_version (str): Version of the addon.
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[List[str]]): List of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[List[str]]): List of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[Dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+
+    Returns:
+        ActionConfigResponse: Action configuration data.
+
+    """
+    con = get_server_api_connection()
+    return con.get_action_config(
+        identifier=identifier,
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+    )
+
+
+def set_action_config(
+    identifier: str,
+    addon_name: str,
+    addon_version: str,
+    value: Dict[str, Any],
+    project_name: Optional[str] = None,
+    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_ids: Optional[List[str]] = None,
+    entity_subtypes: Optional[List[str]] = None,
+    form_data: Optional[Dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+) -> "ActionConfigResponse":
+    """Set action configuration.
+
+    Args:
+        identifier (str): Identifier of the action.
+        addon_name (str): Name of the addon.
+        addon_version (str): Version of the addon.
+        value (Optional[Dict[str, Any]]): Value of the action
+            configuration.
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[List[str]]): List of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[List[str]]): List of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[Dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+
+    Returns:
+        ActionConfigResponse: New action configuration data.
+
+    """
+    con = get_server_api_connection()
+    return con.set_action_config(
+        identifier=identifier,
+        addon_name=addon_name,
+        addon_version=addon_version,
+        value=value,
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+    )
+
+
+def take_action(
+    action_token: str,
+) -> "ActionTakeResponse":
+    """Take action metadata using an action token.
+
+    Args:
+        action_token (str): AYON launcher action token.
+
+    Returns:
+        ActionTakeResponse: Action metadata describing how to launch
+            action.
+
+    """
+    con = get_server_api_connection()
+    return con.take_action(
+        action_token=action_token,
+    )
+
+
+def abort_action(
+    action_token: str,
+    message: Optional[str] = None,
+) -> None:
+    """Abort action using an action token.
+
+    Args:
+        action_token (str): AYON launcher action token.
+        message (Optional[str]): Message to display in the UI.
+
+    """
+    con = get_server_api_connection()
+    return con.abort_action(
+        action_token=action_token,
+        message=message,
     )
