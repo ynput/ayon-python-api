@@ -321,10 +321,13 @@ class GraphQlResponse:
 
 
 def fill_own_attribs(entity):
-    if not entity or not entity.get("attrib") or "ownAttrib" not in entity:
+    if not entity or not entity.get("attrib"):
         return
 
-    attributes = set(entity["ownAttrib"])
+    attributes = entity.get("ownAttrib")
+    if attributes is None:
+        return
+    attributes = set(attributes)
 
     own_attrib = {}
     entity["ownAttrib"] = own_attrib
