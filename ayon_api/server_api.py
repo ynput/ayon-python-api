@@ -1194,7 +1194,6 @@ class ServerAPI(object):
                 all_attrib = user.get("allAttrib")
                 if isinstance(all_attrib, str):
                     user["allAttrib"] = json.loads(all_attrib)
-                fill_own_attribs(user)
                 yield user
 
     def get_user_by_name(
