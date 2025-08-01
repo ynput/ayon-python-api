@@ -1186,6 +1186,7 @@ class ServerAPI(object):
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
+        attributes = self.get_attributes_for_type("user")
         for parsed_data in query.continuous_query(self):
             for user in parsed_data["users"]:
                 access_groups = user.get("accessGroups")
@@ -1194,6 +1195,15 @@ class ServerAPI(object):
                 all_attrib = user.get("allAttrib")
                 if isinstance(all_attrib, str):
                     user["allAttrib"] = json.loads(all_attrib)
+                if "attrib" in user:
+                    user["ownAttrib"] = user["attrib"].copy()
+                    attrib = user["attrib"]
+                    for key, value in tuple(attrib.items()):
+                        if value is not None:
+                            continue
+                        attr_def = attributes.get(key)
+                        if attr_def is not None:
+                            attrib[key] = attr_def["default"]
                 yield user
 
     def get_user_by_name(
