@@ -41,6 +41,8 @@ if typing.TYPE_CHECKING:
     from .typing import (
         ActivityType,
         ActivityReferenceType,
+        EntityListEntityType,
+        EntityListItemMode,
         LinkDirection,
         EventFilter,
         AttributeScope,
@@ -66,6 +68,7 @@ if typing.TYPE_CHECKING:
         ProjectHierarchyDict,
         ProductTypeDict,
         StreamType,
+        EntityListAttributeDefinitionDict,
     )
 
 
