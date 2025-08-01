@@ -324,7 +324,10 @@ def fill_own_attribs(entity):
     if not entity or not entity.get("attrib"):
         return
 
-    attributes = set(entity["ownAttrib"])
+    attributes = entity.get("ownAttrib")
+    if attributes is None:
+        return
+    attributes = set(attributes)
 
     own_attrib = {}
     entity["ownAttrib"] = own_attrib
@@ -1186,6 +1189,7 @@ class ServerAPI(object):
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
+        attributes = self.get_attributes_for_type("user")
         for parsed_data in query.continuous_query(self):
             for user in parsed_data["users"]:
                 access_groups = user.get("accessGroups")
@@ -1194,7 +1198,15 @@ class ServerAPI(object):
                 all_attrib = user.get("allAttrib")
                 if isinstance(all_attrib, str):
                     user["allAttrib"] = json.loads(all_attrib)
-                fill_own_attribs(user)
+                if "attrib" in user:
+                    user["ownAttrib"] = user["attrib"].copy()
+                    attrib = user["attrib"]
+                    for key, value in tuple(attrib.items()):
+                        if value is not None:
+                            continue
+                        attr_def = attributes.get(key)
+                        if attr_def is not None:
+                            attrib[key] = attr_def["default"]
                 yield user
 
     def get_user_by_name(
@@ -1233,7 +1245,9 @@ class ServerAPI(object):
     def get_user(
         self, username: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Get user info using REST endpoit.
+        """Get user info using REST endpoint.
+
+        User contains only explicitly set attributes in 'attrib'.
 
         Args:
             username (Optional[str]): Username.
@@ -1244,14 +1258,19 @@ class ServerAPI(object):
 
         """
         if username is None:
-            output = self._get_user_info()
-            if output is None:
+            user = self._get_user_info()
+            if user is None:
                 raise UnauthorizedError("User is not authorized.")
-            return output
+        else:
+            response = self.get(f"users/{username}")
+            response.raise_for_status()
+            user = response.data
 
-        response = self.get(f"users/{username}")
-        response.raise_for_status()
-        user = response.data
+        # NOTE Server does return only filled attributes right now.
+        #   This would fill all missing attributes with 'None'.
+        # for attr_name in self.get_attributes_for_type("user"):
+        #     user["attrib"].setdefault(attr_name, None)
+
         fill_own_attribs(user)
         return user
 

@@ -766,7 +766,9 @@ def get_user_by_name(
 def get_user(
     username: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Get user info using REST endpoit.
+    """Get user info using REST endpoint.
+
+    User contains only explicitly set attributes in 'attrib'.
 
     Args:
         username (Optional[str]): Username.
