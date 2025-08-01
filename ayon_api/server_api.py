@@ -1243,6 +1243,8 @@ class ServerAPI(object):
         self, username: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Get user info using REST endpoint.
+        
+        User contains only explicitly set attributes in 'attrib'.
 
         Args:
             username (Optional[str]): Username.
@@ -1261,7 +1263,8 @@ class ServerAPI(object):
             response.raise_for_status()
             user = response.data
 
-        # NOTE This would fill all missing attributes with 'None'
+        # NOTE Server does return only filled attributes right now.
+        #   This would fill all missing attributes with 'None'.
         # for attr_name in self.get_attributes_for_type("user"):
         #     user["attrib"].setdefault(attr_name, None)
 
