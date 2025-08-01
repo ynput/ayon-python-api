@@ -1232,7 +1232,7 @@ class ServerAPI(object):
     def get_user(
         self, username: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Get user info using REST endpoit.
+        """Get user info using REST endpoint.
 
         Args:
             username (Optional[str]): Username.
@@ -1243,14 +1243,18 @@ class ServerAPI(object):
 
         """
         if username is None:
-            output = self._get_user_info()
-            if output is None:
+            user = self._get_user_info()
+            if user is None:
                 raise UnauthorizedError("User is not authorized.")
-            return output
+        else:
+            response = self.get(f"users/{username}")
+            response.raise_for_status()
+            user = response.data
 
-        response = self.get(f"users/{username}")
-        response.raise_for_status()
-        user = response.data
+        # NOTE This would fill all missing attributes with 'None'
+        # for attr_name in self.get_attributes_for_type("user"):
+        #     user["attrib"].setdefault(attr_name, None)
+
         fill_own_attribs(user)
         return user
 
