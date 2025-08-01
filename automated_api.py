@@ -30,11 +30,11 @@ sys.modules["requests"] = requests
 sys.modules["unidecode"] = type(sys)("unidecode")
 
 import ayon_api  # noqa: E402
-from ayon_api.server_api import (
+from ayon_api.server_api import (  # noqa: E402
     ServerAPI,
     _PLACEHOLDER,
     _ActionsAPI,
-)  # noqa: E402
+)
 from ayon_api.utils import NOT_SET  # noqa: E402
 
 EXCLUDED_METHODS = {
