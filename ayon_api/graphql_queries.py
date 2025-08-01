@@ -278,8 +278,8 @@ def products_graphql_query(fields):
     product_types_var = query.add_variable("productTypes", "[String!]")
     product_name_regex_var = query.add_variable("productNameRegex", "String!")
     product_path_regex_var = query.add_variable("productPathRegex", "String!")
-    statuses_var = query.add_variable("productStatuses.", "[String!]")
-    tags_var = query.add_variable("productTags.", "[String!]")
+    statuses_var = query.add_variable("productStatuses", "[String!]")
+    tags_var = query.add_variable("productTags", "[String!]")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
