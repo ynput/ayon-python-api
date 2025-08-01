@@ -30,7 +30,11 @@ sys.modules["requests"] = requests
 sys.modules["unidecode"] = type(sys)("unidecode")
 
 import ayon_api  # noqa: E402
-from ayon_api.server_api import ServerAPI, _PLACEHOLDER  # noqa: E402
+from ayon_api.server_api import (
+    ServerAPI,
+    _PLACEHOLDER,
+    _ActionsAPI,
+)  # noqa: E402
 from ayon_api.utils import NOT_SET  # noqa: E402
 
 EXCLUDED_METHODS = {
@@ -285,7 +289,9 @@ def sig_params_to_str(sig, param_names, api_globals, indent=0):
 
 def prepare_api_functions(api_globals):
     functions = []
-    for attr_name, attr in ServerAPI.__dict__.items():
+    _items = list(ServerAPI.__dict__.items())
+    _items.extend(_ActionsAPI.__dict__.items())
+    for attr_name, attr in _items:
         if (
             attr_name.startswith("_")
             or attr_name in EXCLUDED_METHODS
