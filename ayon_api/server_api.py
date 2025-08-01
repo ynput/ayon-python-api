@@ -1246,7 +1246,7 @@ class ServerAPI(object):
         self, username: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Get user info using REST endpoint.
-        
+
         User contains only explicitly set attributes in 'attrib'.
 
         Args:
