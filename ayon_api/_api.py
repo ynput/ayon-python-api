@@ -6757,7 +6757,7 @@ def get_actions(
             folder types for folder ids, task types for tasks ids.
         form_data (Optional[Dict[str, Any]]): Form data of the action.
         variant (Optional[str]): Settings variant.
-        mode (Optional[ActionModeType]): Action modes. ('simple', 'dynamic', 'all')
+        mode (Optional[ActionModeType]): Action modes.
 
     Returns:
         List[ActionManifestDict]: List of action manifests.
