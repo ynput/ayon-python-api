@@ -137,7 +137,7 @@ class _ActionsAPI(_BaseServerAPI):
         form_data: Optional[Dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
-) -> "ActionConfigResponse":
+    ) -> "ActionConfigResponse":
         """Get action configuration.
 
         Args:
