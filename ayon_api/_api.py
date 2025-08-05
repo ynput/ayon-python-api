@@ -6844,7 +6844,7 @@ def get_entity_list_attribute_definitions(
     project_name: str,
     list_id: str,
 ) -> List["EntityListAttributeDefinitionDict"]:
-    """Get attribute definitioins on entity list.
+    """Get attribute definitions on entity list.
 
     Args:
         project_name (str): Project name.
@@ -6867,7 +6867,7 @@ def set_entity_list_attribute_definitions(
     list_id: str,
     attribute_definitions: List["EntityListAttributeDefinitionDict"],
 ) -> None:
-    """Set attribute definitioins on entity list.
+    """Set attribute definitions on entity list.
 
     Args:
         project_name (str): Project name.
