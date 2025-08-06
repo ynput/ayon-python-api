@@ -255,6 +255,12 @@ from ._api import (
     delete_entity_list_item,
     send_batch_operations,
     send_activities_batch_operations,
+    get_actions,
+    trigger_action,
+    get_action_config,
+    set_action_config,
+    take_action,
+    abort_action,
 )
 
 
@@ -513,4 +519,10 @@ __all__ = (
     "delete_entity_list_item",
     "send_batch_operations",
     "send_activities_batch_operations",
+    "get_actions",
+    "trigger_action",
+    "get_action_config",
+    "set_action_config",
+    "take_action",
+    "abort_action",
 )

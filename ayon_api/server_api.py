@@ -101,6 +101,7 @@ from .utils import (
     SortOrder,
     get_machine_name,
 )
+from ._actions import _ActionsAPI
 
 if typing.TYPE_CHECKING:
     from typing import Union
@@ -428,7 +429,7 @@ class _AsUserStack:
             self._last_user = new_last_user
 
 
-class ServerAPI(object):
+class ServerAPI(_ActionsAPI):
     """Base handler of connection to server.
 
     Requires url to server which is used as base for api and graphql calls.

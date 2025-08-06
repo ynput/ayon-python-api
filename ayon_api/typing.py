@@ -10,6 +10,7 @@ from typing import (
     BinaryIO,
 )
 
+
 ActivityType = Literal[
     "comment",
     "watch",
@@ -48,6 +49,16 @@ EventFilterValueType = Union[
     str, int, float,
     List[str], List[int], List[float],
 ]
+
+
+IconType = Literal["material-symbols", "url"]
+
+
+class IconDefType(TypedDict):
+    type: IconType
+    name: Optional[str]
+    color: Optional[str]
+    icon: Optional[str]
 
 
 class EventFilterCondition(TypedDict):
@@ -365,6 +376,114 @@ class ProductTypeDict(TypedDict):
     name: str
     color: Optional[str]
     icon: Optional[str]
+
+
+ActionEntityTypes = Literal[
+    "project",
+    "folder",
+    "task",
+    "product",
+    "version",
+    "representation",
+    "workfile",
+    "list",
+]
+
+
+class ActionManifestDict(TypedDict):
+    identifier: str
+    label: str
+    groupLabel: Optional[str]
+    category: str
+    order: int
+    icon: Optional[IconDefType]
+    adminOnly: bool
+    managerOnly: bool
+    configFields: List[Dict[str, Any]]
+    featured: bool
+    addonName: str
+    addonVersion: str
+    variant: str
+
+
+ActionResponseType = Literal[
+    "form",
+    "launcher",
+    "navigate",
+    "query",
+    "redirect",
+    "simple",
+]
+
+ActionModeType = Literal["simple", "dynamic", "all"]
+
+
+class BaseActionPayload(TypedDict):
+    extra_clipboard: str
+    extra_download: str
+
+
+class ActionLauncherPayload(BaseActionPayload):
+    uri: str
+
+
+class ActionNavigatePayload(BaseActionPayload):
+    uri: str
+
+
+class ActionRedirectPayload(BaseActionPayload):
+    uri: str
+    new_tab: bool
+
+
+class ActionQueryPayload(BaseActionPayload):
+    query: str
+
+
+class ActionFormPayload(BaseActionPayload):
+    title: str
+    fields: List[Dict[str, Any]]
+    submit_label: str
+    submit_icon: str
+    cancel_label: str
+    cancel_icon: str
+    show_cancel_button: bool
+    show_submit_button: bool
+
+
+ActionPayload = Union[
+    ActionLauncherPayload,
+    ActionNavigatePayload,
+    ActionRedirectPayload,
+    ActionQueryPayload,
+    ActionFormPayload,
+]
+
+class ActionTriggerResponse(TypedDict):
+    type: ActionResponseType
+    success: bool
+    message: Optional[str]
+    payload: Optional[ActionPayload]
+
+
+class ActionTakeResponse(TypedDict):
+    eventId: str
+    actionIdentifier: str
+    args: List[str]
+    context: Dict[str, Any]
+    addonName: str
+    addonVersion: str
+    variant: str
+    userName: str
+
+
+class ActionConfigResponse(TypedDict):
+    projectName: str
+    entityType: str
+    entitySubtypes: List[str]
+    entityIds: List[str]
+    formData: Dict[str, Any]
+    value: Dict[str, Any]
 
 
 StreamType = Union[io.BytesIO, BinaryIO]
