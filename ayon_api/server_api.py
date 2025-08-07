@@ -55,6 +55,7 @@ from .constants import (
     DEFAULT_EVENT_FIELDS,
     DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
+    DEFAULT_ENTITY_LIST_FIELDS,
 )
 from .graphql import GraphQlQuery, INTROSPECTION_QUERY
 from .graphql_queries import (
@@ -100,6 +101,7 @@ from .utils import (
     get_machine_name,
 )
 from ._actions import _ActionsAPI
+from ._lists import _ListsAPI
 
 if typing.TYPE_CHECKING:
     from typing import Union
@@ -424,7 +426,7 @@ class _AsUserStack:
             self._last_user = new_last_user
 
 
-class ServerAPI(_ActionsAPI):
+class ServerAPI(_ListsAPI, _ActionsAPI):
     """Base handler of connection to server.
 
     Requires url to server which is used as base for api and graphql calls.
@@ -2783,6 +2785,9 @@ class ServerAPI(_ActionsAPI):
 
         elif entity_type == "user":
             entity_type_defaults = set(DEFAULT_USER_FIELDS)
+
+        elif entity_type == "entityList":
+            entity_type_defaults = set(DEFAULT_ENTITY_LIST_FIELDS)
 
         else:
             raise ValueError(f"Unknown entity type \"{entity_type}\"")

@@ -41,6 +41,8 @@ if typing.TYPE_CHECKING:
     from .typing import (
         ActivityType,
         ActivityReferenceType,
+        EntityListEntityType,
+        EntityListItemMode,
         LinkDirection,
         EventFilter,
         AttributeScope,
@@ -72,6 +74,7 @@ if typing.TYPE_CHECKING:
         ActionConfigResponse,
         ActionModeType,
         StreamType,
+        EntityListAttributeDefinitionDict,
     )
 
 
@@ -6951,4 +6954,365 @@ def abort_action(
     return con.abort_action(
         action_token=action_token,
         message=message,
+    )
+
+
+def get_entity_lists(
+    project_name: str,
+    *,
+    list_ids: Optional[Iterable[str]] = None,
+    active: Optional[bool] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Generator[Dict[str, Any], None, None]:
+    """Fetch entity lists from server.
+
+    Args:
+        project_name (str): Project name where entity lists are.
+        list_ids (Optional[Iterable[str]]): List of entity list ids to
+            fetch.
+        active (Optional[bool]): Filter by active state of entity lists.
+        fields (Optional[Iterable[str]]): Fields to fetch from server.
+
+    Returns:
+        Generator[Dict[str, Any], None, None]: Entity list entities
+            matching defined filters.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_lists(
+        project_name=project_name,
+        list_ids=list_ids,
+        active=active,
+        fields=fields,
+    )
+
+
+def get_entity_list_rest(
+    project_name: str,
+    list_id: str,
+) -> Optional[Dict[str, Any]]:
+    """Get entity list by id using REST API.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+
+    Returns:
+        Optional[Dict[str, Any]]: Entity list data or None if not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_list_rest(
+        project_name=project_name,
+        list_id=list_id,
+    )
+
+
+def get_entity_list_by_id(
+    project_name: str,
+    list_id: str,
+    fields: Optional[Iterable[str]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Get entity list by id using GraphQl.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+        fields (Optional[Iterable[str]]): Fields to fetch from server.
+
+    Returns:
+        Optional[Dict[str, Any]]: Entity list data or None if not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_list_by_id(
+        project_name=project_name,
+        list_id=list_id,
+        fields=fields,
+    )
+
+
+def create_entity_list(
+    project_name: str,
+    entity_type: "EntityListEntityType",
+    label: str,
+    *,
+    list_type: Optional[str] = None,
+    access: Optional[Dict[str, Any]] = None,
+    attrib: Optional[List[Dict[str, Any]]] = None,
+    data: Optional[List[Dict[str, Any]]] = None,
+    tags: Optional[List[str]] = None,
+    template: Optional[Dict[str, Any]] = None,
+    owner: Optional[str] = None,
+    active: Optional[bool] = None,
+    items: Optional[List[Dict[str, Any]]] = None,
+    list_id: Optional[str] = None,
+) -> str:
+    """Create entity list.
+
+    Args:
+        project_name (str): Project name where entity list lives.
+        entity_type (EntityListEntityType): Which entity types can be
+            used in list.
+        label (str): Entity list label.
+        list_type (Optional[str]): Entity list type.
+        access (Optional[dict[str, Any]]): Access control for entity list.
+        attrib (Optional[dict[str, Any]]): Attribute values of
+            entity list.
+        data (Optional[dict[str, Any]]): Custom data of entity list.
+        tags (Optional[list[str]]): Entity list tags.
+        template (Optional[dict[str, Any]]): Dynamic list template.
+        owner (Optional[str]): New owner of the list.
+        active (Optional[bool]): Change active state of entity list.
+        items (Optional[list[dict[str, Any]]]): Initial items in
+            entity list.
+        list_id (Optional[str]): Entity list id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_entity_list(
+        project_name=project_name,
+        entity_type=entity_type,
+        label=label,
+        list_type=list_type,
+        access=access,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        template=template,
+        owner=owner,
+        active=active,
+        items=items,
+        list_id=list_id,
+    )
+
+
+def update_entity_list(
+    project_name: str,
+    list_id: str,
+    *,
+    label: Optional[str] = None,
+    access: Optional[Dict[str, Any]] = None,
+    attrib: Optional[List[Dict[str, Any]]] = None,
+    data: Optional[List[Dict[str, Any]]] = None,
+    tags: Optional[List[str]] = None,
+    owner: Optional[str] = None,
+    active: Optional[bool] = None,
+) -> None:
+    """Update entity list.
+
+    Args:
+        project_name (str): Project name where entity list lives.
+        list_id (str): Entity list id that will be updated.
+        label (Optional[str]): New label of entity list.
+        access (Optional[dict[str, Any]]): Access control for entity list.
+        attrib (Optional[dict[str, Any]]): Attribute values of
+            entity list.
+        data (Optional[dict[str, Any]]): Custom data of entity list.
+        tags (Optional[list[str]]): Entity list tags.
+        owner (Optional[str]): New owner of the list.
+        active (Optional[bool]): Change active state of entity list.
+
+    """
+    con = get_server_api_connection()
+    return con.update_entity_list(
+        project_name=project_name,
+        list_id=list_id,
+        label=label,
+        access=access,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        owner=owner,
+        active=active,
+    )
+
+
+def delete_entity_list(
+    project_name: str,
+    list_id: str,
+) -> None:
+    """Delete entity list from project.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id that will be removed.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_entity_list(
+        project_name=project_name,
+        list_id=list_id,
+    )
+
+
+def get_entity_list_attribute_definitions(
+    project_name: str,
+    list_id: str,
+) -> List["EntityListAttributeDefinitionDict"]:
+    """Get attribute definitioins on entity list.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+
+    Returns:
+        List[EntityListAttributeDefinitionDict]: List of attribute
+            definitions.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_list_attribute_definitions(
+        project_name=project_name,
+        list_id=list_id,
+    )
+
+
+def set_entity_list_attribute_definitions(
+    project_name: str,
+    list_id: str,
+    attribute_definitions: List["EntityListAttributeDefinitionDict"],
+) -> None:
+    """Set attribute definitioins on entity list.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+        attribute_definitions (List[EntityListAttributeDefinitionDict]):
+            List of attribute definitions.
+
+    """
+    con = get_server_api_connection()
+    return con.set_entity_list_attribute_definitions(
+        project_name=project_name,
+        list_id=list_id,
+        attribute_definitions=attribute_definitions,
+    )
+
+
+def create_entity_list_item(
+    project_name: str,
+    list_id: str,
+    *,
+    position: Optional[int] = None,
+    label: Optional[str] = None,
+    attrib: Optional[Dict[str, Any]] = None,
+    data: Optional[Dict[str, Any]] = None,
+    tags: Optional[List[str]] = None,
+    item_id: Optional[str] = None,
+) -> str:
+    """Create entity list item.
+
+    Args:
+        project_name (str): Project name where entity list lives.
+        list_id (str): Entity list id where item will be added.
+        position (Optional[int]): Position of item in entity list.
+        label (Optional[str]): Label of item in entity list.
+        attrib (Optional[dict[str, Any]]): Item attribute values.
+        data (Optional[dict[str, Any]]): Item data.
+        tags (Optional[list[str]]): Tags of item in entity list.
+        item_id (Optional[str]): Id of item that will be created.
+
+    Returns:
+        str: Item id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_entity_list_item(
+        project_name=project_name,
+        list_id=list_id,
+        position=position,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        item_id=item_id,
+    )
+
+
+def update_entity_list_items(
+    project_name: str,
+    list_id: str,
+    items: List[Dict[str, Any]],
+    mode: "EntityListItemMode",
+) -> None:
+    """Update items in entity list.
+
+    Args:
+        project_name (str): Project name where entity list live.
+        list_id (str): Entity list id.
+        items (List[Dict[str, Any]]): Entity list items.
+        mode (EntityListItemMode): Mode of items update.
+
+    """
+    con = get_server_api_connection()
+    return con.update_entity_list_items(
+        project_name=project_name,
+        list_id=list_id,
+        items=items,
+        mode=mode,
+    )
+
+
+def update_entity_list_item(
+    project_name: str,
+    list_id: str,
+    item_id: str,
+    *,
+    new_list_id: Optional[str],
+    position: Optional[int] = None,
+    label: Optional[str] = None,
+    attrib: Optional[Dict[str, Any]] = None,
+    data: Optional[Dict[str, Any]] = None,
+    tags: Optional[List[str]] = None,
+) -> None:
+    """Update item in entity list.
+
+    Args:
+        project_name (str): Project name where entity list live.
+        list_id (str): Entity list id where item lives.
+        item_id (str): Item id that will be removed from entity list.
+        new_list_id (Optional[str]): New entity list id where item will be
+            added.
+        position (Optional[int]): Position of item in entity list.
+        label (Optional[str]): Label of item in entity list.
+        attrib (Optional[dict[str, Any]]): Attributes of item in entity
+            list.
+        data (Optional[dict[str, Any]]): Custom data of item in
+            entity list.
+        tags (Optional[list[str]]): Tags of item in entity list.
+
+    """
+    con = get_server_api_connection()
+    return con.update_entity_list_item(
+        project_name=project_name,
+        list_id=list_id,
+        item_id=item_id,
+        new_list_id=new_list_id,
+        position=position,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+    )
+
+
+def delete_entity_list_item(
+    project_name: str,
+    list_id: str,
+    item_id: str,
+) -> None:
+    """Delete item from entity list.
+
+    Args:
+        project_name (str): Project name where entity list live.
+        list_id (str): Entity list id from which item will be removed.
+        item_id (str): Item id that will be removed from entity list.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_entity_list_item(
+        project_name=project_name,
+        list_id=list_id,
+        item_id=item_id,
     )

@@ -29,6 +29,21 @@ ActivityReferenceType = Literal[
     "watching",
 ]
 
+EntityListEntityType = Literal[
+    "folder",
+    "product",
+    "version",
+    "representation",
+    "task",
+    "workfile",
+]
+
+EntityListItemMode = Literal[
+    "replace",
+    "merge",
+    "delete",
+]
+
 EventFilterValueType = Union[
     None,
     str, int, float,
@@ -472,3 +487,8 @@ class ActionConfigResponse(TypedDict):
 
 
 StreamType = Union[io.BytesIO, BinaryIO]
+
+
+class EntityListAttributeDefinitionDict(TypedDict):
+    name: str
+    data: Dict[str, Any]
