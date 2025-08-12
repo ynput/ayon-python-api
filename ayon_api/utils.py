@@ -62,6 +62,22 @@ class SortOrder(IntEnum):
         return default
 
 
+class RequestType:
+    def __init__(self, name: str):
+        self.name: str = name
+
+    def __hash__(self):
+        return self.name.__hash__()
+
+
+class RequestTypes:
+    get = RequestType("GET")
+    post = RequestType("POST")
+    put = RequestType("PUT")
+    patch = RequestType("PATCH")
+    delete = RequestType("DELETE")
+
+
 def get_default_timeout() -> float:
     """Default value for requests timeout.
 

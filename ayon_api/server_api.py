@@ -83,6 +83,8 @@ from .exceptions import (
     UnsupportedServerVersion,
 )
 from .utils import (
+    RequestType,
+    RequestTypes,
     RepresentationParents,
     RepresentationHierarchy,
     prepare_query_string,
@@ -182,22 +184,6 @@ def _get_description(response):
     if HTTPStatus is None:
         return str(response.orig_response)
     return HTTPStatus(response.status).description
-
-
-class RequestType:
-    def __init__(self, name: str):
-        self.name: str = name
-
-    def __hash__(self):
-        return self.name.__hash__()
-
-
-class RequestTypes:
-    get = RequestType("GET")
-    post = RequestType("POST")
-    put = RequestType("PUT")
-    patch = RequestType("PATCH")
-    delete = RequestType("DELETE")
 
 
 class RestApiResponse(object):

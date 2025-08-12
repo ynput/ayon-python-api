@@ -1,5 +1,6 @@
 from .version import __version__
 from .utils import (
+    RequestTypes,
     TransferProgress,
     slugify_string,
     create_dependency_package_basename,
@@ -12,7 +13,6 @@ from .utils import (
     SortOrder,
 )
 from .server_api import (
-    RequestTypes,
     ServerAPI,
 )
 
@@ -267,6 +267,7 @@ from ._api import (
 __all__ = (
     "__version__",
 
+    "RequestTypes",
     "TransferProgress",
     "slugify_string",
     "create_dependency_package_basename",
@@ -278,7 +279,6 @@ __all__ = (
     "abort_web_action_event",
     "SortOrder",
 
-    "RequestTypes",
     "ServerAPI",
 
     "GlobalServerAPI",
