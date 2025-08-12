@@ -5621,600 +5621,6 @@ def update_thumbnail(
     )
 
 
-def get_full_link_type_name(
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-) -> str:
-    """Calculate full link type name used for query from server.
-
-    Args:
-        link_type_name (str): Type of link.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-
-    Returns:
-        str: Full name of link type used for query from server.
-
-    """
-    con = get_server_api_connection()
-    return con.get_full_link_type_name(
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-    )
-
-
-def get_link_types(
-    project_name: str,
-) -> List[Dict[str, Any]]:
-    """All link types available on a project.
-
-    Example output:
-        [
-            {
-                "name": "reference|folder|folder",
-                "link_type": "reference",
-                "input_type": "folder",
-                "output_type": "folder",
-                "data": {}
-            }
-        ]
-
-    Args:
-        project_name (str): Name of project where to look for link types.
-
-    Returns:
-        list[dict[str, Any]]: Link types available on project.
-
-    """
-    con = get_server_api_connection()
-    return con.get_link_types(
-        project_name=project_name,
-    )
-
-
-def get_link_type(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-) -> Optional[str]:
-    """Get link type data.
-
-    There is not dedicated REST endpoint to get single link type,
-    so method 'get_link_types' is used.
-
-    Example output:
-        {
-            "name": "reference|folder|folder",
-            "link_type": "reference",
-            "input_type": "folder",
-            "output_type": "folder",
-            "data": {}
-        }
-
-    Args:
-        project_name (str): Project where link type is available.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-
-    Returns:
-        Optional[str]: Link type information.
-
-    """
-    con = get_server_api_connection()
-    return con.get_link_type(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-    )
-
-
-def create_link_type(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-    data: Optional[Dict[str, Any]] = None,
-):
-    """Create or update link type on server.
-
-    Warning:
-        Because PUT is used for creation it is also used for update.
-
-    Args:
-        project_name (str): Project where link type is created.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-        data (Optional[dict[str, Any]]): Additional data related to link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.create_link_type(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-        data=data,
-    )
-
-
-def delete_link_type(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-):
-    """Remove link type from project.
-
-    Args:
-        project_name (str): Project where link type is created.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_link_type(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-    )
-
-
-def make_sure_link_type_exists(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-    data: Optional[Dict[str, Any]] = None,
-):
-    """Make sure link type exists on a project.
-
-    Args:
-        project_name (str): Name of project.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-        data (Optional[dict[str, Any]]): Link type related data.
-
-    """
-    con = get_server_api_connection()
-    return con.make_sure_link_type_exists(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-        data=data,
-    )
-
-
-def create_link(
-    project_name: str,
-    link_type_name: str,
-    input_id: str,
-    input_type: str,
-    output_id: str,
-    output_type: str,
-    link_name: Optional[str] = None,
-):
-    """Create link between 2 entities.
-
-    Link has a type which must already exists on a project.
-
-    Example output::
-
-        {
-            "id": "59a212c0d2e211eda0e20242ac120002"
-        }
-
-    Args:
-        project_name (str): Project where the link is created.
-        link_type_name (str): Type of link.
-        input_id (str): Input entity id.
-        input_type (str): Entity type of input entity.
-        output_id (str): Output entity id.
-        output_type (str): Entity type of output entity.
-        link_name (Optional[str]): Name of link.
-            Available from server version '1.0.0-rc.6'.
-
-    Returns:
-        dict[str, str]: Information about link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.create_link(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_id=input_id,
-        input_type=input_type,
-        output_id=output_id,
-        output_type=output_type,
-        link_name=link_name,
-    )
-
-
-def delete_link(
-    project_name: str,
-    link_id: str,
-):
-    """Remove link by id.
-
-    Args:
-        project_name (str): Project where link exists.
-        link_id (str): Id of link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_link(
-        project_name=project_name,
-        link_id=link_id,
-    )
-
-
-def get_entities_links(
-    project_name: str,
-    entity_type: str,
-    entity_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-    link_names: Optional[Iterable[str]] = None,
-    link_name_regex: Optional[str] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Helper method to get links from server for entity types.
-
-    .. highlight:: text
-    .. code-block:: text
-
-        Example output:
-        {
-            "59a212c0d2e211eda0e20242ac120001": [
-                {
-                    "id": "59a212c0d2e211eda0e20242ac120002",
-                    "linkType": "reference",
-                    "description": "reference link between folders",
-                    "projectName": "my_project",
-                    "author": "frantadmin",
-                    "entityId": "b1df109676db11ed8e8c6c9466b19aa8",
-                    "entityType": "folder",
-                    "direction": "out"
-                },
-                ...
-            ],
-            ...
-        }
-
-    Args:
-        project_name (str): Project where links are.
-        entity_type (Literal["folder", "task", "product",
-            "version", "representations"]): Entity type.
-        entity_ids (Optional[Iterable[str]]): Ids of entities for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-        link_names (Optional[Iterable[str]]): Link name filters.
-        link_name_regex (Optional[str]): Regex filter for link name.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by entity ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_entities_links(
-        project_name=project_name,
-        entity_type=entity_type,
-        entity_ids=entity_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-        link_names=link_names,
-        link_name_regex=link_name_regex,
-    )
-
-
-def get_folders_links(
-    project_name: str,
-    folder_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query folders links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        folder_ids (Optional[Iterable[str]]): Ids of folders for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by folder ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders_links(
-        project_name=project_name,
-        folder_ids=folder_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_folder_links(
-    project_name: str,
-    folder_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query folder links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        folder_id (str): Folder id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of folder.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_links(
-        project_name=project_name,
-        folder_id=folder_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_tasks_links(
-    project_name: str,
-    task_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query tasks links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        task_ids (Optional[Iterable[str]]): Ids of tasks for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by task ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_tasks_links(
-        project_name=project_name,
-        task_ids=task_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_task_links(
-    project_name: str,
-    task_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query task links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        task_id (str): Task id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of task.
-
-    """
-    con = get_server_api_connection()
-    return con.get_task_links(
-        project_name=project_name,
-        task_id=task_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_products_links(
-    project_name: str,
-    product_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query products links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        product_ids (Optional[Iterable[str]]): Ids of products for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by product ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_products_links(
-        project_name=project_name,
-        product_ids=product_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_product_links(
-    project_name: str,
-    product_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query product links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        product_id (str): Product id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of product.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_links(
-        project_name=project_name,
-        product_id=product_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_versions_links(
-    project_name: str,
-    version_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query versions links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        version_ids (Optional[Iterable[str]]): Ids of versions for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by version ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_versions_links(
-        project_name=project_name,
-        version_ids=version_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_version_links(
-    project_name: str,
-    version_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query version links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        version_id (str): Version id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of version.
-
-    """
-    con = get_server_api_connection()
-    return con.get_version_links(
-        project_name=project_name,
-        version_id=version_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_representations_links(
-    project_name: str,
-    representation_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query representations links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        representation_ids (Optional[Iterable[str]]): Ids of
-            representations for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by representation ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_representations_links(
-        project_name=project_name,
-        representation_ids=representation_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_representation_links(
-    project_name: str,
-    representation_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query representation links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        representation_id (str): Representation id for which links
-            should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of representation.
-
-    """
-    con = get_server_api_connection()
-    return con.get_representation_links(
-        project_name=project_name,
-        representation_id=representation_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
 def send_batch_operations(
     project_name: str,
     operations: List[Dict[str, Any]],
@@ -6709,6 +6115,600 @@ def download_addon_private_file(
         destination_filename=destination_filename,
         chunk_size=chunk_size,
         progress=progress,
+    )
+
+
+def get_full_link_type_name(
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+) -> str:
+    """Calculate full link type name used for query from server.
+
+    Args:
+        link_type_name (str): Type of link.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+
+    Returns:
+        str: Full name of link type used for query from server.
+
+    """
+    con = get_server_api_connection()
+    return con.get_full_link_type_name(
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
+
+
+def get_link_types(
+    project_name: str,
+) -> list[dict[str, Any]]:
+    """All link types available on a project.
+
+    Example output:
+        [
+            {
+                "name": "reference|folder|folder",
+                "link_type": "reference",
+                "input_type": "folder",
+                "output_type": "folder",
+                "data": {}
+            }
+        ]
+
+    Args:
+        project_name (str): Name of project where to look for link types.
+
+    Returns:
+        list[dict[str, Any]]: Link types available on project.
+
+    """
+    con = get_server_api_connection()
+    return con.get_link_types(
+        project_name=project_name,
+    )
+
+
+def get_link_type(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+) -> Optional[dict[str, Any]]:
+    """Get link type data.
+
+    There is not dedicated REST endpoint to get single link type,
+    so method 'get_link_types' is used.
+
+    Example output:
+        {
+            "name": "reference|folder|folder",
+            "link_type": "reference",
+            "input_type": "folder",
+            "output_type": "folder",
+            "data": {}
+        }
+
+    Args:
+        project_name (str): Project where link type is available.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+
+    Returns:
+        Optional[dict[str, Any]]: Link type information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
+
+
+def create_link_type(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+    data: Optional[dict[str, Any]] = None,
+):
+    """Create or update link type on server.
+
+    Warning:
+        Because PUT is used for creation it is also used for update.
+
+    Args:
+        project_name (str): Project where link type is created.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+        data (Optional[dict[str, Any]]): Additional data related to link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.create_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+        data=data,
+    )
+
+
+def delete_link_type(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+):
+    """Remove link type from project.
+
+    Args:
+        project_name (str): Project where link type is created.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
+
+
+def make_sure_link_type_exists(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+    data: Optional[dict[str, Any]] = None,
+):
+    """Make sure link type exists on a project.
+
+    Args:
+        project_name (str): Name of project.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+        data (Optional[dict[str, Any]]): Link type related data.
+
+    """
+    con = get_server_api_connection()
+    return con.make_sure_link_type_exists(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+        data=data,
+    )
+
+
+def create_link(
+    project_name: str,
+    link_type_name: str,
+    input_id: str,
+    input_type: str,
+    output_id: str,
+    output_type: str,
+    link_name: Optional[str] = None,
+):
+    """Create link between 2 entities.
+
+    Link has a type which must already exists on a project.
+
+    Example output::
+
+        {
+            "id": "59a212c0d2e211eda0e20242ac120002"
+        }
+
+    Args:
+        project_name (str): Project where the link is created.
+        link_type_name (str): Type of link.
+        input_id (str): Input entity id.
+        input_type (str): Entity type of input entity.
+        output_id (str): Output entity id.
+        output_type (str): Entity type of output entity.
+        link_name (Optional[str]): Name of link.
+            Available from server version '1.0.0-rc.6'.
+
+    Returns:
+        dict[str, str]: Information about link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.create_link(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_id=input_id,
+        input_type=input_type,
+        output_id=output_id,
+        output_type=output_type,
+        link_name=link_name,
+    )
+
+
+def delete_link(
+    project_name: str,
+    link_id: str,
+):
+    """Remove link by id.
+
+    Args:
+        project_name (str): Project where link exists.
+        link_id (str): Id of link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_link(
+        project_name=project_name,
+        link_id=link_id,
+    )
+
+
+def get_entities_links(
+    project_name: str,
+    entity_type: str,
+    entity_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+    link_names: Optional[Iterable[str]] = None,
+    link_name_regex: Optional[str] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Helper method to get links from server for entity types.
+
+    .. highlight:: text
+    .. code-block:: text
+
+        Example output:
+        {
+            "59a212c0d2e211eda0e20242ac120001": [
+                {
+                    "id": "59a212c0d2e211eda0e20242ac120002",
+                    "linkType": "reference",
+                    "description": "reference link between folders",
+                    "projectName": "my_project",
+                    "author": "frantadmin",
+                    "entityId": "b1df109676db11ed8e8c6c9466b19aa8",
+                    "entityType": "folder",
+                    "direction": "out"
+                },
+                ...
+            ],
+            ...
+        }
+
+    Args:
+        project_name (str): Project where links are.
+        entity_type (Literal["folder", "task", "product",
+            "version", "representations"]): Entity type.
+        entity_ids (Optional[Iterable[str]]): Ids of entities for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+        link_names (Optional[Iterable[str]]): Link name filters.
+        link_name_regex (Optional[str]): Regex filter for link name.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by entity ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entities_links(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+        link_names=link_names,
+        link_name_regex=link_name_regex,
+    )
+
+
+def get_folders_links(
+    project_name: str,
+    folder_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query folders links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        folder_ids (Optional[Iterable[str]]): Ids of folders for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by folder ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders_links(
+        project_name=project_name,
+        folder_ids=folder_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_folder_links(
+    project_name: str,
+    folder_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> list[dict[str, Any]]:
+    """Query folder links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        folder_id (str): Folder id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of folder.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_links(
+        project_name=project_name,
+        folder_id=folder_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_tasks_links(
+    project_name: str,
+    task_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query tasks links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        task_ids (Optional[Iterable[str]]): Ids of tasks for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by task ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_tasks_links(
+        project_name=project_name,
+        task_ids=task_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_task_links(
+    project_name: str,
+    task_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> list[dict[str, Any]]:
+    """Query task links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        task_id (str): Task id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of task.
+
+    """
+    con = get_server_api_connection()
+    return con.get_task_links(
+        project_name=project_name,
+        task_id=task_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_products_links(
+    project_name: str,
+    product_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query products links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        product_ids (Optional[Iterable[str]]): Ids of products for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by product ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_products_links(
+        project_name=project_name,
+        product_ids=product_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_product_links(
+    project_name: str,
+    product_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> list[dict[str, Any]]:
+    """Query product links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        product_id (str): Product id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of product.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_links(
+        project_name=project_name,
+        product_id=product_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_versions_links(
+    project_name: str,
+    version_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query versions links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        version_ids (Optional[Iterable[str]]): Ids of versions for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by version ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_versions_links(
+        project_name=project_name,
+        version_ids=version_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_version_links(
+    project_name: str,
+    version_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> list[dict[str, Any]]:
+    """Query version links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        version_id (str): Version id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of version.
+
+    """
+    con = get_server_api_connection()
+    return con.get_version_links(
+        project_name=project_name,
+        version_id=version_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_representations_links(
+    project_name: str,
+    representation_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query representations links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        representation_ids (Optional[Iterable[str]]): Ids of
+            representations for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by representation ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_representations_links(
+        project_name=project_name,
+        representation_ids=representation_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_representation_links(
+    project_name: str,
+    representation_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional["LinkDirection"] = None,
+) -> list[dict[str, Any]]:
+    """Query representation links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        representation_id (str): Representation id for which links
+            should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of representation.
+
+    """
+    con = get_server_api_connection()
+    return con.get_representation_links(
+        project_name=project_name,
+        representation_id=representation_id,
+        link_types=link_types,
+        link_direction=link_direction,
     )
 
 
