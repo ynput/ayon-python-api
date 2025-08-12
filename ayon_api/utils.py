@@ -1,6 +1,7 @@
 import os
 import re
 import datetime
+import copy
 import uuid
 import string
 import platform
@@ -76,6 +77,39 @@ class RequestTypes:
     put = RequestType("PUT")
     patch = RequestType("PATCH")
     delete = RequestType("DELETE")
+
+
+def fill_own_attribs(entity: "AnyEntityDict") -> None:
+    """Fill own attributes.
+
+    Prepare data with own attributes. Prepare data based on a list of
+        attribute names in 'ownAttrib' and 'attrib'. If is not attribute in
+        'ownAttrib' then it's value is set to 'None'.
+
+    This can be used with a project, folder or task entity. All other entities
+        don't use hierarchical attributes and 'attrib' values are
+        "real values".
+
+    Args:
+        entity (dict): Entity dictionary.
+
+    """
+    if not entity or not entity.get("attrib"):
+        return
+
+    attributes = entity.get("ownAttrib")
+    if attributes is None:
+        return
+    attributes = set(attributes)
+
+    own_attrib = {}
+    entity["ownAttrib"] = own_attrib
+
+    for key, value in entity["attrib"].items():
+        if key not in attributes:
+            own_attrib[key] = None
+        else:
+            own_attrib[key] = copy.deepcopy(value)
 
 
 def get_default_timeout() -> float:

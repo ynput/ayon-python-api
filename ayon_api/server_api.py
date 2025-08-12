@@ -101,6 +101,7 @@ from .utils import (
     get_media_mime_type,
     SortOrder,
     get_machine_name,
+    fill_own_attribs,
 )
 from ._actions import _ActionsAPI
 from ._addons import _AddonsAPI
@@ -307,25 +308,6 @@ class GraphQlResponse:
             message = self.errors[0]["message"]
             return f"<{self.__class__.__name__} errors={message}>"
         return f"<{self.__class__.__name__}>"
-
-
-def fill_own_attribs(entity):
-    if not entity or not entity.get("attrib"):
-        return
-
-    attributes = entity.get("ownAttrib")
-    if attributes is None:
-        return
-    attributes = set(attributes)
-
-    own_attrib = {}
-    entity["ownAttrib"] = own_attrib
-
-    for key, value in entity["attrib"].items():
-        if key not in attributes:
-            own_attrib[key] = None
-        else:
-            own_attrib[key] = copy.deepcopy(value)
 
 
 class _AsUserStack:
