@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import typing
-from typing import Set, Optional
+from typing import Optional
 
 import requests
 
@@ -49,7 +51,7 @@ class _BaseServerAPI:
     def get_default_settings_variant(self) -> str:
         raise NotImplementedError()
 
-    def get_default_fields_for_type(self, entity_type: str) -> Set[str]:
+    def get_default_fields_for_type(self, entity_type: str) -> set[str]:
         raise NotImplementedError()
 
     def upload_file(

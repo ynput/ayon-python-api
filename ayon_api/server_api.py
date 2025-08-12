@@ -3,6 +3,8 @@
 Provides access to server API.
 
 """
+from __future__ import annotations
+
 import os
 import re
 import io
