@@ -11,6 +11,8 @@ from typing import (
 )
 
 
+ServerVersion = tuple[int, int, int, str, str]
+
 ActivityType = Literal[
     "comment",
     "watch",

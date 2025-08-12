@@ -115,6 +115,7 @@ from ._projects import _ProjectsAPI
 if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
+        ServerVersion,
         ActivityType,
         ActivityReferenceType,
         LinkDirection,
@@ -1048,7 +1049,7 @@ class ServerAPI(
             self._server_version = self.get_info()["version"]
         return self._server_version
 
-    def get_server_version_tuple(self) -> Tuple[int, int, int, str, str]:
+    def get_server_version_tuple(self) -> "ServerVersion":
         """Get server version as tuple.
 
         Version should match semantic version (https://semver.org/).
@@ -1073,7 +1074,7 @@ class ServerAPI(
         return self._server_version_tuple
 
     server_version = property(get_server_version)
-    server_version_tuple: Tuple[int, int, int, str, str] = property(
+    server_version_tuple: "ServerVersion" = property(
         get_server_version_tuple
     )
 

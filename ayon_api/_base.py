@@ -8,10 +8,12 @@ import requests
 from .utils import TransferProgress, RequestType
 
 if typing.TYPE_CHECKING:
-    from .typing import AnyEntityDict
+    from .typing import AnyEntityDict, ServerVersion
 
 
 class _BaseServerAPI:
+    def get_server_version_tuple(self) -> "ServerVersion":
+        raise NotImplementedError()
     def get_base_url(self) -> str:
         raise NotImplementedError()
 
