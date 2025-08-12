@@ -345,6 +345,7 @@ def prepare_api_functions(api_globals):
         _ProjectsAPI,
         _ThumbnailsAPI,
         _WorkfilesAPI,
+        _RepresentationsAPI,
     )
 
     functions = []
@@ -359,6 +360,7 @@ def prepare_api_functions(api_globals):
     _items.extend(_ProjectsAPI.__dict__.items())
     _items.extend(_ThumbnailsAPI.__dict__.items())
     _items.extend(_WorkfilesAPI.__dict__.items())
+    _items.extend(_RepresentationsAPI.__dict__.items())
 
     processed = set()
     for attr_name, attr in _items:

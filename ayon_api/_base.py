@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import typing
-from typing import Optional, Any
+from typing import Optional, Any, Iterable
 
 import requests
 
 from .utils import TransferProgress, RequestType
 
 if typing.TYPE_CHECKING:
-    from .typing import AnyEntityDict, ServerVersion
+    from .typing import (
+        AnyEntityDict,
+        ServerVersion,
+        ProjectDict,
+    )
 
 _PLACEHOLDER = object()
 
@@ -87,6 +91,14 @@ class _BaseServerAPI:
         entity_type: str,
         entity_id: str,
     ) -> Optional["AnyEntityDict"]:
+        raise NotImplementedError()
+
+    def get_project(
+        self,
+        project_name: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Optional["ProjectDict"]:
         raise NotImplementedError()
 
     def _prepare_fields(
