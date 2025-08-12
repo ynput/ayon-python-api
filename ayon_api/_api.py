@@ -39,6 +39,7 @@ from .utils import (
 if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
+        ServerVersion,
         ActivityType,
         ActivityReferenceType,
         EntityListEntityType,
@@ -696,7 +697,7 @@ def get_server_version() -> str:
     return con.get_server_version()
 
 
-def get_server_version_tuple() -> Tuple[int, int, int, str, str]:
+def get_server_version_tuple() -> "ServerVersion":
     """Get server version as tuple.
 
     Version should match semantic version (https://semver.org/).
@@ -3048,68 +3049,6 @@ def get_rest_entity_by_id(
     )
 
 
-def get_rest_folder(
-    project_name: str,
-    folder_id: str,
-) -> Optional["FolderDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_folder(
-        project_name=project_name,
-        folder_id=folder_id,
-    )
-
-
-def get_rest_folders(
-    project_name: str,
-    include_attrib: bool = False,
-) -> List["FlatFolderDict"]:
-    """Get simplified flat list of all project folders.
-
-    Get all project folders in single REST call. This can be faster than
-        using 'get_folders' method which is using GraphQl, but does not
-        allow any filtering, and set of fields is defined
-        by server backend.
-
-    Example::
-
-        [
-            {
-                "id": "112233445566",
-                "parentId": "112233445567",
-                "path": "/root/parent/child",
-                "parents": ["root", "parent"],
-                "name": "child",
-                "label": "Child",
-                "folderType": "Folder",
-                "hasTasks": False,
-                "hasChildren": False,
-                "taskNames": [
-                    "Compositing",
-                ],
-                "status": "In Progress",
-                "attrib": {},
-                "ownAttrib": [],
-                "updatedAt": "2023-06-12T15:37:02.420260",
-            },
-            ...
-        ]
-
-    Args:
-        project_name (str): Project name.
-        include_attrib (Optional[bool]): Include attribute values
-            in output. Slower to query.
-
-    Returns:
-        List[FlatFolderDict]: List of folder entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_rest_folders(
-        project_name=project_name,
-        include_attrib=include_attrib,
-    )
-
-
 def get_rest_task(
     project_name: str,
     task_id: str,
@@ -3151,455 +3090,6 @@ def get_rest_representation(
     return con.get_rest_representation(
         project_name=project_name,
         representation_id=representation_id,
-    )
-
-
-def get_folders_hierarchy(
-    project_name: str,
-    search_string: Optional[str] = None,
-    folder_types: Optional[Iterable[str]] = None,
-) -> "ProjectHierarchyDict":
-    """Get project hierarchy.
-
-    All folders in project in hierarchy data structure.
-
-    Example output:
-        {
-            "hierarchy": [
-                {
-                    "id": "...",
-                    "name": "...",
-                    "label": "...",
-                    "status": "...",
-                    "folderType": "...",
-                    "hasTasks": False,
-                    "taskNames": [],
-                    "parents": [],
-                    "parentId": None,
-                    "children": [...children folders...]
-                },
-                ...
-            ]
-        }
-
-    Args:
-        project_name (str): Project where to look for folders.
-        search_string (Optional[str]): Search string to filter folders.
-        folder_types (Optional[Iterable[str]]): Folder types to filter.
-
-    Returns:
-        dict[str, Any]: Response data from server.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders_hierarchy(
-        project_name=project_name,
-        search_string=search_string,
-        folder_types=folder_types,
-    )
-
-
-def get_folders_rest(
-    project_name: str,
-    include_attrib: bool = False,
-) -> List["FlatFolderDict"]:
-    """Get simplified flat list of all project folders.
-
-    Get all project folders in single REST call. This can be faster than
-        using 'get_folders' method which is using GraphQl, but does not
-        allow any filtering, and set of fields is defined
-        by server backend.
-
-    Example::
-
-        [
-            {
-                "id": "112233445566",
-                "parentId": "112233445567",
-                "path": "/root/parent/child",
-                "parents": ["root", "parent"],
-                "name": "child",
-                "label": "Child",
-                "folderType": "Folder",
-                "hasTasks": False,
-                "hasChildren": False,
-                "taskNames": [
-                    "Compositing",
-                ],
-                "status": "In Progress",
-                "attrib": {},
-                "ownAttrib": [],
-                "updatedAt": "2023-06-12T15:37:02.420260",
-            },
-            ...
-        ]
-
-    Deprecated:
-        Use 'get_rest_folders' instead. Function was renamed to match
-            other rest functions, like 'get_rest_folder',
-            'get_rest_project' etc. .
-        Will be removed in '1.0.7' or '1.1.0'.
-
-    Args:
-        project_name (str): Project name.
-        include_attrib (Optional[bool]): Include attribute values
-            in output. Slower to query.
-
-    Returns:
-        List[FlatFolderDict]: List of folder entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders_rest(
-        project_name=project_name,
-        include_attrib=include_attrib,
-    )
-
-
-def get_folders(
-    project_name: str,
-    folder_ids: Optional[Iterable[str]] = None,
-    folder_paths: Optional[Iterable[str]] = None,
-    folder_names: Optional[Iterable[str]] = None,
-    folder_types: Optional[Iterable[str]] = None,
-    parent_ids: Optional[Iterable[str]] = None,
-    folder_path_regex: Optional[str] = None,
-    has_products: Optional[bool] = None,
-    has_tasks: Optional[bool] = None,
-    has_children: Optional[bool] = None,
-    statuses: Optional[Iterable[str]] = None,
-    assignees_all: Optional[Iterable[str]] = None,
-    tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
-    has_links: Optional[bool] = None,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Generator["FolderDict", None, None]:
-    """Query folders from server.
-
-    Todos:
-        Folder name won't be unique identifier, so we should add
-            folder path filtering.
-
-    Notes:
-        Filter 'active' don't have direct filter in GraphQl.
-
-    Args:
-        project_name (str): Name of project.
-        folder_ids (Optional[Iterable[str]]): Folder ids to filter.
-        folder_paths (Optional[Iterable[str]]): Folder paths used
-            for filtering.
-        folder_names (Optional[Iterable[str]]): Folder names used
-            for filtering.
-        folder_types (Optional[Iterable[str]]): Folder types used
-            for filtering.
-        parent_ids (Optional[Iterable[str]]): Ids of folder parents.
-            Use 'None' if folder is direct child of project.
-        folder_path_regex (Optional[str]): Folder path regex used
-            for filtering.
-        has_products (Optional[bool]): Filter folders with/without
-            products. Ignored when None, default behavior.
-        has_tasks (Optional[bool]): Filter folders with/without
-            tasks. Ignored when None, default behavior.
-        has_children (Optional[bool]): Filter folders with/without
-            children. Ignored when None, default behavior.
-        statuses (Optional[Iterable[str]]): Folder statuses used
-            for filtering.
-        assignees_all (Optional[Iterable[str]]): Filter by assigness
-            on children tasks. Task must have all of passed assignees.
-        tags (Optional[Iterable[str]]): Folder tags used
-            for filtering.
-        active (Optional[bool]): Filter active/inactive folders.
-            Both are returned if is set to None.
-        has_links (Optional[Literal[IN, OUT, ANY]]): Filter
-            representations with IN/OUT/ANY links.
-        fields (Optional[Iterable[str]]): Fields to be queried for
-            folder. All possible folder fields are returned
-            if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Generator[FolderDict, None, None]: Queried folder entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders(
-        project_name=project_name,
-        folder_ids=folder_ids,
-        folder_paths=folder_paths,
-        folder_names=folder_names,
-        folder_types=folder_types,
-        parent_ids=parent_ids,
-        folder_path_regex=folder_path_regex,
-        has_products=has_products,
-        has_tasks=has_tasks,
-        has_children=has_children,
-        statuses=statuses,
-        assignees_all=assignees_all,
-        tags=tags,
-        active=active,
-        has_links=has_links,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_by_id(
-    project_name: str,
-    folder_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["FolderDict"]:
-    """Query folder entity by id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        folder_id (str): Folder id.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[FolderDict]: Folder entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_by_id(
-        project_name=project_name,
-        folder_id=folder_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_by_path(
-    project_name: str,
-    folder_path: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["FolderDict"]:
-    """Query folder entity by path.
-
-    Folder path is a path to folder with all parent names joined by slash.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        folder_path (str): Folder path.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[FolderDict]: Folder entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_by_path(
-        project_name=project_name,
-        folder_path=folder_path,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_by_name(
-    project_name: str,
-    folder_name: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["FolderDict"]:
-    """Query folder entity by path.
-
-    Warnings:
-        Folder name is not a unique identifier of a folder. Function is
-            kept for OpenPype 3 compatibility.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        folder_name (str): Folder name.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[FolderDict]: Folder entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_by_name(
-        project_name=project_name,
-        folder_name=folder_name,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_ids_with_products(
-    project_name: str,
-    folder_ids: Optional[Iterable[str]] = None,
-) -> Set[str]:
-    """Find folders which have at least one product.
-
-    Folders that have at least one product should be immutable, so they
-    should not change path -> change of name or name of any parent
-    is not possible.
-
-    Args:
-        project_name (str): Name of project.
-        folder_ids (Optional[Iterable[str]]): Limit folder ids filtering
-            to a set of folders. If set to None all folders on project are
-            checked.
-
-    Returns:
-        set[str]: Folder ids that have at least one product.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_ids_with_products(
-        project_name=project_name,
-        folder_ids=folder_ids,
-    )
-
-
-def create_folder(
-    project_name: str,
-    name: str,
-    folder_type: Optional[str] = None,
-    parent_id: Optional[str] = None,
-    label: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = None,
-    folder_id: Optional[str] = None,
-) -> str:
-    """Create new folder.
-
-    Args:
-        project_name (str): Project name.
-        name (str): Folder name.
-        folder_type (Optional[str]): Folder type.
-        parent_id (Optional[str]): Parent folder id. Parent is project
-            if is ``None``.
-        label (Optional[str]): Label of folder.
-        attrib (Optional[dict[str, Any]]): Folder attributes.
-        data (Optional[dict[str, Any]]): Folder data.
-        tags (Optional[Iterable[str]]): Folder tags.
-        status (Optional[str]): Folder status.
-        active (Optional[bool]): Folder active state.
-        thumbnail_id (Optional[str]): Folder thumbnail id.
-        folder_id (Optional[str]): Folder id. If not passed new id is
-            generated.
-
-    Returns:
-        str: Entity id.
-
-    """
-    con = get_server_api_connection()
-    return con.create_folder(
-        project_name=project_name,
-        name=name,
-        folder_type=folder_type,
-        parent_id=parent_id,
-        label=label,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-        folder_id=folder_id,
-    )
-
-
-def update_folder(
-    project_name: str,
-    folder_id: str,
-    name: Optional[str] = None,
-    folder_type: Optional[str] = None,
-    parent_id: Optional[str] = NOT_SET,
-    label: Optional[str] = NOT_SET,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = NOT_SET,
-):
-    """Update folder entity on server.
-
-    Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
-        want to change their values. Value ``None`` would unset
-        their value.
-
-    Update of ``data`` will override existing value on folder entity.
-
-    Update of ``attrib`` does change only passed attributes. If you want
-        to unset value, use ``None``.
-
-    Args:
-        project_name (str): Project name.
-        folder_id (str): Folder id.
-        name (Optional[str]): New name.
-        folder_type (Optional[str]): New folder type.
-        parent_id (Optional[Union[str, None]]): New parent folder id.
-        label (Optional[Union[str, None]]): New label.
-        attrib (Optional[dict[str, Any]]): New attributes.
-        data (Optional[dict[str, Any]]): New data.
-        tags (Optional[Iterable[str]]): New tags.
-        status (Optional[str]): New status.
-        active (Optional[bool]): New active state.
-        thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
-
-    """
-    con = get_server_api_connection()
-    return con.update_folder(
-        project_name=project_name,
-        folder_id=folder_id,
-        name=name,
-        folder_type=folder_type,
-        parent_id=parent_id,
-        label=label,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-    )
-
-
-def delete_folder(
-    project_name: str,
-    folder_id: str,
-    force: bool = False,
-):
-    """Delete folder.
-
-    Args:
-        project_name (str): Project name.
-        folder_id (str): Folder id to delete.
-        force (Optional[bool]): Folder delete folder with all children
-            folder, products, versions and representations.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_folder(
-        project_name=project_name,
-        folder_id=folder_id,
-        force=force,
     )
 
 
@@ -6115,6 +5605,517 @@ def download_addon_private_file(
         destination_filename=destination_filename,
         chunk_size=chunk_size,
         progress=progress,
+    )
+
+
+def get_rest_folder(
+    project_name: str,
+    folder_id: str,
+) -> Optional["FolderDict"]:
+    con = get_server_api_connection()
+    return con.get_rest_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+    )
+
+
+def get_rest_folders(
+    project_name: str,
+    include_attrib: bool = False,
+) -> list["FlatFolderDict"]:
+    """Get simplified flat list of all project folders.
+
+    Get all project folders in single REST call. This can be faster than
+        using 'get_folders' method which is using GraphQl, but does not
+        allow any filtering, and set of fields is defined
+        by server backend.
+
+    Example::
+
+        [
+            {
+                "id": "112233445566",
+                "parentId": "112233445567",
+                "path": "/root/parent/child",
+                "parents": ["root", "parent"],
+                "name": "child",
+                "label": "Child",
+                "folderType": "Folder",
+                "hasTasks": False,
+                "hasChildren": False,
+                "taskNames": [
+                    "Compositing",
+                ],
+                "status": "In Progress",
+                "attrib": {},
+                "ownAttrib": [],
+                "updatedAt": "2023-06-12T15:37:02.420260",
+            },
+            ...
+        ]
+
+    Args:
+        project_name (str): Project name.
+        include_attrib (Optional[bool]): Include attribute values
+            in output. Slower to query.
+
+    Returns:
+        List[FlatFolderDict]: List of folder entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_rest_folders(
+        project_name=project_name,
+        include_attrib=include_attrib,
+    )
+
+
+def get_folders_hierarchy(
+    project_name: str,
+    search_string: Optional[str] = None,
+    folder_types: Optional[Iterable[str]] = None,
+) -> "ProjectHierarchyDict":
+    """Get project hierarchy.
+
+    All folders in project in hierarchy data structure.
+
+    Example output:
+        {
+            "hierarchy": [
+                {
+                    "id": "...",
+                    "name": "...",
+                    "label": "...",
+                    "status": "...",
+                    "folderType": "...",
+                    "hasTasks": False,
+                    "taskNames": [],
+                    "parents": [],
+                    "parentId": None,
+                    "children": [...children folders...]
+                },
+                ...
+            ]
+        }
+
+    Args:
+        project_name (str): Project where to look for folders.
+        search_string (Optional[str]): Search string to filter folders.
+        folder_types (Optional[Iterable[str]]): Folder types to filter.
+
+    Returns:
+        dict[str, Any]: Response data from server.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders_hierarchy(
+        project_name=project_name,
+        search_string=search_string,
+        folder_types=folder_types,
+    )
+
+
+def get_folders_rest(
+    project_name: str,
+    include_attrib: bool = False,
+) -> list["FlatFolderDict"]:
+    """Get simplified flat list of all project folders.
+
+    Get all project folders in single REST call. This can be faster than
+        using 'get_folders' method which is using GraphQl, but does not
+        allow any filtering, and set of fields is defined
+        by server backend.
+
+    Example::
+
+        [
+            {
+                "id": "112233445566",
+                "parentId": "112233445567",
+                "path": "/root/parent/child",
+                "parents": ["root", "parent"],
+                "name": "child",
+                "label": "Child",
+                "folderType": "Folder",
+                "hasTasks": False,
+                "hasChildren": False,
+                "taskNames": [
+                    "Compositing",
+                ],
+                "status": "In Progress",
+                "attrib": {},
+                "ownAttrib": [],
+                "updatedAt": "2023-06-12T15:37:02.420260",
+            },
+            ...
+        ]
+
+    Deprecated:
+        Use 'get_rest_folders' instead. Function was renamed to match
+            other rest functions, like 'get_rest_folder',
+            'get_rest_project' etc. .
+        Will be removed in '1.0.7' or '1.1.0'.
+
+    Args:
+        project_name (str): Project name.
+        include_attrib (Optional[bool]): Include attribute values
+            in output. Slower to query.
+
+    Returns:
+        List[FlatFolderDict]: List of folder entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders_rest(
+        project_name=project_name,
+        include_attrib=include_attrib,
+    )
+
+
+def get_folders(
+    project_name: str,
+    folder_ids: Optional[Iterable[str]] = None,
+    folder_paths: Optional[Iterable[str]] = None,
+    folder_names: Optional[Iterable[str]] = None,
+    folder_types: Optional[Iterable[str]] = None,
+    parent_ids: Optional[Iterable[str]] = None,
+    folder_path_regex: Optional[str] = None,
+    has_products: Optional[bool] = None,
+    has_tasks: Optional[bool] = None,
+    has_children: Optional[bool] = None,
+    statuses: Optional[Iterable[str]] = None,
+    assignees_all: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    has_links: Optional[bool] = None,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Generator["FolderDict", None, None]:
+    """Query folders from server.
+
+    Todos:
+        Folder name won't be unique identifier, so we should add
+            folder path filtering.
+
+    Notes:
+        Filter 'active' don't have direct filter in GraphQl.
+
+    Args:
+        project_name (str): Name of project.
+        folder_ids (Optional[Iterable[str]]): Folder ids to filter.
+        folder_paths (Optional[Iterable[str]]): Folder paths used
+            for filtering.
+        folder_names (Optional[Iterable[str]]): Folder names used
+            for filtering.
+        folder_types (Optional[Iterable[str]]): Folder types used
+            for filtering.
+        parent_ids (Optional[Iterable[str]]): Ids of folder parents.
+            Use 'None' if folder is direct child of project.
+        folder_path_regex (Optional[str]): Folder path regex used
+            for filtering.
+        has_products (Optional[bool]): Filter folders with/without
+            products. Ignored when None, default behavior.
+        has_tasks (Optional[bool]): Filter folders with/without
+            tasks. Ignored when None, default behavior.
+        has_children (Optional[bool]): Filter folders with/without
+            children. Ignored when None, default behavior.
+        statuses (Optional[Iterable[str]]): Folder statuses used
+            for filtering.
+        assignees_all (Optional[Iterable[str]]): Filter by assigness
+            on children tasks. Task must have all of passed assignees.
+        tags (Optional[Iterable[str]]): Folder tags used
+            for filtering.
+        active (Optional[bool]): Filter active/inactive folders.
+            Both are returned if is set to None.
+        has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+            representations with IN/OUT/ANY links.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            folder. All possible folder fields are returned
+            if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Generator[FolderDict, None, None]: Queried folder entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders(
+        project_name=project_name,
+        folder_ids=folder_ids,
+        folder_paths=folder_paths,
+        folder_names=folder_names,
+        folder_types=folder_types,
+        parent_ids=parent_ids,
+        folder_path_regex=folder_path_regex,
+        has_products=has_products,
+        has_tasks=has_tasks,
+        has_children=has_children,
+        statuses=statuses,
+        assignees_all=assignees_all,
+        tags=tags,
+        active=active,
+        has_links=has_links,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_by_id(
+    project_name: str,
+    folder_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["FolderDict"]:
+    """Query folder entity by id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        folder_id (str): Folder id.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[FolderDict]: Folder entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_by_id(
+        project_name=project_name,
+        folder_id=folder_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_by_path(
+    project_name: str,
+    folder_path: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["FolderDict"]:
+    """Query folder entity by path.
+
+    Folder path is a path to folder with all parent names joined by slash.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        folder_path (str): Folder path.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[FolderDict]: Folder entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_by_path(
+        project_name=project_name,
+        folder_path=folder_path,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_by_name(
+    project_name: str,
+    folder_name: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["FolderDict"]:
+    """Query folder entity by path.
+
+    Warnings:
+        Folder name is not a unique identifier of a folder. Function is
+            kept for OpenPype 3 compatibility.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        folder_name (str): Folder name.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[FolderDict]: Folder entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_by_name(
+        project_name=project_name,
+        folder_name=folder_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_ids_with_products(
+    project_name: str,
+    folder_ids: Optional[Iterable[str]] = None,
+) -> set[str]:
+    """Find folders which have at least one product.
+
+    Folders that have at least one product should be immutable, so they
+    should not change path -> change of name or name of any parent
+    is not possible.
+
+    Args:
+        project_name (str): Name of project.
+        folder_ids (Optional[Iterable[str]]): Limit folder ids filtering
+            to a set of folders. If set to None all folders on project are
+            checked.
+
+    Returns:
+        set[str]: Folder ids that have at least one product.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_ids_with_products(
+        project_name=project_name,
+        folder_ids=folder_ids,
+    )
+
+
+def create_folder(
+    project_name: str,
+    name: str,
+    folder_type: Optional[str] = None,
+    parent_id: Optional[str] = None,
+    label: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = None,
+    folder_id: Optional[str] = None,
+) -> str:
+    """Create new folder.
+
+    Args:
+        project_name (str): Project name.
+        name (str): Folder name.
+        folder_type (Optional[str]): Folder type.
+        parent_id (Optional[str]): Parent folder id. Parent is project
+            if is ``None``.
+        label (Optional[str]): Label of folder.
+        attrib (Optional[dict[str, Any]]): Folder attributes.
+        data (Optional[dict[str, Any]]): Folder data.
+        tags (Optional[Iterable[str]]): Folder tags.
+        status (Optional[str]): Folder status.
+        active (Optional[bool]): Folder active state.
+        thumbnail_id (Optional[str]): Folder thumbnail id.
+        folder_id (Optional[str]): Folder id. If not passed new id is
+            generated.
+
+    Returns:
+        str: Entity id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_folder(
+        project_name=project_name,
+        name=name,
+        folder_type=folder_type,
+        parent_id=parent_id,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        folder_id=folder_id,
+    )
+
+
+def update_folder(
+    project_name: str,
+    folder_id: str,
+    name: Optional[str] = None,
+    folder_type: Optional[str] = None,
+    parent_id: Optional[str] = NOT_SET,
+    label: Optional[str] = NOT_SET,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = NOT_SET,
+):
+    """Update folder entity on server.
+
+    Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
+        want to change their values. Value ``None`` would unset
+        their value.
+
+    Update of ``data`` will override existing value on folder entity.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        folder_id (str): Folder id.
+        name (Optional[str]): New name.
+        folder_type (Optional[str]): New folder type.
+        parent_id (Optional[str]): New parent folder id.
+        label (Optional[str]): New label.
+        attrib (Optional[dict[str, Any]]): New attributes.
+        data (Optional[dict[str, Any]]): New data.
+        tags (Optional[Iterable[str]]): New tags.
+        status (Optional[str]): New status.
+        active (Optional[bool]): New active state.
+        thumbnail_id (Optional[str]): New thumbnail id.
+
+    """
+    con = get_server_api_connection()
+    return con.update_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+        name=name,
+        folder_type=folder_type,
+        parent_id=parent_id,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+    )
+
+
+def delete_folder(
+    project_name: str,
+    folder_id: str,
+    force: bool = False,
+):
+    """Delete folder.
+
+    Args:
+        project_name (str): Project name.
+        folder_id (str): Folder id to delete.
+        force (Optional[bool]): Folder delete folder with all children
+            folder, products, versions and representations.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+        force=force,
     )
 
 
