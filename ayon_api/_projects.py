@@ -5,6 +5,7 @@ import typing
 from typing import Optional, Generator, Iterable, Any
 
 from ._base import _BaseServerAPI
+from .constants import PROJECT_NAME_REGEX
 from .utils import prepare_query_string, fill_own_attribs
 from .graphql_queries import projects_graphql_query
 
@@ -187,6 +188,154 @@ class _ProjectsAPI(_BaseServerAPI):
         if graphql_project:
             project["productTypes"] = graphql_project["productTypes"]
         return project
+
+    def create_project(
+        self,
+        project_name: str,
+        project_code: str,
+        library_project: bool = False,
+        preset_name: Optional[str] = None,
+    ) -> "ProjectDict":
+        """Create project using AYON settings.
+
+        This project creation function is not validating project entity on
+        creation. It is because project entity is created blindly with only
+        minimum required information about project which is name and code.
+
+        Entered project name must be unique and project must not exist yet.
+
+        Note:
+            This function is here to be OP v4 ready but in v3 has more logic
+                to do. That's why inner imports are in the body.
+
+        Args:
+            project_name (str): New project name. Should be unique.
+            project_code (str): Project's code should be unique too.
+            library_project (Optional[bool]): Project is library project.
+            preset_name (Optional[str]): Name of anatomy preset. Default is
+                used if not passed.
+
+        Raises:
+            ValueError: When project name already exists.
+
+        Returns:
+            ProjectDict: Created project entity.
+
+        """
+        if self.get_project(project_name):
+            raise ValueError(
+                f"Project with name \"{project_name}\" already exists"
+            )
+
+        if not PROJECT_NAME_REGEX.match(project_name):
+            raise ValueError(
+                f"Project name \"{project_name}\" contain invalid characters"
+            )
+
+        preset = self.get_project_anatomy_preset(preset_name)
+
+        result = self.post(
+            "projects",
+            name=project_name,
+            code=project_code,
+            anatomy=preset,
+            library=library_project
+        )
+
+        if result.status != 201:
+            details = f"Unknown details ({result.status})"
+            if result.data:
+                details = result.data.get("detail") or details
+            raise ValueError(
+                f"Failed to create project \"{project_name}\": {details}"
+            )
+
+        return self.get_project(project_name)
+
+    def update_project(
+        self,
+        project_name: str,
+        library: Optional[bool] = None,
+        folder_types: Optional[list[dict[str, Any]]] = None,
+        task_types: Optional[list[dict[str, Any]]] = None,
+        link_types: Optional[list[dict[str, Any]]] = None,
+        statuses: Optional[list[dict[str, Any]]] = None,
+        tags: Optional[list[dict[str, Any]]] = None,
+        config: Optional[dict[str, Any]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        active: Optional[bool] = None,
+        project_code: Optional[str] = None,
+        **changes
+    ):
+        """Update project entity on server.
+
+        Args:
+            project_name (str): Name of project.
+            library (Optional[bool]): Change library state.
+            folder_types (Optional[list[dict[str, Any]]]): Folder type
+                definitions.
+            task_types (Optional[list[dict[str, Any]]]): Task type
+                definitions.
+            link_types (Optional[list[dict[str, Any]]]): Link type
+                definitions.
+            statuses (Optional[list[dict[str, Any]]]): Status definitions.
+            tags (Optional[list[dict[str, Any]]]): List of tags available to
+                set on entities.
+            config (Optional[dict[str, Any]]): Project anatomy config
+                with templates and roots.
+            attrib (Optional[dict[str, Any]]): Project attributes to change.
+            data (Optional[dict[str, Any]]): Custom data of a project. This
+                value will 100% override project data.
+            active (Optional[bool]): Change active state of a project.
+            project_code (Optional[str]): Change project code. Not recommended
+                during production.
+            **changes: Other changed keys based on Rest API documentation.
+
+        """
+        changes.update({
+            key: value
+            for key, value in (
+                ("library", library),
+                ("folderTypes", folder_types),
+                ("taskTypes", task_types),
+                ("linkTypes", link_types),
+                ("statuses", statuses),
+                ("tags", tags),
+                ("config", config),
+                ("attrib", attrib),
+                ("data", data),
+                ("active", active),
+                ("code", project_code),
+            )
+            if value is not None
+        })
+        response = self.patch(
+            f"projects/{project_name}",
+            **changes
+        )
+        response.raise_for_status()
+
+    def delete_project(self, project_name: str):
+        """Delete project from server.
+
+        This will completely remove project from server without any step back.
+
+        Args:
+            project_name (str): Project name that will be removed.
+
+        """
+        if not self.get_project(project_name):
+            raise ValueError(
+                f"Project with name \"{project_name}\" was not found"
+            )
+
+        result = self.delete(f"projects/{project_name}")
+        if result.status_code != 204:
+            detail = result.data["detail"]
+            raise ValueError(
+                f"Failed to delete project \"{project_name}\". {detail}"
+            )
 
     def _get_project_graphql_fields(
         self, fields: Optional[set[str]]

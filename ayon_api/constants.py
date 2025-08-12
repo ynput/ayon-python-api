@@ -1,3 +1,5 @@
+import re
+
 # Environments where server url and api key are stored for global connection
 SERVER_URL_ENV_KEY = "AYON_SERVER_URL"
 SERVER_API_ENV_KEY = "AYON_API_KEY"
@@ -10,6 +12,12 @@ SITE_ID_ENV_KEY = "AYON_SITE_ID"
 
 # Backwards compatibility
 SERVER_TOKEN_ENV_KEY = SERVER_API_ENV_KEY
+
+# This should be collected from server schema
+PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
+PROJECT_NAME_REGEX = re.compile(
+    f"^[{PROJECT_NAME_ALLOWED_SYMBOLS}]+$"
+)
 
 # --- User ---
 DEFAULT_USER_FIELDS = {
