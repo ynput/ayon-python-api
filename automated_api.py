@@ -336,6 +336,7 @@ def prepare_api_functions(api_globals):
     from ayon_api.server_api import (  # noqa: E402
         ServerAPI,
         _ActionsAPI,
+        _ActivitiesAPI,
         _AddonsAPI,
         _EventsAPI,
         _FoldersAPI,
@@ -347,6 +348,7 @@ def prepare_api_functions(api_globals):
     functions = []
     _items = list(ServerAPI.__dict__.items())
     _items.extend(_ActionsAPI.__dict__.items())
+    _items.extend(_ActivitiesAPI.__dict__.items())
     _items.extend(_AddonsAPI.__dict__.items())
     _items.extend(_EventsAPI.__dict__.items())
     _items.extend(_FoldersAPI.__dict__.items())

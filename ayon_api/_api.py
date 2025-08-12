@@ -904,186 +904,6 @@ def delete(
     )
 
 
-def get_activities(
-    project_name: str,
-    activity_ids: Optional[Iterable[str]] = None,
-    activity_types: Optional[Iterable["ActivityType"]] = None,
-    entity_ids: Optional[Iterable[str]] = None,
-    entity_names: Optional[Iterable[str]] = None,
-    entity_type: Optional[str] = None,
-    changed_after: Optional[str] = None,
-    changed_before: Optional[str] = None,
-    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
-    fields: Optional[Iterable[str]] = None,
-    limit: Optional[int] = None,
-    order: Optional[SortOrder] = None,
-) -> Generator[Dict[str, Any], None, None]:
-    """Get activities from server with filtering options.
-
-    Args:
-        project_name (str): Project on which activities happened.
-        activity_ids (Optional[Iterable[str]]): Activity ids.
-        activity_types (Optional[Iterable[ActivityType]]): Activity types.
-        entity_ids (Optional[Iterable[str]]): Entity ids.
-        entity_names (Optional[Iterable[str]]): Entity names.
-        entity_type (Optional[str]): Entity type.
-        changed_after (Optional[str]): Return only activities changed
-            after given iso datetime string.
-        changed_before (Optional[str]): Return only activities changed
-            before given iso datetime string.
-        reference_types (Optional[Iterable[ActivityReferenceType]]):
-            Reference types filter. Defaults to `['origin']`.
-        fields (Optional[Iterable[str]]): Fields that should be received
-            for each activity.
-        limit (Optional[int]): Limit number of activities to be fetched.
-        order (Optional[SortOrder]): Order activities in ascending
-            or descending order. It is recommended to set 'limit'
-            when used descending.
-
-    Returns:
-        Generator[dict[str, Any]]: Available activities matching filters.
-
-    """
-    con = get_server_api_connection()
-    return con.get_activities(
-        project_name=project_name,
-        activity_ids=activity_ids,
-        activity_types=activity_types,
-        entity_ids=entity_ids,
-        entity_names=entity_names,
-        entity_type=entity_type,
-        changed_after=changed_after,
-        changed_before=changed_before,
-        reference_types=reference_types,
-        fields=fields,
-        limit=limit,
-        order=order,
-    )
-
-
-def get_activity_by_id(
-    project_name: str,
-    activity_id: str,
-    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
-    fields: Optional[Iterable[str]] = None,
-) -> Optional[Dict[str, Any]]:
-    """Get activity by id.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        activity_id (str): Activity id.
-        reference_types: Optional[Iterable[ActivityReferenceType]]: Filter
-            by reference types.
-        fields (Optional[Iterable[str]]): Fields that should be received
-            for each activity.
-
-    Returns:
-        Optional[Dict[str, Any]]: Activity data or None if activity is not
-            found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_activity_by_id(
-        project_name=project_name,
-        activity_id=activity_id,
-        reference_types=reference_types,
-        fields=fields,
-    )
-
-
-def create_activity(
-    project_name: str,
-    entity_id: str,
-    entity_type: str,
-    activity_type: "ActivityType",
-    activity_id: Optional[str] = None,
-    body: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    timestamp: Optional[str] = None,
-    data: Optional[Dict[str, Any]] = None,
-) -> str:
-    """Create activity on a project.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        entity_id (str): Entity id.
-        entity_type (str): Entity type.
-        activity_type (ActivityType): Activity type.
-        activity_id (Optional[str]): Activity id.
-        body (Optional[str]): Activity body.
-        file_ids (Optional[List[str]]): List of file ids attached
-            to activity.
-        timestamp (Optional[str]): Activity timestamp.
-        data (Optional[Dict[str, Any]]): Additional data.
-
-    Returns:
-        str: Activity id.
-
-    """
-    con = get_server_api_connection()
-    return con.create_activity(
-        project_name=project_name,
-        entity_id=entity_id,
-        entity_type=entity_type,
-        activity_type=activity_type,
-        activity_id=activity_id,
-        body=body,
-        file_ids=file_ids,
-        timestamp=timestamp,
-        data=data,
-    )
-
-
-def update_activity(
-    project_name: str,
-    activity_id: str,
-    body: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    append_file_ids: Optional[bool] = False,
-    data: Optional[Dict[str, Any]] = None,
-):
-    """Update activity by id.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        activity_id (str): Activity id.
-        body (str): Activity body.
-        file_ids (Optional[List[str]]): List of file ids attached
-            to activity.
-        append_file_ids (Optional[bool]): Append file ids to existing
-            list of file ids.
-        data (Optional[Dict[str, Any]]): Update data in activity.
-
-    """
-    con = get_server_api_connection()
-    return con.update_activity(
-        project_name=project_name,
-        activity_id=activity_id,
-        body=body,
-        file_ids=file_ids,
-        append_file_ids=append_file_ids,
-        data=data,
-    )
-
-
-def delete_activity(
-    project_name: str,
-    activity_id: str,
-):
-    """Delete activity by id.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        activity_id (str): Activity id to remove.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_activity(
-        project_name=project_name,
-        activity_id=activity_id,
-    )
-
-
 def download_file_to_stream(
     endpoint: str,
     stream: "StreamType",
@@ -4862,46 +4682,6 @@ def send_batch_operations(
     )
 
 
-def send_activities_batch_operations(
-    project_name: str,
-    operations: List[Dict[str, Any]],
-    can_fail: bool = False,
-    raise_on_fail: bool = True,
-) -> List[Dict[str, Any]]:
-    """Post multiple CRUD activities operations to server.
-
-    When multiple changes should be made on server side this is the best
-    way to go. It is possible to pass multiple operations to process on a
-    server side and do the changes in a transaction.
-
-    Args:
-        project_name (str): On which project should be operations
-            processed.
-        operations (list[dict[str, Any]]): Operations to be processed.
-        can_fail (Optional[bool]): Server will try to process all
-            operations even if one of them fails.
-        raise_on_fail (Optional[bool]): Raise exception if an operation
-            fails. You can handle failed operations on your own
-            when set to 'False'.
-
-    Raises:
-        ValueError: Operations can't be converted to json string.
-        FailedOperations: When output does not contain server operations
-            or 'raise_on_fail' is enabled and any operation fails.
-
-    Returns:
-        list[dict[str, Any]]: Operations result with process details.
-
-    """
-    con = get_server_api_connection()
-    return con.send_activities_batch_operations(
-        project_name=project_name,
-        operations=operations,
-        can_fail=can_fail,
-        raise_on_fail=raise_on_fail,
-    )
-
-
 def get_actions(
     project_name: Optional[str] = None,
     entity_type: Optional["ActionEntityTypes"] = None,
@@ -5119,6 +4899,226 @@ def abort_action(
     return con.abort_action(
         action_token=action_token,
         message=message,
+    )
+
+
+def get_activities(
+    project_name: str,
+    activity_ids: Optional[Iterable[str]] = None,
+    activity_types: Optional[Iterable["ActivityType"]] = None,
+    entity_ids: Optional[Iterable[str]] = None,
+    entity_names: Optional[Iterable[str]] = None,
+    entity_type: Optional[str] = None,
+    changed_after: Optional[str] = None,
+    changed_before: Optional[str] = None,
+    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    fields: Optional[Iterable[str]] = None,
+    limit: Optional[int] = None,
+    order: Optional[SortOrder] = None,
+) -> Generator[dict[str, Any], None, None]:
+    """Get activities from server with filtering options.
+
+    Args:
+        project_name (str): Project on which activities happened.
+        activity_ids (Optional[Iterable[str]]): Activity ids.
+        activity_types (Optional[Iterable[ActivityType]]): Activity types.
+        entity_ids (Optional[Iterable[str]]): Entity ids.
+        entity_names (Optional[Iterable[str]]): Entity names.
+        entity_type (Optional[str]): Entity type.
+        changed_after (Optional[str]): Return only activities changed
+            after given iso datetime string.
+        changed_before (Optional[str]): Return only activities changed
+            before given iso datetime string.
+        reference_types (Optional[Iterable[ActivityReferenceType]]):
+            Reference types filter. Defaults to `['origin']`.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+        limit (Optional[int]): Limit number of activities to be fetched.
+        order (Optional[SortOrder]): Order activities in ascending
+            or descending order. It is recommended to set 'limit'
+            when used descending.
+
+    Returns:
+        Generator[dict[str, Any]]: Available activities matching filters.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activities(
+        project_name=project_name,
+        activity_ids=activity_ids,
+        activity_types=activity_types,
+        entity_ids=entity_ids,
+        entity_names=entity_names,
+        entity_type=entity_type,
+        changed_after=changed_after,
+        changed_before=changed_before,
+        reference_types=reference_types,
+        fields=fields,
+        limit=limit,
+        order=order,
+    )
+
+
+def get_activity_by_id(
+    project_name: str,
+    activity_id: str,
+    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Optional[dict[str, Any]]:
+    """Get activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        reference_types: Optional[Iterable[ActivityReferenceType]]: Filter
+            by reference types.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+
+    Returns:
+        Optional[dict[str, Any]]: Activity data or None if activity is not
+            found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activity_by_id(
+        project_name=project_name,
+        activity_id=activity_id,
+        reference_types=reference_types,
+        fields=fields,
+    )
+
+
+def create_activity(
+    project_name: str,
+    entity_id: str,
+    entity_type: str,
+    activity_type: "ActivityType",
+    activity_id: Optional[str] = None,
+    body: Optional[str] = None,
+    file_ids: Optional[list[str]] = None,
+    timestamp: Optional[str] = None,
+    data: Optional[dict[str, Any]] = None,
+) -> str:
+    """Create activity on a project.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        entity_id (str): Entity id.
+        entity_type (str): Entity type.
+        activity_type (ActivityType): Activity type.
+        activity_id (Optional[str]): Activity id.
+        body (Optional[str]): Activity body.
+        file_ids (Optional[list[str]]): List of file ids attached
+            to activity.
+        timestamp (Optional[str]): Activity timestamp.
+        data (Optional[dict[str, Any]]): Additional data.
+
+    Returns:
+        str: Activity id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_activity(
+        project_name=project_name,
+        entity_id=entity_id,
+        entity_type=entity_type,
+        activity_type=activity_type,
+        activity_id=activity_id,
+        body=body,
+        file_ids=file_ids,
+        timestamp=timestamp,
+        data=data,
+    )
+
+
+def update_activity(
+    project_name: str,
+    activity_id: str,
+    body: Optional[str] = None,
+    file_ids: Optional[list[str]] = None,
+    append_file_ids: Optional[bool] = False,
+    data: Optional[dict[str, Any]] = None,
+):
+    """Update activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        body (str): Activity body.
+        file_ids (Optional[list[str]]): List of file ids attached
+            to activity.
+        append_file_ids (Optional[bool]): Append file ids to existing
+            list of file ids.
+        data (Optional[dict[str, Any]]): Update data in activity.
+
+    """
+    con = get_server_api_connection()
+    return con.update_activity(
+        project_name=project_name,
+        activity_id=activity_id,
+        body=body,
+        file_ids=file_ids,
+        append_file_ids=append_file_ids,
+        data=data,
+    )
+
+
+def delete_activity(
+    project_name: str,
+    activity_id: str,
+):
+    """Delete activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id to remove.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_activity(
+        project_name=project_name,
+        activity_id=activity_id,
+    )
+
+
+def send_activities_batch_operations(
+    project_name: str,
+    operations: list,
+    can_fail: bool = False,
+    raise_on_fail: bool = True,
+) -> list:
+    """Post multiple CRUD activities operations to server.
+
+    When multiple changes should be made on server side this is the best
+    way to go. It is possible to pass multiple operations to process on a
+    server side and do the changes in a transaction.
+
+    Args:
+        project_name (str): On which project should be operations
+            processed.
+        operations (list[dict[str, Any]]): Operations to be processed.
+        can_fail (Optional[bool]): Server will try to process all
+            operations even if one of them fails.
+        raise_on_fail (Optional[bool]): Raise exception if an operation
+            fails. You can handle failed operations on your own
+            when set to 'False'.
+
+    Raises:
+        ValueError: Operations can't be converted to json string.
+        FailedOperations: When output does not contain server operations
+            or 'raise_on_fail' is enabled and any operation fails.
+
+    Returns:
+        list[dict[str, Any]]: Operations result with process details.
+
+    """
+    con = get_server_api_connection()
+    return con.send_activities_batch_operations(
+        project_name=project_name,
+        operations=operations,
+        can_fail=can_fail,
+        raise_on_fail=raise_on_fail,
     )
 
 

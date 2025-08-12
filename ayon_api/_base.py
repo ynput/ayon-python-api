@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Optional
+from typing import Optional, Any
 
 import requests
 
@@ -12,6 +12,9 @@ if typing.TYPE_CHECKING:
 
 
 class _BaseServerAPI:
+    def get_server_version(self) -> str:
+        raise NotImplementedError()
+
     def get_server_version_tuple(self) -> "ServerVersion":
         raise NotImplementedError()
 
@@ -93,4 +96,13 @@ class _BaseServerAPI:
         raise NotImplementedError()
 
     def _convert_entity_data(self, entity: "AnyEntityDict"):
+        raise NotImplementedError()
+
+    def _send_batch_operations(
+        self,
+        uri: str,
+        operations: list[dict[str, Any]],
+        can_fail: bool,
+        raise_on_fail: bool
+    ) -> list[dict[str, Any]]:
         raise NotImplementedError()

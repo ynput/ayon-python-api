@@ -96,13 +96,13 @@ from .utils import (
     get_default_site_id,
     NOT_SET,
     get_media_mime_type,
-    SortOrder,
     get_machine_name,
     fill_own_attribs,
     prepare_list_filters,
     PatternType,
 )
 from ._actions import _ActionsAPI
+from ._activities import _ActivitiesAPI
 from ._addons import _AddonsAPI
 from ._events import _EventsAPI
 from ._folders import _FoldersAPI
@@ -114,8 +114,6 @@ if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
         ServerVersion,
-        ActivityType,
-        ActivityReferenceType,
         AttributeScope,
         AttributeSchemaDataDict,
         AttributeSchemaDict,
@@ -128,13 +126,11 @@ if typing.TYPE_CHECKING:
         SecretDict,
 
         AnyEntityDict,
-        FolderDict,
         TaskDict,
         ProductDict,
         VersionDict,
         RepresentationDict,
         WorkfileInfoDict,
-        FlatFolderDict,
 
         ProjectHierarchyDict,
         ProductTypeDict,
@@ -369,6 +365,7 @@ class _AsUserStack:
 
 class ServerAPI(
     _ActionsAPI,
+    _ActivitiesAPI,
     _AddonsAPI,
     _EventsAPI,
     _FoldersAPI,
