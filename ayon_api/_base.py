@@ -71,5 +71,13 @@ class _BaseServerAPI:
     ) -> TransferProgress:
         raise NotImplementedError()
 
+    def _prepare_fields(
+        self,
+        entity_type: str,
+        fields: set[str],
+        own_attributes: bool = False,
+    ):
+        raise NotImplementedError()
+
     def _convert_entity_data(self, entity: "AnyEntityDict"):
         raise NotImplementedError()

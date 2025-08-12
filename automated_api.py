@@ -338,6 +338,7 @@ def prepare_api_functions(api_globals):
         _ActionsAPI,
         _AddonsAPI,
         _ListsAPI,
+        _ProjectsAPI,
     )
 
     functions = []
@@ -345,6 +346,8 @@ def prepare_api_functions(api_globals):
     _items.extend(_ActionsAPI.__dict__.items())
     _items.extend(_AddonsAPI.__dict__.items())
     _items.extend(_ListsAPI.__dict__.items())
+    _items.extend(_ProjectsAPI.__dict__.items())
+
     processed = set()
     for attr_name, attr in _items:
         if attr_name in processed:

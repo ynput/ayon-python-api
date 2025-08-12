@@ -3023,52 +3023,6 @@ def delete_secret(
     )
 
 
-def get_rest_project(
-    project_name: str,
-) -> Optional["ProjectDict"]:
-    """Query project by name.
-
-    This call returns project with anatomy data.
-
-    Args:
-        project_name (str): Name of project.
-
-    Returns:
-        Optional[ProjectDict]: Project entity data or 'None' if
-            project was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_rest_project(
-        project_name=project_name,
-    )
-
-
-def get_rest_projects(
-    active: Optional[bool] = True,
-    library: Optional[bool] = None,
-) -> Generator["ProjectDict", None, None]:
-    """Query available project entities.
-
-    User must be logged in.
-
-    Args:
-        active (Optional[bool]): Filter active/inactive projects. Both
-            are returned if 'None' is passed.
-        library (Optional[bool]): Filter standard/library projects. Both
-            are returned if 'None' is passed.
-
-    Returns:
-        Generator[ProjectDict, None, None]: Available projects.
-
-    """
-    con = get_server_api_connection()
-    return con.get_rest_projects(
-        active=active,
-        library=library,
-    )
-
-
 def get_rest_entity_by_id(
     project_name: str,
     entity_type: str,
@@ -3197,89 +3151,6 @@ def get_rest_representation(
     return con.get_rest_representation(
         project_name=project_name,
         representation_id=representation_id,
-    )
-
-
-def get_project_names(
-    active: "Union[bool, None]" = True,
-    library: "Union[bool, None]" = None,
-) -> List[str]:
-    """Receive available project names.
-
-    User must be logged in.
-
-    Args:
-        active (Union[bool, None]): Filter active/inactive projects. Both
-            are returned if 'None' is passed.
-        library (Union[bool, None]): Filter standard/library projects. Both
-            are returned if 'None' is passed.
-
-    Returns:
-        list[str]: List of available project names.
-
-    """
-    con = get_server_api_connection()
-    return con.get_project_names(
-        active=active,
-        library=library,
-    )
-
-
-def get_projects(
-    active: "Union[bool, None]" = True,
-    library: "Union[bool, None]" = None,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Generator["ProjectDict", None, None]:
-    """Get projects.
-
-    Args:
-        active (Optional[bool]): Filter active or inactive projects.
-            Filter is disabled when 'None' is passed.
-        library (Optional[bool]): Filter library projects. Filter is
-            disabled when 'None' is passed.
-        fields (Optional[Iterable[str]]): fields to be queried
-            for project.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Generator[ProjectDict, None, None]: Queried projects.
-
-    """
-    con = get_server_api_connection()
-    return con.get_projects(
-        active=active,
-        library=library,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_project(
-    project_name: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["ProjectDict"]:
-    """Get project.
-
-    Args:
-        project_name (str): Name of project.
-        fields (Optional[Iterable[str]]): fields to be queried
-            for project.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[ProjectDict]: Project entity data or None
-            if project was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_project(
-        project_name=project_name,
-        fields=fields,
-        own_attributes=own_attributes,
     )
 
 
@@ -7315,4 +7186,133 @@ def delete_entity_list_item(
         project_name=project_name,
         list_id=list_id,
         item_id=item_id,
+    )
+
+
+def get_rest_project(
+    project_name: str,
+) -> Optional["ProjectDict"]:
+    """Query project by name.
+
+    This call returns project with anatomy data.
+
+    Args:
+        project_name (str): Name of project.
+
+    Returns:
+        Optional[ProjectDict]: Project entity data or 'None' if
+            project was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_rest_project(
+        project_name=project_name,
+    )
+
+
+def get_rest_projects(
+    active: Optional[bool] = True,
+    library: Optional[bool] = None,
+) -> Generator["ProjectDict", None, None]:
+    """Query available project entities.
+
+    User must be logged in.
+
+    Args:
+        active (Optional[bool]): Filter active/inactive projects. Both
+            are returned if 'None' is passed.
+        library (Optional[bool]): Filter standard/library projects. Both
+            are returned if 'None' is passed.
+
+    Returns:
+        Generator[ProjectDict, None, None]: Available projects.
+
+    """
+    con = get_server_api_connection()
+    return con.get_rest_projects(
+        active=active,
+        library=library,
+    )
+
+
+def get_project_names(
+    active: Optional[bool] = True,
+    library: Optional[bool] = None,
+) -> list[str]:
+    """Receive available project names.
+
+    User must be logged in.
+
+    Args:
+        active (Optional[bool]): Filter active/inactive projects. Both
+            are returned if 'None' is passed.
+        library (Optional[bool]): Filter standard/library projects. Both
+            are returned if 'None' is passed.
+
+    Returns:
+        list[str]: List of available project names.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_names(
+        active=active,
+        library=library,
+    )
+
+
+def get_projects(
+    active: Optional[bool] = True,
+    library: Optional[bool] = None,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Generator["ProjectDict", None, None]:
+    """Get projects.
+
+    Args:
+        active (Optional[bool]): Filter active or inactive projects.
+            Filter is disabled when 'None' is passed.
+        library (Optional[bool]): Filter library projects. Filter is
+            disabled when 'None' is passed.
+        fields (Optional[Iterable[str]]): fields to be queried
+            for project.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Generator[ProjectDict, None, None]: Queried projects.
+
+    """
+    con = get_server_api_connection()
+    return con.get_projects(
+        active=active,
+        library=library,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_project(
+    project_name: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["ProjectDict"]:
+    """Get project.
+
+    Args:
+        project_name (str): Name of project.
+        fields (Optional[Iterable[str]]): fields to be queried
+            for project.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[ProjectDict]: Project entity data or None
+            if project was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project(
+        project_name=project_name,
+        fields=fields,
+        own_attributes=own_attributes,
     )
