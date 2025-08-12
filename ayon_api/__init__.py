@@ -207,9 +207,6 @@ from ._api import (
     get_workfile_thumbnail,
     create_thumbnail,
     update_thumbnail,
-    create_project,
-    update_project,
-    delete_project,
     get_full_link_type_name,
     get_link_types,
     get_link_type,
@@ -261,6 +258,9 @@ from ._api import (
     get_project_names,
     get_projects,
     get_project,
+    create_project,
+    update_project,
+    delete_project,
 )
 
 
@@ -471,9 +471,6 @@ __all__ = (
     "get_workfile_thumbnail",
     "create_thumbnail",
     "update_thumbnail",
-    "create_project",
-    "update_project",
-    "delete_project",
     "get_full_link_type_name",
     "get_link_types",
     "get_link_type",
@@ -525,4 +522,7 @@ __all__ = (
     "get_project_names",
     "get_projects",
     "get_project",
+    "create_project",
+    "update_project",
+    "delete_project",
 )

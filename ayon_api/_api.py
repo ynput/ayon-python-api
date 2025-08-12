@@ -5621,122 +5621,6 @@ def update_thumbnail(
     )
 
 
-def create_project(
-    project_name: str,
-    project_code: str,
-    library_project: bool = False,
-    preset_name: Optional[str] = None,
-) -> "ProjectDict":
-    """Create project using AYON settings.
-
-    This project creation function is not validating project entity on
-    creation. It is because project entity is created blindly with only
-    minimum required information about project which is name and code.
-
-    Entered project name must be unique and project must not exist yet.
-
-    Note:
-        This function is here to be OP v4 ready but in v3 has more logic
-            to do. That's why inner imports are in the body.
-
-    Args:
-        project_name (str): New project name. Should be unique.
-        project_code (str): Project's code should be unique too.
-        library_project (Optional[bool]): Project is library project.
-        preset_name (Optional[str]): Name of anatomy preset. Default is
-            used if not passed.
-
-    Raises:
-        ValueError: When project name already exists.
-
-    Returns:
-        ProjectDict: Created project entity.
-
-    """
-    con = get_server_api_connection()
-    return con.create_project(
-        project_name=project_name,
-        project_code=project_code,
-        library_project=library_project,
-        preset_name=preset_name,
-    )
-
-
-def update_project(
-    project_name: str,
-    library: Optional[bool] = None,
-    folder_types: Optional[List[Dict[str, Any]]] = None,
-    task_types: Optional[List[Dict[str, Any]]] = None,
-    link_types: Optional[List[Dict[str, Any]]] = None,
-    statuses: Optional[List[Dict[str, Any]]] = None,
-    tags: Optional[List[Dict[str, Any]]] = None,
-    config: Optional[Dict[str, Any]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    active: Optional[bool] = None,
-    project_code: Optional[str] = None,
-    **changes,
-):
-    """Update project entity on server.
-
-    Args:
-        project_name (str): Name of project.
-        library (Optional[bool]): Change library state.
-        folder_types (Optional[list[dict[str, Any]]]): Folder type
-            definitions.
-        task_types (Optional[list[dict[str, Any]]]): Task type
-            definitions.
-        link_types (Optional[list[dict[str, Any]]]): Link type
-            definitions.
-        statuses (Optional[list[dict[str, Any]]]): Status definitions.
-        tags (Optional[list[dict[str, Any]]]): List of tags available to
-            set on entities.
-        config (Optional[dict[str, Any]]): Project anatomy config
-            with templates and roots.
-        attrib (Optional[dict[str, Any]]): Project attributes to change.
-        data (Optional[dict[str, Any]]): Custom data of a project. This
-            value will 100% override project data.
-        active (Optional[bool]): Change active state of a project.
-        project_code (Optional[str]): Change project code. Not recommended
-            during production.
-        **changes: Other changed keys based on Rest API documentation.
-
-    """
-    con = get_server_api_connection()
-    return con.update_project(
-        project_name=project_name,
-        library=library,
-        folder_types=folder_types,
-        task_types=task_types,
-        link_types=link_types,
-        statuses=statuses,
-        tags=tags,
-        config=config,
-        attrib=attrib,
-        data=data,
-        active=active,
-        project_code=project_code,
-        **changes,
-    )
-
-
-def delete_project(
-    project_name: str,
-):
-    """Delete project from server.
-
-    This will completely remove project from server without any step back.
-
-    Args:
-        project_name (str): Project name that will be removed.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_project(
-        project_name=project_name,
-    )
-
-
 def get_full_link_type_name(
     link_type_name: str,
     input_type: str,
@@ -7315,4 +7199,120 @@ def get_project(
         project_name=project_name,
         fields=fields,
         own_attributes=own_attributes,
+    )
+
+
+def create_project(
+    project_name: str,
+    project_code: str,
+    library_project: bool = False,
+    preset_name: Optional[str] = None,
+) -> "ProjectDict":
+    """Create project using AYON settings.
+
+    This project creation function is not validating project entity on
+    creation. It is because project entity is created blindly with only
+    minimum required information about project which is name and code.
+
+    Entered project name must be unique and project must not exist yet.
+
+    Note:
+        This function is here to be OP v4 ready but in v3 has more logic
+            to do. That's why inner imports are in the body.
+
+    Args:
+        project_name (str): New project name. Should be unique.
+        project_code (str): Project's code should be unique too.
+        library_project (Optional[bool]): Project is library project.
+        preset_name (Optional[str]): Name of anatomy preset. Default is
+            used if not passed.
+
+    Raises:
+        ValueError: When project name already exists.
+
+    Returns:
+        ProjectDict: Created project entity.
+
+    """
+    con = get_server_api_connection()
+    return con.create_project(
+        project_name=project_name,
+        project_code=project_code,
+        library_project=library_project,
+        preset_name=preset_name,
+    )
+
+
+def update_project(
+    project_name: str,
+    library: Optional[bool] = None,
+    folder_types: Optional[list[dict[str, Any]]] = None,
+    task_types: Optional[list[dict[str, Any]]] = None,
+    link_types: Optional[list[dict[str, Any]]] = None,
+    statuses: Optional[list[dict[str, Any]]] = None,
+    tags: Optional[list[dict[str, Any]]] = None,
+    config: Optional[dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    active: Optional[bool] = None,
+    project_code: Optional[str] = None,
+    **changes,
+):
+    """Update project entity on server.
+
+    Args:
+        project_name (str): Name of project.
+        library (Optional[bool]): Change library state.
+        folder_types (Optional[list[dict[str, Any]]]): Folder type
+            definitions.
+        task_types (Optional[list[dict[str, Any]]]): Task type
+            definitions.
+        link_types (Optional[list[dict[str, Any]]]): Link type
+            definitions.
+        statuses (Optional[list[dict[str, Any]]]): Status definitions.
+        tags (Optional[list[dict[str, Any]]]): List of tags available to
+            set on entities.
+        config (Optional[dict[str, Any]]): Project anatomy config
+            with templates and roots.
+        attrib (Optional[dict[str, Any]]): Project attributes to change.
+        data (Optional[dict[str, Any]]): Custom data of a project. This
+            value will 100% override project data.
+        active (Optional[bool]): Change active state of a project.
+        project_code (Optional[str]): Change project code. Not recommended
+            during production.
+        **changes: Other changed keys based on Rest API documentation.
+
+    """
+    con = get_server_api_connection()
+    return con.update_project(
+        project_name=project_name,
+        library=library,
+        folder_types=folder_types,
+        task_types=task_types,
+        link_types=link_types,
+        statuses=statuses,
+        tags=tags,
+        config=config,
+        attrib=attrib,
+        data=data,
+        active=active,
+        project_code=project_code,
+        **changes,
+    )
+
+
+def delete_project(
+    project_name: str,
+):
+    """Delete project from server.
+
+    This will completely remove project from server without any step back.
+
+    Args:
+        project_name (str): Project name that will be removed.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_project(
+        project_name=project_name,
     )
