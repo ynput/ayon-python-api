@@ -1758,130 +1758,6 @@ def get_default_fields_for_type(
     )
 
 
-def get_addons_info(
-    details: bool = True,
-) -> "AddonsInfoDict":
-    """Get information about addons available on server.
-
-    Args:
-        details (Optional[bool]): Detailed data with information how
-            to get client code.
-
-    """
-    con = get_server_api_connection()
-    return con.get_addons_info(
-        details=details,
-    )
-
-
-def get_addon_endpoint(
-    addon_name: str,
-    addon_version: str,
-    *subpaths,
-) -> str:
-    """Calculate endpoint to addon route.
-
-    Examples:
-
-        >>> api = ServerAPI("https://your.url.com")
-        >>> api.get_addon_url(
-        ...     "example", "1.0.0", "private", "my.zip")
-        'addons/example/1.0.0/private/my.zip'
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        *subpaths (str): Any amount of subpaths that are added to
-            addon url.
-
-    Returns:
-        str: Final url.
-
-    """
-    con = get_server_api_connection()
-    return con.get_addon_endpoint(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        *subpaths,
-    )
-
-
-def get_addon_url(
-    addon_name: str,
-    addon_version: str,
-    *subpaths,
-    use_rest: bool = True,
-) -> str:
-    """Calculate url to addon route.
-
-    Examples:
-
-        >>> api = ServerAPI("https://your.url.com")
-        >>> api.get_addon_url(
-        ...     "example", "1.0.0", "private", "my.zip")
-        'https://your.url.com/api/addons/example/1.0.0/private/my.zip'
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        *subpaths (str): Any amount of subpaths that are added to
-            addon url.
-        use_rest (Optional[bool]): Use rest endpoint.
-
-    Returns:
-        str: Final url.
-
-    """
-    con = get_server_api_connection()
-    return con.get_addon_url(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        *subpaths,
-        use_rest=use_rest,
-    )
-
-
-def download_addon_private_file(
-    addon_name: str,
-    addon_version: str,
-    filename: str,
-    destination_dir: str,
-    destination_filename: Optional[str] = None,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
-) -> str:
-    """Download a file from addon private files.
-
-    This method requires to have authorized token available. Private files
-    are not under '/api' restpoint.
-
-    Args:
-        addon_name (str): Addon name.
-        addon_version (str): Addon version.
-        filename (str): Filename in private folder on server.
-        destination_dir (str): Where the file should be downloaded.
-        destination_filename (Optional[str]): Name of destination
-            filename. Source filename is used if not passed.
-        chunk_size (Optional[int]): Download chunk size.
-        progress (Optional[TransferProgress]): Object that gives ability
-            to track download progress.
-
-    Returns:
-        str: Filepath to downloaded file.
-
-    """
-    con = get_server_api_connection()
-    return con.download_addon_private_file(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        filename=filename,
-        destination_dir=destination_dir,
-        destination_filename=destination_filename,
-        chunk_size=chunk_size,
-        progress=progress,
-    )
-
-
 def get_installers(
     version: Optional[str] = None,
     platform_name: Optional[str] = None,
@@ -2227,79 +2103,6 @@ def upload_dependency_package(
         src_filepath=src_filepath,
         dst_filename=dst_filename,
         platform_name=platform_name,
-        progress=progress,
-    )
-
-
-def delete_addon(
-    addon_name: str,
-    purge: Optional[bool] = None,
-):
-    """Delete addon from server.
-
-    Delete all versions of addon from server.
-
-    Args:
-        addon_name (str): Addon name.
-        purge (Optional[bool]): Purge all data related to the addon.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_addon(
-        addon_name=addon_name,
-        purge=purge,
-    )
-
-
-def delete_addon_version(
-    addon_name: str,
-    addon_version: str,
-    purge: Optional[bool] = None,
-):
-    """Delete addon version from server.
-
-    Delete all versions of addon from server.
-
-    Args:
-        addon_name (str): Addon name.
-        addon_version (str): Addon version.
-        purge (Optional[bool]): Purge all data related to the addon.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_addon_version(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        purge=purge,
-    )
-
-
-def upload_addon_zip(
-    src_filepath: str,
-    progress: Optional[TransferProgress] = None,
-):
-    """Upload addon zip file to server.
-
-    File is validated on server. If it is valid, it is installed. It will
-        create an event job which can be tracked (tracking part is not
-        implemented yet).
-
-    Example output::
-
-        {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
-
-    Args:
-        src_filepath (str): Path to a zip file.
-        progress (Optional[TransferProgress]): Object to keep track about
-            upload state.
-
-    Returns:
-        dict[str, Any]: Response data from server.
-
-    """
-    con = get_server_api_connection()
-    return con.upload_addon_zip(
-        src_filepath=src_filepath,
         progress=progress,
     )
 
@@ -6954,6 +6757,203 @@ def abort_action(
     return con.abort_action(
         action_token=action_token,
         message=message,
+    )
+
+
+def get_addon_endpoint(
+    addon_name: str,
+    addon_version: str,
+    *subpaths,
+) -> str:
+    """Calculate endpoint to addon route.
+
+    Examples:
+        >>> from ayon_api import ServerAPI
+        >>> api = ServerAPI("https://your.url.com")
+        >>> api.get_addon_url(
+        ...     "example", "1.0.0", "private", "my.zip")
+        'addons/example/1.0.0/private/my.zip'
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        *subpaths (str): Any amount of subpaths that are added to
+            addon url.
+
+    Returns:
+        str: Final url.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addon_endpoint(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        *subpaths,
+    )
+
+
+def get_addons_info(
+    details: bool = True,
+) -> "AddonsInfoDict":
+    """Get information about addons available on server.
+
+    Args:
+        details (Optional[bool]): Detailed data with information how
+            to get client code.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addons_info(
+        details=details,
+    )
+
+
+def get_addon_url(
+    addon_name: str,
+    addon_version: str,
+    *subpaths,
+    use_rest: bool = True,
+) -> str:
+    """Calculate url to addon route.
+
+    Examples:
+
+        >>> api = ServerAPI("https://your.url.com")
+        >>> api.get_addon_url(
+        ...     "example", "1.0.0", "private", "my.zip")
+        'https://your.url.com/api/addons/example/1.0.0/private/my.zip'
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        *subpaths (str): Any amount of subpaths that are added to
+            addon url.
+        use_rest (Optional[bool]): Use rest endpoint.
+
+    Returns:
+        str: Final url.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addon_url(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        *subpaths,
+        use_rest=use_rest,
+    )
+
+
+def delete_addon(
+    addon_name: str,
+    purge: Optional[bool] = None,
+) -> None:
+    """Delete addon from server.
+
+    Delete all versions of addon from server.
+
+    Args:
+        addon_name (str): Addon name.
+        purge (Optional[bool]): Purge all data related to the addon.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon(
+        addon_name=addon_name,
+        purge=purge,
+    )
+
+
+def delete_addon_version(
+    addon_name: str,
+    addon_version: str,
+    purge: Optional[bool] = None,
+) -> None:
+    """Delete addon version from server.
+
+    Delete all versions of addon from server.
+
+    Args:
+        addon_name (str): Addon name.
+        addon_version (str): Addon version.
+        purge (Optional[bool]): Purge all data related to the addon.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon_version(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        purge=purge,
+    )
+
+
+def upload_addon_zip(
+    src_filepath: str,
+    progress: Optional[TransferProgress] = None,
+):
+    """Upload addon zip file to server.
+
+    File is validated on server. If it is valid, it is installed. It will
+        create an event job which can be tracked (tracking part is not
+        implemented yet).
+
+    Example output::
+
+        {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
+
+    Args:
+        src_filepath (str): Path to a zip file.
+        progress (Optional[TransferProgress]): Object to keep track about
+            upload state.
+
+    Returns:
+        dict[str, Any]: Response data from server.
+
+    """
+    con = get_server_api_connection()
+    return con.upload_addon_zip(
+        src_filepath=src_filepath,
+        progress=progress,
+    )
+
+
+def download_addon_private_file(
+    addon_name: str,
+    addon_version: str,
+    filename: str,
+    destination_dir: str,
+    destination_filename: Optional[str] = None,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> str:
+    """Download a file from addon private files.
+
+    This method requires to have authorized token available. Private files
+    are not under '/api' restpoint.
+
+    Args:
+        addon_name (str): Addon name.
+        addon_version (str): Addon version.
+        filename (str): Filename in private folder on server.
+        destination_dir (str): Where the file should be downloaded.
+        destination_filename (Optional[str]): Name of destination
+            filename. Source filename is used if not passed.
+        chunk_size (Optional[int]): Download chunk size.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track download progress.
+
+    Returns:
+        str: Filepath to downloaded file.
+
+    """
+    con = get_server_api_connection()
+    return con.download_addon_private_file(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        filename=filename,
+        destination_dir=destination_dir,
+        destination_filename=destination_filename,
+        chunk_size=chunk_size,
+        progress=progress,
     )
 
 
