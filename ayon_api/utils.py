@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 import datetime
@@ -7,6 +9,7 @@ import string
 import platform
 import traceback
 import collections
+import itertools
 from urllib.parse import urlparse, urlencode
 import typing
 from typing import Optional, Dict, Set, Any, Iterable
@@ -30,6 +33,8 @@ REMOVED_VALUE = object()
 NOT_SET = object()
 SLUGIFY_WHITELIST = string.ascii_letters + string.digits
 SLUGIFY_SEP_WHITELIST = " ,./\\;:!|*^#@~+-_="
+
+PatternType = type(re.compile(""))
 
 RepresentationParents = collections.namedtuple(
     "RepresentationParents",
@@ -110,6 +115,31 @@ def fill_own_attribs(entity: "AnyEntityDict") -> None:
             own_attrib[key] = None
         else:
             own_attrib[key] = copy.deepcopy(value)
+
+
+def _convert_list_filter_value(value: Any) -> Optional[list[Any]]:
+    if value is None:
+        return None
+
+    if isinstance(value, PatternType):
+        return [value.pattern]
+
+    if isinstance(value, (int, float, str, bool)):
+        return [value]
+    return list(set(value))
+
+
+def prepare_list_filters(
+    output: dict[str, Any], *args: tuple[str, Any], **kwargs: Any
+) -> bool:
+    for key, value in itertools.chain(args, kwargs.items()):
+        value = _convert_list_filter_value(value)
+        if value is None:
+            continue
+        if not value:
+            return False
+        output[key] = value
+    return True
 
 
 def get_default_timeout() -> float:

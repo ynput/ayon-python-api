@@ -103,6 +103,8 @@ from .utils import (
     SortOrder,
     get_machine_name,
     fill_own_attribs,
+    prepare_list_filters,
+    PatternType,
 )
 from ._actions import _ActionsAPI
 from ._addons import _AddonsAPI
@@ -143,7 +145,6 @@ if typing.TYPE_CHECKING:
         StreamType,
     )
 
-PatternType = type(re.compile(""))
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 
 _PLACEHOLDER = object()
@@ -1583,7 +1584,7 @@ class ServerAPI(
             statuses = states
 
         filters = {}
-        if not _prepare_list_filters(
+        if not prepare_list_filters(
             filters,
             ("eventTopics", topics),
             ("eventIds", event_ids),
@@ -1923,7 +1924,7 @@ class ServerAPI(
         if reference_types is None:
             reference_types = {"origin"}
 
-        if not _prepare_list_filters(
+        if not prepare_list_filters(
             filters,
             ("activityIds", activity_ids),
             ("activityTypes", activity_types),
@@ -4884,7 +4885,7 @@ class ServerAPI(
         filters = {
             "projectName": project_name
         }
-        if not _prepare_list_filters(
+        if not prepare_list_filters(
             filters,
             ("taskIds", task_ids),
             ("taskNames", task_names),
@@ -5040,7 +5041,7 @@ class ServerAPI(
             "projectName": project_name,
             "folderPaths": list(folder_paths),
         }
-        if not _prepare_list_filters(
+        if not prepare_list_filters(
             filters,
             ("taskNames", task_names),
             ("taskTypes", task_types),
@@ -5451,7 +5452,7 @@ class ServerAPI(
         if filter_product_names:
             filters["productNames"] = list(filter_product_names)
 
-        if not _prepare_list_filters(
+        if not prepare_list_filters(
             filters,
             ("productIds", product_ids),
             ("productTypes", product_types),
@@ -5872,7 +5873,7 @@ class ServerAPI(
         filters = {
             "projectName": project_name
         }
-        if not _prepare_list_filters(
+        if not prepare_list_filters(
             filters,
             ("taskIds", task_ids),
             ("versionIds", version_ids),
