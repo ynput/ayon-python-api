@@ -14,6 +14,7 @@ if typing.TYPE_CHECKING:
 class _BaseServerAPI:
     def get_server_version_tuple(self) -> "ServerVersion":
         raise NotImplementedError()
+
     def get_base_url(self) -> str:
         raise NotImplementedError()
 
@@ -73,6 +74,14 @@ class _BaseServerAPI:
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
     ) -> TransferProgress:
+        raise NotImplementedError()
+
+    def get_rest_entity_by_id(
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+    ) -> Optional["AnyEntityDict"]:
         raise NotImplementedError()
 
     def _prepare_fields(
