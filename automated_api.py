@@ -340,6 +340,9 @@ def prepare_api_functions(api_globals):
         _AddonsAPI,
         _EventsAPI,
         _FoldersAPI,
+        _TasksAPI,
+        _ProductsAPI,
+        _VersionsAPI,
         _LinksAPI,
         _ListsAPI,
         _ProjectsAPI,
@@ -354,10 +357,13 @@ def prepare_api_functions(api_globals):
     _items.extend(_ActivitiesAPI.__dict__.items())
     _items.extend(_AddonsAPI.__dict__.items())
     _items.extend(_EventsAPI.__dict__.items())
-    _items.extend(_FoldersAPI.__dict__.items())
     _items.extend(_LinksAPI.__dict__.items())
     _items.extend(_ListsAPI.__dict__.items())
     _items.extend(_ProjectsAPI.__dict__.items())
+    _items.extend(_FoldersAPI.__dict__.items())
+    _items.extend(_TasksAPI.__dict__.items())
+    _items.extend(_ProductsAPI.__dict__.items())
+    _items.extend(_VersionsAPI.__dict__.items())
     _items.extend(_ThumbnailsAPI.__dict__.items())
     _items.extend(_WorkfilesAPI.__dict__.items())
     _items.extend(_RepresentationsAPI.__dict__.items())

@@ -2580,1245 +2580,6 @@ def get_rest_entity_by_id(
     )
 
 
-def get_rest_task(
-    project_name: str,
-    task_id: str,
-) -> Optional["TaskDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_task(
-        project_name=project_name,
-        task_id=task_id,
-    )
-
-
-def get_rest_product(
-    project_name: str,
-    product_id: str,
-) -> Optional["ProductDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_product(
-        project_name=project_name,
-        product_id=product_id,
-    )
-
-
-def get_rest_version(
-    project_name: str,
-    version_id: str,
-) -> Optional["VersionDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_version(
-        project_name=project_name,
-        version_id=version_id,
-    )
-
-
-def get_tasks(
-    project_name: str,
-    task_ids: Optional[Iterable[str]] = None,
-    task_names: Optional[Iterable[str]] = None,
-    task_types: Optional[Iterable[str]] = None,
-    folder_ids: Optional[Iterable[str]] = None,
-    assignees: Optional[Iterable[str]] = None,
-    assignees_all: Optional[Iterable[str]] = None,
-    statuses: Optional[Iterable[str]] = None,
-    tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Generator["TaskDict", None, None]:
-    """Query task entities from server.
-
-    Args:
-        project_name (str): Name of project.
-        task_ids (Iterable[str]): Task ids to filter.
-        task_names (Iterable[str]): Task names used for filtering.
-        task_types (Iterable[str]): Task types used for filtering.
-        folder_ids (Iterable[str]): Ids of task parents. Use 'None'
-            if folder is direct child of project.
-        assignees (Optional[Iterable[str]]): Task assignees used for
-            filtering. All tasks with any of passed assignees are
-            returned.
-        assignees_all (Optional[Iterable[str]]): Task assignees used
-            for filtering. Task must have all of passed assignees to be
-            returned.
-        statuses (Optional[Iterable[str]]): Task statuses used for
-            filtering.
-        tags (Optional[Iterable[str]]): Task tags used for
-            filtering.
-        active (Optional[bool]): Filter active/inactive tasks.
-            Both are returned if is set to None.
-        fields (Optional[Iterable[str]]): Fields to be queried for
-            folder. All possible folder fields are returned
-            if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Generator[TaskDict, None, None]: Queried task entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_tasks(
-        project_name=project_name,
-        task_ids=task_ids,
-        task_names=task_names,
-        task_types=task_types,
-        folder_ids=folder_ids,
-        assignees=assignees,
-        assignees_all=assignees_all,
-        statuses=statuses,
-        tags=tags,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_task_by_name(
-    project_name: str,
-    folder_id: str,
-    task_name: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["TaskDict"]:
-    """Query task entity by name and folder id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        folder_id (str): Folder id.
-        task_name (str): Task name
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[TaskDict]: Task entity data or None if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_task_by_name(
-        project_name=project_name,
-        folder_id=folder_id,
-        task_name=task_name,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_task_by_id(
-    project_name: str,
-    task_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["TaskDict"]:
-    """Query task entity by id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        task_id (str): Task id.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[TaskDict]: Task entity data or None if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_task_by_id(
-        project_name=project_name,
-        task_id=task_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_tasks_by_folder_paths(
-    project_name: str,
-    folder_paths: Iterable[str],
-    task_names: Optional[Iterable[str]] = None,
-    task_types: Optional[Iterable[str]] = None,
-    assignees: Optional[Iterable[str]] = None,
-    assignees_all: Optional[Iterable[str]] = None,
-    statuses: Optional[Iterable[str]] = None,
-    tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Dict[str, List["TaskDict"]]:
-    """Query task entities from server by folder paths.
-
-    Args:
-        project_name (str): Name of project.
-        folder_paths (list[str]): Folder paths.
-        task_names (Iterable[str]): Task names used for filtering.
-        task_types (Iterable[str]): Task types used for filtering.
-        assignees (Optional[Iterable[str]]): Task assignees used for
-            filtering. All tasks with any of passed assignees are
-            returned.
-        assignees_all (Optional[Iterable[str]]): Task assignees used
-            for filtering. Task must have all of passed assignees to be
-            returned.
-        statuses (Optional[Iterable[str]]): Task statuses used for
-            filtering.
-        tags (Optional[Iterable[str]]): Task tags used for
-            filtering.
-        active (Optional[bool]): Filter active/inactive tasks.
-            Both are returned if is set to None.
-        fields (Optional[Iterable[str]]): Fields to be queried for
-            folder. All possible folder fields are returned
-            if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Dict[str, List[TaskDict]]: Task entities by
-            folder path.
-
-    """
-    con = get_server_api_connection()
-    return con.get_tasks_by_folder_paths(
-        project_name=project_name,
-        folder_paths=folder_paths,
-        task_names=task_names,
-        task_types=task_types,
-        assignees=assignees,
-        assignees_all=assignees_all,
-        statuses=statuses,
-        tags=tags,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_tasks_by_folder_path(
-    project_name: str,
-    folder_path: str,
-    task_names: Optional[Iterable[str]] = None,
-    task_types: Optional[Iterable[str]] = None,
-    assignees: Optional[Iterable[str]] = None,
-    assignees_all: Optional[Iterable[str]] = None,
-    statuses: Optional[Iterable[str]] = None,
-    tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> List["TaskDict"]:
-    """Query task entities from server by folder path.
-
-    Args:
-        project_name (str): Name of project.
-        folder_path (str): Folder path.
-        task_names (Iterable[str]): Task names used for filtering.
-        task_types (Iterable[str]): Task types used for filtering.
-        assignees (Optional[Iterable[str]]): Task assignees used for
-            filtering. All tasks with any of passed assignees are
-            returned.
-        assignees_all (Optional[Iterable[str]]): Task assignees used
-            for filtering. Task must have all of passed assignees to be
-            returned.
-        statuses (Optional[Iterable[str]]): Task statuses used for
-            filtering.
-        tags (Optional[Iterable[str]]): Task tags used for
-            filtering.
-        active (Optional[bool]): Filter active/inactive tasks.
-            Both are returned if is set to None.
-        fields (Optional[Iterable[str]]): Fields to be queried for
-            folder. All possible folder fields are returned
-            if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    """
-    con = get_server_api_connection()
-    return con.get_tasks_by_folder_path(
-        project_name=project_name,
-        folder_path=folder_path,
-        task_names=task_names,
-        task_types=task_types,
-        assignees=assignees,
-        assignees_all=assignees_all,
-        statuses=statuses,
-        tags=tags,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_task_by_folder_path(
-    project_name: str,
-    folder_path: str,
-    task_name: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["TaskDict"]:
-    """Query task entity by folder path and task name.
-
-    Args:
-        project_name (str): Project name.
-        folder_path (str): Folder path.
-        task_name (str): Task name.
-        fields (Optional[Iterable[str]]): Task fields that should
-            be returned.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[TaskDict]: Task entity data or None if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_task_by_folder_path(
-        project_name=project_name,
-        folder_path=folder_path,
-        task_name=task_name,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def create_task(
-    project_name: str,
-    name: str,
-    task_type: str,
-    folder_id: str,
-    label: Optional[str] = None,
-    assignees: Optional[Iterable[str]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[List[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = None,
-    task_id: Optional[str] = None,
-) -> str:
-    """Create new task.
-
-    Args:
-        project_name (str): Project name.
-        name (str): Folder name.
-        task_type (str): Task type.
-        folder_id (str): Parent folder id.
-        label (Optional[str]): Label of folder.
-        assignees (Optional[Iterable[str]]): Task assignees.
-        attrib (Optional[dict[str, Any]]): Task attributes.
-        data (Optional[dict[str, Any]]): Task data.
-        tags (Optional[Iterable[str]]): Task tags.
-        status (Optional[str]): Task status.
-        active (Optional[bool]): Task active state.
-        thumbnail_id (Optional[str]): Task thumbnail id.
-        task_id (Optional[str]): Task id. If not passed new id is
-            generated.
-
-    Returns:
-        str: Task id.
-
-    """
-    con = get_server_api_connection()
-    return con.create_task(
-        project_name=project_name,
-        name=name,
-        task_type=task_type,
-        folder_id=folder_id,
-        label=label,
-        assignees=assignees,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-        task_id=task_id,
-    )
-
-
-def update_task(
-    project_name: str,
-    task_id: str,
-    name: Optional[str] = None,
-    task_type: Optional[str] = None,
-    folder_id: Optional[str] = None,
-    label: Optional[str] = NOT_SET,
-    assignees: Optional[List[str]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[List[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = NOT_SET,
-):
-    """Update task entity on server.
-
-    Do not pass ``label`` amd ``thumbnail_id`` if you don't
-        want to change their values. Value ``None`` would unset
-        their value.
-
-    Update of ``data`` will override existing value on folder entity.
-
-    Update of ``attrib`` does change only passed attributes. If you want
-        to unset value, use ``None``.
-
-    Args:
-        project_name (str): Project name.
-        task_id (str): Task id.
-        name (Optional[str]): New name.
-        task_type (Optional[str]): New task type.
-        folder_id (Optional[str]): New folder id.
-        label (Optional[Union[str, None]]): New label.
-        assignees (Optional[str]): New assignees.
-        attrib (Optional[dict[str, Any]]): New attributes.
-        data (Optional[dict[str, Any]]): New data.
-        tags (Optional[Iterable[str]]): New tags.
-        status (Optional[str]): New status.
-        active (Optional[bool]): New active state.
-        thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
-
-    """
-    con = get_server_api_connection()
-    return con.update_task(
-        project_name=project_name,
-        task_id=task_id,
-        name=name,
-        task_type=task_type,
-        folder_id=folder_id,
-        label=label,
-        assignees=assignees,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-    )
-
-
-def delete_task(
-    project_name: str,
-    task_id: str,
-):
-    """Delete task.
-
-    Args:
-        project_name (str): Project name.
-        task_id (str): Task id to delete.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_task(
-        project_name=project_name,
-        task_id=task_id,
-    )
-
-
-def get_products(
-    project_name: str,
-    product_ids: Optional[Iterable[str]] = None,
-    product_names: Optional[Iterable[str]] = None,
-    folder_ids: Optional[Iterable[str]] = None,
-    product_types: Optional[Iterable[str]] = None,
-    product_name_regex: Optional[str] = None,
-    product_path_regex: Optional[str] = None,
-    names_by_folder_ids: Optional[Dict[str, Iterable[str]]] = None,
-    statuses: Optional[Iterable[str]] = None,
-    tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Generator["ProductDict", None, None]:
-    """Query products from server.
-
-    Todos:
-        Separate 'name_by_folder_ids' filtering to separated method. It
-            cannot be combined with some other filters.
-
-    Args:
-        project_name (str): Name of project.
-        product_ids (Optional[Iterable[str]]): Task ids to filter.
-        product_names (Optional[Iterable[str]]): Task names used for
-            filtering.
-        folder_ids (Optional[Iterable[str]]): Ids of task parents.
-            Use 'None' if folder is direct child of project.
-        product_types (Optional[Iterable[str]]): Product types used for
-            filtering.
-        product_name_regex (Optional[str]): Filter products by name regex.
-        product_path_regex (Optional[str]): Filter products by path regex.
-            Path starts with folder path and ends with product name.
-        names_by_folder_ids (Optional[dict[str, Iterable[str]]]): Product
-            name filtering by folder id.
-        statuses (Optional[Iterable[str]]): Product statuses used
-            for filtering.
-        tags (Optional[Iterable[str]]): Product tags used
-            for filtering.
-        active (Optional[bool]): Filter active/inactive products.
-            Both are returned if is set to None.
-        fields (Optional[Iterable[str]]): Fields to be queried for
-            folder. All possible folder fields are returned
-            if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            products.
-
-    Returns:
-        Generator[ProductDict, None, None]: Queried product entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_products(
-        project_name=project_name,
-        product_ids=product_ids,
-        product_names=product_names,
-        folder_ids=folder_ids,
-        product_types=product_types,
-        product_name_regex=product_name_regex,
-        product_path_regex=product_path_regex,
-        names_by_folder_ids=names_by_folder_ids,
-        statuses=statuses,
-        tags=tags,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_product_by_id(
-    project_name: str,
-    product_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["ProductDict"]:
-    """Query product entity by id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        product_id (str): Product id.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            products.
-
-    Returns:
-        Optional[ProductDict]: Product entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_by_id(
-        project_name=project_name,
-        product_id=product_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_product_by_name(
-    project_name: str,
-    product_name: str,
-    folder_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["ProductDict"]:
-    """Query product entity by name and folder id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        product_name (str): Product name.
-        folder_id (str): Folder id (Folder is a parent of products).
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            products.
-
-    Returns:
-        Optional[ProductDict]: Product entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_by_name(
-        project_name=project_name,
-        product_name=product_name,
-        folder_id=folder_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_product_types(
-    fields: Optional[Iterable[str]] = None,
-) -> List["ProductTypeDict"]:
-    """Types of products.
-
-    This is server wide information. Product types have 'name', 'icon' and
-        'color'.
-
-    Args:
-        fields (Optional[Iterable[str]]): Product types fields to query.
-
-    Returns:
-        list[ProductTypeDict]: Product types information.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_types(
-        fields=fields,
-    )
-
-
-def get_project_product_types(
-    project_name: str,
-    fields: Optional[Iterable[str]] = None,
-) -> List["ProductTypeDict"]:
-    """DEPRECATED Types of products available in a project.
-
-    Filter only product types available in a project.
-
-    Args:
-        project_name (str): Name of the project where to look for
-            product types.
-        fields (Optional[Iterable[str]]): Product types fields to query.
-
-    Returns:
-        List[ProductTypeDict]: Product types information.
-
-    """
-    con = get_server_api_connection()
-    return con.get_project_product_types(
-        project_name=project_name,
-        fields=fields,
-    )
-
-
-def get_product_type_names(
-    project_name: Optional[str] = None,
-    product_ids: Optional[Iterable[str]] = None,
-) -> Set[str]:
-    """DEPRECATED Product type names.
-
-    Warnings:
-        This function will be probably removed. Matters if 'products_id'
-            filter has real use-case.
-
-    Args:
-        project_name (Optional[str]): Name of project where to look for
-            queried entities.
-        product_ids (Optional[Iterable[str]]): Product ids filter. Can be
-            used only with 'project_name'.
-
-    Returns:
-        set[str]: Product type names.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_type_names(
-        project_name=project_name,
-        product_ids=product_ids,
-    )
-
-
-def create_product(
-    project_name: str,
-    name: str,
-    product_type: str,
-    folder_id: str,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: "Union[bool, None]" = None,
-    product_id: Optional[str] = None,
-) -> str:
-    """Create new product.
-
-    Args:
-        project_name (str): Project name.
-        name (str): Product name.
-        product_type (str): Product type.
-        folder_id (str): Parent folder id.
-        attrib (Optional[dict[str, Any]]): Product attributes.
-        data (Optional[dict[str, Any]]): Product data.
-        tags (Optional[Iterable[str]]): Product tags.
-        status (Optional[str]): Product status.
-        active (Optional[bool]): Product active state.
-        product_id (Optional[str]): Product id. If not passed new id is
-            generated.
-
-    Returns:
-        str: Product id.
-
-    """
-    con = get_server_api_connection()
-    return con.create_product(
-        project_name=project_name,
-        name=name,
-        product_type=product_type,
-        folder_id=folder_id,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        product_id=product_id,
-    )
-
-
-def update_product(
-    project_name: str,
-    product_id: str,
-    name: Optional[str] = None,
-    folder_id: Optional[str] = None,
-    product_type: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-):
-    """Update product entity on server.
-
-    Update of ``data`` will override existing value on folder entity.
-
-    Update of ``attrib`` does change only passed attributes. If you want
-        to unset value, use ``None``.
-
-    Args:
-        project_name (str): Project name.
-        product_id (str): Product id.
-        name (Optional[str]): New product name.
-        folder_id (Optional[str]): New product id.
-        product_type (Optional[str]): New product type.
-        attrib (Optional[dict[str, Any]]): New product attributes.
-        data (Optional[dict[str, Any]]): New product data.
-        tags (Optional[Iterable[str]]): New product tags.
-        status (Optional[str]): New product status.
-        active (Optional[bool]): New product active state.
-
-    """
-    con = get_server_api_connection()
-    return con.update_product(
-        project_name=project_name,
-        product_id=product_id,
-        name=name,
-        folder_id=folder_id,
-        product_type=product_type,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-    )
-
-
-def delete_product(
-    project_name: str,
-    product_id: str,
-):
-    """Delete product.
-
-    Args:
-        project_name (str): Project name.
-        product_id (str): Product id to delete.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_product(
-        project_name=project_name,
-        product_id=product_id,
-    )
-
-
-def get_versions(
-    project_name: str,
-    version_ids: Optional[Iterable[str]] = None,
-    product_ids: Optional[Iterable[str]] = None,
-    task_ids: Optional[Iterable[str]] = None,
-    versions: Optional[Iterable[str]] = None,
-    hero: bool = True,
-    standard: bool = True,
-    latest: Optional[bool] = None,
-    statuses: Optional[Iterable[str]] = None,
-    tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Generator["VersionDict", None, None]:
-    """Get version entities based on passed filters from server.
-
-    Args:
-        project_name (str): Name of project where to look for versions.
-        version_ids (Optional[Iterable[str]]): Version ids used for
-            version filtering.
-        product_ids (Optional[Iterable[str]]): Product ids used for
-            version filtering.
-        task_ids (Optional[Iterable[str]]): Task ids used for
-            version filtering.
-        versions (Optional[Iterable[int]]): Versions we're interested in.
-        hero (Optional[bool]): Skip hero versions when set to False.
-        standard (Optional[bool]): Skip standard (non-hero) when
-            set to False.
-        latest (Optional[bool]): Return only latest version of standard
-            versions. This can be combined only with 'standard' attribute
-            set to True.
-        statuses (Optional[Iterable[str]]): Representation statuses used
-            for filtering.
-        tags (Optional[Iterable[str]]): Representation tags used
-            for filtering.
-        active (Optional[bool]): Receive active/inactive entities.
-            Both are returned when 'None' is passed.
-        fields (Optional[Iterable[str]]): Fields to be queried
-            for version. All possible folder fields are returned
-            if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        Generator[VersionDict, None, None]: Queried version entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_versions(
-        project_name=project_name,
-        version_ids=version_ids,
-        product_ids=product_ids,
-        task_ids=task_ids,
-        versions=versions,
-        hero=hero,
-        standard=standard,
-        latest=latest,
-        statuses=statuses,
-        tags=tags,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_version_by_id(
-    project_name: str,
-    version_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
-    """Query version entity by id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        version_id (str): Version id.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        Optional[VersionDict]: Version entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_version_by_id(
-        project_name=project_name,
-        version_id=version_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_version_by_name(
-    project_name: str,
-    version: int,
-    product_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
-    """Query version entity by version and product id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        version (int): Version of version entity.
-        product_id (str): Product id. Product is a parent of version.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        Optional[VersionDict]: Version entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_version_by_name(
-        project_name=project_name,
-        version=version,
-        product_id=product_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_hero_version_by_id(
-    project_name: str,
-    version_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
-    """Query hero version entity by id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        version_id (int): Hero version id.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        Optional[VersionDict]: Version entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_hero_version_by_id(
-        project_name=project_name,
-        version_id=version_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_hero_version_by_product_id(
-    project_name: str,
-    product_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
-    """Query hero version entity by product id.
-
-    Only one hero version is available on a product.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        product_id (int): Product id.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        Optional[VersionDict]: Version entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_hero_version_by_product_id(
-        project_name=project_name,
-        product_id=product_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_hero_versions(
-    project_name: str,
-    product_ids: Optional[Iterable[str]] = None,
-    version_ids: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Generator["VersionDict", None, None]:
-    """Query hero versions by multiple filters.
-
-    Only one hero version is available on a product.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        product_ids (Optional[Iterable[str]]): Product ids.
-        version_ids (Optional[Iterable[str]]): Version ids.
-        active (Optional[bool]): Receive active/inactive entities.
-            Both are returned when 'None' is passed.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        Optional[VersionDict]: Version entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_hero_versions(
-        project_name=project_name,
-        product_ids=product_ids,
-        version_ids=version_ids,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_last_versions(
-    project_name: str,
-    product_ids: Iterable[str],
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Dict[str, Optional["VersionDict"]]:
-    """Query last version entities by product ids.
-
-    Args:
-        project_name (str): Project where to look for representation.
-        product_ids (Iterable[str]): Product ids.
-        active (Optional[bool]): Receive active/inactive entities.
-            Both are returned when 'None' is passed.
-        fields (Optional[Iterable[str]]): fields to be queried
-            for representations.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        dict[str, Optional[VersionDict]]: Last versions by product id.
-
-    """
-    con = get_server_api_connection()
-    return con.get_last_versions(
-        project_name=project_name,
-        product_ids=product_ids,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_last_version_by_product_id(
-    project_name: str,
-    product_id: str,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
-    """Query last version entity by product id.
-
-    Args:
-        project_name (str): Project where to look for representation.
-        product_id (str): Product id.
-        active (Optional[bool]): Receive active/inactive entities.
-            Both are returned when 'None' is passed.
-        fields (Optional[Iterable[str]]): fields to be queried
-            for representations.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            versions.
-
-    Returns:
-        Optional[VersionDict]: Queried version entity or None.
-
-    """
-    con = get_server_api_connection()
-    return con.get_last_version_by_product_id(
-        project_name=project_name,
-        product_id=product_id,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_last_version_by_product_name(
-    project_name: str,
-    product_name: str,
-    folder_id: str,
-    active: "Union[bool, None]" = True,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
-    """Query last version entity by product name and folder id.
-
-    Args:
-        project_name (str): Project where to look for representation.
-        product_name (str): Product name.
-        folder_id (str): Folder id.
-        active (Optional[bool]): Receive active/inactive entities.
-            Both are returned when 'None' is passed.
-        fields (Optional[Iterable[str]]): fields to be queried
-            for representations.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            representations.
-
-    Returns:
-        Optional[VersionDict]: Queried version entity or None.
-
-    """
-    con = get_server_api_connection()
-    return con.get_last_version_by_product_name(
-        project_name=project_name,
-        product_name=product_name,
-        folder_id=folder_id,
-        active=active,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def version_is_latest(
-    project_name: str,
-    version_id: str,
-) -> bool:
-    """Is version latest from a product.
-
-    Args:
-        project_name (str): Project where to look for representation.
-        version_id (str): Version id.
-
-    Returns:
-        bool: Version is latest or not.
-
-    """
-    con = get_server_api_connection()
-    return con.version_is_latest(
-        project_name=project_name,
-        version_id=version_id,
-    )
-
-
-def create_version(
-    project_name: str,
-    version: int,
-    product_id: str,
-    task_id: Optional[str] = None,
-    author: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = None,
-    version_id: Optional[str] = None,
-) -> str:
-    """Create new version.
-
-    Args:
-        project_name (str): Project name.
-        version (int): Version.
-        product_id (str): Parent product id.
-        task_id (Optional[str]): Parent task id.
-        author (Optional[str]): Version author.
-        attrib (Optional[dict[str, Any]]): Version attributes.
-        data (Optional[dict[str, Any]]): Version data.
-        tags (Optional[Iterable[str]]): Version tags.
-        status (Optional[str]): Version status.
-        active (Optional[bool]): Version active state.
-        thumbnail_id (Optional[str]): Version thumbnail id.
-        version_id (Optional[str]): Version id. If not passed new id is
-            generated.
-
-    Returns:
-        str: Version id.
-
-    """
-    con = get_server_api_connection()
-    return con.create_version(
-        project_name=project_name,
-        version=version,
-        product_id=product_id,
-        task_id=task_id,
-        author=author,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-        version_id=version_id,
-    )
-
-
-def update_version(
-    project_name: str,
-    version_id: str,
-    version: Optional[int] = None,
-    product_id: Optional[str] = None,
-    task_id: Optional[str] = NOT_SET,
-    author: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = NOT_SET,
-):
-    """Update version entity on server.
-
-    Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
-        want to change their values. Value ``None`` would unset
-        their value.
-
-    Update of ``data`` will override existing value on folder entity.
-
-    Update of ``attrib`` does change only passed attributes. If you want
-        to unset value, use ``None``.
-
-    Args:
-        project_name (str): Project name.
-        version_id (str): Version id.
-        version (Optional[int]): New version.
-        product_id (Optional[str]): New product id.
-        task_id (Optional[Union[str, None]]): New task id.
-        author (Optional[str]): New author username.
-        attrib (Optional[dict[str, Any]]): New attributes.
-        data (Optional[dict[str, Any]]): New data.
-        tags (Optional[Iterable[str]]): New tags.
-        status (Optional[str]): New status.
-        active (Optional[bool]): New active state.
-        thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
-
-    """
-    con = get_server_api_connection()
-    return con.update_version(
-        project_name=project_name,
-        version_id=version_id,
-        version=version,
-        product_id=product_id,
-        task_id=task_id,
-        author=author,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-    )
-
-
-def delete_version(
-    project_name: str,
-    version_id: str,
-):
-    """Delete version.
-
-    Args:
-        project_name (str): Project name.
-        version_id (str): Version id to delete.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_version(
-        project_name=project_name,
-        version_id=version_id,
-    )
-
-
 def send_batch_operations(
     project_name: str,
     operations: List[Dict[str, Any]],
@@ -4782,517 +3543,6 @@ def enroll_event_job(
         max_retries=max_retries,
         ignore_older_than=ignore_older_than,
         ignore_sender_types=ignore_sender_types,
-    )
-
-
-def get_rest_folder(
-    project_name: str,
-    folder_id: str,
-) -> Optional["FolderDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_folder(
-        project_name=project_name,
-        folder_id=folder_id,
-    )
-
-
-def get_rest_folders(
-    project_name: str,
-    include_attrib: bool = False,
-) -> list["FlatFolderDict"]:
-    """Get simplified flat list of all project folders.
-
-    Get all project folders in single REST call. This can be faster than
-        using 'get_folders' method which is using GraphQl, but does not
-        allow any filtering, and set of fields is defined
-        by server backend.
-
-    Example::
-
-        [
-            {
-                "id": "112233445566",
-                "parentId": "112233445567",
-                "path": "/root/parent/child",
-                "parents": ["root", "parent"],
-                "name": "child",
-                "label": "Child",
-                "folderType": "Folder",
-                "hasTasks": False,
-                "hasChildren": False,
-                "taskNames": [
-                    "Compositing",
-                ],
-                "status": "In Progress",
-                "attrib": {},
-                "ownAttrib": [],
-                "updatedAt": "2023-06-12T15:37:02.420260",
-            },
-            ...
-        ]
-
-    Args:
-        project_name (str): Project name.
-        include_attrib (Optional[bool]): Include attribute values
-            in output. Slower to query.
-
-    Returns:
-        List[FlatFolderDict]: List of folder entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_rest_folders(
-        project_name=project_name,
-        include_attrib=include_attrib,
-    )
-
-
-def get_folders_hierarchy(
-    project_name: str,
-    search_string: Optional[str] = None,
-    folder_types: Optional[Iterable[str]] = None,
-) -> "ProjectHierarchyDict":
-    """Get project hierarchy.
-
-    All folders in project in hierarchy data structure.
-
-    Example output:
-        {
-            "hierarchy": [
-                {
-                    "id": "...",
-                    "name": "...",
-                    "label": "...",
-                    "status": "...",
-                    "folderType": "...",
-                    "hasTasks": False,
-                    "taskNames": [],
-                    "parents": [],
-                    "parentId": None,
-                    "children": [...children folders...]
-                },
-                ...
-            ]
-        }
-
-    Args:
-        project_name (str): Project where to look for folders.
-        search_string (Optional[str]): Search string to filter folders.
-        folder_types (Optional[Iterable[str]]): Folder types to filter.
-
-    Returns:
-        dict[str, Any]: Response data from server.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders_hierarchy(
-        project_name=project_name,
-        search_string=search_string,
-        folder_types=folder_types,
-    )
-
-
-def get_folders_rest(
-    project_name: str,
-    include_attrib: bool = False,
-) -> list["FlatFolderDict"]:
-    """Get simplified flat list of all project folders.
-
-    Get all project folders in single REST call. This can be faster than
-        using 'get_folders' method which is using GraphQl, but does not
-        allow any filtering, and set of fields is defined
-        by server backend.
-
-    Example::
-
-        [
-            {
-                "id": "112233445566",
-                "parentId": "112233445567",
-                "path": "/root/parent/child",
-                "parents": ["root", "parent"],
-                "name": "child",
-                "label": "Child",
-                "folderType": "Folder",
-                "hasTasks": False,
-                "hasChildren": False,
-                "taskNames": [
-                    "Compositing",
-                ],
-                "status": "In Progress",
-                "attrib": {},
-                "ownAttrib": [],
-                "updatedAt": "2023-06-12T15:37:02.420260",
-            },
-            ...
-        ]
-
-    Deprecated:
-        Use 'get_rest_folders' instead. Function was renamed to match
-            other rest functions, like 'get_rest_folder',
-            'get_rest_project' etc. .
-        Will be removed in '1.0.7' or '1.1.0'.
-
-    Args:
-        project_name (str): Project name.
-        include_attrib (Optional[bool]): Include attribute values
-            in output. Slower to query.
-
-    Returns:
-        List[FlatFolderDict]: List of folder entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders_rest(
-        project_name=project_name,
-        include_attrib=include_attrib,
-    )
-
-
-def get_folders(
-    project_name: str,
-    folder_ids: Optional[Iterable[str]] = None,
-    folder_paths: Optional[Iterable[str]] = None,
-    folder_names: Optional[Iterable[str]] = None,
-    folder_types: Optional[Iterable[str]] = None,
-    parent_ids: Optional[Iterable[str]] = None,
-    folder_path_regex: Optional[str] = None,
-    has_products: Optional[bool] = None,
-    has_tasks: Optional[bool] = None,
-    has_children: Optional[bool] = None,
-    statuses: Optional[Iterable[str]] = None,
-    assignees_all: Optional[Iterable[str]] = None,
-    tags: Optional[Iterable[str]] = None,
-    active: Optional[bool] = True,
-    has_links: Optional[bool] = None,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Generator["FolderDict", None, None]:
-    """Query folders from server.
-
-    Todos:
-        Folder name won't be unique identifier, so we should add
-            folder path filtering.
-
-    Notes:
-        Filter 'active' don't have direct filter in GraphQl.
-
-    Args:
-        project_name (str): Name of project.
-        folder_ids (Optional[Iterable[str]]): Folder ids to filter.
-        folder_paths (Optional[Iterable[str]]): Folder paths used
-            for filtering.
-        folder_names (Optional[Iterable[str]]): Folder names used
-            for filtering.
-        folder_types (Optional[Iterable[str]]): Folder types used
-            for filtering.
-        parent_ids (Optional[Iterable[str]]): Ids of folder parents.
-            Use 'None' if folder is direct child of project.
-        folder_path_regex (Optional[str]): Folder path regex used
-            for filtering.
-        has_products (Optional[bool]): Filter folders with/without
-            products. Ignored when None, default behavior.
-        has_tasks (Optional[bool]): Filter folders with/without
-            tasks. Ignored when None, default behavior.
-        has_children (Optional[bool]): Filter folders with/without
-            children. Ignored when None, default behavior.
-        statuses (Optional[Iterable[str]]): Folder statuses used
-            for filtering.
-        assignees_all (Optional[Iterable[str]]): Filter by assigness
-            on children tasks. Task must have all of passed assignees.
-        tags (Optional[Iterable[str]]): Folder tags used
-            for filtering.
-        active (Optional[bool]): Filter active/inactive folders.
-            Both are returned if is set to None.
-        has_links (Optional[Literal[IN, OUT, ANY]]): Filter
-            representations with IN/OUT/ANY links.
-        fields (Optional[Iterable[str]]): Fields to be queried for
-            folder. All possible folder fields are returned
-            if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Generator[FolderDict, None, None]: Queried folder entities.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders(
-        project_name=project_name,
-        folder_ids=folder_ids,
-        folder_paths=folder_paths,
-        folder_names=folder_names,
-        folder_types=folder_types,
-        parent_ids=parent_ids,
-        folder_path_regex=folder_path_regex,
-        has_products=has_products,
-        has_tasks=has_tasks,
-        has_children=has_children,
-        statuses=statuses,
-        assignees_all=assignees_all,
-        tags=tags,
-        active=active,
-        has_links=has_links,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_by_id(
-    project_name: str,
-    folder_id: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["FolderDict"]:
-    """Query folder entity by id.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        folder_id (str): Folder id.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[FolderDict]: Folder entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_by_id(
-        project_name=project_name,
-        folder_id=folder_id,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_by_path(
-    project_name: str,
-    folder_path: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["FolderDict"]:
-    """Query folder entity by path.
-
-    Folder path is a path to folder with all parent names joined by slash.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        folder_path (str): Folder path.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[FolderDict]: Folder entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_by_path(
-        project_name=project_name,
-        folder_path=folder_path,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_by_name(
-    project_name: str,
-    folder_name: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["FolderDict"]:
-    """Query folder entity by path.
-
-    Warnings:
-        Folder name is not a unique identifier of a folder. Function is
-            kept for OpenPype 3 compatibility.
-
-    Args:
-        project_name (str): Name of project where to look for queried
-            entities.
-        folder_name (str): Folder name.
-        fields (Optional[Iterable[str]]): Fields that should be returned.
-            All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[FolderDict]: Folder entity data or None
-            if was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_by_name(
-        project_name=project_name,
-        folder_name=folder_name,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_folder_ids_with_products(
-    project_name: str,
-    folder_ids: Optional[Iterable[str]] = None,
-) -> set[str]:
-    """Find folders which have at least one product.
-
-    Folders that have at least one product should be immutable, so they
-    should not change path -> change of name or name of any parent
-    is not possible.
-
-    Args:
-        project_name (str): Name of project.
-        folder_ids (Optional[Iterable[str]]): Limit folder ids filtering
-            to a set of folders. If set to None all folders on project are
-            checked.
-
-    Returns:
-        set[str]: Folder ids that have at least one product.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_ids_with_products(
-        project_name=project_name,
-        folder_ids=folder_ids,
-    )
-
-
-def create_folder(
-    project_name: str,
-    name: str,
-    folder_type: Optional[str] = None,
-    parent_id: Optional[str] = None,
-    label: Optional[str] = None,
-    attrib: Optional[dict[str, Any]] = None,
-    data: Optional[dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = None,
-    folder_id: Optional[str] = None,
-) -> str:
-    """Create new folder.
-
-    Args:
-        project_name (str): Project name.
-        name (str): Folder name.
-        folder_type (Optional[str]): Folder type.
-        parent_id (Optional[str]): Parent folder id. Parent is project
-            if is ``None``.
-        label (Optional[str]): Label of folder.
-        attrib (Optional[dict[str, Any]]): Folder attributes.
-        data (Optional[dict[str, Any]]): Folder data.
-        tags (Optional[Iterable[str]]): Folder tags.
-        status (Optional[str]): Folder status.
-        active (Optional[bool]): Folder active state.
-        thumbnail_id (Optional[str]): Folder thumbnail id.
-        folder_id (Optional[str]): Folder id. If not passed new id is
-            generated.
-
-    Returns:
-        str: Entity id.
-
-    """
-    con = get_server_api_connection()
-    return con.create_folder(
-        project_name=project_name,
-        name=name,
-        folder_type=folder_type,
-        parent_id=parent_id,
-        label=label,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-        folder_id=folder_id,
-    )
-
-
-def update_folder(
-    project_name: str,
-    folder_id: str,
-    name: Optional[str] = None,
-    folder_type: Optional[str] = None,
-    parent_id: Optional[str] = NOT_SET,
-    label: Optional[str] = NOT_SET,
-    attrib: Optional[dict[str, Any]] = None,
-    data: Optional[dict[str, Any]] = None,
-    tags: Optional[Iterable[str]] = None,
-    status: Optional[str] = None,
-    active: Optional[bool] = None,
-    thumbnail_id: Optional[str] = NOT_SET,
-):
-    """Update folder entity on server.
-
-    Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
-        want to change their values. Value ``None`` would unset
-        their value.
-
-    Update of ``data`` will override existing value on folder entity.
-
-    Update of ``attrib`` does change only passed attributes. If you want
-        to unset value, use ``None``.
-
-    Args:
-        project_name (str): Project name.
-        folder_id (str): Folder id.
-        name (Optional[str]): New name.
-        folder_type (Optional[str]): New folder type.
-        parent_id (Optional[str]): New parent folder id.
-        label (Optional[str]): New label.
-        attrib (Optional[dict[str, Any]]): New attributes.
-        data (Optional[dict[str, Any]]): New data.
-        tags (Optional[Iterable[str]]): New tags.
-        status (Optional[str]): New status.
-        active (Optional[bool]): New active state.
-        thumbnail_id (Optional[str]): New thumbnail id.
-
-    """
-    con = get_server_api_connection()
-    return con.update_folder(
-        project_name=project_name,
-        folder_id=folder_id,
-        name=name,
-        folder_type=folder_type,
-        parent_id=parent_id,
-        label=label,
-        attrib=attrib,
-        data=data,
-        tags=tags,
-        status=status,
-        active=active,
-        thumbnail_id=thumbnail_id,
-    )
-
-
-def delete_folder(
-    project_name: str,
-    folder_id: str,
-    force: bool = False,
-):
-    """Delete folder.
-
-    Args:
-        project_name (str): Project name.
-        folder_id (str): Folder id to delete.
-        force (Optional[bool]): Folder delete folder with all children
-            folder, products, versions and representations.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_folder(
-        project_name=project_name,
-        folder_id=folder_id,
-        force=force,
     )
 
 
@@ -6493,6 +4743,1756 @@ def delete_project(
     con = get_server_api_connection()
     return con.delete_project(
         project_name=project_name,
+    )
+
+
+def get_rest_folder(
+    project_name: str,
+    folder_id: str,
+) -> Optional["FolderDict"]:
+    con = get_server_api_connection()
+    return con.get_rest_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+    )
+
+
+def get_rest_folders(
+    project_name: str,
+    include_attrib: bool = False,
+) -> list["FlatFolderDict"]:
+    """Get simplified flat list of all project folders.
+
+    Get all project folders in single REST call. This can be faster than
+        using 'get_folders' method which is using GraphQl, but does not
+        allow any filtering, and set of fields is defined
+        by server backend.
+
+    Example::
+
+        [
+            {
+                "id": "112233445566",
+                "parentId": "112233445567",
+                "path": "/root/parent/child",
+                "parents": ["root", "parent"],
+                "name": "child",
+                "label": "Child",
+                "folderType": "Folder",
+                "hasTasks": False,
+                "hasChildren": False,
+                "taskNames": [
+                    "Compositing",
+                ],
+                "status": "In Progress",
+                "attrib": {},
+                "ownAttrib": [],
+                "updatedAt": "2023-06-12T15:37:02.420260",
+            },
+            ...
+        ]
+
+    Args:
+        project_name (str): Project name.
+        include_attrib (Optional[bool]): Include attribute values
+            in output. Slower to query.
+
+    Returns:
+        List[FlatFolderDict]: List of folder entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_rest_folders(
+        project_name=project_name,
+        include_attrib=include_attrib,
+    )
+
+
+def get_folders_hierarchy(
+    project_name: str,
+    search_string: Optional[str] = None,
+    folder_types: Optional[Iterable[str]] = None,
+) -> "ProjectHierarchyDict":
+    """Get project hierarchy.
+
+    All folders in project in hierarchy data structure.
+
+    Example output:
+        {
+            "hierarchy": [
+                {
+                    "id": "...",
+                    "name": "...",
+                    "label": "...",
+                    "status": "...",
+                    "folderType": "...",
+                    "hasTasks": False,
+                    "taskNames": [],
+                    "parents": [],
+                    "parentId": None,
+                    "children": [...children folders...]
+                },
+                ...
+            ]
+        }
+
+    Args:
+        project_name (str): Project where to look for folders.
+        search_string (Optional[str]): Search string to filter folders.
+        folder_types (Optional[Iterable[str]]): Folder types to filter.
+
+    Returns:
+        dict[str, Any]: Response data from server.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders_hierarchy(
+        project_name=project_name,
+        search_string=search_string,
+        folder_types=folder_types,
+    )
+
+
+def get_folders_rest(
+    project_name: str,
+    include_attrib: bool = False,
+) -> list["FlatFolderDict"]:
+    """Get simplified flat list of all project folders.
+
+    Get all project folders in single REST call. This can be faster than
+        using 'get_folders' method which is using GraphQl, but does not
+        allow any filtering, and set of fields is defined
+        by server backend.
+
+    Example::
+
+        [
+            {
+                "id": "112233445566",
+                "parentId": "112233445567",
+                "path": "/root/parent/child",
+                "parents": ["root", "parent"],
+                "name": "child",
+                "label": "Child",
+                "folderType": "Folder",
+                "hasTasks": False,
+                "hasChildren": False,
+                "taskNames": [
+                    "Compositing",
+                ],
+                "status": "In Progress",
+                "attrib": {},
+                "ownAttrib": [],
+                "updatedAt": "2023-06-12T15:37:02.420260",
+            },
+            ...
+        ]
+
+    Deprecated:
+        Use 'get_rest_folders' instead. Function was renamed to match
+            other rest functions, like 'get_rest_folder',
+            'get_rest_project' etc. .
+        Will be removed in '1.0.7' or '1.1.0'.
+
+    Args:
+        project_name (str): Project name.
+        include_attrib (Optional[bool]): Include attribute values
+            in output. Slower to query.
+
+    Returns:
+        List[FlatFolderDict]: List of folder entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders_rest(
+        project_name=project_name,
+        include_attrib=include_attrib,
+    )
+
+
+def get_folders(
+    project_name: str,
+    folder_ids: Optional[Iterable[str]] = None,
+    folder_paths: Optional[Iterable[str]] = None,
+    folder_names: Optional[Iterable[str]] = None,
+    folder_types: Optional[Iterable[str]] = None,
+    parent_ids: Optional[Iterable[str]] = None,
+    folder_path_regex: Optional[str] = None,
+    has_products: Optional[bool] = None,
+    has_tasks: Optional[bool] = None,
+    has_children: Optional[bool] = None,
+    statuses: Optional[Iterable[str]] = None,
+    assignees_all: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    has_links: Optional[bool] = None,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Generator["FolderDict", None, None]:
+    """Query folders from server.
+
+    Todos:
+        Folder name won't be unique identifier, so we should add
+            folder path filtering.
+
+    Notes:
+        Filter 'active' don't have direct filter in GraphQl.
+
+    Args:
+        project_name (str): Name of project.
+        folder_ids (Optional[Iterable[str]]): Folder ids to filter.
+        folder_paths (Optional[Iterable[str]]): Folder paths used
+            for filtering.
+        folder_names (Optional[Iterable[str]]): Folder names used
+            for filtering.
+        folder_types (Optional[Iterable[str]]): Folder types used
+            for filtering.
+        parent_ids (Optional[Iterable[str]]): Ids of folder parents.
+            Use 'None' if folder is direct child of project.
+        folder_path_regex (Optional[str]): Folder path regex used
+            for filtering.
+        has_products (Optional[bool]): Filter folders with/without
+            products. Ignored when None, default behavior.
+        has_tasks (Optional[bool]): Filter folders with/without
+            tasks. Ignored when None, default behavior.
+        has_children (Optional[bool]): Filter folders with/without
+            children. Ignored when None, default behavior.
+        statuses (Optional[Iterable[str]]): Folder statuses used
+            for filtering.
+        assignees_all (Optional[Iterable[str]]): Filter by assigness
+            on children tasks. Task must have all of passed assignees.
+        tags (Optional[Iterable[str]]): Folder tags used
+            for filtering.
+        active (Optional[bool]): Filter active/inactive folders.
+            Both are returned if is set to None.
+        has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+            representations with IN/OUT/ANY links.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            folder. All possible folder fields are returned
+            if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Generator[FolderDict, None, None]: Queried folder entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders(
+        project_name=project_name,
+        folder_ids=folder_ids,
+        folder_paths=folder_paths,
+        folder_names=folder_names,
+        folder_types=folder_types,
+        parent_ids=parent_ids,
+        folder_path_regex=folder_path_regex,
+        has_products=has_products,
+        has_tasks=has_tasks,
+        has_children=has_children,
+        statuses=statuses,
+        assignees_all=assignees_all,
+        tags=tags,
+        active=active,
+        has_links=has_links,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_by_id(
+    project_name: str,
+    folder_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["FolderDict"]:
+    """Query folder entity by id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        folder_id (str): Folder id.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[FolderDict]: Folder entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_by_id(
+        project_name=project_name,
+        folder_id=folder_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_by_path(
+    project_name: str,
+    folder_path: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["FolderDict"]:
+    """Query folder entity by path.
+
+    Folder path is a path to folder with all parent names joined by slash.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        folder_path (str): Folder path.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[FolderDict]: Folder entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_by_path(
+        project_name=project_name,
+        folder_path=folder_path,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_by_name(
+    project_name: str,
+    folder_name: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["FolderDict"]:
+    """Query folder entity by path.
+
+    Warnings:
+        Folder name is not a unique identifier of a folder. Function is
+            kept for OpenPype 3 compatibility.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        folder_name (str): Folder name.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[FolderDict]: Folder entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_by_name(
+        project_name=project_name,
+        folder_name=folder_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_folder_ids_with_products(
+    project_name: str,
+    folder_ids: Optional[Iterable[str]] = None,
+) -> set[str]:
+    """Find folders which have at least one product.
+
+    Folders that have at least one product should be immutable, so they
+    should not change path -> change of name or name of any parent
+    is not possible.
+
+    Args:
+        project_name (str): Name of project.
+        folder_ids (Optional[Iterable[str]]): Limit folder ids filtering
+            to a set of folders. If set to None all folders on project are
+            checked.
+
+    Returns:
+        set[str]: Folder ids that have at least one product.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_ids_with_products(
+        project_name=project_name,
+        folder_ids=folder_ids,
+    )
+
+
+def create_folder(
+    project_name: str,
+    name: str,
+    folder_type: Optional[str] = None,
+    parent_id: Optional[str] = None,
+    label: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = None,
+    folder_id: Optional[str] = None,
+) -> str:
+    """Create new folder.
+
+    Args:
+        project_name (str): Project name.
+        name (str): Folder name.
+        folder_type (Optional[str]): Folder type.
+        parent_id (Optional[str]): Parent folder id. Parent is project
+            if is ``None``.
+        label (Optional[str]): Label of folder.
+        attrib (Optional[dict[str, Any]]): Folder attributes.
+        data (Optional[dict[str, Any]]): Folder data.
+        tags (Optional[Iterable[str]]): Folder tags.
+        status (Optional[str]): Folder status.
+        active (Optional[bool]): Folder active state.
+        thumbnail_id (Optional[str]): Folder thumbnail id.
+        folder_id (Optional[str]): Folder id. If not passed new id is
+            generated.
+
+    Returns:
+        str: Entity id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_folder(
+        project_name=project_name,
+        name=name,
+        folder_type=folder_type,
+        parent_id=parent_id,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        folder_id=folder_id,
+    )
+
+
+def update_folder(
+    project_name: str,
+    folder_id: str,
+    name: Optional[str] = None,
+    folder_type: Optional[str] = None,
+    parent_id: Optional[str] = NOT_SET,
+    label: Optional[str] = NOT_SET,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = NOT_SET,
+):
+    """Update folder entity on server.
+
+    Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
+        want to change their values. Value ``None`` would unset
+        their value.
+
+    Update of ``data`` will override existing value on folder entity.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        folder_id (str): Folder id.
+        name (Optional[str]): New name.
+        folder_type (Optional[str]): New folder type.
+        parent_id (Optional[str]): New parent folder id.
+        label (Optional[str]): New label.
+        attrib (Optional[dict[str, Any]]): New attributes.
+        data (Optional[dict[str, Any]]): New data.
+        tags (Optional[Iterable[str]]): New tags.
+        status (Optional[str]): New status.
+        active (Optional[bool]): New active state.
+        thumbnail_id (Optional[str]): New thumbnail id.
+
+    """
+    con = get_server_api_connection()
+    return con.update_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+        name=name,
+        folder_type=folder_type,
+        parent_id=parent_id,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+    )
+
+
+def delete_folder(
+    project_name: str,
+    folder_id: str,
+    force: bool = False,
+):
+    """Delete folder.
+
+    Args:
+        project_name (str): Project name.
+        folder_id (str): Folder id to delete.
+        force (Optional[bool]): Folder delete folder with all children
+            folder, products, versions and representations.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_folder(
+        project_name=project_name,
+        folder_id=folder_id,
+        force=force,
+    )
+
+
+def get_rest_task(
+    project_name: str,
+    task_id: str,
+) -> Optional["TaskDict"]:
+    con = get_server_api_connection()
+    return con.get_rest_task(
+        project_name=project_name,
+        task_id=task_id,
+    )
+
+
+def get_tasks(
+    project_name: str,
+    task_ids: Optional[Iterable[str]] = None,
+    task_names: Optional[Iterable[str]] = None,
+    task_types: Optional[Iterable[str]] = None,
+    folder_ids: Optional[Iterable[str]] = None,
+    assignees: Optional[Iterable[str]] = None,
+    assignees_all: Optional[Iterable[str]] = None,
+    statuses: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Generator["TaskDict", None, None]:
+    """Query task entities from server.
+
+    Args:
+        project_name (str): Name of project.
+        task_ids (Iterable[str]): Task ids to filter.
+        task_names (Iterable[str]): Task names used for filtering.
+        task_types (Iterable[str]): Task types used for filtering.
+        folder_ids (Iterable[str]): Ids of task parents. Use 'None'
+            if folder is direct child of project.
+        assignees (Optional[Iterable[str]]): Task assignees used for
+            filtering. All tasks with any of passed assignees are
+            returned.
+        assignees_all (Optional[Iterable[str]]): Task assignees used
+            for filtering. Task must have all of passed assignees to be
+            returned.
+        statuses (Optional[Iterable[str]]): Task statuses used for
+            filtering.
+        tags (Optional[Iterable[str]]): Task tags used for
+            filtering.
+        active (Optional[bool]): Filter active/inactive tasks.
+            Both are returned if is set to None.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            folder. All possible folder fields are returned
+            if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Generator[TaskDict, None, None]: Queried task entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_tasks(
+        project_name=project_name,
+        task_ids=task_ids,
+        task_names=task_names,
+        task_types=task_types,
+        folder_ids=folder_ids,
+        assignees=assignees,
+        assignees_all=assignees_all,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_task_by_name(
+    project_name: str,
+    folder_id: str,
+    task_name: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["TaskDict"]:
+    """Query task entity by name and folder id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        folder_id (str): Folder id.
+        task_name (str): Task name
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[TaskDict]: Task entity data or None if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_task_by_name(
+        project_name=project_name,
+        folder_id=folder_id,
+        task_name=task_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_task_by_id(
+    project_name: str,
+    task_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["TaskDict"]:
+    """Query task entity by id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        task_id (str): Task id.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[TaskDict]: Task entity data or None if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_task_by_id(
+        project_name=project_name,
+        task_id=task_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_tasks_by_folder_paths(
+    project_name: str,
+    folder_paths: Iterable[str],
+    task_names: Optional[Iterable[str]] = None,
+    task_types: Optional[Iterable[str]] = None,
+    assignees: Optional[Iterable[str]] = None,
+    assignees_all: Optional[Iterable[str]] = None,
+    statuses: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> dict[str, list["TaskDict"]]:
+    """Query task entities from server by folder paths.
+
+    Args:
+        project_name (str): Name of project.
+        folder_paths (list[str]): Folder paths.
+        task_names (Iterable[str]): Task names used for filtering.
+        task_types (Iterable[str]): Task types used for filtering.
+        assignees (Optional[Iterable[str]]): Task assignees used for
+            filtering. All tasks with any of passed assignees are
+            returned.
+        assignees_all (Optional[Iterable[str]]): Task assignees used
+            for filtering. Task must have all of passed assignees to be
+            returned.
+        statuses (Optional[Iterable[str]]): Task statuses used for
+            filtering.
+        tags (Optional[Iterable[str]]): Task tags used for
+            filtering.
+        active (Optional[bool]): Filter active/inactive tasks.
+            Both are returned if is set to None.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            folder. All possible folder fields are returned
+            if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        dict[str, list[TaskDict]]: Task entities by
+            folder path.
+
+    """
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_paths(
+        project_name=project_name,
+        folder_paths=folder_paths,
+        task_names=task_names,
+        task_types=task_types,
+        assignees=assignees,
+        assignees_all=assignees_all,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_tasks_by_folder_path(
+    project_name: str,
+    folder_path: str,
+    task_names: Optional[Iterable[str]] = None,
+    task_types: Optional[Iterable[str]] = None,
+    assignees: Optional[Iterable[str]] = None,
+    assignees_all: Optional[Iterable[str]] = None,
+    statuses: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> list["TaskDict"]:
+    """Query task entities from server by folder path.
+
+    Args:
+        project_name (str): Name of project.
+        folder_path (str): Folder path.
+        task_names (Iterable[str]): Task names used for filtering.
+        task_types (Iterable[str]): Task types used for filtering.
+        assignees (Optional[Iterable[str]]): Task assignees used for
+            filtering. All tasks with any of passed assignees are
+            returned.
+        assignees_all (Optional[Iterable[str]]): Task assignees used
+            for filtering. Task must have all of passed assignees to be
+            returned.
+        statuses (Optional[Iterable[str]]): Task statuses used for
+            filtering.
+        tags (Optional[Iterable[str]]): Task tags used for
+            filtering.
+        active (Optional[bool]): Filter active/inactive tasks.
+            Both are returned if is set to None.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            folder. All possible folder fields are returned
+            if 'None' is passed.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    """
+    con = get_server_api_connection()
+    return con.get_tasks_by_folder_path(
+        project_name=project_name,
+        folder_path=folder_path,
+        task_names=task_names,
+        task_types=task_types,
+        assignees=assignees,
+        assignees_all=assignees_all,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_task_by_folder_path(
+    project_name: str,
+    folder_path: str,
+    task_name: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional["TaskDict"]:
+    """Query task entity by folder path and task name.
+
+    Args:
+        project_name (str): Project name.
+        folder_path (str): Folder path.
+        task_name (str): Task name.
+        fields (Optional[Iterable[str]]): Task fields that should
+            be returned.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[TaskDict]: Task entity data or None if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_task_by_folder_path(
+        project_name=project_name,
+        folder_path=folder_path,
+        task_name=task_name,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def create_task(
+    project_name: str,
+    name: str,
+    task_type: str,
+    folder_id: str,
+    label: Optional[str] = None,
+    assignees: Optional[Iterable[str]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = None,
+    task_id: Optional[str] = None,
+) -> str:
+    """Create new task.
+
+    Args:
+        project_name (str): Project name.
+        name (str): Folder name.
+        task_type (str): Task type.
+        folder_id (str): Parent folder id.
+        label (Optional[str]): Label of folder.
+        assignees (Optional[Iterable[str]]): Task assignees.
+        attrib (Optional[dict[str, Any]]): Task attributes.
+        data (Optional[dict[str, Any]]): Task data.
+        tags (Optional[Iterable[str]]): Task tags.
+        status (Optional[str]): Task status.
+        active (Optional[bool]): Task active state.
+        thumbnail_id (Optional[str]): Task thumbnail id.
+        task_id (Optional[str]): Task id. If not passed new id is
+            generated.
+
+    Returns:
+        str: Task id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_task(
+        project_name=project_name,
+        name=name,
+        task_type=task_type,
+        folder_id=folder_id,
+        label=label,
+        assignees=assignees,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        task_id=task_id,
+    )
+
+
+def update_task(
+    project_name: str,
+    task_id: str,
+    name: Optional[str] = None,
+    task_type: Optional[str] = None,
+    folder_id: Optional[str] = None,
+    label: Optional[str] = NOT_SET,
+    assignees: Optional[list[str]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = NOT_SET,
+):
+    """Update task entity on server.
+
+    Do not pass ``label`` amd ``thumbnail_id`` if you don't
+        want to change their values. Value ``None`` would unset
+        their value.
+
+    Update of ``data`` will override existing value on folder entity.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        task_id (str): Task id.
+        name (Optional[str]): New name.
+        task_type (Optional[str]): New task type.
+        folder_id (Optional[str]): New folder id.
+        label (Optional[Optional[str]]): New label.
+        assignees (Optional[str]): New assignees.
+        attrib (Optional[dict[str, Any]]): New attributes.
+        data (Optional[dict[str, Any]]): New data.
+        tags (Optional[Iterable[str]]): New tags.
+        status (Optional[str]): New status.
+        active (Optional[bool]): New active state.
+        thumbnail_id (Optional[str]): New thumbnail id.
+
+    """
+    con = get_server_api_connection()
+    return con.update_task(
+        project_name=project_name,
+        task_id=task_id,
+        name=name,
+        task_type=task_type,
+        folder_id=folder_id,
+        label=label,
+        assignees=assignees,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+    )
+
+
+def delete_task(
+    project_name: str,
+    task_id: str,
+):
+    """Delete task.
+
+    Args:
+        project_name (str): Project name.
+        task_id (str): Task id to delete.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_task(
+        project_name=project_name,
+        task_id=task_id,
+    )
+
+
+def get_rest_product(
+    project_name: str,
+    product_id: str,
+) -> Optional["ProductDict"]:
+    con = get_server_api_connection()
+    return con.get_rest_product(
+        project_name=project_name,
+        product_id=product_id,
+    )
+
+
+def get_products(
+    project_name: str,
+    product_ids: Optional[Iterable[str]] = None,
+    product_names: Optional[Iterable[str]] = None,
+    folder_ids: Optional[Iterable[str]] = None,
+    product_types: Optional[Iterable[str]] = None,
+    product_name_regex: Optional[str] = None,
+    product_path_regex: Optional[str] = None,
+    names_by_folder_ids: Optional[dict[str, Iterable[str]]] = None,
+    statuses: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Generator["ProductDict", None, None]:
+    """Query products from server.
+
+    Todos:
+        Separate 'name_by_folder_ids' filtering to separated method. It
+            cannot be combined with some other filters.
+
+    Args:
+        project_name (str): Name of project.
+        product_ids (Optional[Iterable[str]]): Task ids to filter.
+        product_names (Optional[Iterable[str]]): Task names used for
+            filtering.
+        folder_ids (Optional[Iterable[str]]): Ids of task parents.
+            Use 'None' if folder is direct child of project.
+        product_types (Optional[Iterable[str]]): Product types used for
+            filtering.
+        product_name_regex (Optional[str]): Filter products by name regex.
+        product_path_regex (Optional[str]): Filter products by path regex.
+            Path starts with folder path and ends with product name.
+        names_by_folder_ids (Optional[dict[str, Iterable[str]]]): Product
+            name filtering by folder id.
+        statuses (Optional[Iterable[str]]): Product statuses used
+            for filtering.
+        tags (Optional[Iterable[str]]): Product tags used
+            for filtering.
+        active (Optional[bool]): Filter active/inactive products.
+            Both are returned if is set to None.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            folder. All possible folder fields are returned
+            if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            products.
+
+    Returns:
+        Generator[ProductDict, None, None]: Queried product entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_products(
+        project_name=project_name,
+        product_ids=product_ids,
+        product_names=product_names,
+        folder_ids=folder_ids,
+        product_types=product_types,
+        product_name_regex=product_name_regex,
+        product_path_regex=product_path_regex,
+        names_by_folder_ids=names_by_folder_ids,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_product_by_id(
+    project_name: str,
+    product_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["ProductDict"]:
+    """Query product entity by id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        product_id (str): Product id.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            products.
+
+    Returns:
+        Optional[ProductDict]: Product entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_by_id(
+        project_name=project_name,
+        product_id=product_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_product_by_name(
+    project_name: str,
+    product_name: str,
+    folder_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["ProductDict"]:
+    """Query product entity by name and folder id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        product_name (str): Product name.
+        folder_id (str): Folder id (Folder is a parent of products).
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            products.
+
+    Returns:
+        Optional[ProductDict]: Product entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_by_name(
+        project_name=project_name,
+        product_name=product_name,
+        folder_id=folder_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_product_types(
+    fields: Optional[Iterable[str]] = None,
+) -> list["ProductTypeDict"]:
+    """Types of products.
+
+    This is server wide information. Product types have 'name', 'icon' and
+        'color'.
+
+    Args:
+        fields (Optional[Iterable[str]]): Product types fields to query.
+
+    Returns:
+        list[ProductTypeDict]: Product types information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_types(
+        fields=fields,
+    )
+
+
+def get_project_product_types(
+    project_name: str,
+    fields: Optional[Iterable[str]] = None,
+) -> list["ProductTypeDict"]:
+    """DEPRECATED Types of products available in a project.
+
+    Filter only product types available in a project.
+
+    Args:
+        project_name (str): Name of the project where to look for
+            product types.
+        fields (Optional[Iterable[str]]): Product types fields to query.
+
+    Returns:
+        list[ProductTypeDict]: Product types information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_product_types(
+        project_name=project_name,
+        fields=fields,
+    )
+
+
+def get_product_type_names(
+    project_name: Optional[str] = None,
+    product_ids: Optional[Iterable[str]] = None,
+) -> set[str]:
+    """DEPRECATED Product type names.
+
+    Warnings:
+        This function will be probably removed. Matters if 'products_id'
+            filter has real use-case.
+
+    Args:
+        project_name (Optional[str]): Name of project where to look for
+            queried entities.
+        product_ids (Optional[Iterable[str]]): Product ids filter. Can be
+            used only with 'project_name'.
+
+    Returns:
+        set[str]: Product type names.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_type_names(
+        project_name=project_name,
+        product_ids=product_ids,
+    )
+
+
+def create_product(
+    project_name: str,
+    name: str,
+    product_type: str,
+    folder_id: str,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    product_id: Optional[str] = None,
+) -> str:
+    """Create new product.
+
+    Args:
+        project_name (str): Project name.
+        name (str): Product name.
+        product_type (str): Product type.
+        folder_id (str): Parent folder id.
+        attrib (Optional[dict[str, Any]]): Product attributes.
+        data (Optional[dict[str, Any]]): Product data.
+        tags (Optional[Iterable[str]]): Product tags.
+        status (Optional[str]): Product status.
+        active (Optional[bool]): Product active state.
+        product_id (Optional[str]): Product id. If not passed new id is
+            generated.
+
+    Returns:
+        str: Product id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_product(
+        project_name=project_name,
+        name=name,
+        product_type=product_type,
+        folder_id=folder_id,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        product_id=product_id,
+    )
+
+
+def update_product(
+    project_name: str,
+    product_id: str,
+    name: Optional[str] = None,
+    folder_id: Optional[str] = None,
+    product_type: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+):
+    """Update product entity on server.
+
+    Update of ``data`` will override existing value on folder entity.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        product_id (str): Product id.
+        name (Optional[str]): New product name.
+        folder_id (Optional[str]): New product id.
+        product_type (Optional[str]): New product type.
+        attrib (Optional[dict[str, Any]]): New product attributes.
+        data (Optional[dict[str, Any]]): New product data.
+        tags (Optional[Iterable[str]]): New product tags.
+        status (Optional[str]): New product status.
+        active (Optional[bool]): New product active state.
+
+    """
+    con = get_server_api_connection()
+    return con.update_product(
+        project_name=project_name,
+        product_id=product_id,
+        name=name,
+        folder_id=folder_id,
+        product_type=product_type,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+    )
+
+
+def delete_product(
+    project_name: str,
+    product_id: str,
+):
+    """Delete product.
+
+    Args:
+        project_name (str): Project name.
+        product_id (str): Product id to delete.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_product(
+        project_name=project_name,
+        product_id=product_id,
+    )
+
+
+def get_rest_version(
+    project_name: str,
+    version_id: str,
+) -> Optional["VersionDict"]:
+    con = get_server_api_connection()
+    return con.get_rest_version(
+        project_name=project_name,
+        version_id=version_id,
+    )
+
+
+def get_versions(
+    project_name: str,
+    version_ids: Optional[Iterable[str]] = None,
+    product_ids: Optional[Iterable[str]] = None,
+    task_ids: Optional[Iterable[str]] = None,
+    versions: Optional[Iterable[str]] = None,
+    hero: bool = True,
+    standard: bool = True,
+    latest: Optional[bool] = None,
+    statuses: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Generator["VersionDict", None, None]:
+    """Get version entities based on passed filters from server.
+
+    Args:
+        project_name (str): Name of project where to look for versions.
+        version_ids (Optional[Iterable[str]]): Version ids used for
+            version filtering.
+        product_ids (Optional[Iterable[str]]): Product ids used for
+            version filtering.
+        task_ids (Optional[Iterable[str]]): Task ids used for
+            version filtering.
+        versions (Optional[Iterable[int]]): Versions we're interested in.
+        hero (Optional[bool]): Skip hero versions when set to False.
+        standard (Optional[bool]): Skip standard (non-hero) when
+            set to False.
+        latest (Optional[bool]): Return only latest version of standard
+            versions. This can be combined only with 'standard' attribute
+            set to True.
+        statuses (Optional[Iterable[str]]): Representation statuses used
+            for filtering.
+        tags (Optional[Iterable[str]]): Representation tags used
+            for filtering.
+        active (Optional[bool]): Receive active/inactive entities.
+            Both are returned when 'None' is passed.
+        fields (Optional[Iterable[str]]): Fields to be queried
+            for version. All possible folder fields are returned
+            if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        Generator[VersionDict, None, None]: Queried version entities.
+
+    """
+    con = get_server_api_connection()
+    return con.get_versions(
+        project_name=project_name,
+        version_ids=version_ids,
+        product_ids=product_ids,
+        task_ids=task_ids,
+        versions=versions,
+        hero=hero,
+        standard=standard,
+        latest=latest,
+        statuses=statuses,
+        tags=tags,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_version_by_id(
+    project_name: str,
+    version_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["VersionDict"]:
+    """Query version entity by id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        version_id (str): Version id.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        Optional[VersionDict]: Version entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_version_by_id(
+        project_name=project_name,
+        version_id=version_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_version_by_name(
+    project_name: str,
+    version: int,
+    product_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["VersionDict"]:
+    """Query version entity by version and product id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        version (int): Version of version entity.
+        product_id (str): Product id. Product is a parent of version.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        Optional[VersionDict]: Version entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_version_by_name(
+        project_name=project_name,
+        version=version,
+        product_id=product_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_hero_version_by_id(
+    project_name: str,
+    version_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["VersionDict"]:
+    """Query hero version entity by id.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        version_id (int): Hero version id.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        Optional[VersionDict]: Version entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_hero_version_by_id(
+        project_name=project_name,
+        version_id=version_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_hero_version_by_product_id(
+    project_name: str,
+    product_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["VersionDict"]:
+    """Query hero version entity by product id.
+
+    Only one hero version is available on a product.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        product_id (int): Product id.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        Optional[VersionDict]: Version entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_hero_version_by_product_id(
+        project_name=project_name,
+        product_id=product_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_hero_versions(
+    project_name: str,
+    product_ids: Optional[Iterable[str]] = None,
+    version_ids: Optional[Iterable[str]] = None,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Generator["VersionDict", None, None]:
+    """Query hero versions by multiple filters.
+
+    Only one hero version is available on a product.
+
+    Args:
+        project_name (str): Name of project where to look for queried
+            entities.
+        product_ids (Optional[Iterable[str]]): Product ids.
+        version_ids (Optional[Iterable[str]]): Version ids.
+        active (Optional[bool]): Receive active/inactive entities.
+            Both are returned when 'None' is passed.
+        fields (Optional[Iterable[str]]): Fields that should be returned.
+            All fields are returned if 'None' is passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        Optional[VersionDict]: Version entity data or None
+            if was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_hero_versions(
+        project_name=project_name,
+        product_ids=product_ids,
+        version_ids=version_ids,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_last_versions(
+    project_name: str,
+    product_ids: Iterable[str],
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> dict[str, Optional["VersionDict"]]:
+    """Query last version entities by product ids.
+
+    Args:
+        project_name (str): Project where to look for representation.
+        product_ids (Iterable[str]): Product ids.
+        active (Optional[bool]): Receive active/inactive entities.
+            Both are returned when 'None' is passed.
+        fields (Optional[Iterable[str]]): fields to be queried
+            for representations.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        dict[str, Optional[VersionDict]]: Last versions by product id.
+
+    """
+    con = get_server_api_connection()
+    return con.get_last_versions(
+        project_name=project_name,
+        product_ids=product_ids,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_last_version_by_product_id(
+    project_name: str,
+    product_id: str,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["VersionDict"]:
+    """Query last version entity by product id.
+
+    Args:
+        project_name (str): Project where to look for representation.
+        product_id (str): Product id.
+        active (Optional[bool]): Receive active/inactive entities.
+            Both are returned when 'None' is passed.
+        fields (Optional[Iterable[str]]): fields to be queried
+            for representations.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            versions.
+
+    Returns:
+        Optional[VersionDict]: Queried version entity or None.
+
+    """
+    con = get_server_api_connection()
+    return con.get_last_version_by_product_id(
+        project_name=project_name,
+        product_id=product_id,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_last_version_by_product_name(
+    project_name: str,
+    product_name: str,
+    folder_id: str,
+    active: Optional[bool] = True,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional["VersionDict"]:
+    """Query last version entity by product name and folder id.
+
+    Args:
+        project_name (str): Project where to look for representation.
+        product_name (str): Product name.
+        folder_id (str): Folder id.
+        active (Optional[bool]): Receive active/inactive entities.
+            Both are returned when 'None' is passed.
+        fields (Optional[Iterable[str]]): fields to be queried
+            for representations.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            representations.
+
+    Returns:
+        Optional[VersionDict]: Queried version entity or None.
+
+    """
+    con = get_server_api_connection()
+    return con.get_last_version_by_product_name(
+        project_name=project_name,
+        product_name=product_name,
+        folder_id=folder_id,
+        active=active,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def version_is_latest(
+    project_name: str,
+    version_id: str,
+) -> bool:
+    """Is version latest from a product.
+
+    Args:
+        project_name (str): Project where to look for representation.
+        version_id (str): Version id.
+
+    Returns:
+        bool: Version is latest or not.
+
+    """
+    con = get_server_api_connection()
+    return con.version_is_latest(
+        project_name=project_name,
+        version_id=version_id,
+    )
+
+
+def create_version(
+    project_name: str,
+    version: int,
+    product_id: str,
+    task_id: Optional[str] = None,
+    author: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = None,
+    version_id: Optional[str] = None,
+) -> str:
+    """Create new version.
+
+    Args:
+        project_name (str): Project name.
+        version (int): Version.
+        product_id (str): Parent product id.
+        task_id (Optional[str]): Parent task id.
+        author (Optional[str]): Version author.
+        attrib (Optional[dict[str, Any]]): Version attributes.
+        data (Optional[dict[str, Any]]): Version data.
+        tags (Optional[Iterable[str]]): Version tags.
+        status (Optional[str]): Version status.
+        active (Optional[bool]): Version active state.
+        thumbnail_id (Optional[str]): Version thumbnail id.
+        version_id (Optional[str]): Version id. If not passed new id is
+            generated.
+
+    Returns:
+        str: Version id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_version(
+        project_name=project_name,
+        version=version,
+        product_id=product_id,
+        task_id=task_id,
+        author=author,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        version_id=version_id,
+    )
+
+
+def update_version(
+    project_name: str,
+    version_id: str,
+    version: Optional[int] = None,
+    product_id: Optional[str] = None,
+    task_id: Optional[str] = NOT_SET,
+    author: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = NOT_SET,
+):
+    """Update version entity on server.
+
+    Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
+        want to change their values. Value ``None`` would unset
+        their value.
+
+    Update of ``data`` will override existing value on folder entity.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        version_id (str): Version id.
+        version (Optional[int]): New version.
+        product_id (Optional[str]): New product id.
+        task_id (Optional[str]): New task id.
+        author (Optional[str]): New author username.
+        attrib (Optional[dict[str, Any]]): New attributes.
+        data (Optional[dict[str, Any]]): New data.
+        tags (Optional[Iterable[str]]): New tags.
+        status (Optional[str]): New status.
+        active (Optional[bool]): New active state.
+        thumbnail_id (Optional[str]): New thumbnail id.
+
+    """
+    con = get_server_api_connection()
+    return con.update_version(
+        project_name=project_name,
+        version_id=version_id,
+        version=version,
+        product_id=product_id,
+        task_id=task_id,
+        author=author,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+    )
+
+
+def delete_version(
+    project_name: str,
+    version_id: str,
+):
+    """Delete version.
+
+    Args:
+        project_name (str): Project name.
+        version_id (str): Version id to delete.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_version(
+        project_name=project_name,
+        version_id=version_id,
     )
 
 
