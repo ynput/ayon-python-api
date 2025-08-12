@@ -17,7 +17,7 @@ import uuid
 import warnings
 from contextlib import contextmanager
 import typing
-from typing import Optional, Iterable, Tuple, Generator, Dict, List, Set, Any
+from typing import Optional, Iterable, Tuple, Generator, Any
 
 import requests
 
@@ -854,7 +854,7 @@ class ServerAPI(
             elif key in self._session.headers:
                 self._session.headers.pop(key)
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get information about current used api key.
 
         By default, the 'info' contains only 'uptime' and 'version'. With
@@ -924,7 +924,7 @@ class ServerAPI(
             )
         return self._graphql_allows_traits_in_representations
 
-    def _get_user_info(self) -> Optional[Dict[str, Any]]:
+    def _get_user_info(self) -> Optional[dict[str, Any]]:
         if self._access_token is None:
             return None
 
@@ -953,7 +953,7 @@ class ServerAPI(
         usernames: Optional[Iterable[str]] = None,
         emails: Optional[Iterable[str]] = None,
         fields: Optional[Iterable[str]] = None,
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[dict[str, Any], None, None]:
         """Get Users.
 
         Only administrators and managers can fetch all users. For other users
@@ -1028,7 +1028,7 @@ class ServerAPI(
         username: str,
         project_name: Optional[str] = None,
         fields: Optional[Iterable[str]] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Get user by name using GraphQl.
 
         Only administrators and managers can fetch all users. For other users
@@ -1058,7 +1058,7 @@ class ServerAPI(
 
     def get_user(
         self, username: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Get user info using REST endpoint.
 
         User contains only explicitly set attributes in 'attrib'.
@@ -1067,7 +1067,7 @@ class ServerAPI(
             username (Optional[str]): Username.
 
         Returns:
-            Optional[Dict[str, Any]]: User info or None if user is not
+            Optional[dict[str, Any]]: User info or None if user is not
                 found.
 
         """
@@ -1090,7 +1090,7 @@ class ServerAPI(
 
     def get_headers(
         self, content_type: Optional[str] = None
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         if content_type is None:
             content_type = "application/json"
 
@@ -1652,7 +1652,7 @@ class ServerAPI(
         content_type: Optional[str] = None,
         filename: Optional[str] = None,
         progress: Optional[TransferProgress] = None,
-        headers: Optional[Dict[str, Any]] = None,
+        headers: Optional[dict[str, Any]] = None,
         **kwargs
     ) -> requests.Response:
         """Upload reviewable file to server.
@@ -1667,7 +1667,7 @@ class ServerAPI(
             filename (Optional[str]): User as original filename. Filename from
                 'filepath' is used when not filled.
             progress (Optional[TransferProgress]): Progress.
-            headers (Optional[Dict[str, Any]]): Headers.
+            headers (Optional[dict[str, Any]]): Headers.
 
         Returns:
             requests.Response: Server response.
@@ -1729,7 +1729,7 @@ class ServerAPI(
     def query_graphql(
         self,
         query: str,
-        variables: Optional[Dict[str, Any]] = None,
+        variables: Optional[dict[str, Any]] = None,
     ) -> GraphQlResponse:
         """Execute GraphQl query.
 
@@ -1751,10 +1751,10 @@ class ServerAPI(
         response.raise_for_status()
         return GraphQlResponse(response)
 
-    def get_graphql_schema(self) -> Dict[str, Any]:
+    def get_graphql_schema(self) -> dict[str, Any]:
         return self.query_graphql(INTROSPECTION_QUERY).data["data"]
 
-    def get_server_schema(self) -> Optional[Dict[str, Any]]:
+    def get_server_schema(self) -> Optional[dict[str, Any]]:
         """Get server schema with info, url paths, components etc.
 
         Todos:
@@ -1770,7 +1770,7 @@ class ServerAPI(
             return response.data
         return None
 
-    def get_schemas(self) -> Dict[str, Any]:
+    def get_schemas(self) -> dict[str, Any]:
         """Get components schema.
 
         Name of components does not match entity type names e.g. 'project' is
@@ -1805,7 +1805,7 @@ class ServerAPI(
         self,
         attribute_name: str,
         data: "AttributeSchemaDataDict",
-        scope: List["AttributeScope"],
+        scope: list["AttributeScope"],
         position: Optional[int] = None,
         builtin: bool = False,
     ):
@@ -1858,7 +1858,7 @@ class ServerAPI(
 
     def get_attributes_for_type(
         self, entity_type: "AttributeScope"
-    ) -> Dict[str, "AttributeSchemaDict"]:
+    ) -> dict[str, "AttributeSchemaDict"]:
         """Get attribute schemas available for an entity type.
 
         Example::
@@ -1911,7 +1911,7 @@ class ServerAPI(
 
     def get_attributes_fields_for_type(
         self, entity_type: "AttributeScope"
-    ) -> Set[str]:
+    ) -> set[str]:
         """Prepare attribute fields for entity type.
 
         Returns:
@@ -1924,7 +1924,7 @@ class ServerAPI(
             for attr in attributes
         }
 
-    def get_default_fields_for_type(self, entity_type: str) -> Set[str]:
+    def get_default_fields_for_type(self, entity_type: str) -> set[str]:
         """Default fields for entity type.
 
         Returns most of commonly used fields from server.
@@ -2021,12 +2021,12 @@ class ServerAPI(
         version: str,
         python_version: str,
         platform_name: str,
-        python_modules: Dict[str, str],
-        runtime_python_modules: Dict[str, str],
+        python_modules: dict[str, str],
+        runtime_python_modules: dict[str, str],
         checksum: str,
         checksum_algorithm: str,
         file_size: int,
-        sources: Optional[List[Dict[str, Any]]] = None,
+        sources: Optional[list[dict[str, Any]]] = None,
     ):
         """Create new installer information on server.
 
@@ -2070,7 +2070,7 @@ class ServerAPI(
         response = self.post("desktop/installers", **body)
         response.raise_for_status()
 
-    def update_installer(self, filename: str, sources: List[Dict[str, Any]]):
+    def update_installer(self, filename: str, sources: list[dict[str, Any]]):
         """Update installer information on server.
 
         Args:
@@ -2187,13 +2187,13 @@ class ServerAPI(
     def create_dependency_package(
         self,
         filename: str,
-        python_modules: Dict[str, str],
-        source_addons: Dict[str, str],
+        python_modules: dict[str, str],
+        source_addons: dict[str, str],
         installer_version: str,
         checksum: str,
         checksum_algorithm: str,
         file_size: int,
-        sources: Optional[List[Dict[str, Any]]] = None,
+        sources: Optional[list[dict[str, Any]]] = None,
         platform_name: Optional[str] = None,
     ):
         """Create dependency package on server.
@@ -2243,7 +2243,7 @@ class ServerAPI(
         response.raise_for_status()
 
     def update_dependency_package(
-        self, filename: str, sources: List[Dict[str, Any]]
+        self, filename: str, sources: list[dict[str, Any]]
     ):
         """Update dependency package metadata on server.
 
@@ -2402,15 +2402,15 @@ class ServerAPI(
     def create_bundle(
         self,
         name: str,
-        addon_versions: Dict[str, str],
+        addon_versions: dict[str, str],
         installer_version: str,
-        dependency_packages: Optional[Dict[str, str]] = None,
+        dependency_packages: Optional[dict[str, str]] = None,
         is_production: Optional[bool] = None,
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
         dev_active_user: Optional[str] = None,
         dev_addons_config: Optional[
-            Dict[str, "DevBundleAddonInfoDict"]] = None,
+            dict[str, "DevBundleAddonInfoDict"]] = None,
     ):
         """Create bundle on server.
 
@@ -2473,15 +2473,15 @@ class ServerAPI(
     def update_bundle(
         self,
         bundle_name: str,
-        addon_versions: Optional[Dict[str, str]] = None,
+        addon_versions: Optional[dict[str, str]] = None,
         installer_version: Optional[str] = None,
-        dependency_packages: Optional[Dict[str, str]] = None,
+        dependency_packages: Optional[dict[str, str]] = None,
         is_production: Optional[bool] = None,
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
         dev_active_user: Optional[str] = None,
         dev_addons_config: Optional[
-            Dict[str, "DevBundleAddonInfoDict"]] = None,
+            dict[str, "DevBundleAddonInfoDict"]] = None,
     ):
         """Update bundle on server.
 
@@ -2531,16 +2531,16 @@ class ServerAPI(
     def check_bundle_compatibility(
         self,
         name: str,
-        addon_versions: Dict[str, str],
+        addon_versions: dict[str, str],
         installer_version: str,
-        dependency_packages: Optional[Dict[str, str]] = None,
+        dependency_packages: Optional[dict[str, str]] = None,
         is_production: Optional[bool] = None,
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
         dev_active_user: Optional[str] = None,
         dev_addons_config: Optional[
-            Dict[str, "DevBundleAddonInfoDict"]] = None,
-    ) -> Dict[str, Any]:
+            dict[str, "DevBundleAddonInfoDict"]] = None,
+    ) -> dict[str, Any]:
         """Check bundle compatibility.
 
         Can be used as per-flight validation before creating bundle.
@@ -2562,7 +2562,7 @@ class ServerAPI(
                 dev addons. Can be used only if 'is_dev' is set to 'True'.
 
         Returns:
-            Dict[str, Any]: Server response, with 'success' and 'issues'.
+            dict[str, Any]: Server response, with 'success' and 'issues'.
 
         """
         body = {
@@ -2597,7 +2597,7 @@ class ServerAPI(
         response.raise_for_status()
 
     # Anatomy presets
-    def get_project_anatomy_presets(self) -> List["AnatomyPresetDict"]:
+    def get_project_anatomy_presets(self) -> list["AnatomyPresetDict"]:
         """Anatomy presets available on server.
 
         Content has basic information about presets. Example output::
@@ -2688,7 +2688,7 @@ class ServerAPI(
 
     def get_project_root_overrides(
         self, project_name: str
-    ) -> Dict[str, Dict[str, str]]:
+    ) -> dict[str, dict[str, str]]:
         """Root overrides per site name.
 
         Method is based on logged user and can't be received for any other
@@ -2709,7 +2709,7 @@ class ServerAPI(
 
     def get_project_roots_by_site(
         self, project_name: str
-    ) -> Dict[str, Dict[str, str]]:
+    ) -> dict[str, dict[str, str]]:
         """Root overrides per site name.
 
         Method is based on logged user and can't be received for any other
@@ -2739,7 +2739,7 @@ class ServerAPI(
 
     def get_project_root_overrides_by_site_id(
         self, project_name: str, site_id: Optional[str] = None
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Root overrides for site.
 
         If site id is not passed a site set in current api object is used
@@ -2765,7 +2765,7 @@ class ServerAPI(
 
     def get_project_roots_for_site(
         self, project_name: str, site_id: Optional[str] = None
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Root overrides for site.
 
         If site id is not passed a site set in current api object is used
@@ -2798,7 +2798,7 @@ class ServerAPI(
         project_name: str,
         site_id: Optional[str] = None,
         platform_name: Optional[str] = None,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Root values for site or platform.
 
         Helper function that treats 'siteRoots' endpoint. The endpoint
@@ -2840,7 +2840,7 @@ class ServerAPI(
 
     def get_project_roots_by_site_id(
         self, project_name: str, site_id: Optional[str] = None
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Root values for a site.
 
         If site id is not passed a site set in current api object is used
@@ -2863,7 +2863,7 @@ class ServerAPI(
 
     def get_project_roots_by_platform(
         self, project_name: str, platform_name: Optional[str] = None
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Root values for a site.
 
         If platform name is not passed current platform name is used instead.
@@ -2890,7 +2890,7 @@ class ServerAPI(
         addon_name: str,
         addon_version: str,
         project_name: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Sudio/Project settings schema of an addon.
 
         Project schema may look differently as some enums are based on project
@@ -2919,7 +2919,7 @@ class ServerAPI(
 
     def get_addon_site_settings_schema(
         self, addon_name: str, addon_version: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Site settings schema of an addon.
 
         Args:
@@ -2941,7 +2941,7 @@ class ServerAPI(
         addon_name: str,
         addon_version: str,
         variant: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Addon studio settings.
 
         Receive studio settings for specific version of an addon.
@@ -2975,7 +2975,7 @@ class ServerAPI(
         variant: Optional[str] = None,
         site_id: Optional[str] = None,
         use_site: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Addon project settings.
 
         Receive project settings for specific version of an addon. The settings
@@ -3029,7 +3029,7 @@ class ServerAPI(
         variant: Optional[str] = None,
         site_id: Optional[str] = None,
         use_site: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Receive addon settings.
 
         Receive addon settings based on project name value. Some arguments may
@@ -3067,7 +3067,7 @@ class ServerAPI(
         addon_name: str,
         addon_version: str,
         site_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Site settings of an addon.
 
         If site id is not available an empty dictionary is returned.
@@ -3102,7 +3102,7 @@ class ServerAPI(
         variant: Optional[str] = None,
         site_id: Optional[str] = None,
         use_site: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get complete set of settings for given data.
 
         If project is not passed then studio settings are returned. If variant
@@ -3156,7 +3156,7 @@ class ServerAPI(
         site_id: Optional[str] = None,
         use_site: bool = True,
         only_values: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """All addons settings in one bulk.
 
         Warnings:
@@ -3202,7 +3202,7 @@ class ServerAPI(
         site_id: Optional[str] = None,
         use_site: bool = True,
         only_values: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Project settings of all addons.
 
         Server returns information about used addon versions, so full output
@@ -3269,7 +3269,7 @@ class ServerAPI(
         site_id: Optional[str] = None,
         use_site: bool = True,
         only_values: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Universal function to receive all addon settings.
 
         Based on 'project_name' will receive studio settings or project
@@ -3314,7 +3314,7 @@ class ServerAPI(
             only_values=only_values
         )
 
-    def get_secrets(self) -> List["SecretDict"]:
+    def get_secrets(self) -> list["SecretDict"]:
         """Get all secrets.
 
         Example output::
@@ -3422,10 +3422,10 @@ class ServerAPI(
     def send_batch_operations(
         self,
         project_name: str,
-        operations: List[Dict[str, Any]],
+        operations: list[dict[str, Any]],
         can_fail: bool = False,
         raise_on_fail: bool = True
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Post multiple CRUD operations to server.
 
         When multiple changes should be made on server side this is the best
@@ -3461,10 +3461,10 @@ class ServerAPI(
     def _send_batch_operations(
         self,
         uri: str,
-        operations: List[Dict[str, Any]],
+        operations: list[dict[str, Any]],
         can_fail: bool,
         raise_on_fail: bool
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if not operations:
             return []
 
@@ -3527,7 +3527,7 @@ class ServerAPI(
         return op_results
 
     def _prepare_fields(
-        self, entity_type: str, fields: Set[str], own_attributes: bool = False
+        self, entity_type: str, fields: set[str], own_attributes: bool = False
     ):
         if not fields:
             return
