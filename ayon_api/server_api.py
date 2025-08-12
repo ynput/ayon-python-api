@@ -137,8 +137,6 @@ if typing.TYPE_CHECKING:
         StreamType,
     )
 
-JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
-
 _PLACEHOLDER = object()
 
 VERSION_REGEX = re.compile(
@@ -148,116 +146,6 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
-
-
-def _get_description(response):
-    if HTTPStatus is None:
-        return str(response.orig_response)
-    return HTTPStatus(response.status).description
-
-
-class RestApiResponse(object):
-    """API Response."""
-
-    def __init__(self, response, data=None):
-        if response is None:
-            status_code = 500
-        else:
-            status_code = response.status_code
-        self._response = response
-        self.status = status_code
-        self._data = data
-
-    @property
-    def text(self):
-        if self._response is None:
-            return self.detail
-        return self._response.text
-
-    @property
-    def orig_response(self):
-        return self._response
-
-    @property
-    def headers(self):
-        if self._response is None:
-            return {}
-        return self._response.headers
-
-    @property
-    def data(self):
-        if self._data is None:
-            try:
-                self._data = self.orig_response.json()
-            except RequestsJSONDecodeError:
-                self._data = {}
-        return self._data
-
-    @property
-    def content(self):
-        if self._response is None:
-            return b""
-        return self._response.content
-
-    @property
-    def content_type(self) -> Optional[str]:
-        return self.headers.get("Content-Type")
-
-    @property
-    def detail(self):
-        detail = self.get("detail")
-        if detail:
-            return detail
-        return _get_description(self)
-
-    @property
-    def status_code(self) -> int:
-        return self.status
-
-    @property
-    def ok(self) -> bool:
-        if self._response is not None:
-            return self._response.ok
-        return False
-
-    def raise_for_status(self, message=None):
-        if self._response is None:
-            if self._data and self._data.get("detail"):
-                raise ServerError(self._data["detail"])
-            raise ValueError("Response is not available.")
-
-        if self.status_code == 401:
-            raise UnauthorizedError("Missing or invalid authentication token")
-        try:
-            self._response.raise_for_status()
-        except requests.exceptions.HTTPError as exc:
-            if message is None:
-                message = str(exc)
-            raise HTTPRequestError(message, exc.response)
-
-    def __enter__(self, *args, **kwargs):
-        return self._response.__enter__(*args, **kwargs)
-
-    def __contains__(self, key):
-        return key in self.data
-
-    def __repr__(self):
-        return f"<{self.__class__.__name__} [{self.status}]>"
-
-    def __len__(self):
-        return int(200 <= self.status < 400)
-
-    def __bool__(self):
-        return 200 <= self.status < 400
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def get(self, key, default=None):
-        data = self.data
-        if isinstance(data, dict):
-            return self.data.get(key, default)
-        return default
 
 
 class GraphQlResponse:
@@ -1400,22 +1288,7 @@ class ServerAPI(
         if new_response is not None:
             return new_response
 
-        content_type = response.headers.get("Content-Type")
-        if content_type == "application/json":
-            try:
-                new_response = RestApiResponse(response)
-            except JSONDecodeError:
-                new_response = RestApiResponse(
-                    None,
-                    {
-                        "detail": "The response is not a JSON: {}".format(
-                            response.text)
-                    }
-                )
-
-        else:
-            new_response = RestApiResponse(response)
-
+        new_response = RestApiResponse(response)
         self.log.debug(f"Response {str(new_response)}")
         return new_response
 
