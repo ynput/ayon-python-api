@@ -1,11 +1,21 @@
 import typing
-from typing import Set
+from typing import Set, Optional
+
+import requests
+
+from .utils import TransferProgress, RequestType
 
 if typing.TYPE_CHECKING:
     from .typing import AnyEntityDict
 
 
 class _BaseServerAPI:
+    def get_base_url(self) -> str:
+        raise NotImplementedError()
+
+    def get_rest_url(self) -> str:
+        raise NotImplementedError()
+
     def get(self, entrypoint: str, **kwargs):
         raise NotImplementedError()
 
@@ -40,6 +50,25 @@ class _BaseServerAPI:
         raise NotImplementedError()
 
     def get_default_fields_for_type(self, entity_type: str) -> Set[str]:
+        raise NotImplementedError()
+
+    def upload_file(
+        self,
+        endpoint: str,
+        filepath: str,
+        progress: Optional[TransferProgress] = None,
+        request_type: Optional[RequestType] = None,
+        **kwargs
+    ) -> requests.Response:
+        raise NotImplementedError()
+
+    def download_file(
+        self,
+        endpoint: str,
+        filepath: str,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> TransferProgress:
         raise NotImplementedError()
 
     def _convert_entity_data(self, entity: "AnyEntityDict"):
