@@ -173,9 +173,6 @@ from ._api import (
     create_representation,
     update_representation,
     delete_representation,
-    get_workfiles_info,
-    get_workfile_info,
-    get_workfile_info_by_id,
     send_batch_operations,
     get_actions,
     trigger_action,
@@ -261,6 +258,9 @@ from ._api import (
     get_workfile_thumbnail,
     create_thumbnail,
     update_thumbnail,
+    get_workfiles_info,
+    get_workfile_info,
+    get_workfile_info_by_id,
 )
 
 
@@ -437,9 +437,6 @@ __all__ = (
     "create_representation",
     "update_representation",
     "delete_representation",
-    "get_workfiles_info",
-    "get_workfile_info",
-    "get_workfile_info_by_id",
     "send_batch_operations",
     "get_actions",
     "trigger_action",
@@ -525,4 +522,7 @@ __all__ = (
     "get_workfile_thumbnail",
     "create_thumbnail",
     "update_thumbnail",
+    "get_workfiles_info",
+    "get_workfile_info",
+    "get_workfile_info_by_id",
 )

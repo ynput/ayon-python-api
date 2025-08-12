@@ -10,6 +10,8 @@ from .utils import TransferProgress, RequestType
 if typing.TYPE_CHECKING:
     from .typing import AnyEntityDict, ServerVersion
 
+_PLACEHOLDER = object()
+
 
 class _BaseServerAPI:
     def get_server_version(self) -> str:
