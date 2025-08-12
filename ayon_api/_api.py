@@ -666,7 +666,7 @@ def set_sender_type(
     )
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     """Get information about current used api key.
 
     By default, the 'info' contains only 'uptime' and 'version'. With
@@ -718,7 +718,7 @@ def get_users(
     usernames: Optional[Iterable[str]] = None,
     emails: Optional[Iterable[str]] = None,
     fields: Optional[Iterable[str]] = None,
-) -> Generator[Dict[str, Any], None, None]:
+) -> Generator[dict[str, Any], None, None]:
     """Get Users.
 
     Only administrators and managers can fetch all users. For other users
@@ -748,7 +748,7 @@ def get_user_by_name(
     username: str,
     project_name: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """Get user by name using GraphQl.
 
     Only administrators and managers can fetch all users. For other users
@@ -775,7 +775,7 @@ def get_user_by_name(
 
 def get_user(
     username: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """Get user info using REST endpoint.
 
     User contains only explicitly set attributes in 'attrib'.
@@ -784,7 +784,7 @@ def get_user(
         username (Optional[str]): Username.
 
     Returns:
-        Optional[Dict[str, Any]]: User info or None if user is not
+        Optional[dict[str, Any]]: User info or None if user is not
             found.
 
     """
@@ -1059,7 +1059,7 @@ def upload_reviewable(
     content_type: Optional[str] = None,
     filename: Optional[str] = None,
     progress: Optional[TransferProgress] = None,
-    headers: Optional[Dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
     **kwargs,
 ) -> requests.Response:
     """Upload reviewable file to server.
@@ -1074,7 +1074,7 @@ def upload_reviewable(
         filename (Optional[str]): User as original filename. Filename from
             'filepath' is used when not filled.
         progress (Optional[TransferProgress]): Progress.
-        headers (Optional[Dict[str, Any]]): Headers.
+        headers (Optional[dict[str, Any]]): Headers.
 
     Returns:
         requests.Response: Server response.
@@ -1107,7 +1107,7 @@ def trigger_server_restart():
 
 def query_graphql(
     query: str,
-    variables: Optional[Dict[str, Any]] = None,
+    variables: Optional[dict[str, Any]] = None,
 ) -> GraphQlResponse:
     """Execute GraphQl query.
 
@@ -1127,12 +1127,12 @@ def query_graphql(
     )
 
 
-def get_graphql_schema() -> Dict[str, Any]:
+def get_graphql_schema() -> dict[str, Any]:
     con = get_server_api_connection()
     return con.get_graphql_schema()
 
 
-def get_server_schema() -> Optional[Dict[str, Any]]:
+def get_server_schema() -> Optional[dict[str, Any]]:
     """Get server schema with info, url paths, components etc.
 
     Todos:
@@ -1146,7 +1146,7 @@ def get_server_schema() -> Optional[Dict[str, Any]]:
     return con.get_server_schema()
 
 
-def get_schemas() -> Dict[str, Any]:
+def get_schemas() -> dict[str, Any]:
     """Get components schema.
 
     Name of components does not match entity type names e.g. 'project' is
@@ -1179,7 +1179,7 @@ def reset_attributes_schema():
 def set_attribute_config(
     attribute_name: str,
     data: "AttributeSchemaDataDict",
-    scope: List["AttributeScope"],
+    scope: list["AttributeScope"],
     position: Optional[int] = None,
     builtin: bool = False,
 ):
@@ -1212,7 +1212,7 @@ def remove_attribute_config(
 
 def get_attributes_for_type(
     entity_type: "AttributeScope",
-) -> Dict[str, "AttributeSchemaDict"]:
+) -> dict[str, "AttributeSchemaDict"]:
     """Get attribute schemas available for an entity type.
 
     Example::
@@ -1257,7 +1257,7 @@ def get_attributes_for_type(
 
 def get_attributes_fields_for_type(
     entity_type: "AttributeScope",
-) -> Set[str]:
+) -> set[str]:
     """Prepare attribute fields for entity type.
 
     Returns:
@@ -1272,7 +1272,7 @@ def get_attributes_fields_for_type(
 
 def get_default_fields_for_type(
     entity_type: str,
-) -> Set[str]:
+) -> set[str]:
     """Default fields for entity type.
 
     Returns most of commonly used fields from server.
@@ -1319,12 +1319,12 @@ def create_installer(
     version: str,
     python_version: str,
     platform_name: str,
-    python_modules: Dict[str, str],
-    runtime_python_modules: Dict[str, str],
+    python_modules: dict[str, str],
+    runtime_python_modules: dict[str, str],
     checksum: str,
     checksum_algorithm: str,
     file_size: int,
-    sources: Optional[List[Dict[str, Any]]] = None,
+    sources: Optional[list[dict[str, Any]]] = None,
 ):
     """Create new installer information on server.
 
@@ -1368,7 +1368,7 @@ def create_installer(
 
 def update_installer(
     filename: str,
-    sources: List[Dict[str, Any]],
+    sources: list[dict[str, Any]],
 ):
     """Update installer information on server.
 
@@ -1484,13 +1484,13 @@ def get_dependency_packages() -> "DependencyPackagesDict":
 
 def create_dependency_package(
     filename: str,
-    python_modules: Dict[str, str],
-    source_addons: Dict[str, str],
+    python_modules: dict[str, str],
+    source_addons: dict[str, str],
     installer_version: str,
     checksum: str,
     checksum_algorithm: str,
     file_size: int,
-    sources: Optional[List[Dict[str, Any]]] = None,
+    sources: Optional[list[dict[str, Any]]] = None,
     platform_name: Optional[str] = None,
 ):
     """Create dependency package on server.
@@ -1538,7 +1538,7 @@ def create_dependency_package(
 
 def update_dependency_package(
     filename: str,
-    sources: List[Dict[str, Any]],
+    sources: list[dict[str, Any]],
 ):
     """Update dependency package metadata on server.
 
@@ -1676,14 +1676,14 @@ def get_bundles() -> "BundlesInfoDict":
 
 def create_bundle(
     name: str,
-    addon_versions: Dict[str, str],
+    addon_versions: dict[str, str],
     installer_version: str,
-    dependency_packages: Optional[Dict[str, str]] = None,
+    dependency_packages: Optional[dict[str, str]] = None,
     is_production: Optional[bool] = None,
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
+    dev_addons_config: Optional[dict[str, "DevBundleAddonInfoDict"]] = None,
 ):
     """Create bundle on server.
 
@@ -1739,14 +1739,14 @@ def create_bundle(
 
 def update_bundle(
     bundle_name: str,
-    addon_versions: Optional[Dict[str, str]] = None,
+    addon_versions: Optional[dict[str, str]] = None,
     installer_version: Optional[str] = None,
-    dependency_packages: Optional[Dict[str, str]] = None,
+    dependency_packages: Optional[dict[str, str]] = None,
     is_production: Optional[bool] = None,
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
+    dev_addons_config: Optional[dict[str, "DevBundleAddonInfoDict"]] = None,
 ):
     """Update bundle on server.
 
@@ -1788,15 +1788,15 @@ def update_bundle(
 
 def check_bundle_compatibility(
     name: str,
-    addon_versions: Dict[str, str],
+    addon_versions: dict[str, str],
     installer_version: str,
-    dependency_packages: Optional[Dict[str, str]] = None,
+    dependency_packages: Optional[dict[str, str]] = None,
     is_production: Optional[bool] = None,
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
-) -> Dict[str, Any]:
+    dev_addons_config: Optional[dict[str, "DevBundleAddonInfoDict"]] = None,
+) -> dict[str, Any]:
     """Check bundle compatibility.
 
     Can be used as per-flight validation before creating bundle.
@@ -1818,7 +1818,7 @@ def check_bundle_compatibility(
             dev addons. Can be used only if 'is_dev' is set to 'True'.
 
     Returns:
-        Dict[str, Any]: Server response, with 'success' and 'issues'.
+        dict[str, Any]: Server response, with 'success' and 'issues'.
 
     """
     con = get_server_api_connection()
@@ -1850,7 +1850,7 @@ def delete_bundle(
     )
 
 
-def get_project_anatomy_presets() -> List["AnatomyPresetDict"]:
+def get_project_anatomy_presets() -> list["AnatomyPresetDict"]:
     """Anatomy presets available on server.
 
     Content has basic information about presets. Example output::
@@ -1929,7 +1929,7 @@ def get_build_in_anatomy_preset() -> "AnatomyPresetDict":
 
 def get_project_root_overrides(
     project_name: str,
-) -> Dict[str, Dict[str, str]]:
+) -> dict[str, dict[str, str]]:
     """Root overrides per site name.
 
     Method is based on logged user and can't be received for any other
@@ -1952,7 +1952,7 @@ def get_project_root_overrides(
 
 def get_project_roots_by_site(
     project_name: str,
-) -> Dict[str, Dict[str, str]]:
+) -> dict[str, dict[str, str]]:
     """Root overrides per site name.
 
     Method is based on logged user and can't be received for any other
@@ -1980,7 +1980,7 @@ def get_project_roots_by_site(
 def get_project_root_overrides_by_site_id(
     project_name: str,
     site_id: Optional[str] = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Root overrides for site.
 
     If site id is not passed a site set in current api object is used
@@ -2006,7 +2006,7 @@ def get_project_root_overrides_by_site_id(
 def get_project_roots_for_site(
     project_name: str,
     site_id: Optional[str] = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Root overrides for site.
 
     If site id is not passed a site set in current api object is used
@@ -2035,7 +2035,7 @@ def get_project_roots_for_site(
 def get_project_roots_by_site_id(
     project_name: str,
     site_id: Optional[str] = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Root values for a site.
 
     If site id is not passed a site set in current api object is used
@@ -2061,7 +2061,7 @@ def get_project_roots_by_site_id(
 def get_project_roots_by_platform(
     project_name: str,
     platform_name: Optional[str] = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Root values for a site.
 
     If platform name is not passed current platform name is used instead.
@@ -2090,7 +2090,7 @@ def get_addon_settings_schema(
     addon_name: str,
     addon_version: str,
     project_name: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Sudio/Project settings schema of an addon.
 
     Project schema may look differently as some enums are based on project
@@ -2117,7 +2117,7 @@ def get_addon_settings_schema(
 def get_addon_site_settings_schema(
     addon_name: str,
     addon_version: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Site settings schema of an addon.
 
     Args:
@@ -2139,7 +2139,7 @@ def get_addon_studio_settings(
     addon_name: str,
     addon_version: str,
     variant: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Addon studio settings.
 
     Receive studio settings for specific version of an addon.
@@ -2169,7 +2169,7 @@ def get_addon_project_settings(
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Addon project settings.
 
     Receive project settings for specific version of an addon. The settings
@@ -2214,7 +2214,7 @@ def get_addon_settings(
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Receive addon settings.
 
     Receive addon settings based on project name value. Some arguments may
@@ -2254,7 +2254,7 @@ def get_addon_site_settings(
     addon_name: str,
     addon_version: str,
     site_id: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Site settings of an addon.
 
     If site id is not available an empty dictionary is returned.
@@ -2283,7 +2283,7 @@ def get_bundle_settings(
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get complete set of settings for given data.
 
     If project is not passed then studio settings are returned. If variant
@@ -2331,7 +2331,7 @@ def get_addons_studio_settings(
     site_id: Optional[str] = None,
     use_site: bool = True,
     only_values: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """All addons settings in one bulk.
 
     Warnings:
@@ -2373,7 +2373,7 @@ def get_addons_project_settings(
     site_id: Optional[str] = None,
     use_site: bool = True,
     only_values: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Project settings of all addons.
 
     Server returns information about used addon versions, so full output
@@ -2433,7 +2433,7 @@ def get_addons_settings(
     site_id: Optional[str] = None,
     use_site: bool = True,
     only_values: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Universal function to receive all addon settings.
 
     Based on 'project_name' will receive studio settings or project
@@ -2471,7 +2471,7 @@ def get_addons_settings(
     )
 
 
-def get_secrets() -> List["SecretDict"]:
+def get_secrets() -> list["SecretDict"]:
     """Get all secrets.
 
     Example output::
@@ -2582,10 +2582,10 @@ def get_rest_entity_by_id(
 
 def send_batch_operations(
     project_name: str,
-    operations: List[Dict[str, Any]],
+    operations: list[dict[str, Any]],
     can_fail: bool = False,
     raise_on_fail: bool = True,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Post multiple CRUD operations to server.
 
     When multiple changes should be made on server side this is the best
