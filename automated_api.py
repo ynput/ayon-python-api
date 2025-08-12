@@ -34,6 +34,7 @@ from ayon_api.server_api import (  # noqa: E402
     ServerAPI,
     _PLACEHOLDER,
     _ActionsAPI,
+    _AddonsAPI,
     _ListsAPI,
 )
 from ayon_api.utils import NOT_SET  # noqa: E402
@@ -295,6 +296,7 @@ def prepare_api_functions(api_globals):
     functions = []
     _items = list(ServerAPI.__dict__.items())
     _items.extend(_ActionsAPI.__dict__.items())
+    _items.extend(_AddonsAPI.__dict__.items())
     _items.extend(_ListsAPI.__dict__.items())
     for attr_name, attr in _items:
         if (
