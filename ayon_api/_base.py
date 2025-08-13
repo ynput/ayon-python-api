@@ -63,6 +63,9 @@ class _BaseServerAPI:
     def get_default_settings_variant(self) -> str:
         raise NotImplementedError()
 
+    def get_site_id(self) -> Optional[str]:
+        raise NotImplementedError()
+
     def get_default_fields_for_type(self, entity_type: str) -> set[str]:
         raise NotImplementedError()
 
