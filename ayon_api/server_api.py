@@ -100,13 +100,7 @@ if typing.TYPE_CHECKING:
         SecretDict,
 
         AnyEntityDict,
-        TaskDict,
-        ProductDict,
-        VersionDict,
-        RepresentationDict,
-        WorkfileInfoDict,
 
-        ProductTypeDict,
         StreamType,
     )
 
