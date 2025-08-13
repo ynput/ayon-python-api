@@ -69,7 +69,7 @@ from .utils import (
 )
 from ._actions import _ActionsAPI
 from ._activities import _ActivitiesAPI
-from ._addons import _AddonsAPI
+from ._addons import _BundlesAddonsAPI
 from ._events import _EventsAPI
 from ._links import _LinksAPI
 from ._lists import _ListsAPI
@@ -216,7 +216,7 @@ class _AsUserStack:
 class ServerAPI(
     _ActionsAPI,
     _ActivitiesAPI,
-    _AddonsAPI,
+    _BundlesAddonsAPI,
     _EventsAPI,
     _ProjectsAPI,
     _FoldersAPI,

@@ -337,7 +337,7 @@ def prepare_api_functions(api_globals):
         ServerAPI,
         _ActionsAPI,
         _ActivitiesAPI,
-        _AddonsAPI,
+        _BundlesAddonsAPI,
         _EventsAPI,
         _FoldersAPI,
         _TasksAPI,
@@ -355,7 +355,7 @@ def prepare_api_functions(api_globals):
     _items = list(ServerAPI.__dict__.items())
     _items.extend(_ActionsAPI.__dict__.items())
     _items.extend(_ActivitiesAPI.__dict__.items())
-    _items.extend(_AddonsAPI.__dict__.items())
+    _items.extend(_BundlesAddonsAPI.__dict__.items())
     _items.extend(_EventsAPI.__dict__.items())
     _items.extend(_LinksAPI.__dict__.items())
     _items.extend(_ListsAPI.__dict__.items())

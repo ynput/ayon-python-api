@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
     )
 
 
-class _AddonsAPI(_BaseServerAPI):
+class _BundlesAddonsAPI(_BaseServerAPI):
     def get_bundles(self) -> "BundlesInfoDict":
         """Server bundles with basic information.
 
