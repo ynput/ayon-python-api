@@ -67,7 +67,6 @@ from .utils import (
     get_machine_name,
     fill_own_attribs,
 )
-from ._base import _PLACEHOLDER
 from ._actions import _ActionsAPI
 from ._activities import _ActivitiesAPI
 from ._addons import _AddonsAPI

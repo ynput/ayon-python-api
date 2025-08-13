@@ -235,7 +235,7 @@ def _add_typehint(param_name, param, api_globals):
 
 
 def _kw_default_to_str(param_name, param, api_globals):
-    from ayon_api.server_api import _PLACEHOLDER
+    from ayon_api._base import _PLACEHOLDER
     from ayon_api.utils import NOT_SET
 
     if param.default is inspect.Parameter.empty:
