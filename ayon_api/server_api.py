@@ -69,7 +69,7 @@ from .utils import (
 )
 from ._actions import _ActionsAPI
 from ._activities import _ActivitiesAPI
-from ._addons import _BundlesAddonsAPI
+from ._bundles_addons import _BundlesAddonsAPI
 from ._events import _EventsAPI
 from ._links import _LinksAPI
 from ._lists import _ListsAPI
