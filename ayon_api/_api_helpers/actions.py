@@ -10,7 +10,7 @@ from .base import BaseServerAPI
 if typing.TYPE_CHECKING:
     from ayon_api.typing import (
         ActionEntityTypes,
-        ActionManifestdict,
+        ActionManifestDict,
         ActionTriggerResponse,
         ActionTakeResponse,
         ActionConfigResponse,
@@ -30,7 +30,7 @@ class ActionsAPI(BaseServerAPI):
         *,
         variant: Optional[str] = None,
         mode: Optional["ActionModeType"] = None,
-    ) -> list["ActionManifestdict"]:
+    ) -> list["ActionManifestDict"]:
         """Get actions for a context.
 
         Args:
@@ -47,7 +47,7 @@ class ActionsAPI(BaseServerAPI):
             mode (Optional[ActionModeType]): Action modes.
 
         Returns:
-            list[ActionManifestdict]: list of action manifests.
+            list[ActionManifestDict]: list of action manifests.
 
         """
         if variant is None:

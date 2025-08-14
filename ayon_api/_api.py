@@ -12,7 +12,8 @@ automatically, and changing them manually can cause issues.
 import os
 import socket
 import typing
-from typing import Optional, Set, List, Tuple, Dict, Iterable, Generator, Any
+from typing import Optional, Iterable, Generator, Any
+
 import requests
 
 from .constants import (
@@ -40,6 +41,7 @@ if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
         ServerVersion,
+        ActionManifestDict,
         ActivityType,
         ActivityReferenceType,
         EntityListEntityType,
@@ -307,7 +309,7 @@ def get_service_addon_settings(project_name=None):
         project_name (Optional[str]): Project name.
 
     Returns:
-        Dict[str, Any]: Addon settings.
+        dict[str, Any]: Addon settings.
 
     Raises:
         ValueError: When service was not initialized.
@@ -1688,7 +1690,7 @@ def get_actions(
     *,
     variant: Optional[str] = None,
     mode: Optional["ActionModeType"] = None,
-) -> list["ActionManifestdict"]:
+) -> list["ActionManifestDict"]:
     """Get actions for a context.
 
     Args:
@@ -1705,7 +1707,7 @@ def get_actions(
         mode (Optional[ActionModeType]): Action modes.
 
     Returns:
-        list[ActionManifestdict]: list of action manifests.
+        list[ActionManifestDict]: list of action manifests.
 
     """
     con = get_server_api_connection()
