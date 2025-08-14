@@ -9,6 +9,8 @@ Function that are just wrappers for ServerAPI object are generated
 automatically, and changing them manually can cause issues.
 """
 
+from __future__ import annotations
+
 import os
 import socket
 import typing
