@@ -1,4 +1,6 @@
 from .base import BaseServerAPI
+from .installers import InstallersAPI
+from .dependency_packages import DependencyPackagesAPI
 from .bundles_addons import BundlesAddonsAPI
 from .events import EventsAPI
 from .attributes import AttributesAPI
@@ -18,6 +20,8 @@ from .lists import ListsAPI
 
 __all__ = (
     "BaseServerAPI",
+    "InstallersAPI",
+    "DependencyPackagesAPI",
     "BundlesAddonsAPI",
     "EventsAPI",
     "AttributesAPI",

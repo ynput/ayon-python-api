@@ -13,7 +13,6 @@ import time
 import logging
 import platform
 import uuid
-import warnings
 from contextlib import contextmanager
 import typing
 from typing import Optional, Iterable, Tuple, Generator, Any
@@ -67,33 +66,31 @@ from .utils import (
     fill_own_attribs,
 )
 from ._api_helpers import (
-    ActionsAPI,
-    ActivitiesAPI,
+    InstallersAPI,
+    DependencyPackagesAPI,
     BundlesAddonsAPI,
     EventsAPI,
     AttributesAPI,
-    LinksAPI,
-    ListsAPI,
     ProjectsAPI,
     FoldersAPI,
     TasksAPI,
     ProductsAPI,
     VersionsAPI,
-    ThumbnailsAPI,
-    WorkfilesAPI,
     RepresentationsAPI,
+    WorkfilesAPI,
+    ThumbnailsAPI,
+    ActivitiesAPI,
+    ActionsAPI,
+    LinksAPI,
+    ListsAPI,
 )
 
 if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
         ServerVersion,
-        InstallersInfoDict,
-        DependencyPackagesDict,
         SecretDict,
-
         AnyEntityDict,
-
         StreamType,
     )
 
@@ -210,8 +207,8 @@ class _AsUserStack:
 
 
 class ServerAPI(
-    ActionsAPI,
-    ActivitiesAPI,
+    InstallersAPI,
+    DependencyPackagesAPI,
     BundlesAddonsAPI,
     EventsAPI,
     AttributesAPI,
@@ -222,9 +219,11 @@ class ServerAPI(
     VersionsAPI,
     RepresentationsAPI,
     WorkfilesAPI,
+    ThumbnailsAPI,
+    ActivitiesAPI,
+    ActionsAPI,
     LinksAPI,
     ListsAPI,
-    ThumbnailsAPI,
 ):
     """Base handler of connection to server.
 
@@ -1837,381 +1836,6 @@ class ServerAPI(
             entity_type_defaults
             | self.get_attributes_fields_for_type(entity_type)
         )
-
-    def get_installers(
-        self,
-        version: Optional[str] = None,
-        platform_name: Optional[str] = None,
-    ) -> "InstallersInfoDict":
-        """Information about desktop application installers on server.
-
-        Desktop application installers are helpers to download/update AYON
-        desktop application for artists.
-
-        Args:
-            version (Optional[str]): Filter installers by version.
-            platform_name (Optional[str]): Filter installers by platform name.
-
-        Returns:
-            InstallersInfoDict: Information about installers known for server.
-
-        """
-        query = prepare_query_string({
-            "version": version or None,
-            "platform": platform_name or None,
-        })
-        response = self.get(f"desktop/installers{query}")
-        response.raise_for_status()
-        return response.data
-
-    def create_installer(
-        self,
-        filename: str,
-        version: str,
-        python_version: str,
-        platform_name: str,
-        python_modules: dict[str, str],
-        runtime_python_modules: dict[str, str],
-        checksum: str,
-        checksum_algorithm: str,
-        file_size: int,
-        sources: Optional[list[dict[str, Any]]] = None,
-    ):
-        """Create new installer information on server.
-
-        This step will create only metadata. Make sure to upload installer
-            to the server using 'upload_installer' method.
-
-        Runtime python modules are modules that are required to run AYON
-            desktop application, but are not added to PYTHONPATH for any
-            subprocess.
-
-        Args:
-            filename (str): Installer filename.
-            version (str): Version of installer.
-            python_version (str): Version of Python.
-            platform_name (str): Name of platform.
-            python_modules (dict[str, str]): Python modules that are available
-                in installer.
-            runtime_python_modules (dict[str, str]): Runtime python modules
-                that are available in installer.
-            checksum (str): Installer file checksum.
-            checksum_algorithm (str): Type of checksum used to create checksum.
-            file_size (int): File size.
-            sources (Optional[list[dict[str, Any]]]): List of sources that
-                can be used to download file.
-
-        """
-        body = {
-            "filename": filename,
-            "version": version,
-            "pythonVersion": python_version,
-            "platform": platform_name,
-            "pythonModules": python_modules,
-            "runtimePythonModules": runtime_python_modules,
-            "checksum": checksum,
-            "checksumAlgorithm": checksum_algorithm,
-            "size": file_size,
-        }
-        if sources:
-            body["sources"] = sources
-
-        response = self.post("desktop/installers", **body)
-        response.raise_for_status()
-
-    def update_installer(self, filename: str, sources: list[dict[str, Any]]):
-        """Update installer information on server.
-
-        Args:
-            filename (str): Installer filename.
-            sources (list[dict[str, Any]]): List of sources that
-                can be used to download file. Fully replaces existing sources.
-
-        """
-        response = self.patch(
-            f"desktop/installers/{filename}",
-            sources=sources
-        )
-        response.raise_for_status()
-
-    def delete_installer(self, filename: str):
-        """Delete installer from server.
-
-        Args:
-            filename (str): Installer filename.
-
-        """
-        response = self.delete(f"desktop/installers/{filename}")
-        response.raise_for_status()
-
-    def download_installer(
-        self,
-        filename: str,
-        dst_filepath: str,
-        chunk_size: Optional[int] = None,
-        progress: Optional[TransferProgress] = None
-    ):
-        """Download installer file from server.
-
-        Args:
-            filename (str): Installer filename.
-            dst_filepath (str): Destination filepath.
-            chunk_size (Optional[int]): Download chunk size.
-            progress (Optional[TransferProgress]): Object that gives ability
-                to track download progress.
-
-        """
-        self.download_file(
-            f"desktop/installers/{filename}",
-            dst_filepath,
-            chunk_size=chunk_size,
-            progress=progress
-        )
-
-    def upload_installer(
-        self,
-        src_filepath: str,
-        dst_filename: str,
-        progress: Optional[TransferProgress] = None,
-    ):
-        """Upload installer file to server.
-
-        Args:
-            src_filepath (str): Source filepath.
-            dst_filename (str): Destination filename.
-            progress (Optional[TransferProgress]): Object that gives ability
-                to track download progress.
-
-        Returns:
-            requests.Response: Response object.
-
-        """
-        return self.upload_file(
-            f"desktop/installers/{dst_filename}",
-            src_filepath,
-            progress=progress
-        )
-
-    def _get_dependency_package_route(
-        self, filename: Optional[str] = None
-    ) -> str:
-        endpoint = "desktop/dependencyPackages"
-        if filename:
-            return f"{endpoint}/{filename}"
-        return endpoint
-
-    def get_dependency_packages(self) -> "DependencyPackagesDict":
-        """Information about dependency packages on server.
-
-        To download dependency package, use 'download_dependency_package'
-        method and pass in 'filename'.
-
-        Example data structure::
-
-            {
-                "packages": [
-                    {
-                        "filename": str,
-                        "platform": str,
-                        "checksum": str,
-                        "checksumAlgorithm": str,
-                        "size": int,
-                        "sources": list[dict[str, Any]],
-                        "supportedAddons": dict[str, str],
-                        "pythonModules": dict[str, str]
-                    }
-                ]
-            }
-
-        Returns:
-            DependencyPackagesDict: Information about dependency packages
-                known for server.
-
-        """
-        endpoint = self._get_dependency_package_route()
-        result = self.get(endpoint)
-        result.raise_for_status()
-        return result.data
-
-    def create_dependency_package(
-        self,
-        filename: str,
-        python_modules: dict[str, str],
-        source_addons: dict[str, str],
-        installer_version: str,
-        checksum: str,
-        checksum_algorithm: str,
-        file_size: int,
-        sources: Optional[list[dict[str, Any]]] = None,
-        platform_name: Optional[str] = None,
-    ):
-        """Create dependency package on server.
-
-        The package will be created on a server, it is also required to upload
-        the package archive file (using :meth:`upload_dependency_package`).
-
-        Args:
-            filename (str): Filename of dependency package.
-            python_modules (dict[str, str]): Python modules in dependency
-                package::
-
-                    {"<module name>": "<module version>", ...}
-
-            source_addons (dict[str, str]): Name of addons for which is
-                dependency package created::
-
-                    {"<addon name>": "<addon version>", ...}
-
-            installer_version (str): Version of installer for which was
-                package created.
-            checksum (str): Checksum of archive file where dependencies are.
-            checksum_algorithm (str): Algorithm used to calculate checksum.
-            file_size (Optional[int]): Size of file.
-            sources (Optional[list[dict[str, Any]]]): Information about
-                sources from where it is possible to get file.
-            platform_name (Optional[str]): Name of platform for which is
-                dependency package targeted. Default value is
-                current platform.
-
-        """
-        post_body = {
-            "filename": filename,
-            "pythonModules": python_modules,
-            "sourceAddons": source_addons,
-            "installerVersion": installer_version,
-            "checksum": checksum,
-            "checksumAlgorithm": checksum_algorithm,
-            "size": file_size,
-            "platform": platform_name or platform.system().lower(),
-        }
-        if sources:
-            post_body["sources"] = sources
-
-        route = self._get_dependency_package_route()
-        response = self.post(route, **post_body)
-        response.raise_for_status()
-
-    def update_dependency_package(
-        self, filename: str, sources: list[dict[str, Any]]
-    ):
-        """Update dependency package metadata on server.
-
-        Args:
-            filename (str): Filename of dependency package.
-            sources (list[dict[str, Any]]): Information about
-                sources from where it is possible to get file. Fully replaces
-                existing sources.
-
-        """
-        response = self.patch(
-            self._get_dependency_package_route(filename),
-            sources=sources
-        )
-        response.raise_for_status()
-
-    def delete_dependency_package(
-        self, filename: str, platform_name: Optional[str] = None
-    ):
-        """Remove dependency package for specific platform.
-
-        Args:
-            filename (str): Filename of dependency package.
-            platform_name (Optional[str]): Deprecated.
-
-        """
-        if platform_name is not None:
-            warnings.warn(
-                (
-                    "Argument 'platform_name' is deprecated in"
-                    " 'delete_dependency_package'. The argument will be"
-                    " removed, please modify your code accordingly."
-                ),
-                DeprecationWarning
-            )
-
-        route = self._get_dependency_package_route(filename)
-        response = self.delete(route)
-        response.raise_for_status("Failed to delete dependency file")
-        return response.data
-
-    def download_dependency_package(
-        self,
-        src_filename: str,
-        dst_directory: str,
-        dst_filename: str,
-        platform_name: Optional[str] = None,
-        chunk_size: Optional[int] = None,
-        progress: Optional[TransferProgress] = None,
-    ) -> str:
-        """Download dependency package from server.
-
-        This method requires to have authorized token available. The package
-        is only downloaded.
-
-        Args:
-            src_filename (str): Filename of dependency pacakge.
-                For server version 0.2.0 and lower it is name of package
-                to download.
-            dst_directory (str): Where the file should be downloaded.
-            dst_filename (str): Name of destination filename.
-            platform_name (Optional[str]): Deprecated.
-            chunk_size (Optional[int]): Download chunk size.
-            progress (Optional[TransferProgress]): Object that gives ability
-                to track download progress.
-
-        Returns:
-            str: Filepath to downloaded file.
-
-        """
-        if platform_name is not None:
-            warnings.warn(
-                (
-                    "Argument 'platform_name' is deprecated in"
-                    " 'download_dependency_package'. The argument will be"
-                    " removed, please modify your code accordingly."
-                ),
-                DeprecationWarning
-            )
-        route = self._get_dependency_package_route(src_filename)
-        package_filepath = os.path.join(dst_directory, dst_filename)
-        self.download_file(
-            route,
-            package_filepath,
-            chunk_size=chunk_size,
-            progress=progress
-        )
-        return package_filepath
-
-    def upload_dependency_package(
-        self,
-        src_filepath: str,
-        dst_filename: str,
-        platform_name: Optional[str] = None,
-        progress: Optional[TransferProgress] = None,
-    ):
-        """Upload dependency package to server.
-
-        Args:
-            src_filepath (str): Path to a package file.
-            dst_filename (str): Dependency package filename or name of package
-                for server version 0.2.0 or lower. Must be unique.
-            platform_name (Optional[str]): Deprecated.
-            progress (Optional[TransferProgress]): Object to keep track about
-                upload state.
-
-        """
-        if platform_name is not None:
-            warnings.warn(
-                (
-                    "Argument 'platform_name' is deprecated in"
-                    " 'upload_dependency_package'. The argument will be"
-                    " removed, please modify your code accordingly."
-                ),
-                DeprecationWarning
-            )
-
-        route = self._get_dependency_package_route(dst_filename)
-        self.upload_file(route, src_filepath, progress=progress)
 
     def get_secrets(self) -> list["SecretDict"]:
         """Get all secrets.

@@ -335,8 +335,8 @@ def sig_params_to_str(sig, param_names, api_globals, indent=0):
 def prepare_api_functions(api_globals):
     from ayon_api.server_api import (  # noqa: E402
         ServerAPI,
-        ActionsAPI,
-        ActivitiesAPI,
+        InstallersAPI,
+        DependencyPackagesAPI,
         BundlesAddonsAPI,
         EventsAPI,
         AttributesAPI,
@@ -347,13 +347,17 @@ def prepare_api_functions(api_globals):
         VersionsAPI,
         RepresentationsAPI,
         WorkfilesAPI,
+        ThumbnailsAPI,
+        ActivitiesAPI,
+        ActionsAPI,
         LinksAPI,
         ListsAPI,
-        ThumbnailsAPI,
     )
 
     functions = []
     _items = list(ServerAPI.__dict__.items())
+    _items.extend(InstallersAPI.__dict__.items())
+    _items.extend(DependencyPackagesAPI.__dict__.items())
     _items.extend(ActionsAPI.__dict__.items())
     _items.extend(ActivitiesAPI.__dict__.items())
     _items.extend(BundlesAddonsAPI.__dict__.items())
