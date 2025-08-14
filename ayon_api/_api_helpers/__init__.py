@@ -1,6 +1,7 @@
 from .base import BaseServerAPI
 from .installers import InstallersAPI
 from .dependency_packages import DependencyPackagesAPI
+from .secrets import SecretsAPI
 from .bundles_addons import BundlesAddonsAPI
 from .events import EventsAPI
 from .attributes import AttributesAPI
@@ -22,6 +23,7 @@ __all__ = (
     "BaseServerAPI",
     "InstallersAPI",
     "DependencyPackagesAPI",
+    "SecretsAPI",
     "BundlesAddonsAPI",
     "EventsAPI",
     "AttributesAPI",

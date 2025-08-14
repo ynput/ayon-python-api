@@ -337,6 +337,7 @@ def prepare_api_functions(api_globals):
         ServerAPI,
         InstallersAPI,
         DependencyPackagesAPI,
+        SecretsAPI,
         BundlesAddonsAPI,
         EventsAPI,
         AttributesAPI,
@@ -358,6 +359,7 @@ def prepare_api_functions(api_globals):
     _items = list(ServerAPI.__dict__.items())
     _items.extend(InstallersAPI.__dict__.items())
     _items.extend(DependencyPackagesAPI.__dict__.items())
+    _items.extend(SecretsAPI.__dict__.items())
     _items.extend(ActionsAPI.__dict__.items())
     _items.extend(ActivitiesAPI.__dict__.items())
     _items.extend(BundlesAddonsAPI.__dict__.items())

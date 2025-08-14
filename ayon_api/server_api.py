@@ -15,7 +15,7 @@ import platform
 import uuid
 from contextlib import contextmanager
 import typing
-from typing import Optional, Iterable, Tuple, Generator, Any
+from typing import Optional, Iterable, Generator, Any
 
 import requests
 
@@ -68,6 +68,7 @@ from .utils import (
 from ._api_helpers import (
     InstallersAPI,
     DependencyPackagesAPI,
+    SecretsAPI,
     BundlesAddonsAPI,
     EventsAPI,
     AttributesAPI,
@@ -89,7 +90,6 @@ if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
         ServerVersion,
-        SecretDict,
         AnyEntityDict,
         StreamType,
     )
@@ -209,6 +209,7 @@ class _AsUserStack:
 class ServerAPI(
     InstallersAPI,
     DependencyPackagesAPI,
+    SecretsAPI,
     BundlesAddonsAPI,
     EventsAPI,
     AttributesAPI,
@@ -880,8 +881,7 @@ class ServerAPI(
         This function only returns first three numbers of version.
 
         Returns:
-            Tuple[int, int, int, Union[str, None], Union[str, None]]: Server
-                version.
+            ServerVersion: Server version.
 
         """
         if self._server_version_tuple is None:
@@ -1836,82 +1836,6 @@ class ServerAPI(
             entity_type_defaults
             | self.get_attributes_fields_for_type(entity_type)
         )
-
-    def get_secrets(self) -> list["SecretDict"]:
-        """Get all secrets.
-
-        Example output::
-
-            [
-                {
-                    "name": "secret_1",
-                    "value": "secret_value_1",
-                },
-                {
-                    "name": "secret_2",
-                    "value": "secret_value_2",
-                }
-            ]
-
-        Returns:
-            list[SecretDict]: List of secret entities.
-
-        """
-        response = self.get("secrets")
-        response.raise_for_status()
-        return response.data
-
-    def get_secret(self, secret_name: str) -> "SecretDict":
-        """Get secret by name.
-
-        Example output::
-
-            {
-                "name": "secret_name",
-                "value": "secret_value",
-            }
-
-        Args:
-            secret_name (str): Name of secret.
-
-        Returns:
-            dict[str, str]: Secret entity data.
-
-        """
-        response = self.get(f"secrets/{secret_name}")
-        response.raise_for_status()
-        return response.data
-
-    def save_secret(self, secret_name: str, secret_value: str):
-        """Save secret.
-
-        This endpoint can create and update secret.
-
-        Args:
-            secret_name (str): Name of secret.
-            secret_value (str): Value of secret.
-
-        """
-        response = self.put(
-            f"secrets/{secret_name}",
-            name=secret_name,
-            value=secret_value,
-        )
-        response.raise_for_status()
-        return response.data
-
-    def delete_secret(self, secret_name: str):
-        """Delete secret by name.
-
-        Args:
-            secret_name (str): Name of secret to delete.
-
-        """
-        response = self.delete(f"secrets/{secret_name}")
-        response.raise_for_status()
-        return response.data
-
-    # Entity getters
 
     def get_rest_entity_by_id(
         self,
