@@ -67,21 +67,22 @@ from .utils import (
     get_machine_name,
     fill_own_attribs,
 )
-from ._actions import _ActionsAPI
-from ._activities import _ActivitiesAPI
-from ._bundles_addons import _BundlesAddonsAPI
-from ._events import _EventsAPI
-from ._links import _LinksAPI
-from ._lists import _ListsAPI
-from ._projects import _ProjectsAPI
-from ._folders import _FoldersAPI
-from ._tasks import _TasksAPI
-from ._products import _ProductsAPI
-from ._versions import _VersionsAPI
-from ._thumbnails import _ThumbnailsAPI
-from ._workfiles import _WorkfilesAPI
-from ._representations import _RepresentationsAPI
-
+from ._api_helpers import (
+    ActionsAPI,
+    ActivitiesAPI,
+    BundlesAddonsAPI,
+    EventsAPI,
+    LinksAPI,
+    ListsAPI,
+    ProjectsAPI,
+    FoldersAPI,
+    TasksAPI,
+    ProductsAPI,
+    VersionsAPI,
+    ThumbnailsAPI,
+    WorkfilesAPI,
+    RepresentationsAPI,
+)
 
 if typing.TYPE_CHECKING:
     from typing import Union
@@ -214,20 +215,20 @@ class _AsUserStack:
 
 
 class ServerAPI(
-    _ActionsAPI,
-    _ActivitiesAPI,
-    _BundlesAddonsAPI,
-    _EventsAPI,
-    _ProjectsAPI,
-    _FoldersAPI,
-    _TasksAPI,
-    _ProductsAPI,
-    _VersionsAPI,
-    _RepresentationsAPI,
-    _WorkfilesAPI,
-    _LinksAPI,
-    _ListsAPI,
-    _ThumbnailsAPI,
+    ActionsAPI,
+    ActivitiesAPI,
+    BundlesAddonsAPI,
+    EventsAPI,
+    ProjectsAPI,
+    FoldersAPI,
+    TasksAPI,
+    ProductsAPI,
+    VersionsAPI,
+    RepresentationsAPI,
+    WorkfilesAPI,
+    LinksAPI,
+    ListsAPI,
+    ThumbnailsAPI,
 ):
     """Base handler of connection to server.
 
