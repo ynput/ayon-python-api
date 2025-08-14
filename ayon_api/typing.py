@@ -312,11 +312,14 @@ class AnatomyPresetDict(TypedDict):
     link_types: list[AnatomyPresetLinkTypeDict]
     statuses: list[AnatomyPresetStatusDict]
     tags: list[AnatomyPresetTagDict]
+    primary: bool
+    name: str
 
 
 class SecretDict(TypedDict):
     name: str
     value: str
+
 
 ProjectDict = dict[str, Any]
 FolderDict = dict[str, Any]
