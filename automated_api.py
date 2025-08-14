@@ -339,16 +339,17 @@ def prepare_api_functions(api_globals):
         ActivitiesAPI,
         BundlesAddonsAPI,
         EventsAPI,
+        AttributesAPI,
+        ProjectsAPI,
         FoldersAPI,
         TasksAPI,
         ProductsAPI,
         VersionsAPI,
+        RepresentationsAPI,
+        WorkfilesAPI,
         LinksAPI,
         ListsAPI,
-        ProjectsAPI,
         ThumbnailsAPI,
-        WorkfilesAPI,
-        RepresentationsAPI,
     )
 
     functions = []
@@ -357,16 +358,17 @@ def prepare_api_functions(api_globals):
     _items.extend(ActivitiesAPI.__dict__.items())
     _items.extend(BundlesAddonsAPI.__dict__.items())
     _items.extend(EventsAPI.__dict__.items())
-    _items.extend(LinksAPI.__dict__.items())
-    _items.extend(ListsAPI.__dict__.items())
+    _items.extend(AttributesAPI.__dict__.items())
     _items.extend(ProjectsAPI.__dict__.items())
     _items.extend(FoldersAPI.__dict__.items())
     _items.extend(TasksAPI.__dict__.items())
     _items.extend(ProductsAPI.__dict__.items())
     _items.extend(VersionsAPI.__dict__.items())
-    _items.extend(ThumbnailsAPI.__dict__.items())
-    _items.extend(WorkfilesAPI.__dict__.items())
     _items.extend(RepresentationsAPI.__dict__.items())
+    _items.extend(WorkfilesAPI.__dict__.items())
+    _items.extend(LinksAPI.__dict__.items())
+    _items.extend(ListsAPI.__dict__.items())
+    _items.extend(ThumbnailsAPI.__dict__.items())
 
     processed = set()
     for attr_name, attr in _items:

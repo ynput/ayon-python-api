@@ -1,6 +1,7 @@
 from .base import BaseServerAPI
 from .bundles_addons import BundlesAddonsAPI
 from .events import EventsAPI
+from .attributes import AttributesAPI
 from .projects import ProjectsAPI
 from .folders import FoldersAPI
 from .tasks import TasksAPI
@@ -19,6 +20,7 @@ __all__ = (
     "BaseServerAPI",
     "BundlesAddonsAPI",
     "EventsAPI",
+    "AttributesAPI",
     "ProjectsAPI",
     "FoldersAPI",
     "TasksAPI",
