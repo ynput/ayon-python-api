@@ -43,7 +43,6 @@ if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
         ServerVersion,
-        ActionManifestDict,
         ActivityType,
         ActivityReferenceType,
         EntityListEntityType,

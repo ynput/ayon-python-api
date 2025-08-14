@@ -2,14 +2,16 @@ import copy
 
 try:
     # This should be used if 'requests' have it available
-    from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+    from requests.exceptions import JSONDecodeError
 except ImportError:
     # Older versions of 'requests' don't have custom exception for json
     #   decode error
     try:
-        from simplejson import JSONDecodeError as RequestsJSONDecodeError
+        from simplejson import JSONDecodeError
     except ImportError:
-        from json import JSONDecodeError as RequestsJSONDecodeError
+        from json import JSONDecodeError
+
+RequestsJSONDecodeError = JSONDecodeError
 
 
 class UrlError(Exception):
