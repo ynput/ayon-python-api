@@ -2,16 +2,18 @@ import warnings
 import typing
 from typing import Optional, Any, Iterable, Generator
 
-from ._base import _BaseServerAPI
-from .utils import SortOrder, prepare_list_filters
-from .graphql_queries import events_graphql_query
+from ayon_api.utils import SortOrder, prepare_list_filters
+from ayon_api.graphql_queries import events_graphql_query
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
     from typing import Union
-    from .typing import EventFilter
+
+    from ayon_api.typing import EventFilter
 
 
-class _EventsAPI(_BaseServerAPI):
+class EventsAPI(BaseServerAPI):
     def get_event(self, event_id: str) -> Optional[dict[str, Any]]:
         """Query full event data by id.
 

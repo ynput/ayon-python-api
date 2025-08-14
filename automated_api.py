@@ -235,7 +235,7 @@ def _add_typehint(param_name, param, api_globals):
 
 
 def _kw_default_to_str(param_name, param, api_globals):
-    from ayon_api._base import _PLACEHOLDER
+    from ayon_api._api_helpers.base import _PLACEHOLDER
     from ayon_api.utils import NOT_SET
 
     if param.default is inspect.Parameter.empty:
@@ -335,38 +335,38 @@ def sig_params_to_str(sig, param_names, api_globals, indent=0):
 def prepare_api_functions(api_globals):
     from ayon_api.server_api import (  # noqa: E402
         ServerAPI,
-        _ActionsAPI,
-        _ActivitiesAPI,
-        _BundlesAddonsAPI,
-        _EventsAPI,
-        _FoldersAPI,
-        _TasksAPI,
-        _ProductsAPI,
-        _VersionsAPI,
-        _LinksAPI,
-        _ListsAPI,
-        _ProjectsAPI,
-        _ThumbnailsAPI,
-        _WorkfilesAPI,
-        _RepresentationsAPI,
+        ActionsAPI,
+        ActivitiesAPI,
+        BundlesAddonsAPI,
+        EventsAPI,
+        FoldersAPI,
+        TasksAPI,
+        ProductsAPI,
+        VersionsAPI,
+        LinksAPI,
+        ListsAPI,
+        ProjectsAPI,
+        ThumbnailsAPI,
+        WorkfilesAPI,
+        RepresentationsAPI,
     )
 
     functions = []
     _items = list(ServerAPI.__dict__.items())
-    _items.extend(_ActionsAPI.__dict__.items())
-    _items.extend(_ActivitiesAPI.__dict__.items())
-    _items.extend(_BundlesAddonsAPI.__dict__.items())
-    _items.extend(_EventsAPI.__dict__.items())
-    _items.extend(_LinksAPI.__dict__.items())
-    _items.extend(_ListsAPI.__dict__.items())
-    _items.extend(_ProjectsAPI.__dict__.items())
-    _items.extend(_FoldersAPI.__dict__.items())
-    _items.extend(_TasksAPI.__dict__.items())
-    _items.extend(_ProductsAPI.__dict__.items())
-    _items.extend(_VersionsAPI.__dict__.items())
-    _items.extend(_ThumbnailsAPI.__dict__.items())
-    _items.extend(_WorkfilesAPI.__dict__.items())
-    _items.extend(_RepresentationsAPI.__dict__.items())
+    _items.extend(ActionsAPI.__dict__.items())
+    _items.extend(ActivitiesAPI.__dict__.items())
+    _items.extend(BundlesAddonsAPI.__dict__.items())
+    _items.extend(EventsAPI.__dict__.items())
+    _items.extend(LinksAPI.__dict__.items())
+    _items.extend(ListsAPI.__dict__.items())
+    _items.extend(ProjectsAPI.__dict__.items())
+    _items.extend(FoldersAPI.__dict__.items())
+    _items.extend(TasksAPI.__dict__.items())
+    _items.extend(ProductsAPI.__dict__.items())
+    _items.extend(VersionsAPI.__dict__.items())
+    _items.extend(ThumbnailsAPI.__dict__.items())
+    _items.extend(WorkfilesAPI.__dict__.items())
+    _items.extend(RepresentationsAPI.__dict__.items())
 
     processed = set()
     for attr_name, attr in _items:

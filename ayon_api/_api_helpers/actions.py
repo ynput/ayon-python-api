@@ -1,11 +1,11 @@
 import typing
 from typing import Optional, Dict, List, Any
 
-from .utils import prepare_query_string
-from ._base import _BaseServerAPI
+from ayon_api.utils import prepare_query_string
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import (
+    from ayon_api.typing import (
         ActionEntityTypes,
         ActionManifestDict,
         ActionTriggerResponse,
@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
     )
 
 
-class _ActionsAPI(_BaseServerAPI):
+class ActionsAPI(BaseServerAPI):
     """Implementation of actions API for ServerAPI."""
     def get_actions(
         self,

@@ -2,19 +2,20 @@ import json
 import typing
 from typing import Optional, Iterable, Any, Dict, List, Generator
 
-from ._base import _BaseServerAPI
-from .utils import create_entity_id
-from .graphql_queries import entity_lists_graphql_query
+from ayon_api.utils import create_entity_id
+from ayon_api.graphql_queries import entity_lists_graphql_query
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import (
+    from ayon_api.typing import (
         EntityListEntityType,
         EntityListAttributeDefinitionDict,
         EntityListItemMode,
     )
 
 
-class _ListsAPI(_BaseServerAPI):
+class ListsAPI(BaseServerAPI):
     def get_entity_lists(
         self,
         project_name: str,

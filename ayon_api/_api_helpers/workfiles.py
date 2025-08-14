@@ -2,14 +2,15 @@ import warnings
 import typing
 from typing import Optional, Iterable, Generator
 
-from ._base import _BaseServerAPI, _PLACEHOLDER
-from .graphql_queries import workfiles_info_graphql_query
+from ayon_api.graphql_queries import workfiles_info_graphql_query
+
+from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
-    from .typing import WorkfileInfoDict
+    from ayon_api.typing import WorkfileInfoDict
 
 
-class _WorkfilesAPI(_BaseServerAPI):
+class WorkfilesAPI(BaseServerAPI):
     def get_workfiles_info(
         self,
         project_name: str,

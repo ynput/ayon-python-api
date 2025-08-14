@@ -5,10 +5,10 @@ from typing import Optional, Any, Iterable
 
 import requests
 
-from .utils import TransferProgress, RequestType
+from ayon_api.utils import TransferProgress, RequestType
 
 if typing.TYPE_CHECKING:
-    from .typing import (
+    from ayon_api.typing import (
         AnyEntityDict,
         ServerVersion,
         ProjectDict,
@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 _PLACEHOLDER = object()
 
 
-class _BaseServerAPI:
+class BaseServerAPI:
     def get_server_version(self) -> str:
         raise NotImplementedError()
 

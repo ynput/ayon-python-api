@@ -4,20 +4,21 @@ import warnings
 import typing
 from typing import Optional, Iterable, Generator, Any
 
-from ._base import _BaseServerAPI, _PLACEHOLDER
-from .utils import (
+from ayon_api.utils import (
     NOT_SET,
     create_entity_id,
     prepare_list_filters,
 )
-from .graphql import GraphQlQuery
-from .graphql_queries import versions_graphql_query
+from ayon_api.graphql import GraphQlQuery
+from ayon_api.graphql_queries import versions_graphql_query
+
+from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
-    from .typing import VersionDict
+    from ayon_api.typing import VersionDict
 
 
-class _VersionsAPI(_BaseServerAPI):
+class VersionsAPI(BaseServerAPI):
     def get_rest_version(
         self, project_name: str, version_id: str
     ) -> Optional["VersionDict"]:

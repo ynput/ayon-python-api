@@ -3,23 +3,24 @@ from __future__ import annotations
 import typing
 from typing import Optional, Iterable, Generator, Any
 
-from ._base import _BaseServerAPI
-from .utils import (
+from ayon_api.utils import (
     prepare_list_filters,
     fill_own_attribs,
     create_entity_id,
     NOT_SET,
 )
-from .graphql_queries import (
+from ayon_api.graphql_queries import (
     tasks_graphql_query,
     tasks_by_folder_paths_graphql_query,
 )
 
+from .base import BaseServerAPI
+
 if typing.TYPE_CHECKING:
-    from .typing import TaskDict
+    from ayon_api.typing import TaskDict
 
 
-class _TasksAPI(_BaseServerAPI):
+class TasksAPI(BaseServerAPI):
     def get_rest_task(
         self, project_name: str, task_id: str
     ) -> Optional["TaskDict"]:

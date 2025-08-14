@@ -4,20 +4,21 @@ import collections
 import typing
 from typing import Optional, Any, Iterable
 
-from .graphql_queries import (
+from ayon_api.graphql_queries import (
     folders_graphql_query,
     tasks_graphql_query,
     products_graphql_query,
     versions_graphql_query,
     representations_graphql_query,
 )
-from ._base import _BaseServerAPI
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import LinkDirection
+    from ayon_api.typing import LinkDirection
 
 
-class _LinksAPI(_BaseServerAPI):
+class LinksAPI(BaseServerAPI):
     def get_full_link_type_name(
         self, link_type_name: str, input_type: str, output_type: str
     ) -> str:

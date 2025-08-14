@@ -5,21 +5,22 @@ import warnings
 import typing
 from typing import Optional, Iterable, Generator, Any
 
-from ._base import _BaseServerAPI, _PLACEHOLDER
-from .utils import (
+from ayon_api.utils import (
     prepare_list_filters,
     create_entity_id,
 )
-from .graphql_queries import (
+from ayon_api.graphql_queries import (
     products_graphql_query,
     product_types_query,
 )
 
+from .base import BaseServerAPI, _PLACEHOLDER
+
 if typing.TYPE_CHECKING:
-    from .typing import ProductDict, ProductTypeDict
+    from ayon_api.typing import ProductDict, ProductTypeDict
 
 
-class _ProductsAPI(_BaseServerAPI):
+class ProductsAPI(BaseServerAPI):
     def get_rest_product(
         self, project_name: str, product_id: str
     ) -> Optional["ProductDict"]:

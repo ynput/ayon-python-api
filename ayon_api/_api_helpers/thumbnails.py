@@ -2,16 +2,17 @@ import os
 import warnings
 from typing import Optional
 
-from ._base import _BaseServerAPI
-from .utils import (
+from ayon_api.utils import (
     get_media_mime_type,
     ThumbnailContent,
     RequestTypes,
     RestApiResponse,
 )
 
+from .base import BaseServerAPI
 
-class _ThumbnailsAPI(_BaseServerAPI):
+
+class ThumbnailsAPI(BaseServerAPI):
     def get_thumbnail_by_id(
         self, project_name: str, thumbnail_id: str
     ) -> ThumbnailContent:

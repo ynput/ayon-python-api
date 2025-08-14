@@ -2,22 +2,23 @@ import os
 import typing
 from typing import Optional, Any
 
-from .utils import (
+from ayon_api.utils import (
     RequestTypes,
     prepare_query_string,
     TransferProgress,
 )
-from ._base import _BaseServerAPI
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import (
+    from ayon_api.typing import (
         AddonsInfoDict,
         BundlesInfoDict,
         DevBundleAddonInfoDict,
     )
 
 
-class _BundlesAddonsAPI(_BaseServerAPI):
+class BundlesAddonsAPI(BaseServerAPI):
     def get_bundles(self) -> "BundlesInfoDict":
         """Server bundles with basic information.
 

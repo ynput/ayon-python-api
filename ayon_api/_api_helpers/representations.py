@@ -5,24 +5,25 @@ import warnings
 import typing
 from typing import Optional, Iterable, Generator, Any
 
-from ._base import _BaseServerAPI, _PLACEHOLDER
-from .constants import REPRESENTATION_FILES_FIELDS
-from .utils import (
+from ayon_api.constants import REPRESENTATION_FILES_FIELDS
+from ayon_api.utils import (
     RepresentationHierarchy,
     RepresentationParents,
     PatternType,
     create_entity_id,
 )
-from .graphql_queries import (
+from ayon_api.graphql_queries import (
     representations_graphql_query,
     representations_hierarchy_qraphql_query,
 )
 
+from .base import BaseServerAPI, _PLACEHOLDER
+
 if typing.TYPE_CHECKING:
-    from .typing import RepresentationDict
+    from ayon_api.typing import RepresentationDict
 
 
-class _RepresentationsAPI(_BaseServerAPI):
+class RepresentationsAPI(BaseServerAPI):
     def get_rest_representation(
         self, project_name: str, representation_id: str
     ) -> Optional["RepresentationDict"]:

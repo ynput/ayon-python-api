@@ -4,16 +4,17 @@ import json
 import typing
 from typing import Optional, Generator, Iterable, Any
 
-from ._base import _BaseServerAPI
-from .constants import PROJECT_NAME_REGEX
-from .utils import prepare_query_string, fill_own_attribs
-from .graphql_queries import projects_graphql_query
+from ayon_api.constants import PROJECT_NAME_REGEX
+from ayon_api.utils import prepare_query_string, fill_own_attribs
+from ayon_api.graphql_queries import projects_graphql_query
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import ProjectDict
+    from ayon_api.typing import ProjectDict
 
 
-class _ProjectsAPI(_BaseServerAPI):
+class ProjectsAPI(BaseServerAPI):
     def get_rest_project(
         self, project_name: str
     ) -> Optional["ProjectDict"]:

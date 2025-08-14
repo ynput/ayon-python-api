@@ -4,26 +4,27 @@ import warnings
 import typing
 from typing import Optional, Iterable, Generator, Any
 
-from ._base import _BaseServerAPI
-from .exceptions import UnsupportedServerVersion
-from .utils import (
+from ayon_api.exceptions import UnsupportedServerVersion
+from ayon_api.utils import (
     prepare_query_string,
     prepare_list_filters,
     fill_own_attribs,
     create_entity_id,
     NOT_SET,
 )
-from .graphql_queries import folders_graphql_query
+from ayon_api.graphql_queries import folders_graphql_query
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import (
+    from ayon_api.typing import (
         FolderDict,
         FlatFolderDict,
         ProjectHierarchyDict,
     )
 
 
-class _FoldersAPI(_BaseServerAPI):
+class FoldersAPI(BaseServerAPI):
     def get_rest_folder(
         self, project_name: str, folder_id: str
     ) -> Optional["FolderDict"]:

@@ -2,21 +2,22 @@ import json
 import typing
 from typing import Optional, Iterable, Generator, Any
 
-from ._base import _BaseServerAPI
-from .utils import (
+from ayon_api.utils import (
     SortOrder,
     prepare_list_filters,
 )
-from .graphql_queries import activities_graphql_query
+from ayon_api.graphql_queries import activities_graphql_query
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import (
+    from ayon_api.typing import (
         ActivityType,
         ActivityReferenceType,
     )
 
 
-class _ActivitiesAPI(_BaseServerAPI):
+class ActivitiesAPI(BaseServerAPI):
     def get_activities(
         self,
         project_name: str,
