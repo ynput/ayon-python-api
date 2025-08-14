@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 import typing
-from typing import Optional, Dict, List, Any
+from typing import Optional, Any
 
 from ayon_api.utils import prepare_query_string
+
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
     from ayon_api.typing import (
         ActionEntityTypes,
-        ActionManifestDict,
+        ActionManifestdict,
         ActionTriggerResponse,
         ActionTakeResponse,
         ActionConfigResponse,
@@ -21,13 +24,13 @@ class ActionsAPI(BaseServerAPI):
         self,
         project_name: Optional[str] = None,
         entity_type: Optional["ActionEntityTypes"] = None,
-        entity_ids: Optional[List[str]] = None,
-        entity_subtypes: Optional[List[str]] = None,
-        form_data: Optional[Dict[str, Any]] = None,
+        entity_ids: Optional[list[str]] = None,
+        entity_subtypes: Optional[list[str]] = None,
+        form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
         mode: Optional["ActionModeType"] = None,
-    ) -> List["ActionManifestDict"]:
+    ) -> list["ActionManifestdict"]:
         """Get actions for a context.
 
         Args:
@@ -35,16 +38,16 @@ class ActionsAPI(BaseServerAPI):
                 actions.
             entity_type (Optional[ActionEntityTypes]): Entity type where the
                 action is triggered. None for global actions.
-            entity_ids (Optional[List[str]]): List of entity ids where the
+            entity_ids (Optional[list[str]]): list of entity ids where the
                 action is triggered. None for global actions.
-            entity_subtypes (Optional[List[str]]): List of entity subtypes
+            entity_subtypes (Optional[list[str]]): list of entity subtypes
                 folder types for folder ids, task types for tasks ids.
-            form_data (Optional[Dict[str, Any]]): Form data of the action.
+            form_data (Optional[dict[str, Any]]): Form data of the action.
             variant (Optional[str]): Settings variant.
             mode (Optional[ActionModeType]): Action modes.
 
         Returns:
-            List[ActionManifestDict]: List of action manifests.
+            list[ActionManifestdict]: list of action manifests.
 
         """
         if variant is None:
@@ -75,9 +78,9 @@ class ActionsAPI(BaseServerAPI):
         addon_version: str,
         project_name: Optional[str] = None,
         entity_type: Optional["ActionEntityTypes"] = None,
-        entity_ids: Optional[List[str]] = None,
-        entity_subtypes: Optional[List[str]] = None,
-        form_data: Optional[Dict[str, Any]] = None,
+        entity_ids: Optional[list[str]] = None,
+        entity_subtypes: Optional[list[str]] = None,
+        form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
     ) -> "ActionTriggerResponse":
@@ -91,11 +94,11 @@ class ActionsAPI(BaseServerAPI):
                 actions.
             entity_type (Optional[ActionEntityTypes]): Entity type where the
                 action is triggered. None for global actions.
-            entity_ids (Optional[List[str]]): List of entity ids where the
+            entity_ids (Optional[list[str]]): list of entity ids where the
                 action is triggered. None for global actions.
-            entity_subtypes (Optional[List[str]]): List of entity subtypes
+            entity_subtypes (Optional[list[str]]): list of entity subtypes
                 folder types for folder ids, task types for tasks ids.
-            form_data (Optional[Dict[str, Any]]): Form data of the action.
+            form_data (Optional[dict[str, Any]]): Form data of the action.
             variant (Optional[str]): Settings variant.
 
         """
@@ -132,9 +135,9 @@ class ActionsAPI(BaseServerAPI):
         addon_version: str,
         project_name: Optional[str] = None,
         entity_type: Optional["ActionEntityTypes"] = None,
-        entity_ids: Optional[List[str]] = None,
-        entity_subtypes: Optional[List[str]] = None,
-        form_data: Optional[Dict[str, Any]] = None,
+        entity_ids: Optional[list[str]] = None,
+        entity_subtypes: Optional[list[str]] = None,
+        form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
     ) -> "ActionConfigResponse":
@@ -148,11 +151,11 @@ class ActionsAPI(BaseServerAPI):
                 actions.
             entity_type (Optional[ActionEntityTypes]): Entity type where the
                 action is triggered. None for global actions.
-            entity_ids (Optional[List[str]]): List of entity ids where the
+            entity_ids (Optional[list[str]]): list of entity ids where the
                 action is triggered. None for global actions.
-            entity_subtypes (Optional[List[str]]): List of entity subtypes
+            entity_subtypes (Optional[list[str]]): list of entity subtypes
                 folder types for folder ids, task types for tasks ids.
-            form_data (Optional[Dict[str, Any]]): Form data of the action.
+            form_data (Optional[dict[str, Any]]): Form data of the action.
             variant (Optional[str]): Settings variant.
 
         Returns:
@@ -177,12 +180,12 @@ class ActionsAPI(BaseServerAPI):
         identifier: str,
         addon_name: str,
         addon_version: str,
-        value: Dict[str, Any],
+        value: dict[str, Any],
         project_name: Optional[str] = None,
         entity_type: Optional["ActionEntityTypes"] = None,
-        entity_ids: Optional[List[str]] = None,
-        entity_subtypes: Optional[List[str]] = None,
-        form_data: Optional[Dict[str, Any]] = None,
+        entity_ids: Optional[list[str]] = None,
+        entity_subtypes: Optional[list[str]] = None,
+        form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
     ) -> "ActionConfigResponse":
@@ -192,17 +195,17 @@ class ActionsAPI(BaseServerAPI):
             identifier (str): Identifier of the action.
             addon_name (str): Name of the addon.
             addon_version (str): Version of the addon.
-            value (Optional[Dict[str, Any]]): Value of the action
+            value (Optional[dict[str, Any]]): Value of the action
                 configuration.
             project_name (Optional[str]): Name of the project. None for global
                 actions.
             entity_type (Optional[ActionEntityTypes]): Entity type where the
                 action is triggered. None for global actions.
-            entity_ids (Optional[List[str]]): List of entity ids where the
+            entity_ids (Optional[list[str]]): list of entity ids where the
                 action is triggered. None for global actions.
-            entity_subtypes (Optional[List[str]]): List of entity subtypes
+            entity_subtypes (Optional[list[str]]): list of entity subtypes
                 folder types for folder ids, task types for tasks ids.
-            form_data (Optional[Dict[str, Any]]): Form data of the action.
+            form_data (Optional[dict[str, Any]]): Form data of the action.
             variant (Optional[str]): Settings variant.
 
         Returns:
@@ -262,12 +265,12 @@ class ActionsAPI(BaseServerAPI):
         identifier: str,
         addon_name: str,
         addon_version: str,
-        value: Optional[Dict[str, Any]],
+        value: Optional[dict[str, Any]],
         project_name: Optional[str],
         entity_type: Optional["ActionEntityTypes"],
-        entity_ids: Optional[List[str]],
-        entity_subtypes: Optional[List[str]],
-        form_data: Optional[Dict[str, Any]],
+        entity_ids: Optional[list[str]],
+        entity_subtypes: Optional[list[str]],
+        form_data: Optional[dict[str, Any]],
         variant: Optional[str],
     ) -> "ActionConfigResponse":
         """Set and get action configuration."""

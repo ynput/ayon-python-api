@@ -72,7 +72,7 @@ class FoldersAPI(BaseServerAPI):
                 in output. Slower to query.
 
         Returns:
-            List[FlatFolderDict]: List of folder entities.
+            list[FlatFolderDict]: List of folder entities.
 
         """
         major, minor, patch, _, _ = self.get_server_version_tuple()
@@ -187,7 +187,7 @@ class FoldersAPI(BaseServerAPI):
                 in output. Slower to query.
 
         Returns:
-            List[FlatFolderDict]: List of folder entities.
+            list[FlatFolderDict]: List of folder entities.
 
         """
         warnings.warn(

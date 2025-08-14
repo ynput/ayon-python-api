@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 import typing
 from typing import Optional, Iterable, Generator
