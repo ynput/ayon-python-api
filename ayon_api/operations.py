@@ -6,7 +6,7 @@ import collections
 import uuid
 from abc import ABC, abstractmethod
 import typing
-from typing import Optional, Any
+from typing import Optional, Any, Iterable
 
 from ._api import get_server_api_connection
 from .utils import create_entity_id, REMOVED_VALUE, NOT_SET
@@ -644,7 +644,7 @@ class OperationsSession(object):
             is used if not passed.
 
     """
-    def __init__(self, con: Optional["ServerApi"] = None) -> None:
+    def __init__(self, con: Optional["ServerAPI"] = None) -> None:
         if con is None:
             con = get_server_api_connection()
         self._con = con
