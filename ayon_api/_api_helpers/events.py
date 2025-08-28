@@ -256,6 +256,62 @@ class EventsAPI(BaseServerAPI):
         response.raise_for_status()
         return response
 
+    def create_event(
+        self,
+        topic: str,
+        sender: Optional[str] = None,
+        event_hash: Optional[str] = None,
+        project_name: Optional[str] = None,
+        username: Optional[str] = None,
+        depends_on: Optional[str] = None,
+        description: Optional[str] = None,
+        summary: Optional[dict[str, Any]] = None,
+        payload: Optional[dict[str, Any]] = None,
+        finished: bool = True,
+        store: bool = True,
+        dependencies: Optional[list[str]] = None,
+    ) -> str:
+        """Dispatch event to server.
+
+        Args:
+            topic (str): Event topic used for filtering of listeners.
+            sender (Optional[str]): Sender of event.
+            event_hash (Optional[str]): Event hash.
+            project_name (Optional[str]): Project name.
+            depends_on (Optional[str]): Add dependency to another event.
+            username (Optional[str]): Username which triggered event.
+            description (Optional[str]): Description of event.
+            summary (Optional[dict[str, Any]]): Summary of event that can
+                be used for simple filtering on listeners.
+            payload (Optional[dict[str, Any]]): Full payload of event data with
+                all details.
+            finished (bool): Mark event as finished on dispatch.
+            store (bool): Store event in event queue for possible
+                future processing otherwise is event send only
+                to active listeners.
+            dependencies (Optional[list[str]]): Deprecated.
+                List of event id dependencies.
+
+        Returns:
+            str: Event id.
+
+        """
+        result = self.dispatch_event(
+            topic,
+            sender,
+            event_hash,
+            project_name,
+            username,
+            depends_on,
+            description,
+            summary,
+            payload,
+            finished,
+            store,
+            dependencies,
+        )
+        return result.data["id"]
+
     def delete_event(self, event_id: str) -> None:
         """Delete event by id.
 

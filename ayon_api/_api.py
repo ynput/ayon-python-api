@@ -3104,6 +3104,62 @@ def dispatch_event(
     )
 
 
+def create_event(
+    topic: str,
+    sender: Optional[str] = None,
+    event_hash: Optional[str] = None,
+    project_name: Optional[str] = None,
+    username: Optional[str] = None,
+    depends_on: Optional[str] = None,
+    description: Optional[str] = None,
+    summary: Optional[dict[str, Any]] = None,
+    payload: Optional[dict[str, Any]] = None,
+    finished: bool = True,
+    store: bool = True,
+    dependencies: Optional[list[str]] = None,
+) -> str:
+    """Dispatch event to server.
+
+    Args:
+        topic (str): Event topic used for filtering of listeners.
+        sender (Optional[str]): Sender of event.
+        event_hash (Optional[str]): Event hash.
+        project_name (Optional[str]): Project name.
+        depends_on (Optional[str]): Add dependency to another event.
+        username (Optional[str]): Username which triggered event.
+        description (Optional[str]): Description of event.
+        summary (Optional[dict[str, Any]]): Summary of event that can
+            be used for simple filtering on listeners.
+        payload (Optional[dict[str, Any]]): Full payload of event data with
+            all details.
+        finished (bool): Mark event as finished on dispatch.
+        store (bool): Store event in event queue for possible
+            future processing otherwise is event send only
+            to active listeners.
+        dependencies (Optional[list[str]]): Deprecated.
+            List of event id dependencies.
+
+    Returns:
+        str: Event id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_event(
+        topic=topic,
+        sender=sender,
+        event_hash=event_hash,
+        project_name=project_name,
+        username=username,
+        depends_on=depends_on,
+        description=description,
+        summary=summary,
+        payload=payload,
+        finished=finished,
+        store=store,
+        dependencies=dependencies,
+    )
+
+
 def delete_event(
     event_id: str,
 ) -> None:
