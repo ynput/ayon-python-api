@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
 class RepresentationsAPI(BaseServerAPI):
     def get_rest_representation(
         self, project_name: str, representation_id: str
-    ) -> Optional["RepresentationDict"]:
+    ) -> Optional[RepresentationDict]:
         return self.get_rest_entity_by_id(
             project_name, "representation", representation_id
         )
@@ -44,7 +44,7 @@ class RepresentationsAPI(BaseServerAPI):
         has_links: Optional[str] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Generator["RepresentationDict", None, None]:
+    ) -> Generator[RepresentationDict, None, None]:
         """Get representation entities based on passed filters from server.
 
         .. todo::
@@ -182,7 +182,7 @@ class RepresentationsAPI(BaseServerAPI):
         representation_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Optional["RepresentationDict"]:
+    ) -> Optional[RepresentationDict]:
         """Query representation entity from server based on id filter.
 
         Args:
@@ -216,7 +216,7 @@ class RepresentationsAPI(BaseServerAPI):
         version_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Optional["RepresentationDict"]:
+    ) -> Optional[RepresentationDict]:
         """Query representation entity by name and version id.
 
         Args:
@@ -474,7 +474,7 @@ class RepresentationsAPI(BaseServerAPI):
         folder_fields: Optional[Iterable[str]] = None,
         product_fields: Optional[Iterable[str]] = None,
         version_fields: Optional[Iterable[str]] = None,
-    ) -> Optional["RepresentationParents"]:
+    ) -> Optional[RepresentationParents]:
         """Find representation parents by representation id.
 
         Representation parent entities up to project.
@@ -668,7 +668,7 @@ class RepresentationsAPI(BaseServerAPI):
         tags: Optional[list[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
-    ):
+    ) -> None:
         """Update representation entity on server.
 
         Update of ``data`` will override existing value on folder entity.
@@ -714,7 +714,7 @@ class RepresentationsAPI(BaseServerAPI):
 
     def delete_representation(
         self, project_name: str, representation_id: str
-    ):
+    ) -> None:
         """Delete representation.
 
         Args:
@@ -728,8 +728,8 @@ class RepresentationsAPI(BaseServerAPI):
         response.raise_for_status()
 
     def _representation_conversion(
-        self, representation: "RepresentationDict"
-    ):
+        self, representation: RepresentationDict
+    ) -> None:
         if "context" in representation:
             orig_context = representation["context"]
             context = {}

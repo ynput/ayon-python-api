@@ -23,8 +23,10 @@ if typing.TYPE_CHECKING:
 class ProductsAPI(BaseServerAPI):
     def get_rest_product(
         self, project_name: str, product_id: str
-    ) -> Optional["ProductDict"]:
-        return self.get_rest_entity_by_id(project_name, "product", product_id)
+    ) -> Optional[ProductDict]:
+        return self.get_rest_entity_by_id(
+            project_name, "product", product_id
+        )
 
     def get_products(
         self,
@@ -41,7 +43,7 @@ class ProductsAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Generator["ProductDict", None, None]:
+    ) -> Generator[ProductDict, None, None]:
         """Query products from server.
 
         Todos:
@@ -197,7 +199,7 @@ class ProductsAPI(BaseServerAPI):
         product_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Optional["ProductDict"]:
+    ) -> Optional[ProductDict]:
         """Query product entity by id.
 
         Args:
@@ -232,7 +234,7 @@ class ProductsAPI(BaseServerAPI):
         folder_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Optional["ProductDict"]:
+    ) -> Optional[ProductDict]:
         """Query product entity by name and folder id.
 
         Args:
@@ -264,7 +266,7 @@ class ProductsAPI(BaseServerAPI):
 
     def get_product_types(
         self, fields: Optional[Iterable[str]] = None
-    ) -> list["ProductTypeDict"]:
+    ) -> list[ProductTypeDict]:
         """Types of products.
 
         This is server wide information. Product types have 'name', 'icon' and
@@ -288,7 +290,7 @@ class ProductsAPI(BaseServerAPI):
 
     def get_project_product_types(
         self, project_name: str, fields: Optional[Iterable[str]] = None
-    ) -> list["ProductTypeDict"]:
+    ) -> list[ProductTypeDict]:
         """DEPRECATED Types of products available in a project.
 
         Filter only product types available in a project.
@@ -434,7 +436,7 @@ class ProductsAPI(BaseServerAPI):
         tags: Optional[Iterable[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
-    ):
+    ) -> None:
         """Update product entity on server.
 
         Update of ``data`` will override existing value on folder entity.
@@ -475,7 +477,7 @@ class ProductsAPI(BaseServerAPI):
         )
         response.raise_for_status()
 
-    def delete_product(self, project_name: str, product_id: str):
+    def delete_product(self, project_name: str, product_id: str) -> None:
         """Delete product.
 
         Args:
@@ -491,9 +493,9 @@ class ProductsAPI(BaseServerAPI):
     def _filter_product(
         self,
         project_name: str,
-        product: "ProductDict",
+        product: ProductDict,
         active: Optional[bool],
-    ) -> Optional["ProductDict"]:
+    ) -> Optional[ProductDict]:
         if active is not None and product["active"] is not active:
             return None
 

@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 
 
 class ProjectsAPI(BaseServerAPI):
-    def get_project_anatomy_presets(self) -> list["AnatomyPresetDict"]:
+    def get_project_anatomy_presets(self) -> list[AnatomyPresetDict]:
         """Anatomy presets available on server.
 
         Content has basic information about presets. Example output::
@@ -60,7 +60,7 @@ class ProjectsAPI(BaseServerAPI):
 
     def get_project_anatomy_preset(
         self, preset_name: Optional[str] = None
-    ) -> "AnatomyPresetDict":
+    ) -> AnatomyPresetDict:
         """Anatomy preset values by name.
 
         Get anatomy preset values by preset name. Primary preset is returned
@@ -83,7 +83,7 @@ class ProjectsAPI(BaseServerAPI):
         result.raise_for_status()
         return result.data
 
-    def get_built_in_anatomy_preset(self) -> "AnatomyPresetDict":
+    def get_built_in_anatomy_preset(self) -> AnatomyPresetDict:
         """Get built-in anatomy preset.
 
         Returns:
@@ -96,7 +96,7 @@ class ProjectsAPI(BaseServerAPI):
             preset_name = "_"
         return self.get_project_anatomy_preset(preset_name)
 
-    def get_build_in_anatomy_preset(self) -> "AnatomyPresetDict":
+    def get_build_in_anatomy_preset(self) -> AnatomyPresetDict:
         warnings.warn(
             (
                 "Used deprecated 'get_build_in_anatomy_preset' use"
@@ -108,7 +108,7 @@ class ProjectsAPI(BaseServerAPI):
 
     def get_rest_project(
         self, project_name: str
-    ) -> Optional["ProjectDict"]:
+    ) -> Optional[ProjectDict]:
         """Query project by name.
 
         This call returns project with anatomy data.
@@ -136,7 +136,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
-    ) -> Generator["ProjectDict", None, None]:
+    ) -> Generator[ProjectDict, None, None]:
         """Query available project entities.
 
         User must be logged in.
@@ -198,7 +198,7 @@ class ProjectsAPI(BaseServerAPI):
         library: Optional[bool] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
-    ) -> Generator["ProjectDict", None, None]:
+    ) -> Generator[ProjectDict, None, None]:
         """Get projects.
 
         Args:
@@ -244,7 +244,7 @@ class ProjectsAPI(BaseServerAPI):
         project_name: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
-    ) -> Optional["ProjectDict"]:
+    ) -> Optional[ProjectDict]:
         """Get project.
 
         Args:
@@ -287,7 +287,7 @@ class ProjectsAPI(BaseServerAPI):
         project_code: str,
         library_project: bool = False,
         preset_name: Optional[str] = None,
-    ) -> "ProjectDict":
+    ) -> ProjectDict:
         """Create project using AYON settings.
 
         This project creation function is not validating project entity on
@@ -359,7 +359,7 @@ class ProjectsAPI(BaseServerAPI):
         active: Optional[bool] = None,
         project_code: Optional[str] = None,
         **changes
-    ):
+    ) -> None:
         """Update project entity on server.
 
         Args:
@@ -669,7 +669,7 @@ class ProjectsAPI(BaseServerAPI):
         fields: set[str],
         own_attributes: bool,
         project_name: Optional[str] = None
-    ):
+    ) -> Generator[ProjectDict, None, None]:
         if active is not None:
             fields.add("active")
 

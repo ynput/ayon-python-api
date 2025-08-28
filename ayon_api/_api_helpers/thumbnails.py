@@ -261,7 +261,7 @@ class ThumbnailsAPI(BaseServerAPI):
 
     def update_thumbnail(
         self, project_name: str, thumbnail_id: str, src_filepath: str
-    ):
+    ) -> None:
         """Change thumbnail content by id.
 
         Update can be also used to create new thumbnail.

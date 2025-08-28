@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-
 import typing
 from typing import Optional, Any
+
+import requests
 
 from ayon_api.utils import prepare_query_string, TransferProgress
 
@@ -17,7 +18,7 @@ class InstallersAPI(BaseServerAPI):
         self,
         version: Optional[str] = None,
         platform_name: Optional[str] = None,
-    ) -> "InstallersInfoDict":
+    ) -> InstallersInfoDict:
         """Information about desktop application installers on server.
 
         Desktop application installers are helpers to download/update AYON
@@ -51,7 +52,7 @@ class InstallersAPI(BaseServerAPI):
         checksum_algorithm: str,
         file_size: int,
         sources: Optional[list[dict[str, Any]]] = None,
-    ):
+    ) -> None:
         """Create new installer information on server.
 
         This step will create only metadata. Make sure to upload installer
@@ -94,7 +95,9 @@ class InstallersAPI(BaseServerAPI):
         response = self.post("desktop/installers", **body)
         response.raise_for_status()
 
-    def update_installer(self, filename: str, sources: list[dict[str, Any]]):
+    def update_installer(
+        self, filename: str, sources: list[dict[str, Any]]
+    ) -> None:
         """Update installer information on server.
 
         Args:
@@ -109,7 +112,7 @@ class InstallersAPI(BaseServerAPI):
         )
         response.raise_for_status()
 
-    def delete_installer(self, filename: str):
+    def delete_installer(self, filename: str) -> None:
         """Delete installer from server.
 
         Args:
@@ -125,7 +128,7 @@ class InstallersAPI(BaseServerAPI):
         dst_filepath: str,
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None
-    ):
+    ) -> TransferProgress:
         """Download installer file from server.
 
         Args:
@@ -135,8 +138,11 @@ class InstallersAPI(BaseServerAPI):
             progress (Optional[TransferProgress]): Object that gives ability
                 to track download progress.
 
+        Returns:
+            TransferProgress: Progress object.
+
         """
-        self.download_file(
+        return self.download_file(
             f"desktop/installers/{filename}",
             dst_filepath,
             chunk_size=chunk_size,
@@ -148,7 +154,7 @@ class InstallersAPI(BaseServerAPI):
         src_filepath: str,
         dst_filename: str,
         progress: Optional[TransferProgress] = None,
-    ):
+    ) -> requests.Response:
         """Upload installer file to server.
 
         Args:

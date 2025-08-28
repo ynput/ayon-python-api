@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:
 
 
 class BundlesAddonsAPI(BaseServerAPI):
-    def get_bundles(self) -> "BundlesInfoDict":
+    def get_bundles(self) -> BundlesInfoDict:
         """Server bundles with basic information.
 
         This is example output::
@@ -66,9 +66,8 @@ class BundlesAddonsAPI(BaseServerAPI):
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
         dev_active_user: Optional[str] = None,
-        dev_addons_config: Optional[
-            dict[str, "DevBundleAddonInfoDict"]] = None,
-    ):
+        dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
+    ) -> None:
         """Create bundle on server.
 
         Bundle cannot be changed once is created. Only isProduction, isStaging
@@ -137,9 +136,8 @@ class BundlesAddonsAPI(BaseServerAPI):
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
         dev_active_user: Optional[str] = None,
-        dev_addons_config: Optional[
-            dict[str, "DevBundleAddonInfoDict"]] = None,
-    ):
+        dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
+    ) -> None:
         """Update bundle on server.
 
         Dependency packages can be update only for single platform. Others
@@ -195,8 +193,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
         dev_active_user: Optional[str] = None,
-        dev_addons_config: Optional[
-            dict[str, "DevBundleAddonInfoDict"]] = None,
+        dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
     ) -> dict[str, Any]:
         """Check bundle compatibility.
 
@@ -243,7 +240,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         response.raise_for_status()
         return response.data
 
-    def delete_bundle(self, bundle_name: str):
+    def delete_bundle(self, bundle_name: str) -> None:
         """Delete bundle from server.
 
         Args:
@@ -283,7 +280,7 @@ class BundlesAddonsAPI(BaseServerAPI):
             ending = f"/{'/'.join(subpaths)}"
         return f"addons/{addon_name}/{addon_version}{ending}"
 
-    def get_addons_info(self, details: bool = True) -> "AddonsInfoDict":
+    def get_addons_info(self, details: bool = True) -> AddonsInfoDict:
         """Get information about addons available on server.
 
         Args:

@@ -27,14 +27,14 @@ if typing.TYPE_CHECKING:
 class FoldersAPI(BaseServerAPI):
     def get_rest_folder(
         self, project_name: str, folder_id: str
-    ) -> Optional["FolderDict"]:
+    ) -> Optional[FolderDict]:
         return self.get_rest_entity_by_id(
             project_name, "folder", folder_id
         )
 
     def get_rest_folders(
         self, project_name: str, include_attrib: bool = False
-    ) -> list["FlatFolderDict"]:
+    ) -> list[FlatFolderDict]:
         """Get simplified flat list of all project folders.
 
         Get all project folders in single REST call. This can be faster than
@@ -95,7 +95,7 @@ class FoldersAPI(BaseServerAPI):
         project_name: str,
         search_string: Optional[str] = None,
         folder_types: Optional[Iterable[str]] = None
-    ) -> "ProjectHierarchyDict":
+    ) -> ProjectHierarchyDict:
         """Get project hierarchy.
 
         All folders in project in hierarchy data structure.
@@ -143,7 +143,7 @@ class FoldersAPI(BaseServerAPI):
 
     def get_folders_rest(
         self, project_name: str, include_attrib: bool = False
-    ) -> list["FlatFolderDict"]:
+    ) -> list[FlatFolderDict]:
         """Get simplified flat list of all project folders.
 
         Get all project folders in single REST call. This can be faster than
@@ -218,7 +218,7 @@ class FoldersAPI(BaseServerAPI):
         has_links: Optional[bool] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
-    ) -> Generator["FolderDict", None, None]:
+    ) -> Generator[FolderDict, None, None]:
         """Query folders from server.
 
         Todos:
@@ -348,7 +348,7 @@ class FoldersAPI(BaseServerAPI):
         folder_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
-    ) -> Optional["FolderDict"]:
+    ) -> Optional[FolderDict]:
         """Query folder entity by id.
 
         Args:
@@ -382,7 +382,7 @@ class FoldersAPI(BaseServerAPI):
         folder_path: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
-    ) -> Optional["FolderDict"]:
+    ) -> Optional[FolderDict]:
         """Query folder entity by path.
 
         Folder path is a path to folder with all parent names joined by slash.
@@ -418,7 +418,7 @@ class FoldersAPI(BaseServerAPI):
         folder_name: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
-    ) -> Optional["FolderDict"]:
+    ) -> Optional[FolderDict]:
         """Query folder entity by path.
 
         Warnings:
@@ -565,7 +565,7 @@ class FoldersAPI(BaseServerAPI):
         status: Optional[str] = None,
         active: Optional[bool] = None,
         thumbnail_id: Optional[str] = NOT_SET,
-    ):
+    ) -> None:
         """Update folder entity on server.
 
         Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
@@ -621,7 +621,7 @@ class FoldersAPI(BaseServerAPI):
 
     def delete_folder(
         self, project_name: str, folder_id: str, force: bool = False
-    ):
+    ) -> None:
         """Delete folder.
 
         Args:

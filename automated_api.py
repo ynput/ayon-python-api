@@ -213,12 +213,12 @@ def _get_typehint(annotation, api_globals):
         _typehing_parents.append(parent)
 
     if _typehing_parents:
-        typehint = f'"{_typehint}"'
+        typehint = f'{_typehint}'
         for parent in reversed(_typehing_parents):
             typehint = f"{parent}[{typehint}]"
         return typehint
 
-    return f'"{typehint}"'
+    return f'{typehint}'
 
 
 def _get_param_typehint(param, api_globals):

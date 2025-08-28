@@ -15,7 +15,11 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
+    from typing import TypedDict
     from ayon_api.typing import LinkDirection
+
+    class CreateLinkData(TypedDict):
+        id: str
 
 
 class LinksAPI(BaseServerAPI):
@@ -106,7 +110,7 @@ class LinksAPI(BaseServerAPI):
         input_type: str,
         output_type: str,
         data: Optional[dict[str, Any]] = None,
-    ):
+    ) -> None:
         """Create or update link type on server.
 
         Warning:
@@ -140,7 +144,7 @@ class LinksAPI(BaseServerAPI):
         link_type_name: str,
         input_type: str,
         output_type: str,
-    ):
+    ) -> None:
         """Remove link type from project.
 
         Args:
@@ -168,7 +172,7 @@ class LinksAPI(BaseServerAPI):
         input_type: str,
         output_type: str,
         data: Optional[dict[str, Any]] = None,
-    ):
+    ) -> None:
         """Make sure link type exists on a project.
 
         Args:
@@ -199,7 +203,7 @@ class LinksAPI(BaseServerAPI):
         output_id: str,
         output_type: str,
         link_name: Optional[str] = None,
-    ):
+    ) -> CreateLinkData:
         """Create link between 2 entities.
 
         Link has a type which must already exists on a project.
@@ -221,7 +225,7 @@ class LinksAPI(BaseServerAPI):
                 Available from server version '1.0.0-rc.6'.
 
         Returns:
-            dict[str, str]: Information about link.
+            CreateLinkData: Information about link.
 
         Raises:
             HTTPRequestError: Server error happened.
@@ -244,7 +248,7 @@ class LinksAPI(BaseServerAPI):
         response.raise_for_status()
         return response.data
 
-    def delete_link(self, project_name: str, link_id: str):
+    def delete_link(self, project_name: str, link_id: str) -> None:
         """Remove link by id.
 
         Args:
@@ -260,56 +264,13 @@ class LinksAPI(BaseServerAPI):
         )
         response.raise_for_status()
 
-    def _prepare_link_filters(
-        self,
-        filters: dict[str, Any],
-        link_types: Optional[Iterable[str], None],
-        link_direction: Optional["LinkDirection"],
-        link_names: Optional[Iterable[str]],
-        link_name_regex: Optional[str],
-    ) -> bool:
-        """Add links filters for GraphQl queries.
-
-        Args:
-            filters (dict[str, Any]): Object where filters will be added.
-            link_types (Optional[Iterable[str]]): Link types filters.
-            link_direction (Optional[Literal["in", "out"]]): Direction of
-                link "in", "out" or 'None' for both.
-            link_names (Optional[Iterable[str]]): Link name filters.
-            link_name_regex (Optional[str]): Regex filter for link name.
-
-        Returns:
-            bool: Links are valid, and query from server can happen.
-
-        """
-        if link_types is not None:
-            link_types = set(link_types)
-            if not link_types:
-                return False
-            filters["linkTypes"] = list(link_types)
-
-        if link_names is not None:
-            link_names = set(link_names)
-            if not link_names:
-                return False
-            filters["linkNames"] = list(link_names)
-
-        if link_direction is not None:
-            if link_direction not in ("in", "out"):
-                return False
-            filters["linkDirection"] = link_direction
-
-        if link_name_regex is not None:
-            filters["linkNameRegex"] = link_name_regex
-        return True
-
     def get_entities_links(
         self,
         project_name: str,
         entity_type: str,
         entity_ids: Optional[Iterable[str]] = None,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
         link_names: Optional[Iterable[str]] = None,
         link_name_regex: Optional[str] = None,
     ) -> dict[str, list[dict[str, Any]]]:
@@ -411,7 +372,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         folder_ids: Optional[Iterable[str]] = None,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> dict[str, list[dict[str, Any]]]:
         """Query folders links from server.
 
@@ -436,7 +397,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         folder_id: str,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> list[dict[str, Any]]:
         """Query folder links from server.
 
@@ -460,7 +421,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         task_ids: Optional[Iterable[str]] = None,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> dict[str, list[dict[str, Any]]]:
         """Query tasks links from server.
 
@@ -485,7 +446,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         task_id: str,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> list[dict[str, Any]]:
         """Query task links from server.
 
@@ -509,7 +470,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         product_ids: Optional[Iterable[str]] = None,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> dict[str, list[dict[str, Any]]]:
         """Query products links from server.
 
@@ -534,7 +495,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         product_id: str,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> list[dict[str, Any]]:
         """Query product links from server.
 
@@ -558,7 +519,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         version_ids: Optional[Iterable[str]] = None,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> dict[str, list[dict[str, Any]]]:
         """Query versions links from server.
 
@@ -583,7 +544,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         version_id: str,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> list[dict[str, Any]]:
         """Query version links from server.
 
@@ -607,7 +568,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         representation_ids: Optional[Iterable[str]] = None,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None,
+        link_direction: Optional[LinkDirection] = None,
     ) -> dict[str, list[dict[str, Any]]]:
         """Query representations links from server.
 
@@ -636,7 +597,7 @@ class LinksAPI(BaseServerAPI):
         project_name: str,
         representation_id: str,
         link_types: Optional[Iterable[str]] = None,
-        link_direction: Optional["LinkDirection"] = None
+        link_direction: Optional[LinkDirection] = None
     ) -> list[dict[str, Any]]:
         """Query representation links from server.
 
@@ -655,3 +616,46 @@ class LinksAPI(BaseServerAPI):
         return self.get_representations_links(
             project_name, [representation_id], link_types, link_direction
         )[representation_id]
+
+    def _prepare_link_filters(
+        self,
+        filters: dict[str, Any],
+        link_types: Optional[Iterable[str], None],
+        link_direction: Optional[LinkDirection],
+        link_names: Optional[Iterable[str]],
+        link_name_regex: Optional[str],
+    ) -> bool:
+        """Add links filters for GraphQl queries.
+
+        Args:
+            filters (dict[str, Any]): Object where filters will be added.
+            link_types (Optional[Iterable[str]]): Link types filters.
+            link_direction (Optional[Literal["in", "out"]]): Direction of
+                link "in", "out" or 'None' for both.
+            link_names (Optional[Iterable[str]]): Link name filters.
+            link_name_regex (Optional[str]): Regex filter for link name.
+
+        Returns:
+            bool: Links are valid, and query from server can happen.
+
+        """
+        if link_types is not None:
+            link_types = set(link_types)
+            if not link_types:
+                return False
+            filters["linkTypes"] = list(link_types)
+
+        if link_names is not None:
+            link_names = set(link_names)
+            if not link_names:
+                return False
+            filters["linkNames"] = list(link_names)
+
+        if link_direction is not None:
+            if link_direction not in ("in", "out"):
+                return False
+            filters["linkDirection"] = link_direction
+
+        if link_name_regex is not None:
+            filters["linkNameRegex"] = link_name_regex
+        return True

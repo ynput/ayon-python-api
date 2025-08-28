@@ -25,7 +25,7 @@ class WorkfilesAPI(BaseServerAPI):
         has_links: Optional[str]=None,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Generator["WorkfileInfoDict", None, None]:
+    ) -> Generator[WorkfileInfoDict, None, None]:
         """Workfile info entities by passed filters.
 
         Args:
@@ -121,7 +121,7 @@ class WorkfilesAPI(BaseServerAPI):
         path: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Optional["WorkfileInfoDict"]:
+    ) -> Optional[WorkfileInfoDict]:
         """Workfile info entity by task id and workfile path.
 
         Args:
@@ -157,7 +157,7 @@ class WorkfilesAPI(BaseServerAPI):
         workfile_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Optional["WorkfileInfoDict"]:
+    ) -> Optional[WorkfileInfoDict]:
         """Workfile info entity by id.
 
         Args:

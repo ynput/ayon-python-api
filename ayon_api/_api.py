@@ -1252,7 +1252,7 @@ def send_batch_operations(
 def get_installers(
     version: Optional[str] = None,
     platform_name: Optional[str] = None,
-) -> "InstallersInfoDict":
+) -> InstallersInfoDict:
     """Information about desktop application installers on server.
 
     Desktop application installers are helpers to download/update AYON
@@ -1284,7 +1284,7 @@ def create_installer(
     checksum_algorithm: str,
     file_size: int,
     sources: Optional[list[dict[str, Any]]] = None,
-):
+) -> None:
     """Create new installer information on server.
 
     This step will create only metadata. Make sure to upload installer
@@ -1328,7 +1328,7 @@ def create_installer(
 def update_installer(
     filename: str,
     sources: list[dict[str, Any]],
-):
+) -> None:
     """Update installer information on server.
 
     Args:
@@ -1346,7 +1346,7 @@ def update_installer(
 
 def delete_installer(
     filename: str,
-):
+) -> None:
     """Delete installer from server.
 
     Args:
@@ -1364,7 +1364,7 @@ def download_installer(
     dst_filepath: str,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
-):
+) -> TransferProgress:
     """Download installer file from server.
 
     Args:
@@ -1373,6 +1373,9 @@ def download_installer(
         chunk_size (Optional[int]): Download chunk size.
         progress (Optional[TransferProgress]): Object that gives ability
             to track download progress.
+
+    Returns:
+        TransferProgress: Progress object.
 
     """
     con = get_server_api_connection()
@@ -1388,7 +1391,7 @@ def upload_installer(
     src_filepath: str,
     dst_filename: str,
     progress: Optional[TransferProgress] = None,
-):
+) -> requests.Response:
     """Upload installer file to server.
 
     Args:
@@ -1409,7 +1412,7 @@ def upload_installer(
     )
 
 
-def get_dependency_packages() -> "DependencyPackagesDict":
+def get_dependency_packages() -> DependencyPackagesDict:
     """Information about dependency packages on server.
 
     To download dependency package, use 'download_dependency_package'
@@ -1451,7 +1454,7 @@ def create_dependency_package(
     file_size: int,
     sources: Optional[list[dict[str, Any]]] = None,
     platform_name: Optional[str] = None,
-):
+) -> None:
     """Create dependency package on server.
 
     The package will be created on a server, it is also required to upload
@@ -1498,7 +1501,7 @@ def create_dependency_package(
 def update_dependency_package(
     filename: str,
     sources: list[dict[str, Any]],
-):
+) -> None:
     """Update dependency package metadata on server.
 
     Args:
@@ -1518,7 +1521,7 @@ def update_dependency_package(
 def delete_dependency_package(
     filename: str,
     platform_name: Optional[str] = None,
-):
+) -> None:
     """Remove dependency package for specific platform.
 
     Args:
@@ -1577,7 +1580,7 @@ def upload_dependency_package(
     dst_filename: str,
     platform_name: Optional[str] = None,
     progress: Optional[TransferProgress] = None,
-):
+) -> None:
     """Upload dependency package to server.
 
     Args:
@@ -1598,7 +1601,7 @@ def upload_dependency_package(
     )
 
 
-def get_secrets() -> list["SecretDict"]:
+def get_secrets() -> list[SecretDict]:
     """Get all secrets.
 
     Example output::
@@ -1624,7 +1627,7 @@ def get_secrets() -> list["SecretDict"]:
 
 def get_secret(
     secret_name: str,
-) -> "SecretDict":
+) -> SecretDict:
     """Get secret by name.
 
     Example output::
@@ -1650,7 +1653,7 @@ def get_secret(
 def save_secret(
     secret_name: str,
     secret_value: str,
-):
+) -> None:
     """Save secret.
 
     This endpoint can create and update secret.
@@ -1669,7 +1672,7 @@ def save_secret(
 
 def delete_secret(
     secret_name: str,
-):
+) -> None:
     """Delete secret by name.
 
     Args:
@@ -1684,14 +1687,14 @@ def delete_secret(
 
 def get_actions(
     project_name: Optional[str] = None,
-    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
     entity_ids: Optional[list[str]] = None,
     entity_subtypes: Optional[list[str]] = None,
     form_data: Optional[dict[str, Any]] = None,
     *,
     variant: Optional[str] = None,
-    mode: Optional["ActionModeType"] = None,
-) -> list["ActionManifestDict"]:
+    mode: Optional[ActionModeType] = None,
+) -> list[ActionManifestDict]:
     """Get actions for a context.
 
     Args:
@@ -1728,13 +1731,13 @@ def trigger_action(
     addon_name: str,
     addon_version: str,
     project_name: Optional[str] = None,
-    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
     entity_ids: Optional[list[str]] = None,
     entity_subtypes: Optional[list[str]] = None,
     form_data: Optional[dict[str, Any]] = None,
     *,
     variant: Optional[str] = None,
-) -> "ActionTriggerResponse":
+) -> ActionTriggerResponse:
     """Trigger action.
 
     Args:
@@ -1772,13 +1775,13 @@ def get_action_config(
     addon_name: str,
     addon_version: str,
     project_name: Optional[str] = None,
-    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
     entity_ids: Optional[list[str]] = None,
     entity_subtypes: Optional[list[str]] = None,
     form_data: Optional[dict[str, Any]] = None,
     *,
     variant: Optional[str] = None,
-) -> "ActionConfigResponse":
+) -> ActionConfigResponse:
     """Get action configuration.
 
     Args:
@@ -1820,13 +1823,13 @@ def set_action_config(
     addon_version: str,
     value: dict[str, Any],
     project_name: Optional[str] = None,
-    entity_type: Optional["ActionEntityTypes"] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
     entity_ids: Optional[list[str]] = None,
     entity_subtypes: Optional[list[str]] = None,
     form_data: Optional[dict[str, Any]] = None,
     *,
     variant: Optional[str] = None,
-) -> "ActionConfigResponse":
+) -> ActionConfigResponse:
     """Set action configuration.
 
     Args:
@@ -1867,7 +1870,7 @@ def set_action_config(
 
 def take_action(
     action_token: str,
-) -> "ActionTakeResponse":
+) -> ActionTakeResponse:
     """Take action metadata using an action token.
 
     Args:
@@ -1905,13 +1908,13 @@ def abort_action(
 def get_activities(
     project_name: str,
     activity_ids: Optional[Iterable[str]] = None,
-    activity_types: Optional[Iterable["ActivityType"]] = None,
+    activity_types: Optional[Iterable[ActivityType]] = None,
     entity_ids: Optional[Iterable[str]] = None,
     entity_names: Optional[Iterable[str]] = None,
     entity_type: Optional[str] = None,
     changed_after: Optional[str] = None,
     changed_before: Optional[str] = None,
-    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    reference_types: Optional[Iterable[ActivityReferenceType]] = None,
     fields: Optional[Iterable[str]] = None,
     limit: Optional[int] = None,
     order: Optional[SortOrder] = None,
@@ -1962,7 +1965,7 @@ def get_activities(
 def get_activity_by_id(
     project_name: str,
     activity_id: str,
-    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+    reference_types: Optional[Iterable[ActivityReferenceType]] = None,
     fields: Optional[Iterable[str]] = None,
 ) -> Optional[dict[str, Any]]:
     """Get activity by id.
@@ -1993,7 +1996,7 @@ def create_activity(
     project_name: str,
     entity_id: str,
     entity_type: str,
-    activity_type: "ActivityType",
+    activity_type: ActivityType,
     activity_id: Optional[str] = None,
     body: Optional[str] = None,
     file_ids: Optional[list[str]] = None,
@@ -2039,7 +2042,7 @@ def update_activity(
     file_ids: Optional[list[str]] = None,
     append_file_ids: Optional[bool] = False,
     data: Optional[dict[str, Any]] = None,
-):
+) -> None:
     """Update activity by id.
 
     Args:
@@ -2067,7 +2070,7 @@ def update_activity(
 def delete_activity(
     project_name: str,
     activity_id: str,
-):
+) -> None:
     """Delete activity by id.
 
     Args:
@@ -2122,7 +2125,7 @@ def send_activities_batch_operations(
     )
 
 
-def get_bundles() -> "BundlesInfoDict":
+def get_bundles() -> BundlesInfoDict:
     """Server bundles with basic information.
 
     This is example output::
@@ -2166,8 +2169,8 @@ def create_bundle(
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[dict[str, "DevBundleAddonInfoDict"]] = None,
-):
+    dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
+) -> None:
     """Create bundle on server.
 
     Bundle cannot be changed once is created. Only isProduction, isStaging
@@ -2229,8 +2232,8 @@ def update_bundle(
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[dict[str, "DevBundleAddonInfoDict"]] = None,
-):
+    dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
+) -> None:
     """Update bundle on server.
 
     Dependency packages can be update only for single platform. Others
@@ -2278,7 +2281,7 @@ def check_bundle_compatibility(
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[dict[str, "DevBundleAddonInfoDict"]] = None,
+    dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
 ) -> dict[str, Any]:
     """Check bundle compatibility.
 
@@ -2320,7 +2323,7 @@ def check_bundle_compatibility(
 
 def delete_bundle(
     bundle_name: str,
-):
+) -> None:
     """Delete bundle from server.
 
     Args:
@@ -2367,7 +2370,7 @@ def get_addon_endpoint(
 
 def get_addons_info(
     details: bool = True,
-) -> "AddonsInfoDict":
+) -> AddonsInfoDict:
     """Get information about addons available on server.
 
     Args:
@@ -2940,7 +2943,7 @@ def get_events(
     topics: Optional[Iterable[str]] = None,
     event_ids: Optional[Iterable[str]] = None,
     project_names: Optional[Iterable[str]] = None,
-    statuses: Optional[Iterable[str]] = None,
+    statuses: Optional[Iterable[EventStatus]] = None,
     users: Optional[Iterable[str]] = None,
     include_logs: Optional[bool] = None,
     has_children: Optional[bool] = None,
@@ -2961,7 +2964,7 @@ def get_events(
         event_ids (Optional[Iterable[str]]): Event ids.
         project_names (Optional[Iterable[str]]): Project on which
             event happened.
-        statuses (Optional[Iterable[str]]): Filtering by statuses.
+        statuses (Optional[Iterable[EventStatus]]): Filtering by statuses.
         users (Optional[Iterable[str]]): Filtering by users
             who created/triggered an event.
         include_logs (Optional[bool]): Query also log events.
@@ -3007,13 +3010,13 @@ def update_event(
     sender: Optional[str] = None,
     project_name: Optional[str] = None,
     username: Optional[str] = None,
-    status: Optional[str] = None,
+    status: Optional[EventStatus] = None,
     description: Optional[str] = None,
     summary: Optional[dict[str, Any]] = None,
     payload: Optional[dict[str, Any]] = None,
     progress: Optional[int] = None,
     retries: Optional[int] = None,
-):
+) -> None:
     """Update event data.
 
     Args:
@@ -3021,7 +3024,7 @@ def update_event(
         sender (Optional[str]): New sender of event.
         project_name (Optional[str]): New project name.
         username (Optional[str]): New username.
-        status (Optional[str]): New event status. Enum: "pending",
+        status (Optional[EventStatus]): New event status. Enum: "pending",
             "in_progress", "finished", "failed", "aborted", "restarted"
         description (Optional[str]): New description.
         summary (Optional[dict[str, Any]]): New summary.
@@ -3058,7 +3061,7 @@ def dispatch_event(
     finished: bool = True,
     store: bool = True,
     dependencies: Optional[list[str]] = None,
-):
+) -> RestApiResponse:
     """Dispatch event to server.
 
     Args:
@@ -3073,8 +3076,8 @@ def dispatch_event(
             be used for simple filtering on listeners.
         payload (Optional[dict[str, Any]]): Full payload of event data with
             all details.
-        finished (Optional[bool]): Mark event as finished on dispatch.
-        store (Optional[bool]): Store event in event queue for possible
+        finished (bool): Mark event as finished on dispatch.
+        store (bool): Store event in event queue for possible
             future processing otherwise is event send only
             to active listeners.
         dependencies (Optional[list[str]]): Deprecated.
@@ -3103,7 +3106,7 @@ def dispatch_event(
 
 def delete_event(
     event_id: str,
-):
+) -> None:
     """Delete event by id.
 
     Supported since AYON server 1.6.0.
@@ -3122,16 +3125,16 @@ def delete_event(
 
 
 def enroll_event_job(
-    source_topic: "Union[str, list[str]]",
+    source_topic: Union[str, list[str]],
     target_topic: str,
     sender: str,
     description: Optional[str] = None,
     sequential: Optional[bool] = None,
-    events_filter: Optional["EventFilter"] = None,
+    events_filter: Optional[EventFilter] = None,
     max_retries: Optional[int] = None,
     ignore_older_than: Optional[str] = None,
     ignore_sender_types: Optional[str] = None,
-):
+) -> Optional[EnrollEventData]:
     """Enroll job based on events.
 
     Enroll will find first unprocessed event with 'source_topic' and will
@@ -3186,7 +3189,7 @@ def enroll_event_job(
             by given sender types.
 
     Returns:
-        Optional[dict[str, Any]]: None if there is no event matching
+        Optional[EnrollEventData]: None if there is no event matching
             filters. Created event with 'target_topic'.
 
     """
@@ -3206,25 +3209,25 @@ def enroll_event_job(
 
 def get_attributes_schema(
     use_cache: bool = True,
-) -> "AttributesSchemaDict":
+) -> AttributesSchemaDict:
     con = get_server_api_connection()
     return con.get_attributes_schema(
         use_cache=use_cache,
     )
 
 
-def reset_attributes_schema():
+def reset_attributes_schema() -> None:
     con = get_server_api_connection()
     return con.reset_attributes_schema()
 
 
 def set_attribute_config(
     attribute_name: str,
-    data: "AttributeSchemaDataDict",
-    scope: list["AttributeScope"],
+    data: AttributeSchemaDataDict,
+    scope: list[AttributeScope],
     position: Optional[int] = None,
     builtin: bool = False,
-):
+) -> None:
     con = get_server_api_connection()
     return con.set_attribute_config(
         attribute_name=attribute_name,
@@ -3237,7 +3240,7 @@ def set_attribute_config(
 
 def remove_attribute_config(
     attribute_name: str,
-):
+) -> None:
     """Remove attribute from server.
 
     This can't be un-done, please use carefully.
@@ -3253,8 +3256,8 @@ def remove_attribute_config(
 
 
 def get_attributes_for_type(
-    entity_type: "AttributeScope",
-) -> dict[str, "AttributeSchemaDict"]:
+    entity_type: AttributeScope,
+) -> dict[str, AttributeSchemaDict]:
     """Get attribute schemas available for an entity type.
 
     Example::
@@ -3298,7 +3301,7 @@ def get_attributes_for_type(
 
 
 def get_attributes_fields_for_type(
-    entity_type: "AttributeScope",
+    entity_type: AttributeScope,
 ) -> set[str]:
     """Prepare attribute fields for entity type.
 
@@ -3312,7 +3315,7 @@ def get_attributes_fields_for_type(
     )
 
 
-def get_project_anatomy_presets() -> list["AnatomyPresetDict"]:
+def get_project_anatomy_presets() -> list[AnatomyPresetDict]:
     """Anatomy presets available on server.
 
     Content has basic information about presets. Example output::
@@ -3354,7 +3357,7 @@ def get_default_anatomy_preset_name() -> str:
 
 def get_project_anatomy_preset(
     preset_name: Optional[str] = None,
-) -> "AnatomyPresetDict":
+) -> AnatomyPresetDict:
     """Anatomy preset values by name.
 
     Get anatomy preset values by preset name. Primary preset is returned
@@ -3373,7 +3376,7 @@ def get_project_anatomy_preset(
     )
 
 
-def get_built_in_anatomy_preset() -> "AnatomyPresetDict":
+def get_built_in_anatomy_preset() -> AnatomyPresetDict:
     """Get built-in anatomy preset.
 
     Returns:
@@ -3384,14 +3387,14 @@ def get_built_in_anatomy_preset() -> "AnatomyPresetDict":
     return con.get_built_in_anatomy_preset()
 
 
-def get_build_in_anatomy_preset() -> "AnatomyPresetDict":
+def get_build_in_anatomy_preset() -> AnatomyPresetDict:
     con = get_server_api_connection()
     return con.get_build_in_anatomy_preset()
 
 
 def get_rest_project(
     project_name: str,
-) -> Optional["ProjectDict"]:
+) -> Optional[ProjectDict]:
     """Query project by name.
 
     This call returns project with anatomy data.
@@ -3413,7 +3416,7 @@ def get_rest_project(
 def get_rest_projects(
     active: Optional[bool] = True,
     library: Optional[bool] = None,
-) -> Generator["ProjectDict", None, None]:
+) -> Generator[ProjectDict, None, None]:
     """Query available project entities.
 
     User must be logged in.
@@ -3465,7 +3468,7 @@ def get_projects(
     library: Optional[bool] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["ProjectDict", None, None]:
+) -> Generator[ProjectDict, None, None]:
     """Get projects.
 
     Args:
@@ -3495,7 +3498,7 @@ def get_project(
     project_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["ProjectDict"]:
+) -> Optional[ProjectDict]:
     """Get project.
 
     Args:
@@ -3523,7 +3526,7 @@ def create_project(
     project_code: str,
     library_project: bool = False,
     preset_name: Optional[str] = None,
-) -> "ProjectDict":
+) -> ProjectDict:
     """Create project using AYON settings.
 
     This project creation function is not validating project entity on
@@ -3573,7 +3576,7 @@ def update_project(
     active: Optional[bool] = None,
     project_code: Optional[str] = None,
     **changes,
-):
+) -> None:
     """Update project entity on server.
 
     Args:
@@ -3796,7 +3799,7 @@ def get_project_roots_by_platform(
 def get_rest_folder(
     project_name: str,
     folder_id: str,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     con = get_server_api_connection()
     return con.get_rest_folder(
         project_name=project_name,
@@ -3807,7 +3810,7 @@ def get_rest_folder(
 def get_rest_folders(
     project_name: str,
     include_attrib: bool = False,
-) -> list["FlatFolderDict"]:
+) -> list[FlatFolderDict]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -3859,7 +3862,7 @@ def get_folders_hierarchy(
     project_name: str,
     search_string: Optional[str] = None,
     folder_types: Optional[Iterable[str]] = None,
-) -> "ProjectHierarchyDict":
+) -> ProjectHierarchyDict:
     """Get project hierarchy.
 
     All folders in project in hierarchy data structure.
@@ -3903,7 +3906,7 @@ def get_folders_hierarchy(
 def get_folders_rest(
     project_name: str,
     include_attrib: bool = False,
-) -> list["FlatFolderDict"]:
+) -> list[FlatFolderDict]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -3975,7 +3978,7 @@ def get_folders(
     has_links: Optional[bool] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["FolderDict", None, None]:
+) -> Generator[FolderDict, None, None]:
     """Query folders from server.
 
     Todos:
@@ -4051,7 +4054,7 @@ def get_folder_by_id(
     folder_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     """Query folder entity by id.
 
     Args:
@@ -4082,7 +4085,7 @@ def get_folder_by_path(
     folder_path: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     """Query folder entity by path.
 
     Folder path is a path to folder with all parent names joined by slash.
@@ -4115,7 +4118,7 @@ def get_folder_by_name(
     folder_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     """Query folder entity by path.
 
     Warnings:
@@ -4238,7 +4241,7 @@ def update_folder(
     status: Optional[str] = None,
     active: Optional[bool] = None,
     thumbnail_id: Optional[str] = NOT_SET,
-):
+) -> None:
     """Update folder entity on server.
 
     Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
@@ -4286,7 +4289,7 @@ def delete_folder(
     project_name: str,
     folder_id: str,
     force: bool = False,
-):
+) -> None:
     """Delete folder.
 
     Args:
@@ -4307,7 +4310,7 @@ def delete_folder(
 def get_rest_task(
     project_name: str,
     task_id: str,
-) -> Optional["TaskDict"]:
+) -> Optional[TaskDict]:
     con = get_server_api_connection()
     return con.get_rest_task(
         project_name=project_name,
@@ -4328,7 +4331,7 @@ def get_tasks(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["TaskDict", None, None]:
+) -> Generator[TaskDict, None, None]:
     """Query task entities from server.
 
     Args:
@@ -4383,7 +4386,7 @@ def get_task_by_name(
     task_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskDict"]:
+) -> Optional[TaskDict]:
     """Query task entity by name and folder id.
 
     Args:
@@ -4415,7 +4418,7 @@ def get_task_by_id(
     task_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskDict"]:
+) -> Optional[TaskDict]:
     """Query task entity by id.
 
     Args:
@@ -4452,7 +4455,7 @@ def get_tasks_by_folder_paths(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> dict[str, list["TaskDict"]]:
+) -> dict[str, list[TaskDict]]:
     """Query task entities from server by folder paths.
 
     Args:
@@ -4511,7 +4514,7 @@ def get_tasks_by_folder_path(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> list["TaskDict"]:
+) -> list[TaskDict]:
     """Query task entities from server by folder path.
 
     Args:
@@ -4560,7 +4563,7 @@ def get_task_by_folder_path(
     task_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskDict"]:
+) -> Optional[TaskDict]:
     """Query task entity by folder path and task name.
 
     Args:
@@ -4655,7 +4658,7 @@ def update_task(
     status: Optional[str] = None,
     active: Optional[bool] = None,
     thumbnail_id: Optional[str] = NOT_SET,
-):
+) -> None:
     """Update task entity on server.
 
     Do not pass ``label`` amd ``thumbnail_id`` if you don't
@@ -4704,7 +4707,7 @@ def update_task(
 def delete_task(
     project_name: str,
     task_id: str,
-):
+) -> None:
     """Delete task.
 
     Args:
@@ -4722,7 +4725,7 @@ def delete_task(
 def get_rest_product(
     project_name: str,
     product_id: str,
-) -> Optional["ProductDict"]:
+) -> Optional[ProductDict]:
     con = get_server_api_connection()
     return con.get_rest_product(
         project_name=project_name,
@@ -4744,7 +4747,7 @@ def get_products(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["ProductDict", None, None]:
+) -> Generator[ProductDict, None, None]:
     """Query products from server.
 
     Todos:
@@ -4804,7 +4807,7 @@ def get_product_by_id(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["ProductDict"]:
+) -> Optional[ProductDict]:
     """Query product entity by id.
 
     Args:
@@ -4836,7 +4839,7 @@ def get_product_by_name(
     folder_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["ProductDict"]:
+) -> Optional[ProductDict]:
     """Query product entity by name and folder id.
 
     Args:
@@ -4866,7 +4869,7 @@ def get_product_by_name(
 
 def get_product_types(
     fields: Optional[Iterable[str]] = None,
-) -> list["ProductTypeDict"]:
+) -> list[ProductTypeDict]:
     """Types of products.
 
     This is server wide information. Product types have 'name', 'icon' and
@@ -4888,7 +4891,7 @@ def get_product_types(
 def get_project_product_types(
     project_name: str,
     fields: Optional[Iterable[str]] = None,
-) -> list["ProductTypeDict"]:
+) -> list[ProductTypeDict]:
     """DEPRECATED Types of products available in a project.
 
     Filter only product types available in a project.
@@ -4993,7 +4996,7 @@ def update_product(
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
-):
+) -> None:
     """Update product entity on server.
 
     Update of ``data`` will override existing value on folder entity.
@@ -5032,7 +5035,7 @@ def update_product(
 def delete_product(
     project_name: str,
     product_id: str,
-):
+) -> None:
     """Delete product.
 
     Args:
@@ -5050,7 +5053,7 @@ def delete_product(
 def get_rest_version(
     project_name: str,
     version_id: str,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     con = get_server_api_connection()
     return con.get_rest_version(
         project_name=project_name,
@@ -5072,7 +5075,7 @@ def get_versions(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["VersionDict", None, None]:
+) -> Generator[VersionDict, None, None]:
     """Get version entities based on passed filters from server.
 
     Args:
@@ -5129,7 +5132,7 @@ def get_version_by_id(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query version entity by id.
 
     Args:
@@ -5161,7 +5164,7 @@ def get_version_by_name(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query version entity by version and product id.
 
     Args:
@@ -5194,7 +5197,7 @@ def get_hero_version_by_id(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query hero version entity by id.
 
     Args:
@@ -5225,7 +5228,7 @@ def get_hero_version_by_product_id(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query hero version entity by product id.
 
     Only one hero version is available on a product.
@@ -5260,7 +5263,7 @@ def get_hero_versions(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["VersionDict", None, None]:
+) -> Generator[VersionDict, None, None]:
     """Query hero versions by multiple filters.
 
     Only one hero version is available on a product.
@@ -5299,7 +5302,7 @@ def get_last_versions(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> dict[str, Optional["VersionDict"]]:
+) -> dict[str, Optional[VersionDict]]:
     """Query last version entities by product ids.
 
     Args:
@@ -5332,7 +5335,7 @@ def get_last_version_by_product_id(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query last version entity by product id.
 
     Args:
@@ -5366,7 +5369,7 @@ def get_last_version_by_product_name(
     active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query last version entity by product name and folder id.
 
     Args:
@@ -5481,7 +5484,7 @@ def update_version(
     status: Optional[str] = None,
     active: Optional[bool] = None,
     thumbnail_id: Optional[str] = NOT_SET,
-):
+) -> None:
     """Update version entity on server.
 
     Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
@@ -5528,7 +5531,7 @@ def update_version(
 def delete_version(
     project_name: str,
     version_id: str,
-):
+) -> None:
     """Delete version.
 
     Args:
@@ -5546,7 +5549,7 @@ def delete_version(
 def get_rest_representation(
     project_name: str,
     representation_id: str,
-) -> Optional["RepresentationDict"]:
+) -> Optional[RepresentationDict]:
     con = get_server_api_connection()
     return con.get_rest_representation(
         project_name=project_name,
@@ -5566,7 +5569,7 @@ def get_representations(
     has_links: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["RepresentationDict", None, None]:
+) -> Generator[RepresentationDict, None, None]:
     """Get representation entities based on passed filters from server.
 
     .. todo::
@@ -5626,7 +5629,7 @@ def get_representation_by_id(
     representation_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["RepresentationDict"]:
+) -> Optional[RepresentationDict]:
     """Query representation entity from server based on id filter.
 
     Args:
@@ -5657,7 +5660,7 @@ def get_representation_by_name(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["RepresentationDict"]:
+) -> Optional[RepresentationDict]:
     """Query representation entity by name and version id.
 
     Args:
@@ -5816,7 +5819,7 @@ def get_representation_parents(
     folder_fields: Optional[Iterable[str]] = None,
     product_fields: Optional[Iterable[str]] = None,
     version_fields: Optional[Iterable[str]] = None,
-) -> Optional["RepresentationParents"]:
+) -> Optional[RepresentationParents]:
     """Find representation parents by representation id.
 
     Representation parent entities up to project.
@@ -5962,7 +5965,7 @@ def update_representation(
     tags: Optional[list[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
-):
+) -> None:
     """Update representation entity on server.
 
     Update of ``data`` will override existing value on folder entity.
@@ -6004,7 +6007,7 @@ def update_representation(
 def delete_representation(
     project_name: str,
     representation_id: str,
-):
+) -> None:
     """Delete representation.
 
     Args:
@@ -6030,7 +6033,7 @@ def get_workfiles_info(
     has_links: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["WorkfileInfoDict", None, None]:
+) -> Generator[WorkfileInfoDict, None, None]:
     """Workfile info entities by passed filters.
 
     Args:
@@ -6077,7 +6080,7 @@ def get_workfile_info(
     path: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["WorkfileInfoDict"]:
+) -> Optional[WorkfileInfoDict]:
     """Workfile info entity by task id and workfile path.
 
     Args:
@@ -6109,7 +6112,7 @@ def get_workfile_info_by_id(
     workfile_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["WorkfileInfoDict"]:
+) -> Optional[WorkfileInfoDict]:
     """Workfile info entity by id.
 
     Args:
@@ -6232,7 +6235,7 @@ def create_link_type(
     input_type: str,
     output_type: str,
     data: Optional[dict[str, Any]] = None,
-):
+) -> None:
     """Create or update link type on server.
 
     Warning:
@@ -6264,7 +6267,7 @@ def delete_link_type(
     link_type_name: str,
     input_type: str,
     output_type: str,
-):
+) -> None:
     """Remove link type from project.
 
     Args:
@@ -6292,7 +6295,7 @@ def make_sure_link_type_exists(
     input_type: str,
     output_type: str,
     data: Optional[dict[str, Any]] = None,
-):
+) -> None:
     """Make sure link type exists on a project.
 
     Args:
@@ -6321,7 +6324,7 @@ def create_link(
     output_id: str,
     output_type: str,
     link_name: Optional[str] = None,
-):
+) -> CreateLinkData:
     """Create link between 2 entities.
 
     Link has a type which must already exists on a project.
@@ -6343,7 +6346,7 @@ def create_link(
             Available from server version '1.0.0-rc.6'.
 
     Returns:
-        dict[str, str]: Information about link.
+        CreateLinkData: Information about link.
 
     Raises:
         HTTPRequestError: Server error happened.
@@ -6364,7 +6367,7 @@ def create_link(
 def delete_link(
     project_name: str,
     link_id: str,
-):
+) -> None:
     """Remove link by id.
 
     Args:
@@ -6387,7 +6390,7 @@ def get_entities_links(
     entity_type: str,
     entity_ids: Optional[Iterable[str]] = None,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
     link_names: Optional[Iterable[str]] = None,
     link_name_regex: Optional[str] = None,
 ) -> dict[str, list[dict[str, Any]]]:
@@ -6446,7 +6449,7 @@ def get_folders_links(
     project_name: str,
     folder_ids: Optional[Iterable[str]] = None,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Query folders links from server.
 
@@ -6475,7 +6478,7 @@ def get_folder_links(
     project_name: str,
     folder_id: str,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> list[dict[str, Any]]:
     """Query folder links from server.
 
@@ -6503,7 +6506,7 @@ def get_tasks_links(
     project_name: str,
     task_ids: Optional[Iterable[str]] = None,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Query tasks links from server.
 
@@ -6532,7 +6535,7 @@ def get_task_links(
     project_name: str,
     task_id: str,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> list[dict[str, Any]]:
     """Query task links from server.
 
@@ -6560,7 +6563,7 @@ def get_products_links(
     project_name: str,
     product_ids: Optional[Iterable[str]] = None,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Query products links from server.
 
@@ -6589,7 +6592,7 @@ def get_product_links(
     project_name: str,
     product_id: str,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> list[dict[str, Any]]:
     """Query product links from server.
 
@@ -6617,7 +6620,7 @@ def get_versions_links(
     project_name: str,
     version_ids: Optional[Iterable[str]] = None,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Query versions links from server.
 
@@ -6646,7 +6649,7 @@ def get_version_links(
     project_name: str,
     version_id: str,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> list[dict[str, Any]]:
     """Query version links from server.
 
@@ -6674,7 +6677,7 @@ def get_representations_links(
     project_name: str,
     representation_ids: Optional[Iterable[str]] = None,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Query representations links from server.
 
@@ -6703,7 +6706,7 @@ def get_representation_links(
     project_name: str,
     representation_id: str,
     link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
+    link_direction: Optional[LinkDirection] = None,
 ) -> list[dict[str, Any]]:
     """Query representation links from server.
 
@@ -6805,7 +6808,7 @@ def get_entity_list_by_id(
 
 def create_entity_list(
     project_name: str,
-    entity_type: "EntityListEntityType",
+    entity_type: EntityListEntityType,
     label: str,
     *,
     list_type: Optional[str] = None,
@@ -6920,7 +6923,7 @@ def delete_entity_list(
 def get_entity_list_attribute_definitions(
     project_name: str,
     list_id: str,
-) -> list["EntityListAttributeDefinitionDict"]:
+) -> list[EntityListAttributeDefinitionDict]:
     """Get attribute definitioins on entity list.
 
     Args:
@@ -6942,7 +6945,7 @@ def get_entity_list_attribute_definitions(
 def set_entity_list_attribute_definitions(
     project_name: str,
     list_id: str,
-    attribute_definitions: list["EntityListAttributeDefinitionDict"],
+    attribute_definitions: list[EntityListAttributeDefinitionDict],
 ) -> None:
     """Set attribute definitioins on entity list.
 
@@ -7005,7 +7008,7 @@ def update_entity_list_items(
     project_name: str,
     list_id: str,
     items: list[dict[str, Any]],
-    mode: "EntityListItemMode",
+    mode: EntityListItemMode,
 ) -> None:
     """Update items in entity list.
 
@@ -7300,7 +7303,7 @@ def update_thumbnail(
     project_name: str,
     thumbnail_id: str,
     src_filepath: str,
-):
+) -> None:
     """Change thumbnail content by id.
 
     Update can be also used to create new thumbnail.

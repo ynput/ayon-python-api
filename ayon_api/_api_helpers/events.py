@@ -145,7 +145,7 @@ class EventsAPI(BaseServerAPI):
         payload: Optional[dict[str, Any]] = None,
         progress: Optional[int] = None,
         retries: Optional[int] = None,
-    ):
+    ) -> None:
         """Update event data.
 
         Args:
@@ -198,7 +198,7 @@ class EventsAPI(BaseServerAPI):
         finished: bool = True,
         store: bool = True,
         dependencies: Optional[list[str]] = None,
-    ):
+    ) -> RestApiResponse:
         """Dispatch event to server.
 
         Args:
@@ -213,8 +213,8 @@ class EventsAPI(BaseServerAPI):
                 be used for simple filtering on listeners.
             payload (Optional[dict[str, Any]]): Full payload of event data with
                 all details.
-            finished (Optional[bool]): Mark event as finished on dispatch.
-            store (Optional[bool]): Store event in event queue for possible
+            finished (bool): Mark event as finished on dispatch.
+            store (bool): Store event in event queue for possible
                 future processing otherwise is event send only
                 to active listeners.
             dependencies (Optional[list[str]]): Deprecated.
@@ -256,7 +256,7 @@ class EventsAPI(BaseServerAPI):
         response.raise_for_status()
         return response
 
-    def delete_event(self, event_id: str):
+    def delete_event(self, event_id: str) -> None:
         """Delete event by id.
 
         Supported since AYON server 1.6.0.
@@ -270,16 +270,15 @@ class EventsAPI(BaseServerAPI):
         """
         response = self.delete(f"events/{event_id}")
         response.raise_for_status()
-        return response
 
     def enroll_event_job(
         self,
-        source_topic: "Union[str, list[str]]",
+        source_topic: Union[str, list[str]],
         target_topic: str,
         sender: str,
         description: Optional[str] = None,
         sequential: Optional[bool] = None,
-        events_filter: Optional["EventFilter"] = None,
+        events_filter: Optional[EventFilter] = None,
         max_retries: Optional[int] = None,
         ignore_older_than: Optional[str] = None,
         ignore_sender_types: Optional[str] = None,

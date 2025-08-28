@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:
 class VersionsAPI(BaseServerAPI):
     def get_rest_version(
         self, project_name: str, version_id: str
-    ) -> Optional["VersionDict"]:
+    ) -> Optional[VersionDict]:
         return self.get_rest_entity_by_id(project_name, "version", version_id)
 
     def get_versions(
@@ -39,7 +39,7 @@ class VersionsAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Generator["VersionDict", None, None]:
+    ) -> Generator[VersionDict, None, None]:
         """Get version entities based on passed filters from server.
 
         Args:
@@ -164,7 +164,7 @@ class VersionsAPI(BaseServerAPI):
         version_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Optional["VersionDict"]:
+    ) -> Optional[VersionDict]:
         """Query version entity by id.
 
         Args:
@@ -200,7 +200,7 @@ class VersionsAPI(BaseServerAPI):
         product_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Optional["VersionDict"]:
+    ) -> Optional[VersionDict]:
         """Query version entity by version and product id.
 
         Args:
@@ -236,7 +236,7 @@ class VersionsAPI(BaseServerAPI):
         version_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Optional["VersionDict"]:
+    ) -> Optional[VersionDict]:
         """Query hero version entity by id.
 
         Args:
@@ -269,7 +269,7 @@ class VersionsAPI(BaseServerAPI):
         product_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
-    ) -> Optional["VersionDict"]:
+    ) -> Optional[VersionDict]:
         """Query hero version entity by product id.
 
         Only one hero version is available on a product.
@@ -306,7 +306,7 @@ class VersionsAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Generator["VersionDict", None, None]:
+    ) -> Generator[VersionDict, None, None]:
         """Query hero versions by multiple filters.
 
         Only one hero version is available on a product.
@@ -346,7 +346,7 @@ class VersionsAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> dict[str, Optional["VersionDict"]]:
+    ) -> dict[str, Optional[VersionDict]]:
         """Query last version entities by product ids.
 
         Args:
@@ -391,7 +391,7 @@ class VersionsAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Optional["VersionDict"]:
+    ) -> Optional[VersionDict]:
         """Query last version entity by product id.
 
         Args:
@@ -429,7 +429,7 @@ class VersionsAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
-    ) -> Optional["VersionDict"]:
+    ) -> Optional[VersionDict]:
         """Query last version entity by product name and folder id.
 
         Args:
@@ -572,7 +572,7 @@ class VersionsAPI(BaseServerAPI):
         status: Optional[str] = None,
         active: Optional[bool] = None,
         thumbnail_id: Optional[str] = NOT_SET,
-    ):
+    ) -> None:
         """Update version entity on server.
 
         Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
@@ -626,7 +626,7 @@ class VersionsAPI(BaseServerAPI):
         )
         response.raise_for_status()
 
-    def delete_version(self, project_name: str, version_id: str):
+    def delete_version(self, project_name: str, version_id: str) -> None:
         """Delete version.
 
         Args:

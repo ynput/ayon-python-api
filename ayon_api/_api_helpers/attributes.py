@@ -21,7 +21,7 @@ class AttributesAPI(BaseServerAPI):
 
     def get_attributes_schema(
         self, use_cache: bool = True
-    ) -> "AttributesSchemaDict":
+    ) -> AttributesSchemaDict:
         if not use_cache:
             self.reset_attributes_schema()
 
@@ -31,18 +31,18 @@ class AttributesAPI(BaseServerAPI):
             self._attributes_schema = result.data
         return copy.deepcopy(self._attributes_schema)
 
-    def reset_attributes_schema(self):
+    def reset_attributes_schema(self) -> None:
         self._attributes_schema = None
         self._entity_type_attributes_cache = {}
 
     def set_attribute_config(
         self,
         attribute_name: str,
-        data: "AttributeSchemaDataDict",
-        scope: list["AttributeScope"],
+        data: AttributeSchemaDataDict,
+        scope: list[AttributeScope],
         position: Optional[int] = None,
         builtin: bool = False,
-    ):
+    ) -> None:
         if position is None:
             attributes = self.get("attributes").data["attributes"]
             origin_attr = next(
@@ -73,7 +73,7 @@ class AttributesAPI(BaseServerAPI):
 
         self.reset_attributes_schema()
 
-    def remove_attribute_config(self, attribute_name: str):
+    def remove_attribute_config(self, attribute_name: str) -> None:
         """Remove attribute from server.
 
         This can't be un-done, please use carefully.
@@ -91,8 +91,8 @@ class AttributesAPI(BaseServerAPI):
         self.reset_attributes_schema()
 
     def get_attributes_for_type(
-        self, entity_type: "AttributeScope"
-    ) -> dict[str, "AttributeSchemaDict"]:
+        self, entity_type: AttributeScope
+    ) -> dict[str, AttributeSchemaDict]:
         """Get attribute schemas available for an entity type.
 
         Example::
@@ -144,7 +144,7 @@ class AttributesAPI(BaseServerAPI):
         return copy.deepcopy(attributes)
 
     def get_attributes_fields_for_type(
-        self, entity_type: "AttributeScope"
+        self, entity_type: AttributeScope
     ) -> set[str]:
         """Prepare attribute fields for entity type.
 

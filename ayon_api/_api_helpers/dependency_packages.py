@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
 
 
 class DependencyPackagesAPI(BaseServerAPI):
-    def get_dependency_packages(self) -> "DependencyPackagesDict":
+    def get_dependency_packages(self) -> DependencyPackagesDict:
         """Information about dependency packages on server.
 
         To download dependency package, use 'download_dependency_package'
@@ -59,7 +59,7 @@ class DependencyPackagesAPI(BaseServerAPI):
         file_size: int,
         sources: Optional[list[dict[str, Any]]] = None,
         platform_name: Optional[str] = None,
-    ):
+    ) -> None:
         """Create dependency package on server.
 
         The package will be created on a server, it is also required to upload
@@ -108,7 +108,7 @@ class DependencyPackagesAPI(BaseServerAPI):
 
     def update_dependency_package(
         self, filename: str, sources: list[dict[str, Any]]
-    ):
+    ) -> None:
         """Update dependency package metadata on server.
 
         Args:
@@ -126,7 +126,7 @@ class DependencyPackagesAPI(BaseServerAPI):
 
     def delete_dependency_package(
         self, filename: str, platform_name: Optional[str] = None
-    ):
+    ) -> None:
         """Remove dependency package for specific platform.
 
         Args:
@@ -147,7 +147,6 @@ class DependencyPackagesAPI(BaseServerAPI):
         route = self._get_dependency_package_route(filename)
         response = self.delete(route)
         response.raise_for_status("Failed to delete dependency file")
-        return response.data
 
     def download_dependency_package(
         self,
@@ -203,7 +202,7 @@ class DependencyPackagesAPI(BaseServerAPI):
         dst_filename: str,
         platform_name: Optional[str] = None,
         progress: Optional[TransferProgress] = None,
-    ):
+    ) -> None:
         """Upload dependency package to server.
 
         Args:

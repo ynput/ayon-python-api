@@ -113,7 +113,7 @@ class ListsAPI(BaseServerAPI):
     def create_entity_list(
         self,
         project_name: str,
-        entity_type: "EntityListEntityType",
+        entity_type: EntityListEntityType,
         label: str,
         *,
         list_type: Optional[str] = None,
@@ -237,7 +237,7 @@ class ListsAPI(BaseServerAPI):
 
     def get_entity_list_attribute_definitions(
         self, project_name: str, list_id: str
-    ) -> list["EntityListAttributeDefinitionDict"]:
+    ) -> list[EntityListAttributeDefinitionDict]:
         """Get attribute definitioins on entity list.
 
         Args:
@@ -259,7 +259,7 @@ class ListsAPI(BaseServerAPI):
         self,
         project_name: str,
         list_id: str,
-        attribute_definitions: list["EntityListAttributeDefinitionDict"],
+        attribute_definitions: list[EntityListAttributeDefinitionDict],
     ) -> None:
         """Set attribute definitioins on entity list.
 
@@ -332,7 +332,7 @@ class ListsAPI(BaseServerAPI):
         project_name: str,
         list_id: str,
         items: list[dict[str, Any]],
-        mode: "EntityListItemMode",
+        mode: EntityListItemMode,
     ) -> None:
         """Update items in entity list.
 

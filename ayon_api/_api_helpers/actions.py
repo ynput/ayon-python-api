@@ -23,14 +23,14 @@ class ActionsAPI(BaseServerAPI):
     def get_actions(
         self,
         project_name: Optional[str] = None,
-        entity_type: Optional["ActionEntityTypes"] = None,
+        entity_type: Optional[ActionEntityTypes] = None,
         entity_ids: Optional[list[str]] = None,
         entity_subtypes: Optional[list[str]] = None,
         form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
-        mode: Optional["ActionModeType"] = None,
-    ) -> list["ActionManifestDict"]:
+        mode: Optional[ActionModeType] = None,
+    ) -> list[ActionManifestDict]:
         """Get actions for a context.
 
         Args:
@@ -77,13 +77,13 @@ class ActionsAPI(BaseServerAPI):
         addon_name: str,
         addon_version: str,
         project_name: Optional[str] = None,
-        entity_type: Optional["ActionEntityTypes"] = None,
+        entity_type: Optional[ActionEntityTypes] = None,
         entity_ids: Optional[list[str]] = None,
         entity_subtypes: Optional[list[str]] = None,
         form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
-    ) -> "ActionTriggerResponse":
+    ) -> ActionTriggerResponse:
         """Trigger action.
 
         Args:
@@ -134,13 +134,13 @@ class ActionsAPI(BaseServerAPI):
         addon_name: str,
         addon_version: str,
         project_name: Optional[str] = None,
-        entity_type: Optional["ActionEntityTypes"] = None,
+        entity_type: Optional[ActionEntityTypes] = None,
         entity_ids: Optional[list[str]] = None,
         entity_subtypes: Optional[list[str]] = None,
         form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
-    ) -> "ActionConfigResponse":
+    ) -> ActionConfigResponse:
         """Get action configuration.
 
         Args:
@@ -182,13 +182,13 @@ class ActionsAPI(BaseServerAPI):
         addon_version: str,
         value: dict[str, Any],
         project_name: Optional[str] = None,
-        entity_type: Optional["ActionEntityTypes"] = None,
+        entity_type: Optional[ActionEntityTypes] = None,
         entity_ids: Optional[list[str]] = None,
         entity_subtypes: Optional[list[str]] = None,
         form_data: Optional[dict[str, Any]] = None,
         *,
         variant: Optional[str] = None,
-    ) -> "ActionConfigResponse":
+    ) -> ActionConfigResponse:
         """Set action configuration.
 
         Args:
@@ -225,7 +225,7 @@ class ActionsAPI(BaseServerAPI):
             variant,
         )
 
-    def take_action(self, action_token: str) -> "ActionTakeResponse":
+    def take_action(self, action_token: str) -> ActionTakeResponse:
         """Take action metadata using an action token.
 
         Args:
@@ -267,12 +267,12 @@ class ActionsAPI(BaseServerAPI):
         addon_version: str,
         value: Optional[dict[str, Any]],
         project_name: Optional[str],
-        entity_type: Optional["ActionEntityTypes"],
+        entity_type: Optional[ActionEntityTypes],
         entity_ids: Optional[list[str]],
         entity_subtypes: Optional[list[str]],
         form_data: Optional[dict[str, Any]],
         variant: Optional[str],
-    ) -> "ActionConfigResponse":
+    ) -> ActionConfigResponse:
         """Set and get action configuration."""
         if variant is None:
             variant = self.get_default_settings_variant()

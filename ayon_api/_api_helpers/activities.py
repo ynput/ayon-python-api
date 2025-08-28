@@ -24,13 +24,13 @@ class ActivitiesAPI(BaseServerAPI):
         self,
         project_name: str,
         activity_ids: Optional[Iterable[str]] = None,
-        activity_types: Optional[Iterable["ActivityType"]] = None,
+        activity_types: Optional[Iterable[ActivityType]] = None,
         entity_ids: Optional[Iterable[str]] = None,
         entity_names: Optional[Iterable[str]] = None,
         entity_type: Optional[str] = None,
         changed_after: Optional[str] = None,
         changed_before: Optional[str] = None,
-        reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+        reference_types: Optional[Iterable[ActivityReferenceType]] = None,
         fields: Optional[Iterable[str]] = None,
         limit: Optional[int] = None,
         order: Optional[SortOrder] = None,
@@ -109,7 +109,7 @@ class ActivitiesAPI(BaseServerAPI):
         self,
         project_name: str,
         activity_id: str,
-        reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
+        reference_types: Optional[Iterable[ActivityReferenceType]] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Optional[dict[str, Any]]:
         """Get activity by id.
@@ -141,7 +141,7 @@ class ActivitiesAPI(BaseServerAPI):
         project_name: str,
         entity_id: str,
         entity_type: str,
-        activity_type: "ActivityType",
+        activity_type: ActivityType,
         activity_id: Optional[str] = None,
         body: Optional[str] = None,
         file_ids: Optional[list[str]] = None,
@@ -194,7 +194,7 @@ class ActivitiesAPI(BaseServerAPI):
         file_ids: Optional[list[str]] = None,
         append_file_ids: Optional[bool] = False,
         data: Optional[dict[str, Any]] = None,
-    ):
+    ) -> None:
         """Update activity by id.
 
         Args:
@@ -242,7 +242,7 @@ class ActivitiesAPI(BaseServerAPI):
         )
         response.raise_for_status()
 
-    def delete_activity(self, project_name: str, activity_id: str):
+    def delete_activity(self, project_name: str, activity_id: str) -> None:
         """Delete activity by id.
 
         Args:

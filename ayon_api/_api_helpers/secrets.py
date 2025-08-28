@@ -8,7 +8,7 @@ if typing.TYPE_CHECKING:
 
 
 class SecretsAPI(BaseServerAPI):
-    def get_secrets(self) -> list["SecretDict"]:
+    def get_secrets(self) -> list[SecretDict]:
         """Get all secrets.
 
         Example output::
@@ -32,7 +32,7 @@ class SecretsAPI(BaseServerAPI):
         response.raise_for_status()
         return response.data
 
-    def get_secret(self, secret_name: str) -> "SecretDict":
+    def get_secret(self, secret_name: str) -> SecretDict:
         """Get secret by name.
 
         Example output::

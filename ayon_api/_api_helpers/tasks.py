@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
 class TasksAPI(BaseServerAPI):
     def get_rest_task(
         self, project_name: str, task_id: str
-    ) -> Optional["TaskDict"]:
+    ) -> Optional[TaskDict]:
         return self.get_rest_entity_by_id(project_name, "task", task_id)
 
     def get_tasks(
@@ -40,7 +40,7 @@ class TasksAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
-    ) -> Generator["TaskDict", None, None]:
+    ) -> Generator[TaskDict, None, None]:
         """Query task entities from server.
 
         Args:
@@ -122,7 +122,7 @@ class TasksAPI(BaseServerAPI):
         task_name: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
-    ) -> Optional["TaskDict"]:
+    ) -> Optional[TaskDict]:
         """Query task entity by name and folder id.
 
         Args:
@@ -156,7 +156,7 @@ class TasksAPI(BaseServerAPI):
         task_id: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
-    ) -> Optional["TaskDict"]:
+    ) -> Optional[TaskDict]:
         """Query task entity by id.
 
         Args:
@@ -195,7 +195,7 @@ class TasksAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
-    ) -> dict[str, list["TaskDict"]]:
+    ) -> dict[str, list[TaskDict]]:
         """Query task entities from server by folder paths.
 
         Args:
@@ -289,7 +289,7 @@ class TasksAPI(BaseServerAPI):
         active: Optional[bool] = True,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
-    ) -> list["TaskDict"]:
+    ) -> list[TaskDict]:
         """Query task entities from server by folder path.
 
         Args:
@@ -337,7 +337,7 @@ class TasksAPI(BaseServerAPI):
         task_name: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
-    ) -> Optional["TaskDict"]:
+    ) -> Optional[TaskDict]:
         """Query task entity by folder path and task name.
 
         Args:
@@ -445,7 +445,7 @@ class TasksAPI(BaseServerAPI):
         status: Optional[str] = None,
         active: Optional[bool] = None,
         thumbnail_id: Optional[str] = NOT_SET,
-    ):
+    ) -> None:
         """Update task entity on server.
 
         Do not pass ``label`` amd ``thumbnail_id`` if you don't
@@ -501,7 +501,7 @@ class TasksAPI(BaseServerAPI):
         )
         response.raise_for_status()
 
-    def delete_task(self, project_name: str, task_id: str):
+    def delete_task(self, project_name: str, task_id: str) -> None:
         """Delete task.
 
         Args:

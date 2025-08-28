@@ -21,7 +21,7 @@ class BaseServerAPI:
     def get_server_version(self) -> str:
         raise NotImplementedError()
 
-    def get_server_version_tuple(self) -> "ServerVersion":
+    def get_server_version_tuple(self) -> ServerVersion:
         raise NotImplementedError()
 
     def get_base_url(self) -> str:
@@ -93,7 +93,7 @@ class BaseServerAPI:
         project_name: str,
         entity_type: str,
         entity_id: str,
-    ) -> Optional["AnyEntityDict"]:
+    ) -> Optional[AnyEntityDict]:
         raise NotImplementedError()
 
     def get_project(
@@ -101,7 +101,7 @@ class BaseServerAPI:
         project_name: str,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
-    ) -> Optional["ProjectDict"]:
+    ) -> Optional[ProjectDict]:
         raise NotImplementedError()
 
     def _prepare_fields(
@@ -112,7 +112,7 @@ class BaseServerAPI:
     ):
         raise NotImplementedError()
 
-    def _convert_entity_data(self, entity: "AnyEntityDict"):
+    def _convert_entity_data(self, entity: AnyEntityDict):
         raise NotImplementedError()
 
     def _send_batch_operations(
