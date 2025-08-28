@@ -4,7 +4,7 @@ import warnings
 import typing
 from typing import Optional, Any, Iterable, Generator
 
-from ayon_api.utils import SortOrder, prepare_list_filters
+from ayon_api.utils import SortOrder, prepare_list_filters, RestApiResponse
 from ayon_api.graphql_queries import events_graphql_query
 
 from .base import BaseServerAPI
@@ -12,7 +12,7 @@ from .base import BaseServerAPI
 if typing.TYPE_CHECKING:
     from typing import Union
 
-    from ayon_api.typing import EventFilter
+    from ayon_api.typing import EventFilter, EventStatus, EnrollEventData
 
 
 class EventsAPI(BaseServerAPI):
@@ -38,7 +38,7 @@ class EventsAPI(BaseServerAPI):
         topics: Optional[Iterable[str]] = None,
         event_ids: Optional[Iterable[str]] = None,
         project_names: Optional[Iterable[str]] = None,
-        statuses: Optional[Iterable[str]] = None,
+        statuses: Optional[Iterable[EventStatus]] = None,
         users: Optional[Iterable[str]] = None,
         include_logs: Optional[bool] = None,
         has_children: Optional[bool] = None,
@@ -59,7 +59,7 @@ class EventsAPI(BaseServerAPI):
             event_ids (Optional[Iterable[str]]): Event ids.
             project_names (Optional[Iterable[str]]): Project on which
                 event happened.
-            statuses (Optional[Iterable[str]]): Filtering by statuses.
+            statuses (Optional[Iterable[EventStatus]]): Filtering by statuses.
             users (Optional[Iterable[str]]): Filtering by users
                 who created/triggered an event.
             include_logs (Optional[bool]): Query also log events.
@@ -139,7 +139,7 @@ class EventsAPI(BaseServerAPI):
         sender: Optional[str] = None,
         project_name: Optional[str] = None,
         username: Optional[str] = None,
-        status: Optional[str] = None,
+        status: Optional[EventStatus] = None,
         description: Optional[str] = None,
         summary: Optional[dict[str, Any]] = None,
         payload: Optional[dict[str, Any]] = None,
@@ -153,7 +153,7 @@ class EventsAPI(BaseServerAPI):
             sender (Optional[str]): New sender of event.
             project_name (Optional[str]): New project name.
             username (Optional[str]): New username.
-            status (Optional[str]): New event status. Enum: "pending",
+            status (Optional[EventStatus]): New event status. Enum: "pending",
                 "in_progress", "finished", "failed", "aborted", "restarted"
             description (Optional[str]): New description.
             summary (Optional[dict[str, Any]]): New summary.
@@ -282,7 +282,7 @@ class EventsAPI(BaseServerAPI):
         max_retries: Optional[int] = None,
         ignore_older_than: Optional[str] = None,
         ignore_sender_types: Optional[str] = None,
-    ):
+    ) -> Optional[EnrollEventData]:
         """Enroll job based on events.
 
         Enroll will find first unprocessed event with 'source_topic' and will
@@ -337,7 +337,7 @@ class EventsAPI(BaseServerAPI):
                 by given sender types.
 
         Returns:
-            Optional[dict[str, Any]]: None if there is no event matching
+            Optional[EnrollEventData]: None if there is no event matching
                 filters. Created event with 'target_topic'.
 
         """

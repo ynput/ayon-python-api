@@ -342,6 +342,22 @@ AnyEntityDict = Union[
     ActivityDict,
 ]
 
+EventStatus = Literal[
+    "pending",
+    "in_progress",
+    "finished",
+    "failed",
+    "aborted",
+    "restarted",
+]
+
+
+class EnrollEventData(TypedDict):
+    id: str
+    dependsOn: str
+    hash: str
+    status: EventStatus
+
 
 class FlatFolderDict(TypedDict):
     id: str
