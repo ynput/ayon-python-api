@@ -32,6 +32,7 @@ from .utils import (
     get_default_settings_variant as _get_default_settings_variant,
     RepresentationParents,
     RepresentationHierarchy,
+    RestApiResponse,
 )
 from .server_api import (
     ServerAPI,
@@ -49,6 +50,8 @@ if typing.TYPE_CHECKING:
         EntityListItemMode,
         LinkDirection,
         EventFilter,
+        EventStatus,
+        EnrollEventData,
         AttributeScope,
         AttributeSchemaDataDict,
         AttributeSchemaDict,
@@ -80,6 +83,7 @@ if typing.TYPE_CHECKING:
         StreamType,
         EntityListAttributeDefinitionDict,
     )
+    from ._api_helpers.links import CreateLinkData
 
 
 class GlobalServerAPI(ServerAPI):
@@ -700,7 +704,7 @@ def get_server_version() -> str:
     return con.get_server_version()
 
 
-def get_server_version_tuple() -> "ServerVersion":
+def get_server_version_tuple() -> ServerVersion:
     """Get server version as tuple.
 
     Version should match semantic version (https://semver.org/).
@@ -908,7 +912,7 @@ def delete(
 
 def download_file_to_stream(
     endpoint: str,
-    stream: "StreamType",
+    stream: StreamType,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
 ) -> TransferProgress:
@@ -981,7 +985,7 @@ def download_file(
 
 def upload_file_from_stream(
     endpoint: str,
-    stream: "StreamType",
+    stream: StreamType,
     progress: Optional[TransferProgress] = None,
     request_type: Optional[RequestType] = None,
     **kwargs,
@@ -1188,7 +1192,7 @@ def get_rest_entity_by_id(
     project_name: str,
     entity_type: str,
     entity_id: str,
-) -> Optional["AnyEntityDict"]:
+) -> Optional[AnyEntityDict]:
     """Get entity using REST on a project by its id.
 
     Args:

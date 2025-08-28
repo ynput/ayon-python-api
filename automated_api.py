@@ -136,7 +136,7 @@ def _find_obj(obj_full, api_globals):
 
 def _get_typehint(annotation, api_globals):
     if isinstance(annotation, str):
-        annotation = annotation.replace("'", '"')
+        annotation = annotation.replace("'", "")
 
     if inspect.isclass(annotation):
         module_name = str(annotation.__module__)
@@ -148,7 +148,7 @@ def _get_typehint(annotation, api_globals):
             return obj_name
 
         print("Unknown typehint:", full_name)
-        return f'"{full_name}"'
+        return full_name
 
     typehint = (
         str(annotation)
@@ -213,12 +213,12 @@ def _get_typehint(annotation, api_globals):
         _typehing_parents.append(parent)
 
     if _typehing_parents:
-        typehint = f'{_typehint}'
+        typehint = _typehint
         for parent in reversed(_typehing_parents):
             typehint = f"{parent}[{typehint}]"
         return typehint
 
-    return f'{typehint}'
+    return typehint
 
 
 def _get_param_typehint(param, api_globals):
