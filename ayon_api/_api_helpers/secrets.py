@@ -53,7 +53,7 @@ class SecretsAPI(BaseServerAPI):
         response.raise_for_status()
         return response.data
 
-    def save_secret(self, secret_name: str, secret_value: str):
+    def save_secret(self, secret_name: str, secret_value: str) -> None:
         """Save secret.
 
         This endpoint can create and update secret.
@@ -69,9 +69,8 @@ class SecretsAPI(BaseServerAPI):
             value=secret_value,
         )
         response.raise_for_status()
-        return response.data
 
-    def delete_secret(self, secret_name: str):
+    def delete_secret(self, secret_name: str) -> None:
         """Delete secret by name.
 
         Args:
@@ -80,4 +79,3 @@ class SecretsAPI(BaseServerAPI):
         """
         response = self.delete(f"secrets/{secret_name}")
         response.raise_for_status()
-        return response.data
