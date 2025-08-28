@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing
 from typing import Optional, Any, Iterable
 
@@ -18,6 +19,10 @@ _PLACEHOLDER = object()
 
 
 class BaseServerAPI:
+    @property
+    def log(self) -> logging.Logger:
+        raise NotImplementedError()
+
     def get_server_version(self) -> str:
         raise NotImplementedError()
 
