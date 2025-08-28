@@ -118,7 +118,7 @@ class EventsAPI(BaseServerAPI):
         if not fields:
             fields = self.get_default_fields_for_type("event")
 
-        major, minor, patch, _, _ = self.server_version_tuple
+        major, minor, patch, _, _ = self.get_server_version_tuple()
         use_states = (major, minor, patch) <= (1, 5, 6)
 
         query = events_graphql_query(set(fields), order, use_states)
