@@ -436,7 +436,7 @@ class AbstractOperation(ABC):
         return self._session
 
     @property
-    def con(self) -> "ServerAPI":
+    def con(self) -> ServerAPI:
         return self.session.con
 
     def to_data(self) -> dict[str, Any]:
@@ -644,7 +644,7 @@ class OperationsSession(object):
             is used if not passed.
 
     """
-    def __init__(self, con: Optional["ServerAPI"] = None) -> None:
+    def __init__(self, con: Optional[ServerAPI] = None) -> None:
         if con is None:
             con = get_server_api_connection()
         self._con = con
@@ -653,7 +653,7 @@ class OperationsSession(object):
         self._nested_operations = collections.defaultdict(list)
 
     @property
-    def con(self) -> "ServerAPI":
+    def con(self) -> ServerAPI:
         return self._con
 
     def get_project(
