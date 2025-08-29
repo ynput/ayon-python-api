@@ -20,7 +20,6 @@ import inspect
 import typing
 
 # Fake modules to avoid import errors
-
 requests = type(sys)("requests")
 requests.__dict__["Response"] = type(
     "Response", (), {"__module__": "requests"}
@@ -29,14 +28,7 @@ requests.__dict__["Response"] = type(
 sys.modules["requests"] = requests
 sys.modules["unidecode"] = type(sys)("unidecode")
 
-import ayon_api  # noqa: E402
-from ayon_api.server_api import (  # noqa: E402
-    ServerAPI,
-    _PLACEHOLDER,
-    _ActionsAPI,
-    _ListsAPI,
-)
-from ayon_api.utils import NOT_SET  # noqa: E402
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 EXCLUDED_METHODS = {
     "get_default_service_username",
@@ -125,34 +117,38 @@ def prepare_docstring(func):
     return f'"""{docstring}{line_char}\n"""'
 
 
+def _find_obj(obj_full, api_globals):
+    parts = list(reversed(obj_full.split(".")))
+    _name = None
+    for part in parts:
+        if _name is None:
+            _name = part
+        else:
+            _name = f"{part}.{_name}"
+        try:
+            # Test if typehint is valid for known '_api' content
+            exec(f"_: {_name} = None", api_globals)
+            return _name
+        except NameError:
+            pass
+    return None
+
+
 def _get_typehint(annotation, api_globals):
+    if isinstance(annotation, str):
+        annotation = annotation.replace("'", "")
+
     if inspect.isclass(annotation):
-        module_name_parts = list(str(annotation.__module__).split("."))
-        module_name_parts.append(annotation.__name__)
-        module_name_parts.reverse()
-        options = []
-        _name = None
-        for name in module_name_parts:
-            if _name is None:
-                _name = name
-                options.append(name)
-            else:
-                _name = f"{name}.{_name}"
-                options.append(_name)
+        module_name = str(annotation.__module__)
+        full_name = annotation.__name__
+        if module_name:
+            full_name = f"{module_name}.{full_name}"
+        obj_name = _find_obj(full_name, api_globals)
+        if obj_name is not None:
+            return obj_name
 
-        options.reverse()
-        for option in options:
-            try:
-                # Test if typehint is valid for known '_api' content
-                exec(f"_: {option} = None", api_globals)
-                return option
-            except NameError:
-                pass
-
-        typehint = options[0]
-        print("Unknown typehint:", typehint)
-        typehint = f'"{typehint}"'
-        return typehint
+        print("Unknown typehint:", full_name)
+        return full_name
 
     typehint = (
         str(annotation)
@@ -161,9 +157,15 @@ def _get_typehint(annotation, api_globals):
     full_path_regex = re.compile(
         r"(?P<full>(?P<name>[a-zA-Z0-9_\.]+))"
     )
+
     for item in full_path_regex.finditer(str(typehint)):
         groups = item.groupdict()
-        name = groups["name"].split(".")[-1]
+        name = groups["name"]
+        obj_name = _find_obj(name, api_globals)
+        if obj_name:
+            name = obj_name
+        else:
+            name = name.split(".")[-1]
         typehint = typehint.replace(groups["full"], name)
 
     forwardref_regex = re.compile(
@@ -171,15 +173,51 @@ def _get_typehint(annotation, api_globals):
     )
     for item in forwardref_regex.finditer(str(typehint)):
         groups = item.groupdict()
-        name = groups["name"].split(".")[-1]
-        typehint = typehint.replace(groups["full"], f'"{name}"')
+        name = groups["name"]
+        obj_name = _find_obj(name, api_globals)
+        if obj_name:
+            name = obj_name
+        else:
+            name = name.split(".")[-1]
+        typehint = typehint.replace(groups["full"], name)
 
     try:
         # Test if typehint is valid for known '_api' content
         exec(f"_: {typehint} = None", api_globals)
+        return typehint
     except NameError:
         print("Unknown typehint:", typehint)
-        typehint = f'"{typehint}"'
+
+    _typehint = typehint
+    _typehing_parents = []
+    while True:
+        # Too hard to manage typehints with commas
+        if "[" not in _typehint:
+            break
+
+        parts = _typehint.split("[")
+        parent = parts.pop(0)
+
+        try:
+            # Test if typehint is valid for known '_api' content
+            exec(f"_: {parent} = None", api_globals)
+        except NameError:
+            _typehint = parent
+            break
+
+        _typehint = "[".join(parts)[:-1]
+        if "," in _typehint:
+            _typing = parent
+            break
+
+        _typehing_parents.append(parent)
+
+    if _typehing_parents:
+        typehint = _typehint
+        for parent in reversed(_typehing_parents):
+            typehint = f"{parent}[{typehint}]"
+        return typehint
+
     return typehint
 
 
@@ -197,6 +235,9 @@ def _add_typehint(param_name, param, api_globals):
 
 
 def _kw_default_to_str(param_name, param, api_globals):
+    from ayon_api._api_helpers.base import _PLACEHOLDER
+    from ayon_api.utils import NOT_SET
+
     if param.default is inspect.Parameter.empty:
         return _add_typehint(param_name, param, api_globals)
 
@@ -292,11 +333,54 @@ def sig_params_to_str(sig, param_names, api_globals, indent=0):
 
 
 def prepare_api_functions(api_globals):
+    from ayon_api.server_api import (  # noqa: E402
+        ServerAPI,
+        InstallersAPI,
+        DependencyPackagesAPI,
+        SecretsAPI,
+        BundlesAddonsAPI,
+        EventsAPI,
+        AttributesAPI,
+        ProjectsAPI,
+        FoldersAPI,
+        TasksAPI,
+        ProductsAPI,
+        VersionsAPI,
+        RepresentationsAPI,
+        WorkfilesAPI,
+        ThumbnailsAPI,
+        ActivitiesAPI,
+        ActionsAPI,
+        LinksAPI,
+        ListsAPI,
+    )
+
     functions = []
     _items = list(ServerAPI.__dict__.items())
-    _items.extend(_ActionsAPI.__dict__.items())
-    _items.extend(_ListsAPI.__dict__.items())
+    _items.extend(InstallersAPI.__dict__.items())
+    _items.extend(DependencyPackagesAPI.__dict__.items())
+    _items.extend(SecretsAPI.__dict__.items())
+    _items.extend(ActionsAPI.__dict__.items())
+    _items.extend(ActivitiesAPI.__dict__.items())
+    _items.extend(BundlesAddonsAPI.__dict__.items())
+    _items.extend(EventsAPI.__dict__.items())
+    _items.extend(AttributesAPI.__dict__.items())
+    _items.extend(ProjectsAPI.__dict__.items())
+    _items.extend(FoldersAPI.__dict__.items())
+    _items.extend(TasksAPI.__dict__.items())
+    _items.extend(ProductsAPI.__dict__.items())
+    _items.extend(VersionsAPI.__dict__.items())
+    _items.extend(RepresentationsAPI.__dict__.items())
+    _items.extend(WorkfilesAPI.__dict__.items())
+    _items.extend(LinksAPI.__dict__.items())
+    _items.extend(ListsAPI.__dict__.items())
+    _items.extend(ThumbnailsAPI.__dict__.items())
+
+    processed = set()
     for attr_name, attr in _items:
+        if attr_name in processed:
+            continue
+        processed.add(attr_name)
         if (
             attr_name.startswith("_")
             or attr_name in EXCLUDED_METHODS
@@ -334,10 +418,7 @@ def prepare_api_functions(api_globals):
 def main():
     print("Creating public API functions based on ServerAPI methods")
     # TODO order methods in some order
-    dirpath = os.path.dirname(os.path.dirname(
-        os.path.abspath(ayon_api.__file__)
-    ))
-    ayon_api_root = os.path.join(dirpath, "ayon_api")
+    ayon_api_root = os.path.join(CURRENT_DIR, "ayon_api")
     init_filepath = os.path.join(ayon_api_root, "__init__.py")
     api_filepath = os.path.join(ayon_api_root, "_api.py")
 
@@ -361,15 +442,13 @@ def main():
     # Read content of first part of `_api.py` to get global variables
     # - disable type checking so imports done only during typechecking are
     #   not executed
-    old_value = typing.TYPE_CHECKING
     typing.TYPE_CHECKING = False
     api_globals = {"__name__": "ayon_api._api"}
     exec(parts[0], api_globals)
+
     for attr_name in dir(__builtins__):
         api_globals[attr_name] = getattr(__builtins__, attr_name)
-    typing.TYPE_CHECKING = old_value
 
-    # print(api_globals)
     print("(3/5) Preparing functions body based on 'ServerAPI' class")
     result = prepare_api_functions(api_globals)
 

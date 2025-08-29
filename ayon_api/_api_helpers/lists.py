@@ -1,20 +1,23 @@
+from __future__ import annotations
+
 import json
 import typing
-from typing import Optional, Iterable, Any, Dict, List, Generator
+from typing import Optional, Iterable, Any, Generator
 
-from ._base import _BaseServerAPI
-from .utils import create_entity_id
-from .graphql_queries import entity_lists_graphql_query
+from ayon_api.utils import create_entity_id
+from ayon_api.graphql_queries import entity_lists_graphql_query
+
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from .typing import (
+    from ayon_api.typing import (
         EntityListEntityType,
         EntityListAttributeDefinitionDict,
         EntityListItemMode,
     )
 
 
-class _ListsAPI(_BaseServerAPI):
+class ListsAPI(BaseServerAPI):
     def get_entity_lists(
         self,
         project_name: str,
@@ -22,7 +25,7 @@ class _ListsAPI(_BaseServerAPI):
         list_ids: Optional[Iterable[str]] = None,
         active: Optional[bool] = None,
         fields: Optional[Iterable[str]] = None,
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[dict[str, Any], None, None]:
         """Fetch entity lists from server.
 
         Args:
@@ -33,7 +36,7 @@ class _ListsAPI(_BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to fetch from server.
 
         Returns:
-            Generator[Dict[str, Any], None, None]: Entity list entities
+            Generator[dict[str, Any], None, None]: Entity list entities
                 matching defined filters.
 
         """
@@ -44,7 +47,7 @@ class _ListsAPI(_BaseServerAPI):
         if active is not None:
             fields.add("active")
 
-        filters: Dict[str, Any] = {"projectName": project_name}
+        filters: dict[str, Any] = {"projectName": project_name}
         if list_ids is not None:
             if not list_ids:
                 return
@@ -69,7 +72,7 @@ class _ListsAPI(_BaseServerAPI):
 
     def get_entity_list_rest(
         self, project_name: str, list_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Get entity list by id using REST API.
 
         Args:
@@ -77,7 +80,7 @@ class _ListsAPI(_BaseServerAPI):
             list_id (str): Entity list id.
 
         Returns:
-            Optional[Dict[str, Any]]: Entity list data or None if not found.
+            Optional[dict[str, Any]]: Entity list data or None if not found.
 
         """
         response = self.get(f"projects/{project_name}/lists/{list_id}")
@@ -89,7 +92,7 @@ class _ListsAPI(_BaseServerAPI):
         project_name: str,
         list_id: str,
         fields: Optional[Iterable[str]] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Get entity list by id using GraphQl.
 
         Args:
@@ -98,7 +101,7 @@ class _ListsAPI(_BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to fetch from server.
 
         Returns:
-            Optional[Dict[str, Any]]: Entity list data or None if not found.
+            Optional[dict[str, Any]]: Entity list data or None if not found.
 
         """
         for entity_list in self.get_entity_lists(
@@ -110,18 +113,18 @@ class _ListsAPI(_BaseServerAPI):
     def create_entity_list(
         self,
         project_name: str,
-        entity_type: "EntityListEntityType",
+        entity_type: EntityListEntityType,
         label: str,
         *,
         list_type: Optional[str] = None,
-        access: Optional[Dict[str, Any]] = None,
-        attrib: Optional[List[Dict[str, Any]]] = None,
-        data: Optional[List[Dict[str, Any]]] = None,
-        tags: Optional[List[str]] = None,
-        template: Optional[Dict[str, Any]] = None,
+        access: Optional[dict[str, Any]] = None,
+        attrib: Optional[list[dict[str, Any]]] = None,
+        data: Optional[list[dict[str, Any]]] = None,
+        tags: Optional[list[str]] = None,
+        template: Optional[dict[str, Any]] = None,
         owner: Optional[str] = None,
         active: Optional[bool] = None,
-        items: Optional[List[Dict[str, Any]]] = None,
+        items: Optional[list[dict[str, Any]]] = None,
         list_id: Optional[str] = None,
     ) -> str:
         """Create entity list.
@@ -180,10 +183,10 @@ class _ListsAPI(_BaseServerAPI):
         list_id: str,
         *,
         label: Optional[str] = None,
-        access: Optional[Dict[str, Any]] = None,
-        attrib: Optional[List[Dict[str, Any]]] = None,
-        data: Optional[List[Dict[str, Any]]] = None,
-        tags: Optional[List[str]] = None,
+        access: Optional[dict[str, Any]] = None,
+        attrib: Optional[list[dict[str, Any]]] = None,
+        data: Optional[list[dict[str, Any]]] = None,
+        tags: Optional[list[str]] = None,
         owner: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> None:
@@ -234,7 +237,7 @@ class _ListsAPI(_BaseServerAPI):
 
     def get_entity_list_attribute_definitions(
         self, project_name: str, list_id: str
-    ) -> List["EntityListAttributeDefinitionDict"]:
+    ) -> list[EntityListAttributeDefinitionDict]:
         """Get attribute definitioins on entity list.
 
         Args:
@@ -242,7 +245,7 @@ class _ListsAPI(_BaseServerAPI):
             list_id (str): Entity list id.
 
         Returns:
-            List[EntityListAttributeDefinitionDict]: List of attribute
+            list[EntityListAttributeDefinitionDict]: List of attribute
                 definitions.
 
         """
@@ -256,14 +259,14 @@ class _ListsAPI(_BaseServerAPI):
         self,
         project_name: str,
         list_id: str,
-        attribute_definitions: List["EntityListAttributeDefinitionDict"],
+        attribute_definitions: list[EntityListAttributeDefinitionDict],
     ) -> None:
         """Set attribute definitioins on entity list.
 
         Args:
             project_name (str): Project name.
             list_id (str): Entity list id.
-            attribute_definitions (List[EntityListAttributeDefinitionDict]):
+            attribute_definitions (list[EntityListAttributeDefinitionDict]):
                 List of attribute definitions.
 
         """
@@ -280,9 +283,9 @@ class _ListsAPI(_BaseServerAPI):
         *,
         position: Optional[int] = None,
         label: Optional[str] = None,
-        attrib: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
         item_id: Optional[str] = None,
     ) -> str:
         """Create entity list item.
@@ -328,15 +331,15 @@ class _ListsAPI(_BaseServerAPI):
         self,
         project_name: str,
         list_id: str,
-        items: List[Dict[str, Any]],
-        mode: "EntityListItemMode",
+        items: list[dict[str, Any]],
+        mode: EntityListItemMode,
     ) -> None:
         """Update items in entity list.
 
         Args:
             project_name (str): Project name where entity list live.
             list_id (str): Entity list id.
-            items (List[Dict[str, Any]]): Entity list items.
+            items (list[dict[str, Any]]): Entity list items.
             mode (EntityListItemMode): Mode of items update.
 
         """
@@ -356,9 +359,9 @@ class _ListsAPI(_BaseServerAPI):
         new_list_id: Optional[str],
         position: Optional[int] = None,
         label: Optional[str] = None,
-        attrib: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
     ) -> None:
         """Update item in entity list.
 
