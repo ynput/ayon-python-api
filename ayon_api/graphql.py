@@ -758,7 +758,7 @@ class GraphQlQueryField(BaseGraphQlQueryField):
     def parse_result(
         self,
         data: dict[str, Any],
-        output: dict[str, Any], 
+        output: dict[str, Any],
         progress_data: dict[str, Any],
     ) -> None:
         if not isinstance(data, dict):
