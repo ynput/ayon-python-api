@@ -13,6 +13,13 @@ from .utils import create_entity_id, REMOVED_VALUE, NOT_SET
 
 if typing.TYPE_CHECKING:
     from .server_api import ServerAPI
+    from .typing import (
+        NewFolderDict,
+        NewProductDict,
+        NewVersionDict,
+        NewRepresentationDict,
+        NewWorkfileDict,
+    )
 
 
 def _create_or_convert_to_id(entity_id: Optional[str] = None) -> str:
@@ -74,7 +81,7 @@ def new_folder_entity(
     data: Optional[dict[str, Any]] = None,
     thumbnail_id: Optional[str] = None,
     entity_id: Optional[str] = None
-) -> dict[str, Any]:
+) -> NewFolderDict:
     """Create skeleton data of folder entity.
 
     Args:
@@ -130,7 +137,7 @@ def new_product_entity(
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
     entity_id: Optional[str] = None,
-) -> dict[str, Any]:
+) -> NewProductDict:
     """Create skeleton data of product entity.
 
     Args:
@@ -148,7 +155,7 @@ def new_product_entity(
             created if not passed.
 
     Returns:
-        dict[str, Any]: Skeleton of product entity.
+        NewProductDict: Skeleton of product entity.
 
     """
     if attribs is None:
@@ -183,7 +190,7 @@ def new_version_entity(
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
     entity_id: Optional[str] = None,
-) -> dict[str, Any]:
+) -> NewVersionDict:
     """Create skeleton data of version entity.
 
     Args:
@@ -202,7 +209,7 @@ def new_version_entity(
             created if not passed.
 
     Returns:
-        dict[str, Any]: Skeleton of version entity.
+        NewVersionDict: Skeleton of version entity.
 
     """
     if attribs is None:
@@ -242,7 +249,7 @@ def new_hero_version_entity(
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
     entity_id: Optional[str] = None,
-) -> dict[str, Any]:
+) -> NewVersionDict:
     """Create skeleton data of hero version entity.
 
     Args:
@@ -261,7 +268,7 @@ def new_hero_version_entity(
             created if not passed.
 
     Returns:
-        dict[str, Any]: Skeleton of version entity.
+        NewVersionDict: Skeleton of version entity.
 
     """
     return new_version_entity(
@@ -288,7 +295,7 @@ def new_representation_entity(
     data: Optional[dict[str, Any]] = None,
     traits: Optional[dict[str, Any]] = None,
     entity_id: Optional[str] = None,
-) -> dict[str, Any]:
+) -> NewRepresentationDict:
     """Create skeleton data of representation entity.
 
     Args:
@@ -307,7 +314,7 @@ def new_representation_entity(
             if not passed.
 
     Returns:
-        dict[str, Any]: Skeleton of representation entity.
+        NewRepresentationDict: Skeleton of representation entity.
 
     """
     if attribs is None:
@@ -342,7 +349,7 @@ def new_workfile_info(
     description: Optional[str] = None,
     data: Optional[dict[str, Any]] = None,
     entity_id: Optional[str] = None,
-) -> dict[str, Any]:
+) -> NewWorkfileDict:
     """Create skeleton data of workfile info entity.
 
     Workfile entity is at this moment used primarily for artist notes.

@@ -342,6 +342,65 @@ AnyEntityDict = Union[
     ActivityDict,
 ]
 
+
+class NewFolderDict(TypedDict):
+    id: str
+    name: str
+    folderType: str
+    parentId: Optional[str]
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    thumbnailId: Optional[str]
+    status: Optional[str]
+    tags: Optional[list[str]]
+
+
+class NewProductDict(TypedDict):
+    id: str
+    name: str
+    productType: str
+    folderId: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    status: Optional[str]
+    tags: Optional[list[str]]
+
+
+class NewVersionDict(TypedDict):
+    id: str
+    version: int
+    productId: str
+    attrib: dict[str, Any]
+    data: dict[str, Any]
+    taskId: Optional[str]
+    thumbnailId: Optional[str]
+    author: Optional[str]
+    status: Optional[str]
+    tags: Optional[list[str]]
+
+
+class NewRepresentationDict(TypedDict):
+    id: str
+    versionId: str
+    name: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    files: list[dict[str, str]]
+    traits: Optional[dict[str, Any]]
+    status: Optional[str]
+    tags: Optional[list[str]]
+
+
+class NewWorkfileDict(TypedDict):
+    id: str
+    taskId: str
+    path: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    status: Optional[str]
+    tags: Optional[list[str]]
+
+
 EventStatus = Literal[
     "pending",
     "in_progress",
