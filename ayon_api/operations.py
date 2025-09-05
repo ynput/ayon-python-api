@@ -921,14 +921,14 @@ class OperationsSession(object):
             folder_id (str): Folder id.
             name (Optional[str]): New name.
             folder_type (Optional[str]): New folder type.
-            parent_id (Optional[Union[str, None]]): New parent folder id.
-            label (Optional[Union[str, None]]): New label.
+            parent_id (Optional[str]): New parent folder id.
+            label (Optional[str]): New label.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
-            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+            thumbnail_id (Optional[str]): New thumbnail id.
 
         Returns:
             UpdateOperation: Object of update operation.
@@ -1074,14 +1074,14 @@ class OperationsSession(object):
             name (Optional[str]): New name.
             task_type (Optional[str]): New task type.
             folder_id (Optional[str]): New folder id.
-            label (Optional[Union[str, None]]): New label.
+            label (Optional[str]): New label.
             assignees (Optional[str]): New assignees.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
-            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+            thumbnail_id (Optional[str]): New thumbnail id.
 
         Returns:
             UpdateOperation: Object of update operation.
@@ -1350,13 +1350,13 @@ class OperationsSession(object):
             version_id (str): Version id.
             version (Optional[int]): New version.
             product_id (Optional[str]): New product id.
-            task_id (Optional[Union[str, None]]): New task id.
+            task_id (Optional[str]): New task id.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
-            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+            thumbnail_id (Optional[str]): New thumbnail id.
 
         Returns:
             UpdateOperation: Object of update operation.
