@@ -162,23 +162,23 @@ class _AsUserStack:
         self._default_user = None
 
     @property
-    def username(self):
+    def username(self) -> Optional[str]:
         # Use '_user_ids' for boolean check to have ability "unset"
         #   default user
         if self._user_ids:
             return self._last_user
         return self._default_user
 
-    def get_default_username(self):
+    def get_default_username(self) -> Optional[str]:
         return self._default_user
 
-    def set_default_username(self, username=None):
+    def set_default_username(self, username: Optional[str] = None) -> None:
         self._default_user = username
 
     default_username = property(get_default_username, set_default_username)
 
     @contextmanager
-    def as_user(self, username):
+    def as_user(self, username: Optional[str]) -> Generator[None, None, None]:
         self._last_user = username
         user_id = uuid.uuid4().hex
         self._user_ids.append(user_id)
