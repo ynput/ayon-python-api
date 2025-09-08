@@ -86,7 +86,7 @@ class WorkfilesAPI(BaseServerAPI):
             filters["workfileTags"] = list(tags)
 
         if has_links is not None:
-            filters["workfilehasLinks"] = has_links.upper()
+            filters["workfileHasLinks"] = has_links.upper()
 
         if not fields:
             fields = self.get_default_fields_for_type("workfile")
