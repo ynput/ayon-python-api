@@ -133,8 +133,8 @@ class EntityHub:
                 be attributes received.
 
         Returns:
-            dict[str, AttributeSchemaDict]: Attribute schemas that are available
-                for entered entity type.
+            dict[str, AttributeSchemaDict]: Attribute schemas that
+                are available for entered entity type.
 
         """
         return self._connection.get_attributes_for_type(entity_type)
