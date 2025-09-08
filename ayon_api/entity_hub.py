@@ -1,29 +1,57 @@
+from __future__ import annotations
+
 import re
 import copy
 import collections
 import warnings
 from abc import ABC, abstractmethod
 import typing
-from typing import Optional, Iterable, Dict, List, Set, Any
+from typing import Optional, Iterable, Any, Generator, Type
 
+from .server_api import ServerAPI
 from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
 
 if typing.TYPE_CHECKING:
-    from typing import Literal, Union
+    from typing import Literal, Union, TypedDict
+
+    from .typing import (
+        AttributeSchemaDict,
+        FolderDict,
+        TaskDict,
+        ProductDict,
+        VersionDict,
+    )
 
     StatusState = Literal["not_started", "in_progress", "done", "blocked"]
+    StatusEntityType = Literal[
+        "folder",
+        "task",
+        "product",
+        "version",
+        "representation",
+        "workfile"
+    ]
     EntityType = Literal["project", "folder", "task", "product", "version"]
+    AttributeValueType = Union[bool, str, int, float, list[str]]
+
+    class ProjectStatusDict(TypedDict):
+        name: str
+        shortName: Optional[str]
+        state: Optional[StatusState]
+        icon: Optional[str]
+        color: Optional[str]
+        scope: Optional[StatusEntityType]
 
 
-class _CustomNone(object):
-    def __init__(self, name=None):
+class _CustomNone:
+    def __init__(self, name: Optional[str] = None) -> None:
         self._name = name or "CustomNone"
 
-    def __repr__(self):
-        return "<{}>".format(self._name)
+    def __repr__(self) -> str:
+        return f"<{self._name}>"
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False
 
 
@@ -32,7 +60,7 @@ PROJECT_PARENT_ID = _CustomNone("PROJECT_PARENT_ID")
 _NOT_SET = _CustomNone("_NOT_SET")
 
 
-class EntityHub(object):
+class EntityHub:
     """Helper to create, update or remove entities in project.
 
     The hub is a guide to operation with folder entities and update of project.
@@ -51,8 +79,11 @@ class EntityHub(object):
         connection (ServerAPI): Connection to server with logged user.
 
     """
-
-    def __init__(self, project_name, connection=None):
+    def __init__(
+        self,
+        project_name: str,
+        connection: Optional[ServerAPI] = None
+    ) -> None:
         if not connection:
             connection = get_server_api_connection()
 
@@ -66,7 +97,7 @@ class EntityHub(object):
         self._path_reset_queue = None
 
     @property
-    def project_name(self):
+    def project_name(self) -> str:
         """Project name which is maintained by hub.
 
         Returns:
@@ -76,7 +107,7 @@ class EntityHub(object):
         return self._project_name
 
     @property
-    def project_entity(self):
+    def project_entity(self) -> ProjectEntity:
         """Project entity.
 
         Returns:
@@ -87,7 +118,9 @@ class EntityHub(object):
             self.fill_project_from_server()
         return self._project_entity
 
-    def get_attributes_for_type(self, entity_type: "EntityType"):
+    def get_attributes_for_type(
+        self, entity_type: EntityType
+    ) -> dict[str, AttributeSchemaDict]:
         """Get attributes available for a type.
 
         Attributes are based on entity types.
@@ -100,13 +133,13 @@ class EntityHub(object):
                 be attributes received.
 
         Returns:
-            Dict[str, Dict[str, Any]]: Attribute schemas that are available
+            dict[str, AttributeSchemaDict]: Attribute schemas that are available
                 for entered entity type.
 
         """
         return self._connection.get_attributes_for_type(entity_type)
 
-    def get_entity_by_id(self, entity_id: str) -> Optional["BaseEntity"]:
+    def get_entity_by_id(self, entity_id: str) -> Optional[BaseEntity]:
         """Receive entity by its id without entity type.
 
         The entity must be already existing in cached objects.
@@ -123,8 +156,8 @@ class EntityHub(object):
     def get_folder_by_id(
         self,
         entity_id: str,
-        allow_fetch: Optional[bool] = True,
-    ) -> Optional["FolderEntity"]:
+        allow_fetch: bool = True,
+    ) -> Optional[FolderEntity]:
         """Get folder entity by id.
 
         Args:
@@ -143,8 +176,8 @@ class EntityHub(object):
     def get_task_by_id(
         self,
         entity_id: str,
-        allow_fetch: Optional[bool] = True,
-    ) -> Optional["TaskEntity"]:
+        allow_fetch: bool = True,
+    ) -> Optional[TaskEntity]:
         """Get task entity by id.
 
         Args:
@@ -163,8 +196,8 @@ class EntityHub(object):
     def get_product_by_id(
         self,
         entity_id: str,
-        allow_fetch: Optional[bool] = True,
-    ) -> Optional["ProductEntity"]:
+        allow_fetch: bool = True,
+    ) -> Optional[ProductEntity]:
         """Get product entity by id.
 
         Args:
@@ -183,8 +216,8 @@ class EntityHub(object):
     def get_version_by_id(
         self,
         entity_id: str,
-        allow_fetch: Optional[bool] = True,
-    ) -> Optional["VersionEntity"]:
+        allow_fetch: bool = True,
+    ) -> Optional[VersionEntity]:
         """Get version entity by id.
 
         Args:
@@ -203,8 +236,8 @@ class EntityHub(object):
     def get_or_fetch_entity_by_id(
         self,
         entity_id: str,
-        entity_types: List["EntityType"],
-    ):
+        entity_types: list[EntityType],
+    ) -> Optional[BaseEntity]:
         """Get or query entity based on it's id and possible entity types.
 
         This is a helper function when entity id is known but entity type may
@@ -253,9 +286,7 @@ class EntityHub(object):
                     fields=self._get_version_fields(),
                 )
             else:
-                raise ValueError(
-                    "Unknown entity type \"{}\"".format(entity_type)
-                )
+                raise ValueError(f"Unknown entity type \"{entity_type}\"")
 
             if entity_data:
                 break
@@ -268,13 +299,13 @@ class EntityHub(object):
             folder_entity.has_published_content = entity_data["hasProducts"]
             return folder_entity
 
-        elif entity_type == "task":
+        if entity_type == "task":
             return self.add_task(entity_data)
 
-        elif entity_type == "product":
+        if entity_type == "product":
             return self.add_product(entity_data)
 
-        elif entity_type == "version":
+        if entity_type == "version":
             return self.add_version(entity_data)
 
         return None
@@ -282,8 +313,9 @@ class EntityHub(object):
     def get_or_query_entity_by_id(
         self,
         entity_id: str,
-        entity_types: List["EntityType"],
-    ):
+        entity_types: list[EntityType],
+    ) -> Optional[BaseEntity]:
+        """Get or query entity based on it's id and possible entity types."""
         warnings.warn(
             "Method 'get_or_query_entity_by_id' is deprecated. "
             "Please use 'get_or_fetch_entity_by_id' instead.",
@@ -292,11 +324,12 @@ class EntityHub(object):
         return self.get_or_fetch_entity_by_id(entity_id, entity_types)
 
     @property
-    def entities(self):
+    def entities(self) -> Generator[BaseEntity, None, None]:
         """Iterator over available entities.
 
         Returns:
-            Iterator[BaseEntity]: All queried/created entities cached in hub.
+            Generator[BaseEntity, None, None]: All queried/created entities
+                cached in hub.
 
         """
         for entity in self._entities_by_id.values():
@@ -310,30 +343,30 @@ class EntityHub(object):
         label: Optional[str] = None,
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
-        tags: Optional[List[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        tags: Optional[list[str]] = None,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
-        active: bool = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = True,
-    ):
+    ) -> FolderEntity:
         """Create folder object and add it to entity hub.
 
         Args:
             name (str): Name of entity.
             folder_type (str): Type of folder. Folder type must be available in
                 config of project folder types.
-            parent_id (Union[str, None]): Id of parent entity.
+            parent_id (Optional[str]): Id of parent entity.
             label (Optional[str]): Folder label.
             path (Optional[str]): Folder path. Path consist of all parent names
                 with slash('/') used as separator.
             status (Optional[str]): Folder status.
-            tags (Optional[List[str]]): Folder tags.
-            attribs (Dict[str, Any]): Attribute values.
-            data (Dict[str, Any]): Entity data (custom data).
-            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
-            active (bool): Is entity active.
+            tags (Optional[list[str]]): Folder tags.
+            attribs (dict[str, Any]): Attribute values.
+            data (dict[str, Any]): Entity data (custom data).
+            thumbnail_id (Optional[str]): Id of entity's thumbnail.
+            active (Optional[bool]): Is entity active.
             entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
@@ -370,35 +403,35 @@ class EntityHub(object):
         label: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         assignees: Optional[Iterable[str]] = None,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = True,
         parent_id: Optional[str] = UNKNOWN_VALUE,
-    ):
+    ) -> TaskEntity:
         """Create task object and add it to entity hub.
 
         Args:
             name (str): Name of entity.
             task_type (str): Type of task. Task type must be available in
                 config of project task types.
-            folder_id (Union[str, None]): Parent folder id.
+            folder_id (Optional[str]): Parent folder id.
             label (Optional[str]): Task label.
             status (Optional[str]): Task status.
             tags (Optional[Iterable[str]]): Folder tags.
-            attribs (Dict[str, Any]): Attribute values.
-            data (Dict[str, Any]): Entity data (custom data).
+            attribs (dict[str, Any]): Attribute values.
+            data (dict[str, Any]): Entity data (custom data).
             assignees (Optional[Iterable[str]]): User assignees to the task.
-            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+            thumbnail_id (Optional[str]): Id of entity's thumbnail.
             active (bool): Is entity active.
             entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
-            parent_id (Union[str, None]): DEPRECATED Parent folder id.
+            parent_id (Optional[str]): DEPRECATED Parent folder id.
 
         Returns:
             TaskEntity: Added task entity.
@@ -435,23 +468,23 @@ class EntityHub(object):
         self,
         name: str,
         product_type: str,
-        folder_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
+        folder_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = True,
-    ):
+    ) -> ProductEntity:
         """Create task object and add it to entity hub.
 
         Args:
             name (str): Name of entity.
             product_type (str): Type of product.
-            folder_id (Union[str, None]): Parent folder id.
+            folder_id (Optional[Union[str, _CustomNone]]): Parent folder id.
             tags (Optional[Iterable[str]]): Folder tags.
-            attribs (Dict[str, Any]): Attribute values.
-            data (Dict[str, Any]): Entity data (custom data).
+            attribs (dict[str, Any]): Attribute values.
+            data (dict[str, Any]): Entity data (custom data).
             active (bool): Is entity active.
             entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
@@ -480,28 +513,28 @@ class EntityHub(object):
     def add_new_version(
         self,
         version: int,
-        product_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
-        task_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
+        product_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        task_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = True,
-    ):
+    ) -> VersionEntity:
         """Create task object and add it to entity hub.
 
         Args:
             version (int): Version.
-            product_id (Union[str, None]): Parent product id.
-            task_id (Union[str, None]): Parent task id.
+            product_id (Union[Union[str, _CustomNone]]): Parent product id.
+            task_id (Union[Union[str, _CustomNone]]): Parent task id.
             status (Optional[str]): Task status.
             tags (Optional[Iterable[str]]): Folder tags.
-            attribs (Dict[str, Any]): Attribute values.
-            data (Dict[str, Any]): Entity data (custom data).
-            thumbnail_id (Union[str, None]): Id of entity's thumbnail.
+            attribs (dict[str, Any]): Attribute values.
+            data (dict[str, Any]): Entity data (custom data).
+            thumbnail_id (Optional[str]): Id of entity's thumbnail.
             active (bool): Is entity active.
             entity_id (Optional[str]): Id of the entity. New id is created if
                 not passed.
@@ -529,11 +562,11 @@ class EntityHub(object):
         self.add_entity(version_entity)
         return version_entity
 
-    def add_folder(self, folder):
+    def add_folder(self, folder: FolderDict) -> FolderEntity:
         """Create folder object and add it to entity hub.
 
         Args:
-            folder (Dict[str, Any]): Folder entity data.
+            folder (FolderDict): Folder entity data.
 
         Returns:
             FolderEntity: Added folder entity.
@@ -543,11 +576,11 @@ class EntityHub(object):
         self.add_entity(folder_entity)
         return folder_entity
 
-    def add_task(self, task):
+    def add_task(self, task: TaskDict) -> TaskEntity:
         """Create task object and add it to entity hub.
 
         Args:
-            task (Dict[str, Any]): Task entity data.
+            task (TaskDict): Task entity data.
 
         Returns:
             TaskEntity: Added task entity.
@@ -557,11 +590,11 @@ class EntityHub(object):
         self.add_entity(task_entity)
         return task_entity
 
-    def add_product(self, product):
+    def add_product(self, product: ProductDict) -> ProductEntity:
         """Create version object and add it to entity hub.
 
         Args:
-            product (Dict[str, Any]): Version entity data.
+            product (ProductDict): Version entity data.
 
         Returns:
             ProductEntity: Added version entity.
@@ -573,11 +606,11 @@ class EntityHub(object):
         self.add_entity(product_entity)
         return product_entity
 
-    def add_version(self, version):
+    def add_version(self, version: VersionDict) -> VersionEntity:
         """Create version object and add it to entity hub.
 
         Args:
-            version (Dict[str, Any]): Version entity data.
+            version (dict[str, Any]): Version entity data.
 
         Returns:
             VersionEntity: Added version entity.
@@ -589,7 +622,7 @@ class EntityHub(object):
         self.add_entity(version_entity)
         return version_entity
 
-    def add_entity(self, entity):
+    def add_entity(self, entity: BaseEntity) -> None:
         """Add entity to hub cache.
 
         Args:
@@ -608,7 +641,7 @@ class EntityHub(object):
         if parent is not None:
             parent.add_child(entity.id)
 
-    def folder_path_reseted(self, folder_id):
+    def folder_path_reseted(self, folder_id: str) -> None:
         """Method called from 'FolderEntity' on path reset.
 
         This should reset cache of folder paths on all children entities.
@@ -636,7 +669,7 @@ class EntityHub(object):
 
         self._path_reset_queue = None
 
-    def unset_entity_parent(self, entity_id, parent_id):
+    def unset_entity_parent(self, entity_id: str, parent_id: str) -> None:
         entity = self._entities_by_id.get(entity_id)
         parent = self._entities_by_id.get(parent_id)
         children_ids = UNKNOWN_VALUE
@@ -667,7 +700,12 @@ class EntityHub(object):
             new_parent_children.append(entity)
         self.reset_immutable_for_hierarchy_cache(parent_id)
 
-    def set_entity_parent(self, entity_id, parent_id, orig_parent_id=_NOT_SET):
+    def set_entity_parent(
+        self,
+        entity_id: str,
+        parent_id: str,
+        orig_parent_id: Optional[str] = _NOT_SET,
+    ) -> None:
         parent = self._entities_by_id.get(parent_id)
         entity = self._entities_by_id.get(entity_id)
         if entity is None:
@@ -706,7 +744,7 @@ class EntityHub(object):
         parent.add_child(entity_id)
         self.reset_immutable_for_hierarchy_cache(parent_id)
 
-    def _fetch_entity_children(self, entity):
+    def _fetch_entity_children(self, entity: BaseEntity) -> None:
         folder_fields = self._get_folder_fields()
         task_fields = self._get_task_fields()
         tasks = []
@@ -761,7 +799,9 @@ class EntityHub(object):
 
         entity.fill_children_ids(children_ids)
 
-    def get_entity_children(self, entity, allow_fetch=True):
+    def get_entity_children(
+        self, entity: BaseEntity, allow_fetch: bool = True
+    ) -> Union[list[BaseEntity], Type[UNKNOWN_VALUE]]:
         children_ids = entity.get_children_ids(allow_fetch=False)
         if children_ids is not UNKNOWN_VALUE:
             return entity.get_children()
@@ -773,7 +813,7 @@ class EntityHub(object):
 
         return entity.get_children()
 
-    def delete_entity(self, entity):
+    def delete_entity(self, entity: BaseEntity) -> None:
         parent_id = entity.parent_id
         if parent_id is None:
             return
@@ -785,8 +825,10 @@ class EntityHub(object):
             self.unset_entity_parent(entity.id, parent_id)
 
     def reset_immutable_for_hierarchy_cache(
-        self, entity_id: Optional[str], bottom_to_top: Optional[bool] = True
-    ):
+        self,
+        entity_id: Optional[str],
+        bottom_to_top: Optional[bool] = True,
+    ) -> None:
         if bottom_to_top is None or entity_id is None:
             return
 
@@ -814,7 +856,7 @@ class EntityHub(object):
                 for child in self._entities_by_parent_id[entity.id]:
                     reset_queue.append(child.id)
 
-    def fill_project_from_server(self):
+    def fill_project_from_server(self) -> ProjectEntity:
         """Query project data from server and create project entity.
 
         This method will invalidate previous object of Project entity.
@@ -832,9 +874,7 @@ class EntityHub(object):
             own_attributes=True
         )
         if not project:
-            raise ValueError(
-                "Project \"{}\" was not found.".format(project_name)
-            )
+            raise ValueError(f"Project \"{project_name}\" was not found.")
         major, minor, _, _, _ = self._connection.get_server_version_tuple()
         status_scope_supported = True
         if (major, minor) < (1, 5):
@@ -849,7 +889,7 @@ class EntityHub(object):
         self.add_entity(self._project_entity)
         return self._project_entity
 
-    def _get_folder_fields(self) -> Set[str]:
+    def _get_folder_fields(self) -> set[str]:
         folder_fields = set(
             self._connection.get_default_fields_for_type("folder")
         )
@@ -857,22 +897,22 @@ class EntityHub(object):
         folder_fields.add("data")
         return folder_fields
 
-    def _get_task_fields(self) -> Set[str]:
+    def _get_task_fields(self) -> set[str]:
         return set(
             self._connection.get_default_fields_for_type("task")
         )
 
-    def _get_product_fields(self) -> Set[str]:
+    def _get_product_fields(self) -> set[str]:
         return set(
             self._connection.get_default_fields_for_type("product")
         )
 
-    def _get_version_fields(self) -> Set[str]:
+    def _get_version_fields(self) -> set[str]:
         return set(
             self._connection.get_default_fields_for_type("version")
         )
 
-    def fetch_hierarchy_entities(self):
+    def fetch_hierarchy_entities(self) -> None:
         """Query whole project at once."""
         project_entity = self.fill_project_from_server()
 
@@ -928,22 +968,22 @@ class EntityHub(object):
             entity = lock_queue.popleft()
             entity.lock()
 
-    def query_entities_from_server(self):
+    def query_entities_from_server(self) -> None:
         warnings.warn(
             "Method 'query_entities_from_server' is deprecated."
             " Please use 'fetch_hierarchy_entities' instead.",
             DeprecationWarning
         )
-        return self.fetch_hierarchy_entities()
+        self.fetch_hierarchy_entities()
 
-    def lock(self):
+    def lock(self) -> None:
         if self._project_entity is None:
             return
 
         for entity in self._entities_by_id.values():
             entity.lock()
 
-    def _get_top_entities(self):
+    def _get_top_entities(self) -> list[BaseEntity]:
         all_ids = set(self._entities_by_id.keys())
         return [
             entity
@@ -951,7 +991,7 @@ class EntityHub(object):
             if entity.parent_id not in all_ids
         ]
 
-    def _split_entities(self):
+    def _split_entities(self) -> tuple[list[str], list[str], list[str]]:
         top_entities = self._get_top_entities()
         entities_queue = collections.deque(top_entities)
         removed_entity_ids = []
@@ -973,7 +1013,9 @@ class EntityHub(object):
                 entities_queue.append(child)
         return created_entity_ids, other_entity_ids, removed_entity_ids
 
-    def _get_update_body(self, entity, changes=None):
+    def _get_update_body(
+        self, entity: BaseEntity, changes: Optional[dict[str, Any]] = None
+    ) -> Optional[dict[str, Any]]:
         if changes is None:
             changes = entity.changes
 
@@ -986,7 +1028,7 @@ class EntityHub(object):
             "data": changes
         }
 
-    def _get_create_body(self, entity):
+    def _get_create_body(self, entity: BaseEntity) -> dict[str, Any]:
         return {
             "type": "create",
             "entityType": entity.entity_type,
@@ -994,7 +1036,7 @@ class EntityHub(object):
             "data": entity.to_create_body_data()
         }
 
-    def _get_delete_body(self, entity):
+    def _get_delete_body(self, entity: BaseEntity) -> dict[str, Any]:
         return {
             "type": "delete",
             "entityType": entity.entity_type,
@@ -1002,8 +1044,12 @@ class EntityHub(object):
         }
 
     def _pre_commit_types_changes(
-        self, project_changes, orig_types, changes_key, post_changes
-    ):
+        self,
+        project_changes: dict[str, Any],
+        orig_types: list[dict[str, Any]],
+        changes_key: Literal["folderType", "taskType"],
+        post_changes: dict[str, Any],
+    ) -> None:
         """Compare changes of types on a project.
 
         Compare old and new types. Change project changes content if some old
@@ -1043,7 +1089,7 @@ class EntityHub(object):
         for type_name in diff_names:
             new_types.append(orig_types_by_name[type_name])
 
-    def _pre_commit_project(self):
+    def _pre_commit_project(self) -> dict[str, Any]:
         """Some project changes cannot be committed before hierarchy changes.
 
         It is not possible to change folder types or task types if there are
@@ -1077,7 +1123,7 @@ class EntityHub(object):
         self._connection.update_project(self.project_name, **project_changes)
         return post_changes
 
-    def commit_changes(self):
+    def commit_changes(self) -> None:
         """Commit any changes that happened on entities.
 
         Todo:
@@ -1090,7 +1136,7 @@ class EntityHub(object):
         project_changes = self.project_entity.changes
         if project_changes:
             response = self._connection.patch(
-                "projects/{}".format(self.project_name),
+                f"projects/{self.project_name}",
                 **project_changes
             )
             response.raise_for_status()
@@ -1163,28 +1209,28 @@ class EntityHub(object):
         self.lock()
 
 
-class AttributeValue(object):
-    def __init__(self, value):
+class AttributeValue:
+    def __init__(self, value: AttributeValueType) -> None:
         self._value = value
         self._origin_value = copy.deepcopy(value)
 
-    def get_value(self):
+    def get_value(self) -> AttributeValueType:
         return self._value
 
-    def set_value(self, value):
+    def set_value(self, value: AttributeValueType) -> None:
         self._value = value
 
     value = property(get_value, set_value)
 
     @property
-    def changed(self):
+    def changed(self) -> bool:
         return self._value != self._origin_value
 
-    def lock(self):
+    def lock(self) -> None:
         self._origin_value = copy.deepcopy(self._value)
 
 
-class Attributes(object):
+class Attributes:
     """Object representing attribs of entity.
 
     Todos:
@@ -1194,11 +1240,15 @@ class Attributes(object):
     Args:
         attrib_keys (Iterable[str]): Keys that are available in attribs of the
             entity.
-        values (Optional[Dict[str, Any]]): Values of attributes.
+        values (Optional[dict[str, Any]]): Values of attributes.
 
     """
 
-    def __init__(self, attrib_keys, values=UNKNOWN_VALUE):
+    def __init__(
+        self,
+        attrib_keys: Iterable[str],
+        values: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+    ) -> None:
         if values in (UNKNOWN_VALUE, None):
             values = {}
         self._attributes = {
@@ -1206,31 +1256,31 @@ class Attributes(object):
             for key in attrib_keys
         }
 
-    def __contains__(self, key):
+    def __contains__(self, key: str) -> bool:
         return key in self._attributes
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> AttributeValue:
         return self._attributes[key].value
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: AttributeValueType) -> None:
         self._attributes[key].set_value(value)
 
     def __iter__(self):
         for key in self._attributes:
             yield key
 
-    def keys(self):
+    def keys(self) -> Iterable[str]:
         return self._attributes.keys()
 
-    def values(self):
+    def values(self) -> Iterable[AttributeValueType]:
         for attribute in self._attributes.values():
             yield attribute.value
 
-    def items(self):
+    def items(self) -> Iterable[tuple[str, AttributeValueType]]:
         for key, attribute in self._attributes.items():
             yield key, attribute.value
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
         """Get value of attribute.
 
         Args:
@@ -1244,17 +1294,17 @@ class Attributes(object):
             return default
         return attribute.value
 
-    def set(self, key, value):
+    def set(self, key: str, value: AttributeValueType) -> None:
         """Change value of attribute.
 
         Args:
             key (str): Attribute name.
-            value (Any): New value of the attribute.
+            value (AttributeValueType): New value of the attribute.
 
         """
         self[key] = value
 
-    def get_attribute(self, key):
+    def get_attribute(self, key: str) -> AttributeValue:
         """Access to attribute object.
 
         Args:
@@ -1269,16 +1319,16 @@ class Attributes(object):
         """
         return self._attributes[key]
 
-    def lock(self):
+    def lock(self) -> None:
         for attribute in self._attributes.values():
             attribute.lock()
 
     @property
-    def changes(self):
+    def changes(self) -> dict[str, AttributeValueType]:
         """Attribute value changes.
 
         Returns:
-            Dict[str, Any]: Key mapping with new values.
+            dict[str, Any]: Key mapping with new values.
 
         """
         return {
@@ -1287,7 +1337,7 @@ class Attributes(object):
             if attribute.changed
         }
 
-    def to_dict(self, ignore_none=True):
+    def to_dict(self, ignore_none: bool = True) -> dict[str, Any]:
         output = {}
         for key, value in self.items():
             if (
@@ -1321,11 +1371,11 @@ class EntityData(dict):
         }
 
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._orig_data = copy.deepcopy(self)
 
-    def get_changes(self):
+    def get_changes(self) -> dict[str, Any]:
         """Changes in entity data.
 
         Removed keys have value set to 'None'.
@@ -1348,11 +1398,11 @@ class EntityData(dict):
                 output[key] = self[key]
         return output
 
-    def get_new_entity_value(self):
+    def get_new_entity_value(self) -> dict[str, AttributeValueType]:
         """Value of data for new entity.
 
         Returns:
-            dict[str, Any]: Data without None values.
+            dict[str, AttributeValueType]: Data without None values.
 
         """
         return {
@@ -1362,7 +1412,7 @@ class EntityData(dict):
             if value is not None
         }
 
-    def lock(self):
+    def lock(self) -> None:
         """Lock changes of entity data."""
 
         self._orig_data = copy.deepcopy(self)
@@ -1383,8 +1433,8 @@ class BaseEntity(ABC):
         entity_id (Optional[str]): Entity id. New id is created if
             not passed.
         parent_id (Optional[str]): Parent entity id.
-        attribs (Optional[Dict[str, Any]]): Attribute values.
-        data (Optional[Dict[str, Any]]): Entity data (custom data).
+        attribs (Optional[dict[str, Any]]): Attribute values.
+        data (Optional[dict[str, Any]]): Entity data (custom data).
         thumbnail_id (Optional[str]): Thumbnail id.
         active (Optional[bool]): Is entity active.
         entity_hub (EntityHub): Object of entity hub which created object of
@@ -1402,9 +1452,9 @@ class BaseEntity(ABC):
     def __init__(
         self,
         entity_id: Optional[str] = None,
-        parent_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        parent_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
@@ -1412,7 +1462,7 @@ class BaseEntity(ABC):
         name=None,
         label=None,
         status: Optional[str] = UNKNOWN_VALUE,
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
     ):
         if entity_hub is None:
@@ -1476,12 +1526,12 @@ class BaseEntity(ABC):
         self._immutable_for_hierarchy_cache = None
 
     def __repr__(self):
-        return "<{} - {}>".format(self.__class__.__name__, self.id)
+        return f"<{self.__class__.__name__} - {self.id}>"
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> Any:
         return getattr(self, item)
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: str, value: Any) -> None:
         return setattr(self, item, value)
 
     def _prepare_entity_id(self, entity_id: Any) -> str:
@@ -1505,11 +1555,11 @@ class BaseEntity(ABC):
         return self._parent_id is None
 
     @property
-    def orig_parent_id(self):
+    def orig_parent_id(self) -> Optional[str]:
         return self._orig_parent_id
 
     @property
-    def attribs(self):
+    def attribs(self) -> Attributes:
         """Entity attributes based on server configuration.
 
         Returns:
@@ -1520,7 +1570,7 @@ class BaseEntity(ABC):
         return self._attribs
 
     @property
-    def data(self):
+    def data(self) -> EntityData:
         """Entity custom data that are not stored by any deterministic model.
 
         Be aware that 'data' can't be queried using GraphQl and cannot be
@@ -1544,7 +1594,7 @@ class BaseEntity(ABC):
 
     @property
     @abstractmethod
-    def entity_type(self) -> "EntityType":
+    def entity_type(self) -> EntityType:
         """Entity type corresponding to server.
 
         Returns:
@@ -1555,22 +1605,22 @@ class BaseEntity(ABC):
 
     @property
     @abstractmethod
-    def parent_entity_types(self) -> List[str]:
+    def parent_entity_types(self) -> list[str]:
         """Entity type corresponding to server.
 
         Returns:
-            List[str]: Possible entity types of parent.
+            list[str]: Possible entity types of parent.
 
         """
         pass
 
     @property
     @abstractmethod
-    def changes(self) -> Optional[Dict[str, Any]]:
+    def changes(self) -> Optional[dict[str, Any]]:
         """Receive entity changes.
 
         Returns:
-            Optional[Dict[str, Any]]: All values that have changed on
+            Optional[dict[str, Any]]: All values that have changed on
                 entity. New entity must return None.
 
         """
@@ -1579,12 +1629,12 @@ class BaseEntity(ABC):
     @classmethod
     @abstractmethod
     def from_entity_data(
-        cls, entity_data: Dict[str, Any], entity_hub: EntityHub
-    ) -> "BaseEntity":
+        cls, entity_data: dict[str, Any], entity_hub: EntityHub
+    ) -> BaseEntity:
         """Create entity based on queried data from server.
 
         Args:
-            entity_data (Dict[str, Any]): Entity data from server.
+            entity_data (dict[str, Any]): Entity data from server.
             entity_hub (EntityHub): Hub which handle the entity.
 
         Returns:
@@ -1594,11 +1644,11 @@ class BaseEntity(ABC):
         pass
 
     @abstractmethod
-    def to_create_body_data(self) -> Dict[str, Any]:
+    def to_create_body_data(self) -> dict[str, Any]:
         """Convert object of entity to data for server on creation.
 
         Returns:
-            Dict[str, Any]: Entity data.
+            dict[str, Any]: Entity data.
 
         """
         pass
@@ -1630,7 +1680,7 @@ class BaseEntity(ABC):
         return self._immutable_for_hierarchy_cache
 
     @property
-    def _immutable_for_hierarchy(self):
+    def _immutable_for_hierarchy(self) -> Optional[bool]:
         """Override this method to define if entity object is immutable.
 
         This property was added to define immutable state of Folder entities
@@ -1649,7 +1699,7 @@ class BaseEntity(ABC):
 
     def reset_immutable_for_hierarchy_cache(
         self, bottom_to_top: Optional[bool] = True
-    ):
+    ) -> None:
         """Clear cache of immutable hierarchy property.
 
         This is used when entity changed parent or a child was added.
@@ -1664,11 +1714,11 @@ class BaseEntity(ABC):
             self.id, bottom_to_top
         )
 
-    def _get_default_changes(self):
+    def _get_default_changes(self) -> dict[str, Any]:
         """Collect changes of common data on entity.
 
         Returns:
-            Dict[str, Any]: Changes on entity. Key and it's new value.
+            dict[str, Any]: Changes on entity. Key and it's new value.
 
         """
         changes = {}
@@ -1702,10 +1752,12 @@ class BaseEntity(ABC):
             changes["tags"] = self._tags
         return changes
 
-    def _get_attributes_for_type(self, entity_type):
+    def _get_attributes_for_type(
+        self, entity_type: EntityType
+    ) -> dict[str, AttributeSchemaDict]:
         return self._entity_hub.get_attributes_for_type(entity_type)
 
-    def lock(self):
+    def lock(self) -> None:
         """Lock entity as 'saved' so all changes are discarded."""
         self._orig_parent_id = self._parent_id
         self._orig_name = self._name
@@ -1726,10 +1778,10 @@ class BaseEntity(ABC):
         if self._supports_thumbnail:
             self._orig_thumbnail_id = self._thumbnail_id
 
-    def _get_entity_by_id(self, entity_id):
+    def _get_entity_by_id(self, entity_id: str) -> Optional[BaseEntity]:
         return self._entity_hub.get_entity_by_id(entity_id)
 
-    def get_parent_id(self):
+    def get_parent_id(self) -> Optional[str]:
         """Parent entity id.
 
         Returns:
@@ -1738,7 +1790,7 @@ class BaseEntity(ABC):
         """
         return self._parent_id
 
-    def set_parent_id(self, parent_id):
+    def set_parent_id(self, parent_id: Optional[str]) -> None:
         """Change parent by id.
 
         Args:
@@ -1758,7 +1810,7 @@ class BaseEntity(ABC):
 
     parent_id = property(get_parent_id, set_parent_id)
 
-    def get_parent(self, allow_fetch=True):
+    def get_parent(self, allow_fetch: bool = True) -> Optional[BaseEntity]:
         """Parent entity.
 
         Returns:
@@ -1779,7 +1831,7 @@ class BaseEntity(ABC):
             self._parent_id, self.parent_entity_types
         )
 
-    def set_parent(self, parent):
+    def set_parent(self, parent: BaseEntity) -> None:
         """Change parent object.
 
         Args:
@@ -1806,7 +1858,7 @@ class BaseEntity(ABC):
                 hierarchy.
 
         Returns:
-            Union[List[str], Type[UNKNOWN_VALUE]]: Children iterator.
+            Union[list[str], Type[UNKNOWN_VALUE]]: Children iterator.
 
         """
         if self._children_ids is UNKNOWN_VALUE:
@@ -1817,11 +1869,13 @@ class BaseEntity(ABC):
 
     children_ids = property(get_children_ids)
 
-    def get_children(self, allow_fetch=True):
+    def get_children(
+        self, allow_fetch: bool = True
+    ) -> list[Union[BaseEntity, Type[UNKNOWN_VALUE]]]:
         """Access to children objects.
 
         Returns:
-            Union[List[BaseEntity], Type[UNKNOWN_VALUE]]: Children iterator.
+            Union[list[BaseEntity], Type[UNKNOWN_VALUE]]: Children iterator.
 
         """
         if self._children_ids is UNKNOWN_VALUE:
@@ -1836,7 +1890,7 @@ class BaseEntity(ABC):
 
     children = property(get_children)
 
-    def add_child(self, child):
+    def add_child(self, child: Union[BaseEntity, str]) -> None:
         """Add child entity.
 
         Args:
@@ -1855,7 +1909,7 @@ class BaseEntity(ABC):
 
         self._entity_hub.set_entity_parent(child_id, self.id)
 
-    def remove_child(self, child):
+    def remove_child(self, child: Union[BaseEntity, str]) -> None:
         """Remove child entity.
 
         Is ignored if child is not in children.
@@ -1872,7 +1926,7 @@ class BaseEntity(ABC):
             self._children_ids.discard(child_id)
         self._entity_hub.unset_entity_parent(child_id, self.id)
 
-    def get_thumbnail_id(self):
+    def get_thumbnail_id(self) -> str:
         """Thumbnail id of entity.
 
         Returns:
@@ -1881,11 +1935,11 @@ class BaseEntity(ABC):
         """
         return self._thumbnail_id
 
-    def set_thumbnail_id(self, thumbnail_id):
+    def set_thumbnail_id(self, thumbnail_id: Optional[str]) -> None:
         """Change thumbnail id.
 
         Args:
-            thumbnail_id (Union[str, None]): Thumbnail id for entity.
+            thumbnail_id (Optional[str]): Thumbnail id for entity.
 
         """
         self._thumbnail_id = thumbnail_id
@@ -1893,7 +1947,7 @@ class BaseEntity(ABC):
     thumbnail_id = property(get_thumbnail_id, set_thumbnail_id)
 
     @property
-    def created(self):
+    def created(self) -> bool:
         """Entity is new.
 
         Returns:
@@ -1902,7 +1956,7 @@ class BaseEntity(ABC):
         """
         return self._created
 
-    def fill_children_ids(self, children_ids):
+    def fill_children_ids(self, children_ids: Iterable[str]) -> None:
         """Fill children ids on entity.
 
         Warning:
@@ -1911,14 +1965,14 @@ class BaseEntity(ABC):
         """
         self._children_ids = set(children_ids)
 
-    def get_name(self):
+    def get_name(self) -> str:
         if not self._supports_name:
             raise NotImplementedError(
                 f"Name is not supported for '{self.entity_type}'."
             )
         return self._name
 
-    def set_name(self, name):
+    def set_name(self, name: str) -> None:
         if not self._supports_name:
             raise NotImplementedError(
                 f"Name is not supported for '{self.entity_type}'."
@@ -1937,14 +1991,14 @@ class BaseEntity(ABC):
             )
         return self._label
 
-    def set_label(self, label: Optional[str]):
+    def set_label(self, label: Optional[str]) -> None:
         if not self._supports_label:
             raise NotImplementedError(
                 f"Label is not supported for '{self.entity_type}'."
             )
         self._label = label
 
-    def _get_label_value(self):
+    def _get_label_value(self) -> Optional[str]:
         """Get label value that will be used for operations.
 
         Returns:
@@ -1958,7 +2012,7 @@ class BaseEntity(ABC):
 
     label = property(get_label, set_label)
 
-    def get_thumbnail_id(self):
+    def get_thumbnail_id(self) -> Optional[str]:
         """Thumbnail id of entity.
 
         Returns:
@@ -1971,11 +2025,11 @@ class BaseEntity(ABC):
             )
         return self._thumbnail_id
 
-    def set_thumbnail_id(self, thumbnail_id):
+    def set_thumbnail_id(self, thumbnail_id: Optional[str]) -> None:
         """Change thumbnail id.
 
         Args:
-            thumbnail_id (Union[str, None]): Thumbnail id for entity.
+            thumbnail_id (Optional[str]): Thumbnail id for entity.
 
         """
         if not self._supports_thumbnail:
@@ -1986,7 +2040,7 @@ class BaseEntity(ABC):
 
     thumbnail_id = property(get_thumbnail_id, set_thumbnail_id)
 
-    def get_status(self) -> "Union[str, _CustomNone]":
+    def get_status(self) -> Union[str, _CustomNone]:
         """Folder status.
 
         Returns:
@@ -1999,7 +2053,7 @@ class BaseEntity(ABC):
             )
         return self._status
 
-    def set_status(self, status_name: str):
+    def set_status(self, status_name: str) -> None:
         """Set folder status.
 
         Args:
@@ -2026,7 +2080,7 @@ class BaseEntity(ABC):
 
     status = property(get_status, set_status)
 
-    def get_tags(self):
+    def get_tags(self) -> list[str]:
         """Task tags.
 
         Returns:
@@ -2039,7 +2093,7 @@ class BaseEntity(ABC):
             )
         return self._tags
 
-    def set_tags(self, tags):
+    def set_tags(self, tags: Iterable[str]) -> None:
         """Change tags.
 
         Args:
@@ -2064,7 +2118,8 @@ class ProjectStatus:
         state (Optional[StatusState]): A state of the status.
         icon (Optional[str]): Icon of the status. e.g. 'play_arrow'.
         color (Optional[str]): Color of the status. e.g. '#eeeeee'.
-        scope (Optional[Iterable[str]]): Scope of the status. e.g. ['folder'].
+        scope (Optional[Iterable[StatusEntityType]]): Scope of the
+            status. e.g. ['folder'].
         index (Optional[int]): Index of the status.
         project_statuses (Optional[_ProjectStatuses]): Project statuses
             wrapper.
@@ -2080,16 +2135,16 @@ class ProjectStatus:
 
     def __init__(
         self,
-        name,
-        short_name=None,
-        state=None,
-        icon=None,
-        color=None,
-        scope=None,
-        index=None,
-        project_statuses=None,
-        is_new=None,
-    ):
+        name: str,
+        short_name: Optional[str] = None,
+        state: Optional[StatusState] = None,
+        icon: Optional[str] = None,
+        color: Optional[str] = None,
+        scope: Optional[StatusEntityType] = None,
+        index: Optional[int] = None,
+        project_statuses: Optional[_ProjectStatuses] = None,
+        is_new: Optional[bool] = None,
+    ) -> None:
         short_name = short_name or ""
         icon = icon or ""
         state = state or self.default_state
@@ -2124,27 +2179,25 @@ class ProjectStatus:
     def __str__(self):
         short_name = ""
         if self.short_name:
-            short_name = "({})".format(self.short_name)
-        return "<{} {}{}>".format(
-            self.__class__.__name__, self.name, short_name
-        )
+            short_name = f"({self.short_name})"
+        return f"<{self.__class__.__name__} {self.name}{short_name}>"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         if key in {
             "name", "short_name", "icon", "state", "color", "slugified_name"
         }:
             return getattr(self, key)
         raise KeyError(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> None:
         if key in {"name", "short_name", "icon", "state", "color"}:
             return setattr(self, key, value)
         raise KeyError(key)
 
-    def lock(self):
+    def lock(self) -> None:
         """Lock status.
 
         Changes were commited and current values are now the original values.
@@ -2159,13 +2212,13 @@ class ProjectStatus:
         self._original_scope = self.scope
         self._original_index = self.index
 
-    def is_available_for_entity_type(self, entity_type):
+    def is_available_for_entity_type(self, entity_type: str) -> bool:
         if self._scope is None:
             return True
         return entity_type in self._scope
 
     @staticmethod
-    def slugify_name(name):
+    def slugify_name(name: str) -> str:
         """Slugify status name for name comparison.
 
         Args:
@@ -2177,7 +2230,7 @@ class ProjectStatus:
         """
         return slugify_string(name.lower())
 
-    def get_project_statuses(self):
+    def get_project_statuses(self) -> Optional[_ProjectStatuses]:
         """Internal logic method.
 
         Returns:
@@ -2186,7 +2239,9 @@ class ProjectStatus:
         """
         return self._project_statuses
 
-    def set_project_statuses(self, project_statuses):
+    def set_project_statuses(
+        self, project_statuses: _ProjectStatuses
+    ) -> None:
         """Internal logic method to change parent object.
 
         Args:
@@ -2195,7 +2250,9 @@ class ProjectStatus:
         """
         self._project_statuses = project_statuses
 
-    def unset_project_statuses(self, project_statuses):
+    def unset_project_statuses(
+        self, project_statuses: _ProjectStatuses
+    ) -> None:
         """Internal logic method to unset parent object.
 
         Args:
@@ -2207,7 +2264,7 @@ class ProjectStatus:
             self._index = None
 
     @property
-    def changed(self):
+    def changed(self) -> bool:
         """Status has changed.
 
         Returns:
@@ -2225,35 +2282,41 @@ class ProjectStatus:
             or self._original_scope != self._scope
         )
 
-    def delete(self):
+    def delete(self) -> None:
         """Remove status from project statuses object."""
         if self._project_statuses is not None:
             self._project_statuses.remove(self)
 
-    def get_index(self):
+    def get_index(self) -> Optional[int]:
         """Get index of status.
 
         Returns:
-            Union[int, None]: Index of status or None if status is not under
+            Optional[int]: Index of status or None if status is not under
                 project.
 
         """
         return self._index
 
-    def set_index(self, index, **kwargs):
+    def set_index(
+        self,
+        index: Optional[int],
+        from_parent: bool = False,
+    ) -> None:
         """Change status index.
 
         Returns:
-            Union[int, None]: Index of status or None if status is not under
+            Optional[int]: Index of status or None if status is not under
                 project.
+            from_parent (bool): For internal usage when called
+                from '_ProjectStatuses'.
 
         """
-        if kwargs.get("from_parent"):
+        if from_parent:
             self._index = index
         else:
             self._project_statuses.set_status_index(self, index)
 
-    def get_name(self):
+    def get_name(self) -> str:
         """Status name.
 
         Returns:
@@ -2262,7 +2325,7 @@ class ProjectStatus:
         """
         return self._name
 
-    def set_name(self, name):
+    def set_name(self, name: str) -> None:
         """Change status name.
 
         Args:
@@ -2276,7 +2339,7 @@ class ProjectStatus:
         self._name = name
         self._slugified_name = None
 
-    def get_short_name(self):
+    def get_short_name(self) -> str:
         """Status short name 3 letters tops.
 
         Returns:
@@ -2285,7 +2348,7 @@ class ProjectStatus:
         """
         return self._short_name
 
-    def set_short_name(self, short_name):
+    def set_short_name(self, short_name: str) -> None:
         """Change status short name.
 
         Args:
@@ -2296,7 +2359,7 @@ class ProjectStatus:
             raise TypeError("Short name must be a string.")
         self._short_name = short_name
 
-    def get_icon(self):
+    def get_icon(self) -> str:
         """Name of icon to use for status.
 
         Returns:
@@ -2305,7 +2368,7 @@ class ProjectStatus:
         """
         return self._icon
 
-    def set_icon(self, icon):
+    def set_icon(self, icon: Optional[str]) -> None:
         """Change status icon name.
 
         Args:
@@ -2319,7 +2382,7 @@ class ProjectStatus:
         self._icon = icon
 
     @property
-    def slugified_name(self):
+    def slugified_name(self) -> str:
         """Slugified and lowere status name.
 
         Can be used for comparison of existing statuses. e.g. 'In Progress'
@@ -2333,7 +2396,7 @@ class ProjectStatus:
             self._slugified_name = self.slugify_name(self.name)
         return self._slugified_name
 
-    def get_state(self):
+    def get_state(self) -> StatusState:
         """Get state of project status.
 
         Return:
@@ -2342,7 +2405,7 @@ class ProjectStatus:
         """
         return self._state
 
-    def set_state(self, state):
+    def set_state(self, state: StatusState) -> None:
         """Set color of project status.
 
         Args:
@@ -2350,10 +2413,10 @@ class ProjectStatus:
 
         """
         if state not in self.valid_states:
-            raise ValueError("Invalid state '{}'".format(str(state)))
+            raise ValueError(f"Invalid state '{state}'")
         self._state = state
 
-    def get_color(self):
+    def get_color(self) -> str:
         """Get color of project status.
 
         Returns:
@@ -2362,7 +2425,7 @@ class ProjectStatus:
         """
         return self._color
 
-    def set_color(self, color):
+    def set_color(self, color: str) -> None:
         """Set color of project status.
 
         Args:
@@ -2371,26 +2434,27 @@ class ProjectStatus:
         """
         if not isinstance(color, str):
             raise TypeError(
-                "Color must be string got '{}'".format(type(color)))
+                f"Color must be string got '{type(color)}'"
+            )
         color = color.lower()
         if self.color_regex.fullmatch(color) is None:
-            raise ValueError("Invalid color value '{}'".format(color))
+            raise ValueError(f"Invalid color value '{color}'")
         self._color = color
 
-    def get_scope(self):
+    def get_scope(self) -> set[StatusEntityType]:
         """Get scope of the status.
 
         Returns:
-            Set[str]: Scope of the status.
+            set[StatusEntityType]: Scope of the status.
 
         """
         return set(self._scope)
 
-    def set_scope(self, scope):
+    def set_scope(self, scope: Iterable[StatusEntityType]) -> None:
         """Get scope of the status.
 
         Returns:
-            scope (Iterable[str]): Scope of the status.
+            scope (Iterable[StatusEntityType]): Scope of the status.
 
         """
         if not isinstance(scope, (list, set, tuple)):
@@ -2401,9 +2465,8 @@ class ProjectStatus:
         scope = set(scope)
         invalid_entity_types = scope - self.valid_scope
         if invalid_entity_types:
-            raise ValueError("Invalid scope values '{}'".format(
-                ", ".join(invalid_entity_types)
-            ))
+            joined_types = ", ".join(invalid_entity_types)
+            raise ValueError(f"Invalid scope values '{joined_types}'")
 
         self._scope = scope
 
@@ -2416,7 +2479,7 @@ class ProjectStatus:
     icon = property(get_icon, set_icon)
     scope = property(get_scope, set_scope)
 
-    def _validate_other_p_statuses(self, other):
+    def _validate_other_p_statuses(self, other: ProjectStatus) -> None:
         """Validate if other status can be used for move.
 
         To be able to work with other status, and position them in relation,
@@ -2438,15 +2501,16 @@ class ProjectStatus:
             missing_status = self
         if missing_status is not None:
             raise ValueError(
-                "Status '{}' is not assigned to a project.".format(
-                    missing_status.name))
+                f"Status '{missing_status.name}' is not assigned"
+                " to a project."
+            )
         if m_project_statuses is not o_project_statuses:
             raise ValueError(
                 "Statuse are assigned to different projects."
                 " Cannot execute move."
             )
 
-    def move_before(self, other):
+    def move_before(self, other: ProjectStatus) -> None:
         """Move status before other status.
 
         Args:
@@ -2456,7 +2520,7 @@ class ProjectStatus:
         self._validate_other_p_statuses(other)
         self._project_statuses.set_status_index(self, other.index)
 
-    def move_after(self, other):
+    def move_after(self, other: ProjectStatus) -> None:
         """Move status after other status.
 
         Args:
@@ -2466,11 +2530,11 @@ class ProjectStatus:
         self._validate_other_p_statuses(other)
         self._project_statuses.set_status_index(self, other.index + 1)
 
-    def to_data(self):
+    def to_data(self) -> dict[str, Any]:
         """Convert status to data.
 
         Returns:
-            dict[str, str]: Status data.
+            dict[str, Any]: Status data.
 
         """
         output = {
@@ -2490,13 +2554,18 @@ class ProjectStatus:
         return output
 
     @classmethod
-    def from_data(cls, data, index=None, project_statuses=None):
+    def from_data(
+        cls,
+        data: ProjectStatusDict,
+        index: Optional[int] = None,
+        project_statuses: Optional[_ProjectStatuses] = None,
+    ) -> ProjectStatus:
         """Create project status from data.
 
         Args:
             data (dict[str, str]): Status data.
             index (Optional[int]): Status index.
-            project_statuses (Optional[ProjectStatuses]): Project statuses
+            project_statuses (Optional[_ProjectStatuses]): Project statuses
                 object which wraps the status for a project.
 
         """
@@ -2525,7 +2594,7 @@ class _ProjectStatuses:
         Validate if statuses are duplicated.
 
     """
-    def __init__(self, statuses):
+    def __init__(self, statuses: list[ProjectStatusDict]) -> None:
         self._statuses = [
             ProjectStatus.from_data(status, idx, self)
             for idx, status in enumerate(statuses)
@@ -2534,10 +2603,10 @@ class _ProjectStatuses:
         self._orig_status_length = len(self._statuses)
         self._set_called = False
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._statuses)
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[ProjectStatus, None, None]:
         """Iterate over statuses.
 
         Yields:
@@ -2549,13 +2618,13 @@ class _ProjectStatuses:
 
     def create(
         self,
-        name,
-        short_name=None,
-        state=None,
-        icon=None,
-        color=None,
-        scope=None,
-    ):
+        name: str,
+        short_name: Optional[str] = None,
+        state: Optional[StatusState] = None,
+        icon: Optional[str] = None,
+        color: Optional[str] = None,
+        scope: Optional[list[StatusEntityType]] = None,
+    ) -> ProjectStatus:
         """Create project status.
 
         Args:
@@ -2564,7 +2633,8 @@ class _ProjectStatuses:
             state (Optional[StatusState]): A state of the status.
             icon (Optional[str]): Icon of the status. e.g. 'play_arrow'.
             color (Optional[str]): Color of the status. e.g. '#eeeeee'.
-            scope (Optional[List[str]]): Scope of the status. e.g. ['folder'].
+            scope (Optional[list[StatusEntityType]]): Scope of the
+                status. e.g. ['folder'].
 
         Returns:
             ProjectStatus: Created project status.
@@ -2576,10 +2646,10 @@ class _ProjectStatuses:
         self.append(status)
         return status
 
-    def set_status_scope_supported(self, supported: bool):
+    def set_status_scope_supported(self, supported: bool) -> None:
         self._scope_supported = supported
 
-    def lock(self):
+    def lock(self) -> None:
         """Lock statuses.
 
         Changes were commited and current values are now the original values.
@@ -2590,7 +2660,7 @@ class _ProjectStatuses:
         for status in self._statuses:
             status.lock()
 
-    def to_data(self):
+    def to_data(self) -> list[ProjectStatusDict]:
         """Convert to project statuses data."""
         output = [
             status.to_data()
@@ -2602,13 +2672,13 @@ class _ProjectStatuses:
                 item.pop("scope")
         return output
 
-    def set(self, statuses):
+    def set(self, statuses: list[ProjectStatusDict]) -> None:
         """Explicitly override statuses.
 
         This method does not handle if statuses changed or not.
 
         Args:
-            statuses (list[dict[str, str]]): List of statuses data.
+            statuses (list[ProjectStatusDict]): List of statuses data.
 
         """
         self._set_called = True
@@ -2618,7 +2688,7 @@ class _ProjectStatuses:
         ]
 
     @property
-    def changed(self):
+    def changed(self) -> bool:
         """Statuses have changed.
 
         Returns:
@@ -2638,7 +2708,9 @@ class _ProjectStatuses:
                 return True
         return False
 
-    def get(self, name, default=None):
+    def get(
+        self, name: str, default: Optional[Any] = None
+    ) -> Union[ProjectStatus, Any]:
         """Get status by name.
 
         Args:
@@ -2660,7 +2732,11 @@ class _ProjectStatuses:
 
     get_status_by_name = get
 
-    def index(self, status, **kwargs):
+    def index(
+        self,
+        status: ProjectStatus,
+        default: Any = _NOT_SET,
+    ) -> Union[int, Any]:
         """Get status index.
 
         Args:
@@ -2686,18 +2762,20 @@ class _ProjectStatuses:
         if output is not None:
             return output
 
-        if "default" in kwargs:
-            return kwargs["default"]
-        raise ValueError("Status '{}' not found".format(status.name))
+        if default is _NOT_SET:
+            raise ValueError(f"Status '{status.name}' not found")
+        return default
 
-    def get_status_by_slugified_name(self, name):
+    def get_status_by_slugified_name(
+        self, name: str
+    ) -> Optional[ProjectStatus]:
         """Get status by slugified name.
 
         Args:
             name (str): Status name. Is slugified before search.
 
         Returns:
-            Union[ProjectStatus, None]: Status or None if not found.
+            Optional[ProjectStatus]: Status or None if not found.
 
         """
         slugified_name = ProjectStatus.slugify_name(name)
@@ -2710,7 +2788,9 @@ class _ProjectStatuses:
             None
         )
 
-    def remove_by_name(self, name, ignore_missing=False):
+    def remove_by_name(
+        self, name: str, ignore_missing: bool = False
+    ) -> Optional[ProjectStatus]:
         """Remove status by name.
 
         Args:
@@ -2719,18 +2799,21 @@ class _ProjectStatuses:
                 status is not found.
 
         Returns:
-            ProjectStatus: Removed status.
+            Optional[ProjectStatus]: Removed status.
 
         """
         matching_status = self.get(name)
         if matching_status is None:
             if ignore_missing:
-                return
-            raise ValueError(
-                "Status '{}' not found in project".format(name))
+                return None
+            raise ValueError(f"Status '{name}' not found in project")
         return self.remove(matching_status)
 
-    def remove(self, status, ignore_missing=False):
+    def remove(
+        self,
+        status: ProjectStatus,
+        ignore_missing: bool = False,
+    ) -> Optional[ProjectStatus]:
         """Remove status.
 
         Args:
@@ -2739,18 +2822,18 @@ class _ProjectStatuses:
                 status is not found.
 
         Returns:
-            Union[ProjectStatus, None]: Removed status.
+            Optional[ProjectStatus]: Removed status.
 
         """
         index = self.index(status, default=None)
         if index is None:
             if ignore_missing:
                 return None
-            raise ValueError("Status '{}' not in project".format(status))
+            raise ValueError(f"Status '{status}' not in project")
 
         return self.pop(index)
 
-    def pop(self, index):
+    def pop(self, index: int) -> ProjectStatus:
         """Remove status by index.
 
         Args:
@@ -2766,7 +2849,11 @@ class _ProjectStatuses:
             st.set_index(st.index - 1, from_parent=True)
         return status
 
-    def insert(self, index, status):
+    def insert(
+        self,
+        index: int,
+        status: Union[ProjectStatus, ProjectStatusDict],
+    ) -> ProjectStatus:
         """Insert status at index.
 
         Args:
@@ -2778,16 +2865,19 @@ class _ProjectStatuses:
             ProjectStatus: Inserted status.
 
         """
-        if not isinstance(status, ProjectStatus):
-            status = ProjectStatus.from_data(status)
+        matching_index = None
+        if isinstance(status, ProjectStatus):
+            p_status: ProjectStatus = status
+            matching_index = self.index(p_status, default=None)
+        else:
+            p_status: ProjectStatus = ProjectStatus.from_data(status)
 
         start_index = index
         end_index = len(self._statuses) + 1
-        matching_index = self.index(status, default=None)
         if matching_index is not None:
             if matching_index == index:
-                status.set_index(index, from_parent=True)
-                return
+                p_status.set_index(index, from_parent=True)
+                return p_status
 
             self._statuses.pop(matching_index)
             if matching_index < index:
@@ -2796,26 +2886,30 @@ class _ProjectStatuses:
             else:
                 end_index -= 1
 
-        status.set_project_statuses(self)
-        self._statuses.insert(index, status)
+        p_status.set_project_statuses(self)
+        self._statuses.insert(index, p_status)
         for idx, st in enumerate(self._statuses[start_index:end_index]):
             st.set_index(start_index + idx, from_parent=True)
-        return status
+        return p_status
 
-    def append(self, status):
+    def append(
+        self, status: Union[ProjectStatus, ProjectStatusDict]
+    ) -> ProjectStatus:
         """Add new status to the end of the list.
 
         Args:
-            status (Union[ProjectStatus, dict[str, str]]): Status to insert.
-                Can be either status object or status data.
+            status (Union[ProjectStatus, ProjectStatusDict]): Status to
+                append. Can be either status object or status data.
 
         Returns:
-            ProjectStatus: Inserted status.
+            ProjectStatus: Appended status.
 
         """
         return self.insert(len(self._statuses), status)
 
-    def set_status_index(self, status, index):
+    def set_status_index(
+        self, status: ProjectStatus, index: int
+    ) -> ProjectStatus:
         """Set status index.
 
         Args:
@@ -2835,9 +2929,9 @@ class ProjectEntity(BaseEntity):
         library (bool): Is project library project.
         folder_types (list[dict[str, Any]]): Folder types definition.
         task_types (list[dict[str, Any]]): Task types definition.
-        statuses: (list[dict[str, Any]]): Statuses definition.
-        attribs (Optional[Dict[str, Any]]): Attribute values.
-        data (Dict[str, Any]): Entity data (custom data).
+        statuses: (list[ProjectStatusDict]): Statuses definition.
+        attribs (Optional[dict[str, Any]]): Attribute values.
+        data (dict[str, Any]): Entity data (custom data).
         active (bool): Is entity active.
         entity_hub (EntityHub): Object of entity hub which created object of
             the entity.
@@ -2855,11 +2949,11 @@ class ProjectEntity(BaseEntity):
         name: str,
         project_code: str,
         library: bool,
-        folder_types: List[Dict[str, Any]],
-        task_types: List[Dict[str, Any]],
-        statuses: List[Dict[str, Any]],
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        folder_types: list[dict[str, Any]],
+        task_types: list[dict[str, Any]],
+        statuses: list[ProjectStatusDict],
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_hub: EntityHub = None,
     ):
@@ -2886,38 +2980,39 @@ class ProjectEntity(BaseEntity):
         self._orig_task_types = copy.deepcopy(task_types)
         self._orig_statuses = copy.deepcopy(statuses)
 
-    def _prepare_entity_id(self, entity_id):
+    def _prepare_entity_id(self, entity_id: str) -> str:
         if entity_id != self.project_name:
             raise ValueError(
-                "Unexpected entity id value \"{}\". Expected \"{}\"".format(
-                    entity_id, self.project_name))
+                f"Unexpected entity id value \"{entity_id}\"."
+                f" Expected \"{self.project_name}\""
+            )
         return entity_id
 
-    def set_name(self, name):
+    def set_name(self, name: str) -> None:
         if self._name == name:
             return
         raise ValueError("It is not allowed to change project name.")
 
-    def get_parent(self, *args, **kwargs):
+    def get_parent(self, *args, **kwargs) -> None:
         return None
 
-    def set_parent(self, parent):
+    def set_parent(self, parent: Any) -> None:
         raise ValueError(
-            "Parent of project cannot be set to {}".format(parent)
+            f"Parent of project cannot be set to {parent}"
         )
 
-    def set_status_scope_supported(self, supported: bool):
+    def set_status_scope_supported(self, supported: bool) -> None:
         self._statuses_obj.set_status_scope_supported(supported)
 
     parent = property(get_parent, set_parent)
 
-    def get_orig_folder_types(self):
+    def get_orig_folder_types(self) -> list[dict[str, Any]]:
         return copy.deepcopy(self._orig_folder_types)
 
-    def get_folder_types(self):
+    def get_folder_types(self) -> list[dict[str, Any]]:
         return copy.deepcopy(self._folder_types)
 
-    def set_folder_types(self, folder_types):
+    def set_folder_types(self, folder_types: list[dict[str, Any]]) -> None:
         new_folder_types = []
         for folder_type in folder_types:
             if "icon" not in folder_type:
@@ -2925,13 +3020,13 @@ class ProjectEntity(BaseEntity):
             new_folder_types.append(folder_type)
         self._folder_types = new_folder_types
 
-    def get_orig_task_types(self):
+    def get_orig_task_types(self) -> list[dict[str, Any]]:
         return copy.deepcopy(self._orig_task_types)
 
-    def get_task_types(self):
+    def get_task_types(self) -> list[dict[str, Any]]:
         return copy.deepcopy(self._task_types)
 
-    def set_task_types(self, task_types):
+    def set_task_types(self, task_types: list[dict[str, Any]]) -> None:
         new_task_types = []
         for task_type in task_types:
             if "icon" not in task_type:
@@ -2939,20 +3034,20 @@ class ProjectEntity(BaseEntity):
             new_task_types.append(task_type)
         self._task_types = new_task_types
 
-    def get_orig_statuses(self):
+    def get_orig_statuses(self) -> list[ProjectStatusDict]:
         return copy.deepcopy(self._orig_statuses)
 
-    def get_statuses(self):
+    def get_statuses(self) -> _ProjectStatuses:
         return self._statuses_obj
 
-    def set_statuses(self, statuses):
+    def set_statuses(self, statuses: list[ProjectStatusDict]) -> None:
         self._statuses_obj.set(statuses)
 
     folder_types = property(get_folder_types, set_folder_types)
     task_types = property(get_task_types, set_task_types)
     statuses = property(get_statuses, set_statuses)
 
-    def get_status_by_slugified_name(self, name):
+    def get_status_by_slugified_name(self, name: str) -> str:
         """Find status by name.
 
         Args:
@@ -2960,19 +3055,19 @@ class ProjectEntity(BaseEntity):
 
 
         Returns:
-            Union[ProjectStatus, None]: Status object or None.
+            Optional[ProjectStatus]: Status object or None.
 
         """
         return self._statuses_obj.get_status_by_slugified_name(name)
 
-    def lock(self):
+    def lock(self) -> None:
         super().lock()
         self._orig_folder_types = copy.deepcopy(self._folder_types)
         self._orig_task_types = copy.deepcopy(self._task_types)
         self._statuses_obj.lock()
 
     @property
-    def changes(self):
+    def changes(self) -> dict[str, Any]:
         changes = self._get_default_changes()
         if self._orig_folder_types != self._folder_types:
             changes["folderTypes"] = self.get_folder_types()
@@ -2986,7 +3081,7 @@ class ProjectEntity(BaseEntity):
         return changes
 
     @classmethod
-    def from_entity_data(cls, project, entity_hub) -> "ProjectEntity":
+    def from_entity_data(cls, project, entity_hub) -> ProjectEntity:
         return cls(
             project["name"],
             project["code"],
@@ -3000,7 +3095,7 @@ class ProjectEntity(BaseEntity):
             entity_hub=entity_hub,
         )
 
-    def to_create_body_data(self):
+    def to_create_body_data(self) -> dict[str, Any]:
         raise NotImplementedError(
             "ProjectEntity does not support conversion to entity data"
         )
@@ -3013,17 +3108,17 @@ class FolderEntity(BaseEntity):
         name (str): Name of entity.
         folder_type (str): Type of folder. Folder type must be available in
             config of project folder types.
-        parent_id (Union[str, None]): Id of parent entity.
+        parent_id (Optional[str]): Id of parent entity.
         label (Optional[str]): Folder label.
         path (Optional[str]): Folder path. Path consist of all parent names
             with slash('/') used as separator.
         status (Optional[str]): Folder status.
-        tags (Optional[List[str]]): Folder tags.
-        attribs (Dict[str, Any]): Attribute values.
-        data (Dict[str, Any]): Entity data (custom data).
-        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
-        active (bool): Is entity active.
-        entity_id (Union[str, None]): Id of the entity. New id is created if
+        tags (Optional[list[str]]): Folder tags.
+        attribs (Optional[dict[str, Any]]): Attribute values.
+        data (Optional[dict[str, Any]]): Entity data (custom data).
+        thumbnail_id (Optional[str]): Id of entity's thumbnail.
+        active (Optional[bool]): Is entity active.
+        entity_id (Optional[str]): Id of the entity. New id is created if
             not passed.
         created (Optional[bool]): Entity is new. When 'None' is passed the
             value is defined based on value of 'entity_id'.
@@ -3048,15 +3143,15 @@ class FolderEntity(BaseEntity):
         label: Optional[str] = None,
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
-        tags: Optional[List[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        tags: Optional[list[str]] = None,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
-        active: bool = UNKNOWN_VALUE,
+        active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
-    ):
+    ) -> None:
         super().__init__(
             entity_id=entity_id,
             parent_id=parent_id,
@@ -3087,35 +3182,34 @@ class FolderEntity(BaseEntity):
     def get_folder_type(self) -> str:
         return self._folder_type
 
-    def set_folder_type(self, folder_type: str):
+    def set_folder_type(self, folder_type: str) -> None:
         self._folder_type = folder_type
 
     folder_type = property(get_folder_type, set_folder_type)
 
-    def get_path(self, dynamic_value=True):
+    def get_path(self, dynamic_value: bool = True) -> str:
         if not dynamic_value:
             return self._path
 
         if self._path is None:
             parent = self.parent
             if parent.entity_type == "folder":
-                parent_path = parent.path
-                path = "/".join([parent_path, self.name])
+                path = f"{parent.path}/{self.name}"
             else:
-                path = "/{}".format(self.name)
+                path = f"/{self.name}"
             self._path = path
         return self._path
 
-    def reset_path(self):
+    def reset_path(self) -> None:
         self._path = None
         self._entity_hub.folder_path_reseted(self.id)
 
     path = property(get_path)
 
-    def get_has_published_content(self):
+    def get_has_published_content(self) -> bool:
         return self._has_published_content
 
-    def set_has_published_content(self, has_published_content):
+    def set_has_published_content(self, has_published_content: bool) -> None:
         if self._has_published_content is has_published_content:
             return
 
@@ -3128,17 +3222,17 @@ class FolderEntity(BaseEntity):
     )
 
     @property
-    def _immutable_for_hierarchy(self):
+    def _immutable_for_hierarchy(self) -> Optional[bool]:
         if self.has_published_content:
             return True
         return None
 
-    def lock(self):
+    def lock(self) -> None:
         super().lock()
         self._orig_folder_type = self._folder_type
 
     @property
-    def changes(self):
+    def changes(self) -> dict[str, Any]:
         changes = self._get_default_changes()
         if self._orig_parent_id != self._parent_id:
             parent_id = self._parent_id
@@ -3152,7 +3246,11 @@ class FolderEntity(BaseEntity):
         return changes
 
     @classmethod
-    def from_entity_data(cls, folder, entity_hub) -> "FolderEntity":
+    def from_entity_data(
+        cls,
+        folder: dict[str, Any],
+        entity_hub: EntityHub,
+    ) -> FolderEntity:
         parent_id = folder["parentId"]
         if parent_id is None:
             parent_id = entity_hub.project_entity.id
@@ -3173,7 +3271,7 @@ class FolderEntity(BaseEntity):
             entity_hub=entity_hub
         )
 
-    def to_create_body_data(self):
+    def to_create_body_data(self) -> dict[str, Any]:
         parent_id = self._parent_id
         if parent_id is UNKNOWN_VALUE:
             raise ValueError("Folder does not have set 'parent_id'")
@@ -3222,16 +3320,16 @@ class TaskEntity(BaseEntity):
         name (str): Name of entity.
         task_type (str): Type of task. Task type must be available in config
             of project task types.
-        folder_id (Union[str, None]): Parent folder id.
+        folder_id (Optional[str]): Parent folder id.
         label (Optional[str]): Task label.
         status (Optional[str]): Task status.
         tags (Optional[Iterable[str]]): Folder tags.
-        attribs (Dict[str, Any]): Attribute values.
-        data (Dict[str, Any]): Entity data (custom data).
+        attribs (dict[str, Any]): Attribute values.
+        data (dict[str, Any]): Entity data (custom data).
         assignees (Optional[Iterable[str]]): User assignees to the task.
-        thumbnail_id (Union[str, None]): Id of entity's thumbnail.
-        active (bool): Is entity active.
-        entity_id (Union[str, None]): Id of the entity. New id is created if
+        thumbnail_id (Optional[str]): Id of entity's thumbnail.
+        active (Optional[bool]): Is entity active.
+        entity_id (Optional[str]): Id of the entity. New id is created if
             not passed.
         created (Optional[bool]): Entity is new. When 'None' is passed the
             value is defined based on value of 'entity_id'.
@@ -3255,15 +3353,15 @@ class TaskEntity(BaseEntity):
         label: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         assignees: Optional[Iterable[str]] = None,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
-    ):
+    ) -> None:
         super().__init__(
             name=name,
             parent_id=folder_id,
@@ -3291,12 +3389,12 @@ class TaskEntity(BaseEntity):
 
         self._children_ids = set()
 
-    def lock(self):
+    def lock(self) -> None:
         super().lock()
         self._orig_task_type = self._task_type
         self._orig_assignees = copy.deepcopy(self._assignees)
 
-    def get_folder_id(self):
+    def get_folder_id(self) -> Union[str, _CustomNone]:
         return self._parent_id
 
     def set_folder_id(self, folder_id):
@@ -3307,12 +3405,12 @@ class TaskEntity(BaseEntity):
     def get_task_type(self) -> str:
         return self._task_type
 
-    def set_task_type(self, task_type: str):
+    def set_task_type(self, task_type: str) -> None:
         self._task_type = task_type
 
     task_type = property(get_task_type, set_task_type)
 
-    def get_assignees(self):
+    def get_assignees(self) -> list[str]:
         """Task assignees.
 
         Returns:
@@ -3321,7 +3419,7 @@ class TaskEntity(BaseEntity):
         """
         return self._assignees
 
-    def set_assignees(self, assignees):
+    def set_assignees(self, assignees: Iterable[str]) -> None:
         """Change assignees.
 
         Args:
@@ -3332,11 +3430,11 @@ class TaskEntity(BaseEntity):
 
     assignees = property(get_assignees, set_assignees)
 
-    def add_child(self, child):
+    def add_child(self, child: BaseEntity) -> None:
         raise ValueError("Task does not support to add children")
 
     @property
-    def changes(self):
+    def changes(self) -> dict[str, Any]:
         changes = self._get_default_changes()
 
         if self._orig_parent_id != self._parent_id:
@@ -3351,7 +3449,9 @@ class TaskEntity(BaseEntity):
         return changes
 
     @classmethod
-    def from_entity_data(cls, task, entity_hub) -> "TaskEntity":
+    def from_entity_data(
+        cls, task: dict[str, Any], entity_hub: EntityHub
+    ) -> TaskEntity:
         return cls(
             name=task["name"],
             task_type=task["taskType"],
@@ -3369,7 +3469,7 @@ class TaskEntity(BaseEntity):
             entity_hub=entity_hub
         )
 
-    def to_create_body_data(self):
+    def to_create_body_data(self) -> dict[str, Any]:
         if self.parent_id is UNKNOWN_VALUE:
             raise ValueError("Task does not have set 'parent_id'")
 
@@ -3414,15 +3514,15 @@ class ProductEntity(BaseEntity):
         self,
         name: str,
         product_type: str,
-        folder_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
+        folder_id: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
-    ):
+    ) -> None:
         super().__init__(
             name=name,
             parent_id=folder_id,
@@ -3438,28 +3538,28 @@ class ProductEntity(BaseEntity):
 
         self._orig_product_type = product_type
 
-    def get_folder_id(self):
+    def get_folder_id(self) -> Union[str, _CustomNone]:
         return self._parent_id
 
-    def set_folder_id(self, folder_id):
+    def set_folder_id(self, folder_id: str) -> None:
         self.set_parent_id(folder_id)
 
     folder_id = property(get_folder_id, set_folder_id)
 
-    def get_product_type(self):
+    def get_product_type(self) -> str:
         return self._product_type
 
-    def set_product_type(self, product_type):
+    def set_product_type(self, product_type: str) -> None:
         self._product_type = product_type
 
     product_type = property(get_product_type, set_product_type)
 
-    def lock(self):
+    def lock(self) -> None:
         super().lock()
         self._orig_product_type = self._product_type
 
     @property
-    def changes(self):
+    def changes(self) -> dict[str, Any]:
         changes = self._get_default_changes()
 
         if self._orig_parent_id != self._parent_id:
@@ -3471,7 +3571,9 @@ class ProductEntity(BaseEntity):
         return changes
 
     @classmethod
-    def from_entity_data(cls, product, entity_hub):
+    def from_entity_data(
+        cls, product: dict[str, Any], entity_hub: EntityHub
+    ) -> ProductEntity:
         return cls(
             name=product["name"],
             product_type=product["productType"],
@@ -3485,11 +3587,11 @@ class ProductEntity(BaseEntity):
             entity_hub=entity_hub
         )
 
-    def to_create_body_data(self):
+    def to_create_body_data(self) -> dict[str, Any]:
         if self.parent_id is UNKNOWN_VALUE:
             raise ValueError("Product does not have set 'folder_id'")
 
-        output = {
+        output: dict[str, Any] = {
             "name": self.name,
             "productType": self.product_type,
             "folderId": self.parent_id,
@@ -3521,18 +3623,18 @@ class VersionEntity(BaseEntity):
     def __init__(
         self,
         version: int,
-        product_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
-        task_id: Optional["Union[str, _CustomNone]"] = UNKNOWN_VALUE,
+        product_id: Optional[str] = UNKNOWN_VALUE,
+        task_id: Optional[str] = UNKNOWN_VALUE,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
-        data: Optional[Dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
-    ):
+    ) -> None:
         super().__init__(
             parent_id=product_id,
             status=status,
@@ -3551,37 +3653,37 @@ class VersionEntity(BaseEntity):
         self._orig_version = version
         self._orig_task_id = task_id
 
-    def get_version(self):
+    def get_version(self) -> int:
         return self._version
 
-    def set_version(self, version):
+    def set_version(self, version: int) -> None:
         self._version = version
 
     version = property(get_version, set_version)
 
-    def get_product_id(self):
+    def get_product_id(self) -> Optional[str]:
         return self._parent_id
 
-    def set_product_id(self, product_id):
+    def set_product_id(self, product_id: str) -> None:
         self.set_parent_id(product_id)
 
     product_id = property(get_product_id, set_product_id)
 
-    def get_task_id(self):
+    def get_task_id(self) -> Optional[str]:
         return self._task_id
 
-    def set_task_id(self, task_id):
+    def set_task_id(self, task_id: Optional[str]) -> None:
         self._task_id = task_id
 
     task_id = property(get_task_id, set_task_id)
 
-    def lock(self):
+    def lock(self) -> None:
         super().lock()
         self._orig_version = self._version
         self._orig_task_id = self._task_id
 
     @property
-    def changes(self):
+    def changes(self) -> dict[str, Any]:
         changes = self._get_default_changes()
 
         if self._orig_parent_id != self._parent_id:
@@ -3593,7 +3695,9 @@ class VersionEntity(BaseEntity):
         return changes
 
     @classmethod
-    def from_entity_data(cls, version, entity_hub):
+    def from_entity_data(
+        cls, version: dict[str, Any], entity_hub: EntityHub
+    ) -> VersionEntity:
         return cls(
             version=version["version"],
             product_id=version["productId"],
@@ -3609,11 +3713,11 @@ class VersionEntity(BaseEntity):
             entity_hub=entity_hub
         )
 
-    def to_create_body_data(self):
+    def to_create_body_data(self) -> dict[str, Any]:
         if self.parent_id is UNKNOWN_VALUE:
             raise ValueError("Version does not have set 'product_id'")
 
-        output = {
+        output: dict[str, Any] = {
             "version": self.version,
             "productId": self.parent_id,
         }
