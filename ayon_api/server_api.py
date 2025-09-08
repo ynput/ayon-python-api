@@ -272,7 +272,7 @@ class ServerAPI(
         default_settings_variant: Optional[str] = None,
         sender_type: Optional[str] = None,
         sender: Optional[str] = None,
-        ssl_verify: Optional[Union[bool, str]]=None,
+        ssl_verify: Optional[Union[bool, str]] = None,
         cert: Optional[str] = None,
         create_session: bool = True,
         timeout: Optional[float] = None,
