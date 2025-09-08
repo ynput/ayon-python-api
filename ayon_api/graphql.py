@@ -6,13 +6,13 @@ from abc import ABC, abstractmethod
 import typing
 from typing import Optional, Iterable, Any, Generator
 
-from ayon_api import ServerAPI
-
 from .exceptions import GraphQlQueryFailed
 from .utils import SortOrder
 
 if typing.TYPE_CHECKING:
     from typing import Union
+
+    from .server_api import ServerAPI
 
 FIELD_VALUE = object()
 
