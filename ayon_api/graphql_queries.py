@@ -194,7 +194,8 @@ def tasks_graphql_query(fields):
 
     tasks_field = project_field.add_field_with_edges("tasks")
     tasks_field.set_filter("ids", task_ids_var)
-    # WARNING: At moment when this been created 'names' filter is not supported
+    # WARNING: At the moment when this been created 'names' filter
+    #   is not supported
     tasks_field.set_filter("names", task_names_var)
     tasks_field.set_filter("taskTypes", task_types_var)
     tasks_field.set_filter("folderIds", folder_ids_var)
@@ -241,7 +242,8 @@ def tasks_by_folder_paths_graphql_query(fields):
     folders_field.set_filter("paths", folder_paths_var)
 
     tasks_field = folders_field.add_field_with_edges("tasks")
-    # WARNING: At moment when this been created 'names' filter is not supported
+    # WARNING: At the moment when this been created 'names' filter
+    #   is not supported
     tasks_field.set_filter("names", task_names_var)
     tasks_field.set_filter("taskTypes", task_types_var)
     tasks_field.set_filter("assigneesAny", assignees_any_var)
@@ -515,7 +517,7 @@ def workfiles_info_graphql_query(fields):
     task_ids_var = query.add_variable("taskIds", "[String!]")
     paths_var = query.add_variable("paths", "[String!]")
     path_regex_var = query.add_variable("workfilePathRegex", "String!")
-    has_links_var = query.add_variable("workfilehasLinks", "HasLinksFilter")
+    has_links_var = query.add_variable("workfileHasLinks", "HasLinksFilter")
     statuses_var = query.add_variable("workfileStatuses", "[String!]")
     tags_var = query.add_variable("workfileTags", "[String!]")
 
