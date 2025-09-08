@@ -99,7 +99,7 @@ def new_folder_entity(
             created if not passed.
 
     Returns:
-        dict[str, Any]: Skeleton of folder entity.
+        NewFolderDict: Skeleton of folder entity.
 
     """
     if attribs is None:
@@ -119,7 +119,7 @@ def new_folder_entity(
         "parentId": parent_id,
         "data": data,
         "attrib": attribs,
-        "thumbnailId": thumbnail_id
+        "thumbnailId": thumbnail_id,
     }
     if status:
         output["status"] = status
@@ -366,7 +366,7 @@ def new_workfile_info(
             if not passed.
 
     Returns:
-        dict[str, Any]: Skeleton of workfile info entity.
+        NewWorkfileDict: Skeleton of workfile info entity.
 
     """
     if attribs is None:

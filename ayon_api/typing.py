@@ -8,6 +8,7 @@ from typing import (
     Union,
     Optional,
     BinaryIO,
+    NotRequired,
 )
 
 
@@ -351,8 +352,8 @@ class NewFolderDict(TypedDict):
     data: dict[str, Any]
     attrib: dict[str, Any]
     thumbnailId: Optional[str]
-    status: Optional[str]
-    tags: Optional[list[str]]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
 
 
 class NewProductDict(TypedDict):
@@ -362,8 +363,8 @@ class NewProductDict(TypedDict):
     folderId: str
     data: dict[str, Any]
     attrib: dict[str, Any]
-    status: Optional[str]
-    tags: Optional[list[str]]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
 
 
 class NewVersionDict(TypedDict):
@@ -372,11 +373,11 @@ class NewVersionDict(TypedDict):
     productId: str
     attrib: dict[str, Any]
     data: dict[str, Any]
-    taskId: Optional[str]
-    thumbnailId: Optional[str]
-    author: Optional[str]
-    status: Optional[str]
-    tags: Optional[list[str]]
+    taskId: NotRequired[str]
+    thumbnailId: NotRequired[str]
+    author: NotRequired[str]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
 
 
 class NewRepresentationDict(TypedDict):
@@ -386,9 +387,9 @@ class NewRepresentationDict(TypedDict):
     data: dict[str, Any]
     attrib: dict[str, Any]
     files: list[dict[str, str]]
-    traits: Optional[dict[str, Any]]
-    status: Optional[str]
-    tags: Optional[list[str]]
+    traits: NotRequired[dict[str, Any]]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
 
 
 class NewWorkfileDict(TypedDict):
@@ -397,8 +398,8 @@ class NewWorkfileDict(TypedDict):
     path: str
     data: dict[str, Any]
     attrib: dict[str, Any]
-    status: Optional[str]
-    tags: Optional[list[str]]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
 
 
 EventStatus = Literal[
