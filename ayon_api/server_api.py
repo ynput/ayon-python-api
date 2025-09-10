@@ -15,7 +15,7 @@ import platform
 import uuid
 from contextlib import contextmanager
 import typing
-from typing import Optional, Iterable, Generator, Any
+from typing import Optional, Iterable, Generator, Any, Union
 
 import requests
 
@@ -87,7 +87,6 @@ from ._api_helpers import (
 )
 
 if typing.TYPE_CHECKING:
-    from typing import Union
     from .typing import (
         ServerVersion,
         AnyEntityDict,
@@ -163,23 +162,23 @@ class _AsUserStack:
         self._default_user = None
 
     @property
-    def username(self):
+    def username(self) -> Optional[str]:
         # Use '_user_ids' for boolean check to have ability "unset"
         #   default user
         if self._user_ids:
             return self._last_user
         return self._default_user
 
-    def get_default_username(self):
+    def get_default_username(self) -> Optional[str]:
         return self._default_user
 
-    def set_default_username(self, username=None):
+    def set_default_username(self, username: Optional[str] = None) -> None:
         self._default_user = username
 
     default_username = property(get_default_username, set_default_username)
 
     @contextmanager
-    def as_user(self, username):
+    def as_user(self, username: Optional[str]) -> Generator[None, None, None]:
         self._last_user = username
         user_id = uuid.uuid4().hex
         self._user_ids.append(user_id)
@@ -273,7 +272,7 @@ class ServerAPI(
         default_settings_variant: Optional[str] = None,
         sender_type: Optional[str] = None,
         sender: Optional[str] = None,
-        ssl_verify: Optional["Union[bool, str]"]=None,
+        ssl_verify: Optional[Union[bool, str]] = None,
         cert: Optional[str] = None,
         create_session: bool = True,
         timeout: Optional[float] = None,
@@ -685,7 +684,7 @@ class ServerAPI(
     @contextmanager
     def as_username(
         self,
-        username: "Union[str, None]",
+        username: Optional[str],
         ignore_service_error: bool = False,
     ):
         """Service API will temporarily work as other user.
@@ -693,7 +692,7 @@ class ServerAPI(
         This method can be used only if service API key is logged in.
 
         Args:
-            username (Union[str, None]): Username to work as when service.
+            username (Optional[str]): Username to work as when service.
             ignore_service_error (Optional[bool]): Ignore error when service
                 API key is not used.
 
@@ -873,7 +872,7 @@ class ServerAPI(
             self._server_version = self.get_info()["version"]
         return self._server_version
 
-    def get_server_version_tuple(self) -> "ServerVersion":
+    def get_server_version_tuple(self) -> ServerVersion:
         """Get server version as tuple.
 
         Version should match semantic version (https://semver.org/).
@@ -897,7 +896,7 @@ class ServerAPI(
         return self._server_version_tuple
 
     server_version = property(get_server_version)
-    server_version_tuple: "ServerVersion" = property(
+    server_version_tuple: ServerVersion = property(
         get_server_version_tuple
     )
 
@@ -1360,7 +1359,7 @@ class ServerAPI(
     def download_file_to_stream(
         self,
         endpoint: str,
-        stream: "StreamType",
+        stream: StreamType,
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
     ) -> TransferProgress:
@@ -1462,7 +1461,7 @@ class ServerAPI(
 
     @staticmethod
     def _upload_chunks_iter(
-        file_stream: "StreamType",
+        file_stream: StreamType,
         progress: TransferProgress,
         chunk_size: int,
     ) -> Generator[bytes, None, None]:
@@ -1494,7 +1493,7 @@ class ServerAPI(
     def _upload_file(
         self,
         url: str,
-        stream: "StreamType",
+        stream: StreamType,
         progress: TransferProgress,
         request_type: Optional[RequestType] = None,
         chunk_size: Optional[int] = None,
@@ -1545,7 +1544,7 @@ class ServerAPI(
     def upload_file_from_stream(
         self,
         endpoint: str,
-        stream: "StreamType",
+        stream: StreamType,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
         **kwargs
@@ -1842,7 +1841,7 @@ class ServerAPI(
         project_name: str,
         entity_type: str,
         entity_id: str,
-    ) -> Optional["AnyEntityDict"]:
+    ) -> Optional[AnyEntityDict]:
         """Get entity using REST on a project by its id.
 
         Args:
@@ -2029,7 +2028,7 @@ class ServerAPI(
                 )
             }
 
-    def _convert_entity_data(self, entity: "AnyEntityDict"):
+    def _convert_entity_data(self, entity: AnyEntityDict):
         if not entity or "data" not in entity:
             return
 
