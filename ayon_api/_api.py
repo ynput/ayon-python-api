@@ -6197,6 +6197,75 @@ def get_workfile_info_by_id(
     )
 
 
+def delete_workfile_info(
+    project_name: str,
+    workfile_id: str,
+) -> None:
+    """Delete workfile entity on server.
+
+    Args:
+        project_name (str): Project name.
+        workfile_id (str): Workfile id to delete.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_workfile_info(
+        project_name=project_name,
+        workfile_id=workfile_id,
+    )
+
+
+def update_workfile_info(
+    project_name: str,
+    workfile_id: str,
+    path: Optional[str] = None,
+    task_id: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = NOT_SET,
+    created_by: Optional[str] = None,
+    updated_by: Optional[str] = None,
+) -> None:
+    """Update workfile entity on server.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        workfile_id (str): Workfile id.
+        path (Optional[str]): New rootless workfile path..
+        task_id (Optional[str]): New parent task id.
+        attrib (Optional[dict[str, Any]]): New attributes.
+        data (Optional[dict[str, Any]]): New data.
+        tags (Optional[Iterable[str]]): New tags.
+        status (Optional[str]): New status.
+        active (Optional[bool]): New active state.
+        thumbnail_id (Optional[str]): New thumbnail id.
+        created_by (Optional[str]): New created by username.
+        updated_by (Optional[str]): New updated by username.
+
+    """
+    con = get_server_api_connection()
+    return con.update_workfile_info(
+        project_name=project_name,
+        workfile_id=workfile_id,
+        path=path,
+        task_id=task_id,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        created_by=created_by,
+        updated_by=updated_by,
+    )
+
+
 def get_full_link_type_name(
     link_type_name: str,
     input_type: str,
