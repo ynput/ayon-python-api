@@ -2235,7 +2235,7 @@ def update_bundle(
     is_production: Optional[bool] = None,
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
-    dev_active_user: Optional[str] = None,
+    dev_active_user: Optional[str] = NOT_SET,
     dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
 ) -> None:
     """Update bundle on server.
