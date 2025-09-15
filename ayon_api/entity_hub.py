@@ -3446,7 +3446,7 @@ class TaskEntity(BaseEntity):
 
     assignees = property(get_assignees, set_assignees)
 
-    def add_child(self, child: BaseEntity) -> None:
+    def add_child(self, child: Union[BaseEntity, str]) -> None:
         raise ValueError("Task does not support to add children")
 
     @property
