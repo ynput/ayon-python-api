@@ -8,6 +8,7 @@ from typing import (
     Union,
     Optional,
     BinaryIO,
+    NotRequired,
 )
 
 
@@ -341,6 +342,65 @@ AnyEntityDict = Union[
     EventDict,
     ActivityDict,
 ]
+
+
+class NewFolderDict(TypedDict):
+    id: str
+    name: str
+    folderType: str
+    parentId: Optional[str]
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    thumbnailId: Optional[str]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewProductDict(TypedDict):
+    id: str
+    name: str
+    productType: str
+    folderId: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewVersionDict(TypedDict):
+    id: str
+    version: int
+    productId: str
+    attrib: dict[str, Any]
+    data: dict[str, Any]
+    taskId: NotRequired[str]
+    thumbnailId: NotRequired[str]
+    author: NotRequired[str]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewRepresentationDict(TypedDict):
+    id: str
+    versionId: str
+    name: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    files: list[dict[str, str]]
+    traits: NotRequired[dict[str, Any]]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewWorkfileDict(TypedDict):
+    id: str
+    taskId: str
+    path: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
 
 EventStatus = Literal[
     "pending",
