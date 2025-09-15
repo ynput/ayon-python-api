@@ -468,7 +468,7 @@ class EntityHub:
         self,
         name: str,
         product_type: str,
-        folder_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        folder_id: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
@@ -481,7 +481,7 @@ class EntityHub:
         Args:
             name (str): Name of entity.
             product_type (str): Type of product.
-            folder_id (Optional[Union[str, _CustomNone]]): Parent folder id.
+            folder_id (Optional[str]): Parent folder id.
             tags (Optional[Iterable[str]]): Folder tags.
             attribs (dict[str, Any]): Attribute values.
             data (dict[str, Any]): Entity data (custom data).
@@ -513,8 +513,8 @@ class EntityHub:
     def add_new_version(
         self,
         version: int,
-        product_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
-        task_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        product_id: Optional[str] = UNKNOWN_VALUE,
+        task_id: Optional[str] = UNKNOWN_VALUE,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
@@ -528,8 +528,8 @@ class EntityHub:
 
         Args:
             version (int): Version.
-            product_id (Union[Union[str, _CustomNone]]): Parent product id.
-            task_id (Union[Union[str, _CustomNone]]): Parent task id.
+            product_id (Optional[str]): Parent product id.
+            task_id (Optional[str]): Parent task id.
             status (Optional[str]): Task status.
             tags (Optional[Iterable[str]]): Folder tags.
             attribs (dict[str, Any]): Attribute values.
@@ -1452,7 +1452,7 @@ class BaseEntity(ABC):
     def __init__(
         self,
         entity_id: Optional[str] = None,
-        parent_id: Optional[Union[str, _CustomNone]] = UNKNOWN_VALUE,
+        parent_id: Optional[str] = UNKNOWN_VALUE,
         attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
