@@ -13,7 +13,7 @@ from ._api import get_server_api_connection
 from .utils import create_entity_id, convert_entity_id, slugify_string
 
 if typing.TYPE_CHECKING:
-    from typing import Literal, Union, TypedDict
+    from typing import Literal, Union, TypedDict, NotRequired
 
     from .typing import (
         AttributeSchemaDict,
@@ -41,7 +41,7 @@ if typing.TYPE_CHECKING:
         state: Optional[StatusState]
         icon: Optional[str]
         color: Optional[str]
-        scope: Optional[StatusEntityType]
+        scope: NotRequired[Optional[StatusEntityType]]
 
 
 class _CustomNone:
@@ -837,7 +837,7 @@ class EntityHub:
         if bottom_to_top:
             while reset_queue:
                 entity_id: str = reset_queue.popleft()
-                entity: Optional["BaseEntity"] = self.get_entity_by_id(
+                entity: Optional[BaseEntity] = self.get_entity_by_id(
                     entity_id
                 )
                 if entity is None:
@@ -847,7 +847,7 @@ class EntityHub:
         else:
             while reset_queue:
                 entity_id: str = reset_queue.popleft()
-                entity: Optional["BaseEntity"] = self.get_entity_by_id(
+                entity: Optional[BaseEntity] = self.get_entity_by_id(
                     entity_id
                 )
                 if entity is None:
@@ -1605,7 +1605,7 @@ class BaseEntity(ABC):
 
     @property
     @abstractmethod
-    def parent_entity_types(self) -> list[str]:
+    def parent_entity_types(self) -> list[EntityType]:
         """Entity type corresponding to server.
 
         Returns:
@@ -2530,11 +2530,11 @@ class ProjectStatus:
         self._validate_other_p_statuses(other)
         self._project_statuses.set_status_index(self, other.index + 1)
 
-    def to_data(self) -> dict[str, Any]:
+    def to_data(self) -> ProjectStatusDict:
         """Convert status to data.
 
         Returns:
-            dict[str, Any]: Status data.
+            ProjectStatusDict: Status data.
 
         """
         output = {
@@ -2993,7 +2993,7 @@ class ProjectEntity(BaseEntity):
             return
         raise ValueError("It is not allowed to change project name.")
 
-    def get_parent(self, *args, **kwargs) -> None:
+    def get_parent(self, allow_fetch: bool = True) -> None:
         return None
 
     def set_parent(self, parent: Any) -> None:
@@ -3047,7 +3047,9 @@ class ProjectEntity(BaseEntity):
     task_types = property(get_task_types, set_task_types)
     statuses = property(get_statuses, set_statuses)
 
-    def get_status_by_slugified_name(self, name: str) -> str:
+    def get_status_by_slugified_name(
+        self, name: str
+    ) ->  Optional[ProjectStatus]:
         """Find status by name.
 
         Args:
