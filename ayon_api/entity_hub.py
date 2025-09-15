@@ -237,7 +237,14 @@ class EntityHub:
         self,
         entity_id: str,
         entity_types: list[EntityType],
-    ) -> Optional[BaseEntity]:
+    ) -> Union[
+        ProjectEntity,
+        FolderEntity,
+        TaskEntity,
+        ProductEntity,
+        VersionEntity,
+        None
+    ]:
         """Get or query entity based on it's id and possible entity types.
 
         This is a helper function when entity id is known but entity type may
@@ -314,7 +321,14 @@ class EntityHub:
         self,
         entity_id: str,
         entity_types: list[EntityType],
-    ) -> Optional[BaseEntity]:
+    ) -> Union[
+        ProjectEntity,
+        FolderEntity,
+        TaskEntity,
+        ProductEntity,
+        VersionEntity,
+        None
+    ]:
         """Get or query entity based on it's id and possible entity types."""
         warnings.warn(
             "Method 'get_or_query_entity_by_id' is deprecated. "
