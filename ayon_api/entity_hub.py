@@ -343,7 +343,7 @@ class EntityHub:
         label: Optional[str] = None,
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
-        tags: Optional[list[str]] = None,
+        tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
@@ -362,7 +362,7 @@ class EntityHub:
             path (Optional[str]): Folder path. Path consist of all parent names
                 with slash('/') used as separator.
             status (Optional[str]): Folder status.
-            tags (Optional[list[str]]): Folder tags.
+            tags (Optional[Iterable[str]]): Folder tags.
             attribs (dict[str, Any]): Attribute values.
             data (dict[str, Any]): Entity data (custom data).
             thumbnail_id (Optional[str]): Id of entity's thumbnail.
@@ -1462,7 +1462,7 @@ class BaseEntity(ABC):
         name=None,
         label=None,
         status: Optional[str] = UNKNOWN_VALUE,
-        tags: Optional[list[str]] = None,
+        tags: Optional[Iterable[str]] = None,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
     ):
         if entity_hub is None:
@@ -3145,7 +3145,7 @@ class FolderEntity(BaseEntity):
         label: Optional[str] = None,
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
-        tags: Optional[list[str]] = None,
+        tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
