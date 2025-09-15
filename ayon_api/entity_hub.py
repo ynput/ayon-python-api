@@ -84,7 +84,7 @@ class EntityHub:
         project_name: str,
         connection: Optional[ServerAPI] = None
     ) -> None:
-        if not connection:
+        if connection is None:
             connection = get_server_api_connection()
 
         self._connection = connection
