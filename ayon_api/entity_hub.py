@@ -3410,10 +3410,10 @@ class TaskEntity(BaseEntity):
         self._orig_task_type = self._task_type
         self._orig_assignees = copy.deepcopy(self._assignees)
 
-    def get_folder_id(self) -> Union[str, _CustomNone]:
+    def get_folder_id(self) -> Union[str, None, _CustomNone]:
         return self._parent_id
 
-    def set_folder_id(self, folder_id):
+    def set_folder_id(self, folder_id: str) -> None:
         self.set_parent_id(folder_id)
 
     folder_id = property(get_folder_id, set_folder_id)
@@ -3554,7 +3554,7 @@ class ProductEntity(BaseEntity):
 
         self._orig_product_type = product_type
 
-    def get_folder_id(self) -> Union[str, _CustomNone]:
+    def get_folder_id(self) -> Union[str, None, _CustomNone]:
         return self._parent_id
 
     def set_folder_id(self, folder_id: str) -> None:
@@ -3677,7 +3677,7 @@ class VersionEntity(BaseEntity):
 
     version = property(get_version, set_version)
 
-    def get_product_id(self) -> Optional[str]:
+    def get_product_id(self) -> Union[str, None, _CustomNone]:
         return self._parent_id
 
     def set_product_id(self, product_id: str) -> None:
@@ -3685,7 +3685,7 @@ class VersionEntity(BaseEntity):
 
     product_id = property(get_product_id, set_product_id)
 
-    def get_task_id(self) -> Optional[str]:
+    def get_task_id(self) -> Union[str, None, _CustomNone]:
         return self._task_id
 
     def set_task_id(self, task_id: Optional[str]) -> None:
