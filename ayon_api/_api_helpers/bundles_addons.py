@@ -8,6 +8,7 @@ from ayon_api.utils import (
     RequestTypes,
     prepare_query_string,
     TransferProgress,
+    NOT_SET,
 )
 
 from .base import BaseServerAPI
@@ -135,7 +136,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         is_production: Optional[bool] = None,
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
-        dev_active_user: Optional[str] = None,
+        dev_active_user: Optional[str] = NOT_SET,
         dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
     ) -> None:
         """Update bundle on server.
@@ -171,11 +172,12 @@ class BundlesAddonsAPI(BaseServerAPI):
                 ("isProduction", is_production),
                 ("isStaging", is_staging),
                 ("isDev", is_dev),
-                ("activeUser", dev_active_user),
                 ("addonDevelopment", dev_addons_config),
             )
             if value is not None
         }
+        if dev_active_user is not NOT_SET:
+            body["activeUser"] = dev_active_user
 
         response = self.patch(
             f"bundles/{bundle_name}",
