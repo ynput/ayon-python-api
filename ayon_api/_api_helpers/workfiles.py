@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import warnings
 import typing
-from typing import Optional, Iterable, Generator
+from typing import Optional, Iterable, Generator, Any
 
 from ayon_api.graphql_queries import workfiles_info_graphql_query
-
+from ayon_api.utils import NOT_SET
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
@@ -184,3 +184,82 @@ class WorkfilesAPI(BaseServerAPI):
         ):
             return workfile_info
         return None
+
+    def delete_workfile_info(
+        self,
+        project_name: str,
+        workfile_id: str,
+    ) -> None:
+        """Delete workfile entity on server.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile id to delete.
+
+        """
+        response = self.delete(
+            f"projects/{project_name}/workfiles/{workfile_id}"
+        )
+        response.raise_for_status()
+
+    def update_workfile_info(
+        self,
+        project_name: str,
+        workfile_id: str,
+        path: Optional[str] = None,
+        task_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
+        created_by: Optional[str] = None,
+        updated_by: Optional[str] = None,
+    ) -> None:
+        """Update workfile entity on server.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile id.
+            path (Optional[str]): New rootless workfile path..
+            task_id (Optional[str]): New parent task id.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+            thumbnail_id (Optional[str]): New thumbnail id.
+            created_by (Optional[str]): New created by username.
+            updated_by (Optional[str]): New updated by username.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("path", path),
+            ("taskId", task_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+            ("createdBy", created_by),
+            ("updatedBy", updated_by),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        for key, value in (
+            ("thumbnailId", thumbnail_id),
+        ):
+            if value is not NOT_SET:
+                update_data[key] = value
+
+        response = self.patch(
+            f"projects/{project_name}/workfiles/{workfile_id}",
+            **update_data
+        )
+        response.raise_for_status()
