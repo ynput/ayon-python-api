@@ -8,9 +8,10 @@ from ayon_api.utils import (
     RequestTypes,
     prepare_query_string,
     TransferProgress,
+    NOT_SET,
 )
 
-from .base import BaseServerAPI, _PLACEHOLDER
+from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
     from ayon_api.typing import (
@@ -135,7 +136,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         is_production: Optional[bool] = None,
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
-        dev_active_user: Optional[str] = _PLACEHOLDER,
+        dev_active_user: Optional[str] = NOT_SET,
         dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
     ) -> None:
         """Update bundle on server.
@@ -175,7 +176,7 @@ class BundlesAddonsAPI(BaseServerAPI):
             )
             if value is not None
         }
-        if dev_active_user is not _PLACEHOLDER:
+        if dev_active_user is not NOT_SET:
             body["activeUser"] = dev_active_user
 
         response = self.patch(
