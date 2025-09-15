@@ -10,7 +10,7 @@ from ayon_api.utils import (
     TransferProgress,
 )
 
-from .base import BaseServerAPI
+from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
     from ayon_api.typing import (
@@ -135,7 +135,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         is_production: Optional[bool] = None,
         is_staging: Optional[bool] = None,
         is_dev: Optional[bool] = None,
-        dev_active_user: Optional[str] = None,
+        dev_active_user: Optional[str] = _PLACEHOLDER,
         dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
     ) -> None:
         """Update bundle on server.
@@ -171,11 +171,12 @@ class BundlesAddonsAPI(BaseServerAPI):
                 ("isProduction", is_production),
                 ("isStaging", is_staging),
                 ("isDev", is_dev),
-                ("activeUser", dev_active_user),
                 ("addonDevelopment", dev_addons_config),
             )
             if value is not None
         }
+        if dev_active_user is not _PLACEHOLDER:
+            body["activeUser"] = dev_active_user
 
         response = self.patch(
             f"bundles/{bundle_name}",
