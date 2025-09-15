@@ -1259,7 +1259,7 @@ class Attributes:
     def __contains__(self, key: str) -> bool:
         return key in self._attributes
 
-    def __getitem__(self, key: str) -> AttributeValue:
+    def __getitem__(self, key: str) -> AttributeValueType:
         return self._attributes[key].value
 
     def __setitem__(self, key: str, value: AttributeValueType) -> None:
