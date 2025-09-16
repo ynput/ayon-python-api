@@ -1,3 +1,15 @@
+"""Entity hub is a helper for AYON project entities.
+
+It provides a way to create new entities and to manage existing ones.
+
+Note @iLLiCiTiT this really needs cleanup.
+
+- Remove optional arguments and attributes from 'BaseEntity'.
+- More reasonable order of attributes and require positional arguments in
+    some cases.
+- Make clear why UNKNOWN_VALUE is used in some default values for arguments.
+
+"""
 from __future__ import annotations
 
 import re
