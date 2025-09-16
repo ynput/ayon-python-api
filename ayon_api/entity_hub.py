@@ -6,7 +6,7 @@ import collections
 import warnings
 from abc import ABC, abstractmethod
 import typing
-from typing import Optional, Iterable, Any, Generator, Type
+from typing import Optional, Iterable, Any, Generator
 
 from .server_api import ServerAPI
 from ._api import get_server_api_connection
@@ -815,7 +815,7 @@ class EntityHub:
 
     def get_entity_children(
         self, entity: BaseEntity, allow_fetch: bool = True
-    ) -> Union[list[BaseEntity], Type[UNKNOWN_VALUE]]:
+    ) -> Union[list[BaseEntity], _CustomNone]:
         children_ids = entity.get_children_ids(allow_fetch=False)
         if children_ids is not UNKNOWN_VALUE:
             return entity.get_children()
@@ -1466,19 +1466,19 @@ class BaseEntity(ABC):
     def __init__(
         self,
         entity_id: Optional[str] = None,
-        parent_id: Optional[str] = UNKNOWN_VALUE,
+        parent_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
         attribs: Optional[dict[str, Any]] = None,
-        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
-        active: Optional[bool] = UNKNOWN_VALUE,
+        data: Union[dict[str, Any], None, _CustomNone] = UNKNOWN_VALUE,
+        active: Union[bool, _CustomNone] = UNKNOWN_VALUE,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
         # Optional arguments
-        name=None,
-        label=None,
-        status: Optional[str] = UNKNOWN_VALUE,
+        name: Optional[str] = None,
+        label: Optional[str] = None,
+        status: Union[str, _CustomNone] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
-    ):
+        thumbnail_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
+    ) -> None:
         if entity_hub is None:
             raise ValueError("Missing required kwarg 'entity_hub'")
 
@@ -1539,7 +1539,7 @@ class BaseEntity(ABC):
 
         self._immutable_for_hierarchy_cache = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} - {self.id}>"
 
     def __getitem__(self, item: str) -> Any:
@@ -1795,11 +1795,11 @@ class BaseEntity(ABC):
     def _get_entity_by_id(self, entity_id: str) -> Optional[BaseEntity]:
         return self._entity_hub.get_entity_by_id(entity_id)
 
-    def get_parent_id(self) -> Optional[str]:
+    def get_parent_id(self) -> Union[str, None, _CustomNone]:
         """Parent entity id.
 
         Returns:
-            Optional[str]: Parent entity id or none if is not set.
+            Union[str, None, _CustomNone]: Parent entity id.
 
         """
         return self._parent_id
@@ -1824,11 +1824,13 @@ class BaseEntity(ABC):
 
     parent_id = property(get_parent_id, set_parent_id)
 
-    def get_parent(self, allow_fetch: bool = True) -> Optional[BaseEntity]:
+    def get_parent(
+        self, allow_fetch: bool = True
+    ) -> Union[BaseEntity, None, _CustomNone]:
         """Parent entity.
 
         Returns:
-            Optional[BaseEntity]: Parent object.
+            Union[BaseEntity, None, _CustomNone]: Parent object.
 
         """
         parent = self._entity_hub.get_entity_by_id(self._parent_id)
@@ -1845,11 +1847,11 @@ class BaseEntity(ABC):
             self._parent_id, self.parent_entity_types
         )
 
-    def set_parent(self, parent: BaseEntity) -> None:
+    def set_parent(self, parent: Optional[BaseEntity]) -> None:
         """Change parent object.
 
         Args:
-            parent (BaseEntity): New parent for entity.
+            parent (Optional[BaseEntity]): New parent for entity.
 
         Raises:
             TypeError: If validation of parent does not pass.
@@ -1862,7 +1864,9 @@ class BaseEntity(ABC):
 
     parent = property(get_parent, set_parent)
 
-    def get_children_ids(self, allow_fetch=True):
+    def get_children_ids(
+        self, allow_fetch: bool = True
+    ) -> Union[set[str], _CustomNone]:
         """Access to children objects.
 
         Todos:
@@ -1872,7 +1876,7 @@ class BaseEntity(ABC):
                 hierarchy.
 
         Returns:
-            Union[list[str], Type[UNKNOWN_VALUE]]: Children iterator.
+            Union[list[str], _CustomNone]: Children iterator.
 
         """
         if self._children_ids is UNKNOWN_VALUE:
@@ -1885,11 +1889,11 @@ class BaseEntity(ABC):
 
     def get_children(
         self, allow_fetch: bool = True
-    ) -> list[Union[BaseEntity, Type[UNKNOWN_VALUE]]]:
+    ) -> Union[list[BaseEntity], _CustomNone]:
         """Access to children objects.
 
         Returns:
-            Union[list[BaseEntity], Type[UNKNOWN_VALUE]]: Children iterator.
+            Union[list[BaseEntity], _CustomNone]: Children iterator.
 
         """
         if self._children_ids is UNKNOWN_VALUE:
@@ -1959,7 +1963,7 @@ class BaseEntity(ABC):
         """
         self._children_ids = set(children_ids)
 
-    def get_name(self) -> str:
+    def get_name(self) -> Optional[str]:
         if not self._supports_name:
             raise NotImplementedError(
                 f"Name is not supported for '{self.entity_type}'."
@@ -2006,11 +2010,11 @@ class BaseEntity(ABC):
 
     label = property(get_label, set_label)
 
-    def get_thumbnail_id(self) -> Optional[str]:
+    def get_thumbnail_id(self) -> Union[str, None, _CustomNone]:
         """Thumbnail id of entity.
 
         Returns:
-            Optional[str]: Thumbnail id or none if is not set.
+            Optional[str]: Thumbnail id or None if is not set.
 
         """
         if not self._supports_thumbnail:
@@ -2038,7 +2042,7 @@ class BaseEntity(ABC):
         """Folder status.
 
         Returns:
-            Union[str, UNKNOWN_VALUE]: Folder status or 'UNKNOWN_VALUE'.
+            Union[str, UNKNOWN_VALUE]: Entity status or 'UNKNOWN_VALUE'.
 
         """
         if not self._supports_status:
@@ -2947,8 +2951,8 @@ class ProjectEntity(BaseEntity):
         task_types: list[dict[str, Any]],
         statuses: list[ProjectStatusDict],
         attribs: Optional[dict[str, Any]] = None,
-        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
-        active: Optional[bool] = UNKNOWN_VALUE,
+        data: Union[dict[str, Any], None, _CustomNone] = UNKNOWN_VALUE,
+        active: Union[bool, _CustomNone] = UNKNOWN_VALUE,
         entity_hub: EntityHub = None,
     ):
         super().__init__(
@@ -3135,15 +3139,15 @@ class FolderEntity(BaseEntity):
         self,
         name: str,
         folder_type: str,
-        parent_id: Optional[str] = UNKNOWN_VALUE,
+        parent_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
         label: Optional[str] = None,
         path: Optional[str] = None,
-        status: Optional[str] = UNKNOWN_VALUE,
+        status: Union[str, _CustomNone] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = None,
-        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
-        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
-        active: Optional[bool] = UNKNOWN_VALUE,
+        data: Union[dict[str, Any], _CustomNone] = UNKNOWN_VALUE,
+        thumbnail_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
+        active: Union[bool, _CustomNone] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
@@ -3345,15 +3349,15 @@ class TaskEntity(BaseEntity):
         self,
         name: str,
         task_type: str,
-        folder_id: Optional[str] = UNKNOWN_VALUE,
+        folder_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
         label: Optional[str] = None,
-        status: Optional[str] = UNKNOWN_VALUE,
+        status: Union[str, _CustomNone] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = None,
-        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        data: Union[dict[str, Any], None, _CustomNone] = UNKNOWN_VALUE,
         assignees: Optional[Iterable[str]] = None,
-        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
-        active: Optional[bool] = UNKNOWN_VALUE,
+        thumbnail_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
+        active: Union[bool, _CustomNone] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
@@ -3510,11 +3514,11 @@ class ProductEntity(BaseEntity):
         self,
         name: str,
         product_type: str,
-        folder_id: Optional[str] = UNKNOWN_VALUE,
+        folder_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = None,
-        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
-        active: Optional[bool] = UNKNOWN_VALUE,
+        data: Union[dict[str, Any], None, _CustomNone] = UNKNOWN_VALUE,
+        active: Union[bool, _CustomNone] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
@@ -3619,14 +3623,14 @@ class VersionEntity(BaseEntity):
     def __init__(
         self,
         version: int,
-        product_id: Optional[str] = UNKNOWN_VALUE,
-        task_id: Optional[str] = UNKNOWN_VALUE,
-        status: Optional[str] = UNKNOWN_VALUE,
+        product_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
+        task_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
+        status: Union[str, _CustomNone] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = None,
-        data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
-        thumbnail_id: Optional[str] = UNKNOWN_VALUE,
-        active: Optional[bool] = UNKNOWN_VALUE,
+        data: Union[dict[str, Any], None, _CustomNone] = UNKNOWN_VALUE,
+        thumbnail_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
+        active: Union[bool, _CustomNone] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
         created: Optional[bool] = None,
         entity_hub: EntityHub = None,
