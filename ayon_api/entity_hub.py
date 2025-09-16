@@ -1940,26 +1940,6 @@ class BaseEntity(ABC):
             self._children_ids.discard(child_id)
         self._entity_hub.unset_entity_parent(child_id, self.id)
 
-    def get_thumbnail_id(self) -> str:
-        """Thumbnail id of entity.
-
-        Returns:
-            Optional[str]: Thumbnail id or none if is not set.
-
-        """
-        return self._thumbnail_id
-
-    def set_thumbnail_id(self, thumbnail_id: Optional[str]) -> None:
-        """Change thumbnail id.
-
-        Args:
-            thumbnail_id (Optional[str]): Thumbnail id for entity.
-
-        """
-        self._thumbnail_id = thumbnail_id
-
-    thumbnail_id = property(get_thumbnail_id, set_thumbnail_id)
-
     @property
     def created(self) -> bool:
         """Entity is new.
