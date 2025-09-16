@@ -1789,8 +1789,8 @@ class BaseEntity(ABC):
             self._orig_status = self._status
         if self._supports_tags:
             self._orig_tags = copy.deepcopy(self._tags)
-        if self._supports_thumbnail:
-            self._orig_thumbnail_id = self._thumbnail_id
+        # if self._supports_thumbnail:
+        #     self._orig_thumbnail_id = self._thumbnail_id
 
     def _get_entity_by_id(self, entity_id: str) -> Optional[BaseEntity]:
         return self._entity_hub.get_entity_by_id(entity_id)
