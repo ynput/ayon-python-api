@@ -358,7 +358,7 @@ class EntityHub:
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
@@ -377,7 +377,7 @@ class EntityHub:
                 with slash('/') used as separator.
             status (Optional[str]): Folder status.
             tags (Optional[Iterable[str]]): Folder tags.
-            attribs (dict[str, Any]): Attribute values.
+            attribs (Optional[dict[str, Any]]): Attribute values.
             data (dict[str, Any]): Entity data (custom data).
             thumbnail_id (Optional[str]): Id of entity's thumbnail.
             active (Optional[bool]): Is entity active.
@@ -417,7 +417,7 @@ class EntityHub:
         label: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         assignees: Optional[Iterable[str]] = None,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
@@ -436,7 +436,7 @@ class EntityHub:
             label (Optional[str]): Task label.
             status (Optional[str]): Task status.
             tags (Optional[Iterable[str]]): Folder tags.
-            attribs (dict[str, Any]): Attribute values.
+            attribs (Optional[dict[str, Any]]): Attribute values.
             data (dict[str, Any]): Entity data (custom data).
             assignees (Optional[Iterable[str]]): User assignees to the task.
             thumbnail_id (Optional[str]): Id of entity's thumbnail.
@@ -484,7 +484,7 @@ class EntityHub:
         product_type: str,
         folder_id: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
@@ -497,7 +497,7 @@ class EntityHub:
             product_type (str): Type of product.
             folder_id (Optional[str]): Parent folder id.
             tags (Optional[Iterable[str]]): Folder tags.
-            attribs (dict[str, Any]): Attribute values.
+            attribs (Optional[dict[str, Any]]): Attribute values.
             data (dict[str, Any]): Entity data (custom data).
             active (bool): Is entity active.
             entity_id (Optional[str]): Id of the entity. New id is created if
@@ -531,7 +531,7 @@ class EntityHub:
         task_id: Optional[str] = UNKNOWN_VALUE,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
@@ -546,7 +546,7 @@ class EntityHub:
             task_id (Optional[str]): Parent task id.
             status (Optional[str]): Task status.
             tags (Optional[Iterable[str]]): Folder tags.
-            attribs (dict[str, Any]): Attribute values.
+            attribs (Optional[dict[str, Any]]): Attribute values.
             data (dict[str, Any]): Entity data (custom data).
             thumbnail_id (Optional[str]): Id of entity's thumbnail.
             active (bool): Is entity active.
@@ -1261,7 +1261,7 @@ class Attributes:
     def __init__(
         self,
         attrib_keys: Iterable[str],
-        values: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        values: Optional[dict[str, Any]] = None,
     ) -> None:
         if values in (UNKNOWN_VALUE, None):
             values = {}
@@ -1467,7 +1467,7 @@ class BaseEntity(ABC):
         self,
         entity_id: Optional[str] = None,
         parent_id: Optional[str] = UNKNOWN_VALUE,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         created: Optional[bool] = None,
@@ -2966,7 +2966,7 @@ class ProjectEntity(BaseEntity):
         folder_types: list[dict[str, Any]],
         task_types: list[dict[str, Any]],
         statuses: list[ProjectStatusDict],
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_hub: EntityHub = None,
@@ -3160,7 +3160,7 @@ class FolderEntity(BaseEntity):
         path: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
@@ -3369,7 +3369,7 @@ class TaskEntity(BaseEntity):
         label: Optional[str] = None,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         assignees: Optional[Iterable[str]] = None,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
@@ -3532,7 +3532,7 @@ class ProductEntity(BaseEntity):
         product_type: str,
         folder_id: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
         entity_id: Optional[str] = None,
@@ -3643,7 +3643,7 @@ class VersionEntity(BaseEntity):
         task_id: Optional[str] = UNKNOWN_VALUE,
         status: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
-        attribs: Optional[dict[str, Any]] = UNKNOWN_VALUE,
+        attribs: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = UNKNOWN_VALUE,
         thumbnail_id: Optional[str] = UNKNOWN_VALUE,
         active: Optional[bool] = UNKNOWN_VALUE,
