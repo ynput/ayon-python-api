@@ -77,7 +77,9 @@ def project_graphql_query(fields):
 
 def projects_graphql_query(fields):
     query = GraphQlQuery("ProjectsQuery")
+    project_name_var = query.add_variable("projectName", "String!")
     projects_field = query.add_field_with_edges("projects")
+    projects_field.set_filter("name", project_name_var)
 
     nested_fields = fields_to_dict(fields)
 
@@ -101,52 +103,6 @@ def product_types_query(fields):
     query = GraphQlQuery("ProductTypes")
     product_types_field = query.add_field("productTypes")
 
-    nested_fields = fields_to_dict(fields)
-
-    query_queue = collections.deque()
-    for key, value in nested_fields.items():
-        query_queue.append((key, value, product_types_field))
-
-    while query_queue:
-        item = query_queue.popleft()
-        key, value, parent = item
-        field = parent.add_field(key)
-        if value is FIELD_VALUE:
-            continue
-
-        for k, v in value.items():
-            query_queue.append((k, v, field))
-    return query
-
-
-def product_base_types_query(fields):
-    query = GraphQlQuery("ProductBaseTypes")
-    product_base_types_field = query.add_field("productBaseTypes")
-
-    nested_fields = fields_to_dict(fields)
-
-    query_queue = collections.deque()
-    for key, value in nested_fields.items():
-        query_queue.append((key, value, product_base_types_field))
-
-    while query_queue:
-        item = query_queue.popleft()
-        key, value, parent = item
-        field = parent.add_field(key)
-        if value is FIELD_VALUE:
-            continue
-
-        for k, v in value.items():
-            query_queue.append((k, v, field))
-    return query
-
-
-def project_product_types_query(fields):
-    query = GraphQlQuery("ProjectProductTypes")
-    project_query = query.add_field("project")
-    project_name_var = query.add_variable("projectName", "String!")
-    project_query.set_filter("name", project_name_var)
-    product_types_field = project_query.add_field("productTypes")
     nested_fields = fields_to_dict(fields)
 
     query_queue = collections.deque()
@@ -262,7 +218,8 @@ def tasks_graphql_query(fields):
 
     tasks_field = project_field.add_field_with_edges("tasks")
     tasks_field.set_filter("ids", task_ids_var)
-    # WARNING: At moment when this been created 'names' filter is not supported
+    # WARNING: At the moment when this been created 'names' filter
+    #   is not supported
     tasks_field.set_filter("names", task_names_var)
     tasks_field.set_filter("taskTypes", task_types_var)
     tasks_field.set_filter("folderIds", folder_ids_var)
@@ -309,7 +266,8 @@ def tasks_by_folder_paths_graphql_query(fields):
     folders_field.set_filter("paths", folder_paths_var)
 
     tasks_field = folders_field.add_field_with_edges("tasks")
-    # WARNING: At moment when this been created 'names' filter is not supported
+    # WARNING: At the moment when this been created 'names' filter
+    #   is not supported
     tasks_field.set_filter("names", task_names_var)
     tasks_field.set_filter("taskTypes", task_types_var)
     tasks_field.set_filter("assigneesAny", assignees_any_var)
@@ -348,8 +306,8 @@ def products_graphql_query(fields):
         "productBaseTypes", "[String!]")
     product_name_regex_var = query.add_variable("productNameRegex", "String!")
     product_path_regex_var = query.add_variable("productPathRegex", "String!")
-    statuses_var = query.add_variable("productStatuses.", "[String!]")
-    tags_var = query.add_variable("productTags.", "[String!]")
+    statuses_var = query.add_variable("productStatuses", "[String!]")
+    tags_var = query.add_variable("productTags", "[String!]")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -586,7 +544,7 @@ def workfiles_info_graphql_query(fields):
     task_ids_var = query.add_variable("taskIds", "[String!]")
     paths_var = query.add_variable("paths", "[String!]")
     path_regex_var = query.add_variable("workfilePathRegex", "String!")
-    has_links_var = query.add_variable("workfilehasLinks", "HasLinksFilter")
+    has_links_var = query.add_variable("workfileHasLinks", "HasLinksFilter")
     statuses_var = query.add_variable("workfileStatuses", "[String!]")
     tags_var = query.add_variable("workfileTags", "[String!]")
 
@@ -724,6 +682,36 @@ def activities_graphql_query(fields, order):
     query_queue = collections.deque()
     for key, value in nested_fields.items():
         query_queue.append((key, value, activities_field))
+
+    while query_queue:
+        item = query_queue.popleft()
+        key, value, parent = item
+        field = parent.add_field(key)
+        if value is FIELD_VALUE:
+            continue
+
+        for k, v in value.items():
+            query_queue.append((k, v, field))
+
+    return query
+
+
+def entity_lists_graphql_query(fields):
+    query = GraphQlQuery("EntityLists")
+    project_name_var = query.add_variable("projectName", "String!")
+    entity_list_ids = query.add_variable("listIds", "[String!]")
+
+    project_field = query.add_field("project")
+    project_field.set_filter("name", project_name_var)
+
+    entity_lists_field = project_field.add_field_with_edges("entityLists")
+    entity_lists_field.set_filter("ids", entity_list_ids)
+
+    nested_fields = fields_to_dict(set(fields))
+
+    query_queue = collections.deque()
+    for key, value in nested_fields.items():
+        query_queue.append((key, value, entity_lists_field))
 
     while query_queue:
         item = query_queue.popleft()

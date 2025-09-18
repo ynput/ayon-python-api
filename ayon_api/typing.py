@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import io
 from typing import (
     Literal,
-    Dict,
-    List,
     Any,
     TypedDict,
     Union,
     Optional,
     BinaryIO,
+    NotRequired,
 )
+
+
+ServerVersion = tuple[int, int, int, str, str]
 
 ActivityType = Literal[
     "comment",
@@ -28,11 +32,36 @@ ActivityReferenceType = Literal[
     "watching",
 ]
 
+EntityListEntityType = Literal[
+    "folder",
+    "product",
+    "version",
+    "representation",
+    "task",
+    "workfile",
+]
+
+EntityListItemMode = Literal[
+    "replace",
+    "merge",
+    "delete",
+]
+
 EventFilterValueType = Union[
     None,
     str, int, float,
-    List[str], List[int], List[float],
+    list[str], list[int], list[float],
 ]
+
+
+IconType = Literal["material-symbols", "url"]
+
+
+class IconDefType(TypedDict):
+    type: IconType
+    name: Optional[str]
+    color: Optional[str]
+    icon: Optional[str]
 
 
 class EventFilterCondition(TypedDict):
@@ -56,7 +85,7 @@ class EventFilterCondition(TypedDict):
 
 
 class EventFilter(TypedDict):
-    conditions: List[EventFilterCondition]
+    conditions: list[EventFilterCondition]
     operator: Literal["and", "or"]
 
 
@@ -110,38 +139,38 @@ class AttributeSchemaDataDict(TypedDict):
     minItems: Optional[int]
     maxItems: Optional[int]
     regex: Optional[str]
-    enum: Optional[List[AttributeEnumItemDict]]
+    enum: Optional[list[AttributeEnumItemDict]]
 
 
 class AttributeSchemaDict(TypedDict):
     name: str
     position: int
-    scope: List[AttributeScope]
+    scope: list[AttributeScope]
     builtin: bool
     data: AttributeSchemaDataDict
 
 
 class AttributesSchemaDict(TypedDict):
-    attributes: List[AttributeSchemaDict]
+    attributes: list[AttributeSchemaDict]
 
 
 class AddonVersionInfoDict(TypedDict):
     hasSettings: bool
     hasSiteSettings: bool
-    frontendScopes: Dict[str, Any]
-    clientPyproject: Dict[str, Any]
-    clientSourceInfo: List[Dict[str, Any]]
+    frontendScopes: dict[str, Any]
+    clientPyproject: dict[str, Any]
+    clientSourceInfo: list[dict[str, Any]]
     isBroken: bool
 
 
 class AddonInfoDict(TypedDict):
     name: str
     title: str
-    versions: Dict[str, AddonVersionInfoDict]
+    versions: dict[str, AddonVersionInfoDict]
 
 
 class AddonsInfoDict(TypedDict):
-    addons: List[AddonInfoDict]
+    addons: list[AddonInfoDict]
 
 
 class InstallerInfoDict(TypedDict):
@@ -150,15 +179,15 @@ class InstallerInfoDict(TypedDict):
     size: int
     checksum: str
     checksumAlgorithm: str
-    sources: List[Dict[str, Any]]
+    sources: list[dict[str, Any]]
     version: str
     pythonVersion: str
-    pythonModules: Dict[str, str]
-    runtimePythonModules: Dict[str, str]
+    pythonModules: dict[str, str]
+    runtimePythonModules: dict[str, str]
 
 
 class InstallersInfoDict(TypedDict):
-    installers: List[InstallerInfoDict]
+    installers: list[InstallerInfoDict]
 
 
 class DependencyPackageDict(TypedDict):
@@ -167,14 +196,14 @@ class DependencyPackageDict(TypedDict):
     size: int
     checksum: str
     checksumAlgorithm: str
-    sources: List[Dict[str, Any]]
+    sources: list[dict[str, Any]]
     installerVersion: str
-    sourceAddons: Dict[str, str]
-    pythonModules: Dict[str, str]
+    sourceAddons: dict[str, str]
+    pythonModules: dict[str, str]
 
 
 class DependencyPackagesDict(TypedDict):
-    packages: List[DependencyPackageDict]
+    packages: list[DependencyPackageDict]
 
 
 class DevBundleAddonInfoDict(TypedDict):
@@ -185,10 +214,10 @@ class DevBundleAddonInfoDict(TypedDict):
 class BundleInfoDict(TypedDict):
     name: str
     createdAt: str
-    addons: Dict[str, str]
+    addons: dict[str, str]
     installerVersion: str
-    dependencyPackages: Dict[str, str]
-    addonDevelopment: Dict[str, DevBundleAddonInfoDict]
+    dependencyPackages: dict[str, str]
+    addonDevelopment: dict[str, DevBundleAddonInfoDict]
     isProduction: bool
     isStaging: bool
     isArchived: bool
@@ -197,9 +226,9 @@ class BundleInfoDict(TypedDict):
 
 
 class BundlesInfoDict(TypedDict):
-    bundles: List[BundleInfoDict]
+    bundles: list[BundleInfoDict]
     productionBundle: str
-    devBundles: List[str]
+    devBundles: list[str]
 
 
 class AnatomyPresetInfoDict(TypedDict):
@@ -226,12 +255,12 @@ class AnatomyPresetTemplatesDict(TypedDict):
     version: str
     frame_padding: int
     frame: str
-    work: List[AnatomyPresetTemplateDict]
-    publish: List[AnatomyPresetTemplateDict]
-    hero: List[AnatomyPresetTemplateDict]
-    delivery: List[AnatomyPresetTemplateDict]
-    staging: List[AnatomyPresetTemplateDict]
-    others: List[AnatomyPresetTemplateDict]
+    work: list[AnatomyPresetTemplateDict]
+    publish: list[AnatomyPresetTemplateDict]
+    hero: list[AnatomyPresetTemplateDict]
+    delivery: list[AnatomyPresetTemplateDict]
+    staging: list[AnatomyPresetTemplateDict]
+    others: list[AnatomyPresetTemplateDict]
 
 
 class AnatomyPresetSubtypeDict(TypedDict):
@@ -265,7 +294,7 @@ class AnatomyPresetStatusDict(TypedDict):
     state: str
     icon: str
     color: str
-    scope: List[StatusScope]
+    scope: list[StatusScope]
     original_name: str
 
 
@@ -276,29 +305,32 @@ class AnatomyPresetTagDict(TypedDict):
 
 
 class AnatomyPresetDict(TypedDict):
-    roots: List[AnatomyPresetRootDict]
+    roots: list[AnatomyPresetRootDict]
     templates: AnatomyPresetTemplatesDict
-    attributes: Dict[str, Any]
-    folder_types: List[AnatomyPresetSubtypeDict]
-    task_types: List[AnatomyPresetSubtypeDict]
-    link_types: List[AnatomyPresetLinkTypeDict]
-    statuses: List[AnatomyPresetStatusDict]
-    tags: List[AnatomyPresetTagDict]
+    attributes: dict[str, Any]
+    folder_types: list[AnatomyPresetSubtypeDict]
+    task_types: list[AnatomyPresetSubtypeDict]
+    link_types: list[AnatomyPresetLinkTypeDict]
+    statuses: list[AnatomyPresetStatusDict]
+    tags: list[AnatomyPresetTagDict]
+    primary: bool
+    name: str
 
 
 class SecretDict(TypedDict):
     name: str
     value: str
 
-ProjectDict = Dict[str, Any]
-FolderDict = Dict[str, Any]
-TaskDict = Dict[str, Any]
-ProductDict = Dict[str, Any]
-VersionDict = Dict[str, Any]
-RepresentationDict = Dict[str, Any]
-WorkfileInfoDict = Dict[str, Any]
-EventDict = Dict[str, Any]
-ActivityDict = Dict[str, Any]
+
+ProjectDict = dict[str, Any]
+FolderDict = dict[str, Any]
+TaskDict = dict[str, Any]
+ProductDict = dict[str, Any]
+VersionDict = dict[str, Any]
+RepresentationDict = dict[str, Any]
+WorkfileInfoDict = dict[str, Any]
+EventDict = dict[str, Any]
+ActivityDict = dict[str, Any]
 AnyEntityDict = Union[
     ProjectDict,
     FolderDict,
@@ -312,20 +344,95 @@ AnyEntityDict = Union[
 ]
 
 
+class NewFolderDict(TypedDict):
+    id: str
+    name: str
+    folderType: str
+    parentId: Optional[str]
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    thumbnailId: Optional[str]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewProductDict(TypedDict):
+    id: str
+    name: str
+    productType: str
+    folderId: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewVersionDict(TypedDict):
+    id: str
+    version: int
+    productId: str
+    attrib: dict[str, Any]
+    data: dict[str, Any]
+    taskId: NotRequired[str]
+    thumbnailId: NotRequired[str]
+    author: NotRequired[str]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewRepresentationDict(TypedDict):
+    id: str
+    versionId: str
+    name: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    files: list[dict[str, str]]
+    traits: NotRequired[dict[str, Any]]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewWorkfileDict(TypedDict):
+    id: str
+    taskId: str
+    path: str
+    data: dict[str, Any]
+    attrib: dict[str, Any]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+EventStatus = Literal[
+    "pending",
+    "in_progress",
+    "finished",
+    "failed",
+    "aborted",
+    "restarted",
+]
+
+
+class EnrollEventData(TypedDict):
+    id: str
+    dependsOn: str
+    hash: str
+    status: EventStatus
+
+
 class FlatFolderDict(TypedDict):
     id: str
     parentId: Optional[str]
     path: str
-    parents: List[str]
+    parents: list[str]
     name: str
     label: Optional[str]
     folderType: str
     hasTasks: bool
     hasChildren: bool
-    taskNames: List[str]
+    taskNames: list[str]
     status: str
-    attrib: Dict[str, Any]
-    ownAttrib: List[str]
+    attrib: dict[str, Any]
+    ownAttrib: list[str]
     updatedAt: str
 
 
@@ -336,14 +443,14 @@ class ProjectHierarchyItemDict(TypedDict):
     status: str
     folderType: str
     hasTasks: bool
-    taskNames: List[str]
-    parents: List[str]
+    taskNames: list[str]
+    parents: list[str]
     parentId: Optional[str]
-    children: List["ProjectHierarchyItemDict"]
+    children: list["ProjectHierarchyItemDict"]
 
 
 class ProjectHierarchyDict(TypedDict):
-    hierarchy: List[ProjectHierarchyItemDict]
+    hierarchy: list[ProjectHierarchyItemDict]
 
 
 class ProductTypeDict(TypedDict):
@@ -352,9 +459,123 @@ class ProductTypeDict(TypedDict):
     icon: Optional[str]
 
 
+ActionEntityTypes = Literal[
+    "project",
+    "folder",
+    "task",
+    "product",
+    "version",
+    "representation",
+    "workfile",
+    "list",
+]
+
+
+class ActionManifestDict(TypedDict):
+    identifier: str
+    label: str
+    groupLabel: Optional[str]
+    category: str
+    order: int
+    icon: Optional[IconDefType]
+    adminOnly: bool
+    managerOnly: bool
+    configFields: list[dict[str, Any]]
+    featured: bool
+    addonName: str
+    addonVersion: str
+    variant: str
+
+
+ActionResponseType = Literal[
+    "form",
+    "launcher",
+    "navigate",
+    "query",
+    "redirect",
+    "simple",
+]
+
+ActionModeType = Literal["simple", "dynamic", "all"]
+
+
+class BaseActionPayload(TypedDict):
+    extra_clipboard: str
+    extra_download: str
+
+
+class ActionLauncherPayload(BaseActionPayload):
+    uri: str
+
+
+class ActionNavigatePayload(BaseActionPayload):
+    uri: str
+
+
+class ActionRedirectPayload(BaseActionPayload):
+    uri: str
+    new_tab: bool
+
+
+class ActionQueryPayload(BaseActionPayload):
+    query: str
+
+
+class ActionFormPayload(BaseActionPayload):
+    title: str
+    fields: list[dict[str, Any]]
+    submit_label: str
+    submit_icon: str
+    cancel_label: str
+    cancel_icon: str
+    show_cancel_button: bool
+    show_submit_button: bool
+
+
+ActionPayload = Union[
+    ActionLauncherPayload,
+    ActionNavigatePayload,
+    ActionRedirectPayload,
+    ActionQueryPayload,
+    ActionFormPayload,
+]
+
+class ActionTriggerResponse(TypedDict):
+    type: ActionResponseType
+    success: bool
+    message: Optional[str]
+    payload: Optional[ActionPayload]
+
+
+class ActionTakeResponse(TypedDict):
+    eventId: str
+    actionIdentifier: str
+    args: list[str]
+    context: dict[str, Any]
+    addonName: str
+    addonVersion: str
+    variant: str
+    userName: str
+
+
+class ActionConfigResponse(TypedDict):
+    projectName: str
+    entityType: str
+    entitySubtypes: list[str]
+    entityIds: list[str]
+    formData: dict[str, Any]
+    value: dict[str, Any]
+
+
+StreamType = Union[io.BytesIO, BinaryIO]
+
+
+class EntityListAttributeDefinitionDict(TypedDict):
+    name: str
+    data: dict[str, Any]
+
+
 class ProductBaseTypeDict(TypedDict):
     name: str
     color: Optional[str]
     icon: Optional[str]
-
-StreamType = Union[io.BytesIO, BinaryIO]

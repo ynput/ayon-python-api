@@ -9,23 +9,21 @@ Function that are just wrappers for ServerAPI object are generated
 automatically, and changing them manually can cause issues.
 """
 
+from __future__ import annotations
+
 import os
 import socket
 import typing
-from typing import Optional, Set, List, Tuple, Dict, Iterable, Generator, Any
+from typing import Optional, Iterable, Generator, Any
+
 import requests
 
 from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_API_ENV_KEY,
 )
-from .server_api import (
-    ServerAPI,
-    RequestType,
-    GraphQlResponse,
-    _PLACEHOLDER,
-)
 from .exceptions import FailedServiceInit
+from ._api_helpers.base import _PLACEHOLDER
 from .utils import (
     NOT_SET,
     SortOrder,
@@ -34,15 +32,26 @@ from .utils import (
     get_default_settings_variant as _get_default_settings_variant,
     RepresentationParents,
     RepresentationHierarchy,
+    RestApiResponse,
+)
+from .server_api import (
+    ServerAPI,
+    RequestType,
+    GraphQlResponse,
 )
 
 if typing.TYPE_CHECKING:
     from typing import Union
     from .typing import (
+        ServerVersion,
         ActivityType,
         ActivityReferenceType,
+        EntityListEntityType,
+        EntityListItemMode,
         LinkDirection,
         EventFilter,
+        EventStatus,
+        EnrollEventData,
         AttributeScope,
         AttributeSchemaDataDict,
         AttributeSchemaDict,
@@ -59,15 +68,23 @@ if typing.TYPE_CHECKING:
         FolderDict,
         TaskDict,
         ProductDict,
+        ProductBaseTypeDict,
         VersionDict,
         RepresentationDict,
         WorkfileInfoDict,
         FlatFolderDict,
         ProjectHierarchyDict,
         ProductTypeDict,
-        ProductBaseTypeDict,
+        ActionEntityTypes,
+        ActionManifestDict,
+        ActionTriggerResponse,
+        ActionTakeResponse,
+        ActionConfigResponse,
+        ActionModeType,
         StreamType,
+        EntityListAttributeDefinitionDict,
     )
+    from ._api_helpers.links import CreateLinkData
 
 
 class GlobalServerAPI(ServerAPI):
@@ -298,7 +315,7 @@ def get_service_addon_settings(project_name=None):
         project_name (Optional[str]): Project name.
 
     Returns:
-        Dict[str, Any]: Addon settings.
+        dict[str, Any]: Addon settings.
 
     Raises:
         ValueError: When service was not initialized.
@@ -657,7 +674,7 @@ def set_sender_type(
     )
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     """Get information about current used api key.
 
     By default, the 'info' contains only 'uptime' and 'version'. With
@@ -688,7 +705,7 @@ def get_server_version() -> str:
     return con.get_server_version()
 
 
-def get_server_version_tuple() -> Tuple[int, int, int, str, str]:
+def get_server_version_tuple() -> ServerVersion:
     """Get server version as tuple.
 
     Version should match semantic version (https://semver.org/).
@@ -696,8 +713,7 @@ def get_server_version_tuple() -> Tuple[int, int, int, str, str]:
     This function only returns first three numbers of version.
 
     Returns:
-        Tuple[int, int, int, Union[str, None], Union[str, None]]: Server
-            version.
+        ServerVersion: Server version.
 
     """
     con = get_server_api_connection()
@@ -709,7 +725,7 @@ def get_users(
     usernames: Optional[Iterable[str]] = None,
     emails: Optional[Iterable[str]] = None,
     fields: Optional[Iterable[str]] = None,
-) -> Generator[Dict[str, Any], None, None]:
+) -> Generator[dict[str, Any], None, None]:
     """Get Users.
 
     Only administrators and managers can fetch all users. For other users
@@ -739,7 +755,7 @@ def get_user_by_name(
     username: str,
     project_name: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """Get user by name using GraphQl.
 
     Only administrators and managers can fetch all users. For other users
@@ -766,14 +782,16 @@ def get_user_by_name(
 
 def get_user(
     username: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
-    """Get user info using REST endpoit.
+) -> Optional[dict[str, Any]]:
+    """Get user info using REST endpoint.
+
+    User contains only explicitly set attributes in 'attrib'.
 
     Args:
         username (Optional[str]): Username.
 
     Returns:
-        Optional[Dict[str, Any]]: User info or None if user is not
+        Optional[dict[str, Any]]: User info or None if user is not
             found.
 
     """
@@ -893,478 +911,9 @@ def delete(
     )
 
 
-def get_event(
-    event_id: str,
-) -> Optional[Dict[str, Any]]:
-    """Query full event data by id.
-
-    Events received using event server do not contain full information. To
-    get the full event information is required to receive it explicitly.
-
-    Args:
-        event_id (str): Event id.
-
-    Returns:
-        dict[str, Any]: Full event data.
-
-    """
-    con = get_server_api_connection()
-    return con.get_event(
-        event_id=event_id,
-    )
-
-
-def get_events(
-    topics: Optional[Iterable[str]] = None,
-    event_ids: Optional[Iterable[str]] = None,
-    project_names: Optional[Iterable[str]] = None,
-    statuses: Optional[Iterable[str]] = None,
-    users: Optional[Iterable[str]] = None,
-    include_logs: Optional[bool] = None,
-    has_children: Optional[bool] = None,
-    newer_than: Optional[str] = None,
-    older_than: Optional[str] = None,
-    fields: Optional[Iterable[str]] = None,
-    limit: Optional[int] = None,
-    order: Optional[SortOrder] = None,
-    states: Optional[Iterable[str]] = None,
-) -> Generator[Dict[str, Any], None, None]:
-    """Get events from server with filtering options.
-
-    Notes:
-        Not all event happen on a project.
-
-    Args:
-        topics (Optional[Iterable[str]]): Name of topics.
-        event_ids (Optional[Iterable[str]]): Event ids.
-        project_names (Optional[Iterable[str]]): Project on which
-            event happened.
-        statuses (Optional[Iterable[str]]): Filtering by statuses.
-        users (Optional[Iterable[str]]): Filtering by users
-            who created/triggered an event.
-        include_logs (Optional[bool]): Query also log events.
-        has_children (Optional[bool]): Event is with/without children
-            events. If 'None' then all events are returned, default.
-        newer_than (Optional[str]): Return only events newer than given
-            iso datetime string.
-        older_than (Optional[str]): Return only events older than given
-            iso datetime string.
-        fields (Optional[Iterable[str]]): Fields that should be received
-            for each event.
-        limit (Optional[int]): Limit number of events to be fetched.
-        order (Optional[SortOrder]): Order events in ascending
-            or descending order. It is recommended to set 'limit'
-            when used descending.
-        states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
-            Use 'statuses' instead.
-
-    Returns:
-        Generator[dict[str, Any]]: Available events matching filters.
-
-    """
-    con = get_server_api_connection()
-    return con.get_events(
-        topics=topics,
-        event_ids=event_ids,
-        project_names=project_names,
-        statuses=statuses,
-        users=users,
-        include_logs=include_logs,
-        has_children=has_children,
-        newer_than=newer_than,
-        older_than=older_than,
-        fields=fields,
-        limit=limit,
-        order=order,
-        states=states,
-    )
-
-
-def update_event(
-    event_id: str,
-    sender: Optional[str] = None,
-    project_name: Optional[str] = None,
-    username: Optional[str] = None,
-    status: Optional[str] = None,
-    description: Optional[str] = None,
-    summary: Optional[Dict[str, Any]] = None,
-    payload: Optional[Dict[str, Any]] = None,
-    progress: Optional[int] = None,
-    retries: Optional[int] = None,
-):
-    """Update event data.
-
-    Args:
-        event_id (str): Event id.
-        sender (Optional[str]): New sender of event.
-        project_name (Optional[str]): New project name.
-        username (Optional[str]): New username.
-        status (Optional[str]): New event status. Enum: "pending",
-            "in_progress", "finished", "failed", "aborted", "restarted"
-        description (Optional[str]): New description.
-        summary (Optional[dict[str, Any]]): New summary.
-        payload (Optional[dict[str, Any]]): New payload.
-        progress (Optional[int]): New progress. Range [0-100].
-        retries (Optional[int]): New retries.
-
-    """
-    con = get_server_api_connection()
-    return con.update_event(
-        event_id=event_id,
-        sender=sender,
-        project_name=project_name,
-        username=username,
-        status=status,
-        description=description,
-        summary=summary,
-        payload=payload,
-        progress=progress,
-        retries=retries,
-    )
-
-
-def dispatch_event(
-    topic: str,
-    sender: Optional[str] = None,
-    event_hash: Optional[str] = None,
-    project_name: Optional[str] = None,
-    username: Optional[str] = None,
-    depends_on: Optional[str] = None,
-    description: Optional[str] = None,
-    summary: Optional[Dict[str, Any]] = None,
-    payload: Optional[Dict[str, Any]] = None,
-    finished: bool = True,
-    store: bool = True,
-    dependencies: Optional[List[str]] = None,
-):
-    """Dispatch event to server.
-
-    Args:
-        topic (str): Event topic used for filtering of listeners.
-        sender (Optional[str]): Sender of event.
-        event_hash (Optional[str]): Event hash.
-        project_name (Optional[str]): Project name.
-        depends_on (Optional[str]): Add dependency to another event.
-        username (Optional[str]): Username which triggered event.
-        description (Optional[str]): Description of event.
-        summary (Optional[dict[str, Any]]): Summary of event that can
-            be used for simple filtering on listeners.
-        payload (Optional[dict[str, Any]]): Full payload of event data with
-            all details.
-        finished (Optional[bool]): Mark event as finished on dispatch.
-        store (Optional[bool]): Store event in event queue for possible
-            future processing otherwise is event send only
-            to active listeners.
-        dependencies (Optional[list[str]]): Deprecated.
-            List of event id dependencies.
-
-    Returns:
-        RestApiResponse: Response from server.
-
-    """
-    con = get_server_api_connection()
-    return con.dispatch_event(
-        topic=topic,
-        sender=sender,
-        event_hash=event_hash,
-        project_name=project_name,
-        username=username,
-        depends_on=depends_on,
-        description=description,
-        summary=summary,
-        payload=payload,
-        finished=finished,
-        store=store,
-        dependencies=dependencies,
-    )
-
-
-def delete_event(
-    event_id: str,
-):
-    """Delete event by id.
-
-    Supported since AYON server 1.6.0.
-
-    Args:
-        event_id (str): Event id.
-
-    Returns:
-        RestApiResponse: Response from server.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_event(
-        event_id=event_id,
-    )
-
-
-def enroll_event_job(
-    source_topic: "Union[str, List[str]]",
-    target_topic: str,
-    sender: str,
-    description: Optional[str] = None,
-    sequential: Optional[bool] = None,
-    events_filter: Optional["EventFilter"] = None,
-    max_retries: Optional[int] = None,
-    ignore_older_than: Optional[str] = None,
-    ignore_sender_types: Optional[str] = None,
-):
-    """Enroll job based on events.
-
-    Enroll will find first unprocessed event with 'source_topic' and will
-    create new event with 'target_topic' for it and return the new event
-    data.
-
-    Use 'sequential' to control that only single target event is created
-    at same time. Creation of new target events is blocked while there is
-    at least one unfinished event with target topic, when set to 'True'.
-    This helps when order of events matter and more than one process using
-    the same target is running at the same time.
-
-    Make sure the new event has updated status to '"finished"' status
-    when you're done with logic
-
-    Target topic should not clash with other processes/services.
-
-    Created target event have 'dependsOn' key where is id of source topic.
-
-    Use-case:
-        - Service 1 is creating events with topic 'my.leech'
-        - Service 2 process 'my.leech' and uses target topic 'my.process'
-            - this service can run on 1-n machines
-            - all events must be processed in a sequence by their creation
-                time and only one event can be processed at a time
-            - in this case 'sequential' should be set to 'True' so only
-                one machine is actually processing events, but if one goes
-                down there are other that can take place
-        - Service 3 process 'my.leech' and uses target topic 'my.discover'
-            - this service can run on 1-n machines
-            - order of events is not important
-            - 'sequential' should be 'False'
-
-    Args:
-        source_topic (Union[str, List[str]]): Source topic to enroll with
-            wildcards '*', or explicit list of topics.
-        target_topic (str): Topic of dependent event.
-        sender (str): Identifier of sender (e.g. service name or username).
-        description (Optional[str]): Human readable text shown
-            in target event.
-        sequential (Optional[bool]): The source topic must be processed
-            in sequence.
-        events_filter (Optional[dict[str, Any]]): Filtering conditions
-            to filter the source event. For more technical specifications
-            look to server backed 'ayon_server.sqlfilter.Filter'.
-            TODO: Add example of filters.
-        max_retries (Optional[int]): How many times can be event retried.
-            Default value is based on server (3 at the time of this PR).
-        ignore_older_than (Optional[int]): Ignore events older than
-            given number in days.
-        ignore_sender_types (Optional[List[str]]): Ignore events triggered
-            by given sender types.
-
-    Returns:
-        Union[None, dict[str, Any]]: None if there is no event matching
-            filters. Created event with 'target_topic'.
-
-    """
-    con = get_server_api_connection()
-    return con.enroll_event_job(
-        source_topic=source_topic,
-        target_topic=target_topic,
-        sender=sender,
-        description=description,
-        sequential=sequential,
-        events_filter=events_filter,
-        max_retries=max_retries,
-        ignore_older_than=ignore_older_than,
-        ignore_sender_types=ignore_sender_types,
-    )
-
-
-def get_activities(
-    project_name: str,
-    activity_ids: Optional[Iterable[str]] = None,
-    activity_types: Optional[Iterable["ActivityType"]] = None,
-    entity_ids: Optional[Iterable[str]] = None,
-    entity_names: Optional[Iterable[str]] = None,
-    entity_type: Optional[str] = None,
-    changed_after: Optional[str] = None,
-    changed_before: Optional[str] = None,
-    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
-    fields: Optional[Iterable[str]] = None,
-    limit: Optional[int] = None,
-    order: Optional[SortOrder] = None,
-) -> Generator[Dict[str, Any], None, None]:
-    """Get activities from server with filtering options.
-
-    Args:
-        project_name (str): Project on which activities happened.
-        activity_ids (Optional[Iterable[str]]): Activity ids.
-        activity_types (Optional[Iterable[ActivityType]]): Activity types.
-        entity_ids (Optional[Iterable[str]]): Entity ids.
-        entity_names (Optional[Iterable[str]]): Entity names.
-        entity_type (Optional[str]): Entity type.
-        changed_after (Optional[str]): Return only activities changed
-            after given iso datetime string.
-        changed_before (Optional[str]): Return only activities changed
-            before given iso datetime string.
-        reference_types (Optional[Iterable[ActivityReferenceType]]):
-            Reference types filter. Defaults to `['origin']`.
-        fields (Optional[Iterable[str]]): Fields that should be received
-            for each activity.
-        limit (Optional[int]): Limit number of activities to be fetched.
-        order (Optional[SortOrder]): Order activities in ascending
-            or descending order. It is recommended to set 'limit'
-            when used descending.
-
-    Returns:
-        Generator[dict[str, Any]]: Available activities matching filters.
-
-    """
-    con = get_server_api_connection()
-    return con.get_activities(
-        project_name=project_name,
-        activity_ids=activity_ids,
-        activity_types=activity_types,
-        entity_ids=entity_ids,
-        entity_names=entity_names,
-        entity_type=entity_type,
-        changed_after=changed_after,
-        changed_before=changed_before,
-        reference_types=reference_types,
-        fields=fields,
-        limit=limit,
-        order=order,
-    )
-
-
-def get_activity_by_id(
-    project_name: str,
-    activity_id: str,
-    reference_types: Optional[Iterable["ActivityReferenceType"]] = None,
-    fields: Optional[Iterable[str]] = None,
-) -> Optional[Dict[str, Any]]:
-    """Get activity by id.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        activity_id (str): Activity id.
-        reference_types: Optional[Iterable[ActivityReferenceType]]: Filter
-            by reference types.
-        fields (Optional[Iterable[str]]): Fields that should be received
-            for each activity.
-
-    Returns:
-        Optional[Dict[str, Any]]: Activity data or None if activity is not
-            found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_activity_by_id(
-        project_name=project_name,
-        activity_id=activity_id,
-        reference_types=reference_types,
-        fields=fields,
-    )
-
-
-def create_activity(
-    project_name: str,
-    entity_id: str,
-    entity_type: str,
-    activity_type: "ActivityType",
-    activity_id: Optional[str] = None,
-    body: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    timestamp: Optional[str] = None,
-    data: Optional[Dict[str, Any]] = None,
-) -> str:
-    """Create activity on a project.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        entity_id (str): Entity id.
-        entity_type (str): Entity type.
-        activity_type (ActivityType): Activity type.
-        activity_id (Optional[str]): Activity id.
-        body (Optional[str]): Activity body.
-        file_ids (Optional[List[str]]): List of file ids attached
-            to activity.
-        timestamp (Optional[str]): Activity timestamp.
-        data (Optional[Dict[str, Any]]): Additional data.
-
-    Returns:
-        str: Activity id.
-
-    """
-    con = get_server_api_connection()
-    return con.create_activity(
-        project_name=project_name,
-        entity_id=entity_id,
-        entity_type=entity_type,
-        activity_type=activity_type,
-        activity_id=activity_id,
-        body=body,
-        file_ids=file_ids,
-        timestamp=timestamp,
-        data=data,
-    )
-
-
-def update_activity(
-    project_name: str,
-    activity_id: str,
-    body: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    append_file_ids: Optional[bool] = False,
-    data: Optional[Dict[str, Any]] = None,
-):
-    """Update activity by id.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        activity_id (str): Activity id.
-        body (str): Activity body.
-        file_ids (Optional[List[str]]): List of file ids attached
-            to activity.
-        append_file_ids (Optional[bool]): Append file ids to existing
-            list of file ids.
-        data (Optional[Dict[str, Any]]): Update data in activity.
-
-    """
-    con = get_server_api_connection()
-    return con.update_activity(
-        project_name=project_name,
-        activity_id=activity_id,
-        body=body,
-        file_ids=file_ids,
-        append_file_ids=append_file_ids,
-        data=data,
-    )
-
-
-def delete_activity(
-    project_name: str,
-    activity_id: str,
-):
-    """Delete activity by id.
-
-    Args:
-        project_name (str): Project on which activity happened.
-        activity_id (str): Activity id to remove.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_activity(
-        project_name=project_name,
-        activity_id=activity_id,
-    )
-
-
 def download_file_to_stream(
     endpoint: str,
-    stream: "StreamType",
+    stream: StreamType,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
 ) -> TransferProgress:
@@ -1437,7 +986,7 @@ def download_file(
 
 def upload_file_from_stream(
     endpoint: str,
-    stream: "StreamType",
+    stream: StreamType,
     progress: Optional[TransferProgress] = None,
     request_type: Optional[RequestType] = None,
     **kwargs,
@@ -1517,7 +1066,7 @@ def upload_reviewable(
     content_type: Optional[str] = None,
     filename: Optional[str] = None,
     progress: Optional[TransferProgress] = None,
-    headers: Optional[Dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
     **kwargs,
 ) -> requests.Response:
     """Upload reviewable file to server.
@@ -1532,7 +1081,7 @@ def upload_reviewable(
         filename (Optional[str]): User as original filename. Filename from
             'filepath' is used when not filled.
         progress (Optional[TransferProgress]): Progress.
-        headers (Optional[Dict[str, Any]]): Headers.
+        headers (Optional[dict[str, Any]]): Headers.
 
     Returns:
         requests.Response: Server response.
@@ -1565,7 +1114,7 @@ def trigger_server_restart():
 
 def query_graphql(
     query: str,
-    variables: Optional[Dict[str, Any]] = None,
+    variables: Optional[dict[str, Any]] = None,
 ) -> GraphQlResponse:
     """Execute GraphQl query.
 
@@ -1585,12 +1134,12 @@ def query_graphql(
     )
 
 
-def get_graphql_schema() -> Dict[str, Any]:
+def get_graphql_schema() -> dict[str, Any]:
     con = get_server_api_connection()
     return con.get_graphql_schema()
 
 
-def get_server_schema() -> Optional[Dict[str, Any]]:
+def get_server_schema() -> Optional[dict[str, Any]]:
     """Get server schema with info, url paths, components etc.
 
     Todos:
@@ -1604,7 +1153,7 @@ def get_server_schema() -> Optional[Dict[str, Any]]:
     return con.get_server_schema()
 
 
-def get_schemas() -> Dict[str, Any]:
+def get_schemas() -> dict[str, Any]:
     """Get components schema.
 
     Name of components does not match entity type names e.g. 'project' is
@@ -1620,117 +1169,9 @@ def get_schemas() -> Dict[str, Any]:
     return con.get_schemas()
 
 
-def get_attributes_schema(
-    use_cache: bool = True,
-) -> "AttributesSchemaDict":
-    con = get_server_api_connection()
-    return con.get_attributes_schema(
-        use_cache=use_cache,
-    )
-
-
-def reset_attributes_schema():
-    con = get_server_api_connection()
-    return con.reset_attributes_schema()
-
-
-def set_attribute_config(
-    attribute_name: str,
-    data: "AttributeSchemaDataDict",
-    scope: List["AttributeScope"],
-    position: Optional[int] = None,
-    builtin: bool = False,
-):
-    con = get_server_api_connection()
-    return con.set_attribute_config(
-        attribute_name=attribute_name,
-        data=data,
-        scope=scope,
-        position=position,
-        builtin=builtin,
-    )
-
-
-def remove_attribute_config(
-    attribute_name: str,
-):
-    """Remove attribute from server.
-
-    This can't be un-done, please use carefully.
-
-    Args:
-        attribute_name (str): Name of attribute to remove.
-
-    """
-    con = get_server_api_connection()
-    return con.remove_attribute_config(
-        attribute_name=attribute_name,
-    )
-
-
-def get_attributes_for_type(
-    entity_type: "AttributeScope",
-) -> Dict[str, "AttributeSchemaDict"]:
-    """Get attribute schemas available for an entity type.
-
-    Example::
-
-        ```
-        # Example attribute schema
-        {
-            # Common
-            "type": "integer",
-            "title": "Clip Out",
-            "description": null,
-            "example": 1,
-            "default": 1,
-            # These can be filled based on value of 'type'
-            "gt": null,
-            "ge": null,
-            "lt": null,
-            "le": null,
-            "minLength": null,
-            "maxLength": null,
-            "minItems": null,
-            "maxItems": null,
-            "regex": null,
-            "enum": null
-        }
-        ```
-
-    Args:
-        entity_type (str): Entity type for which should be attributes
-            received.
-
-    Returns:
-        dict[str, dict[str, Any]]: Attribute schemas that are available
-            for entered entity type.
-
-    """
-    con = get_server_api_connection()
-    return con.get_attributes_for_type(
-        entity_type=entity_type,
-    )
-
-
-def get_attributes_fields_for_type(
-    entity_type: "AttributeScope",
-) -> Set[str]:
-    """Prepare attribute fields for entity type.
-
-    Returns:
-        set[str]: Attributes fields for entity type.
-
-    """
-    con = get_server_api_connection()
-    return con.get_attributes_fields_for_type(
-        entity_type=entity_type,
-    )
-
-
 def get_default_fields_for_type(
     entity_type: str,
-) -> Set[str]:
+) -> set[str]:
     """Default fields for entity type.
 
     Returns most of commonly used fields from server.
@@ -1748,134 +1189,75 @@ def get_default_fields_for_type(
     )
 
 
-def get_addons_info(
-    details: bool = True,
-) -> "AddonsInfoDict":
-    """Get information about addons available on server.
+def get_rest_entity_by_id(
+    project_name: str,
+    entity_type: str,
+    entity_id: str,
+) -> Optional[AnyEntityDict]:
+    """Get entity using REST on a project by its id.
 
     Args:
-        details (Optional[bool]): Detailed data with information how
-            to get client code.
+        project_name (str): Name of project where entity is.
+        entity_type (Literal["folder", "task", "product", "version"]): The
+            entity type which should be received.
+        entity_id (str): Id of entity.
+
+    Returns:
+        Optional[AnyEntityDict]: Received entity data.
 
     """
     con = get_server_api_connection()
-    return con.get_addons_info(
-        details=details,
+    return con.get_rest_entity_by_id(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_id=entity_id,
     )
 
 
-def get_addon_endpoint(
-    addon_name: str,
-    addon_version: str,
-    *subpaths,
-) -> str:
-    """Calculate endpoint to addon route.
+def send_batch_operations(
+    project_name: str,
+    operations: list[dict[str, Any]],
+    can_fail: bool = False,
+    raise_on_fail: bool = True,
+) -> list[dict[str, Any]]:
+    """Post multiple CRUD operations to server.
 
-    Examples:
-
-        >>> api = ServerAPI("https://your.url.com")
-        >>> api.get_addon_url(
-        ...     "example", "1.0.0", "private", "my.zip")
-        'addons/example/1.0.0/private/my.zip'
+    When multiple changes should be made on server side this is the best
+    way to go. It is possible to pass multiple operations to process on a
+    server side and do the changes in a transaction.
 
     Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        *subpaths (str): Any amount of subpaths that are added to
-            addon url.
+        project_name (str): On which project should be operations
+            processed.
+        operations (list[dict[str, Any]]): Operations to be processed.
+        can_fail (Optional[bool]): Server will try to process all
+            operations even if one of them fails.
+        raise_on_fail (Optional[bool]): Raise exception if an operation
+            fails. You can handle failed operations on your own
+            when set to 'False'.
+
+    Raises:
+        ValueError: Operations can't be converted to json string.
+        FailedOperations: When output does not contain server operations
+            or 'raise_on_fail' is enabled and any operation fails.
 
     Returns:
-        str: Final url.
+        list[dict[str, Any]]: Operations result with process details.
 
     """
     con = get_server_api_connection()
-    return con.get_addon_endpoint(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        *subpaths,
-    )
-
-
-def get_addon_url(
-    addon_name: str,
-    addon_version: str,
-    *subpaths,
-    use_rest: bool = True,
-) -> str:
-    """Calculate url to addon route.
-
-    Examples:
-
-        >>> api = ServerAPI("https://your.url.com")
-        >>> api.get_addon_url(
-        ...     "example", "1.0.0", "private", "my.zip")
-        'https://your.url.com/api/addons/example/1.0.0/private/my.zip'
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        *subpaths (str): Any amount of subpaths that are added to
-            addon url.
-        use_rest (Optional[bool]): Use rest endpoint.
-
-    Returns:
-        str: Final url.
-
-    """
-    con = get_server_api_connection()
-    return con.get_addon_url(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        *subpaths,
-        use_rest=use_rest,
-    )
-
-
-def download_addon_private_file(
-    addon_name: str,
-    addon_version: str,
-    filename: str,
-    destination_dir: str,
-    destination_filename: Optional[str] = None,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
-) -> str:
-    """Download a file from addon private files.
-
-    This method requires to have authorized token available. Private files
-    are not under '/api' restpoint.
-
-    Args:
-        addon_name (str): Addon name.
-        addon_version (str): Addon version.
-        filename (str): Filename in private folder on server.
-        destination_dir (str): Where the file should be downloaded.
-        destination_filename (Optional[str]): Name of destination
-            filename. Source filename is used if not passed.
-        chunk_size (Optional[int]): Download chunk size.
-        progress (Optional[TransferProgress]): Object that gives ability
-            to track download progress.
-
-    Returns:
-        str: Filepath to downloaded file.
-
-    """
-    con = get_server_api_connection()
-    return con.download_addon_private_file(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        filename=filename,
-        destination_dir=destination_dir,
-        destination_filename=destination_filename,
-        chunk_size=chunk_size,
-        progress=progress,
+    return con.send_batch_operations(
+        project_name=project_name,
+        operations=operations,
+        can_fail=can_fail,
+        raise_on_fail=raise_on_fail,
     )
 
 
 def get_installers(
     version: Optional[str] = None,
     platform_name: Optional[str] = None,
-) -> "InstallersInfoDict":
+) -> InstallersInfoDict:
     """Information about desktop application installers on server.
 
     Desktop application installers are helpers to download/update AYON
@@ -1901,13 +1283,13 @@ def create_installer(
     version: str,
     python_version: str,
     platform_name: str,
-    python_modules: Dict[str, str],
-    runtime_python_modules: Dict[str, str],
+    python_modules: dict[str, str],
+    runtime_python_modules: dict[str, str],
     checksum: str,
     checksum_algorithm: str,
     file_size: int,
-    sources: Optional[List[Dict[str, Any]]] = None,
-):
+    sources: Optional[list[dict[str, Any]]] = None,
+) -> None:
     """Create new installer information on server.
 
     This step will create only metadata. Make sure to upload installer
@@ -1950,8 +1332,8 @@ def create_installer(
 
 def update_installer(
     filename: str,
-    sources: List[Dict[str, Any]],
-):
+    sources: list[dict[str, Any]],
+) -> None:
     """Update installer information on server.
 
     Args:
@@ -1969,7 +1351,7 @@ def update_installer(
 
 def delete_installer(
     filename: str,
-):
+) -> None:
     """Delete installer from server.
 
     Args:
@@ -1987,7 +1369,7 @@ def download_installer(
     dst_filepath: str,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
-):
+) -> TransferProgress:
     """Download installer file from server.
 
     Args:
@@ -1996,6 +1378,9 @@ def download_installer(
         chunk_size (Optional[int]): Download chunk size.
         progress (Optional[TransferProgress]): Object that gives ability
             to track download progress.
+
+    Returns:
+        TransferProgress: Progress object.
 
     """
     con = get_server_api_connection()
@@ -2011,7 +1396,7 @@ def upload_installer(
     src_filepath: str,
     dst_filename: str,
     progress: Optional[TransferProgress] = None,
-):
+) -> requests.Response:
     """Upload installer file to server.
 
     Args:
@@ -2032,7 +1417,7 @@ def upload_installer(
     )
 
 
-def get_dependency_packages() -> "DependencyPackagesDict":
+def get_dependency_packages() -> DependencyPackagesDict:
     """Information about dependency packages on server.
 
     To download dependency package, use 'download_dependency_package'
@@ -2066,15 +1451,15 @@ def get_dependency_packages() -> "DependencyPackagesDict":
 
 def create_dependency_package(
     filename: str,
-    python_modules: Dict[str, str],
-    source_addons: Dict[str, str],
+    python_modules: dict[str, str],
+    source_addons: dict[str, str],
     installer_version: str,
     checksum: str,
     checksum_algorithm: str,
     file_size: int,
-    sources: Optional[List[Dict[str, Any]]] = None,
+    sources: Optional[list[dict[str, Any]]] = None,
     platform_name: Optional[str] = None,
-):
+) -> None:
     """Create dependency package on server.
 
     The package will be created on a server, it is also required to upload
@@ -2120,8 +1505,8 @@ def create_dependency_package(
 
 def update_dependency_package(
     filename: str,
-    sources: List[Dict[str, Any]],
-):
+    sources: list[dict[str, Any]],
+) -> None:
     """Update dependency package metadata on server.
 
     Args:
@@ -2141,7 +1526,7 @@ def update_dependency_package(
 def delete_dependency_package(
     filename: str,
     platform_name: Optional[str] = None,
-):
+) -> None:
     """Remove dependency package for specific platform.
 
     Args:
@@ -2200,7 +1585,7 @@ def upload_dependency_package(
     dst_filename: str,
     platform_name: Optional[str] = None,
     progress: Optional[TransferProgress] = None,
-):
+) -> None:
     """Upload dependency package to server.
 
     Args:
@@ -2221,80 +1606,531 @@ def upload_dependency_package(
     )
 
 
-def delete_addon(
-    addon_name: str,
-    purge: Optional[bool] = None,
-):
-    """Delete addon from server.
-
-    Delete all versions of addon from server.
-
-    Args:
-        addon_name (str): Addon name.
-        purge (Optional[bool]): Purge all data related to the addon.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_addon(
-        addon_name=addon_name,
-        purge=purge,
-    )
-
-
-def delete_addon_version(
-    addon_name: str,
-    addon_version: str,
-    purge: Optional[bool] = None,
-):
-    """Delete addon version from server.
-
-    Delete all versions of addon from server.
-
-    Args:
-        addon_name (str): Addon name.
-        addon_version (str): Addon version.
-        purge (Optional[bool]): Purge all data related to the addon.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_addon_version(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        purge=purge,
-    )
-
-
-def upload_addon_zip(
-    src_filepath: str,
-    progress: Optional[TransferProgress] = None,
-):
-    """Upload addon zip file to server.
-
-    File is validated on server. If it is valid, it is installed. It will
-        create an event job which can be tracked (tracking part is not
-        implemented yet).
+def get_secrets() -> list[SecretDict]:
+    """Get all secrets.
 
     Example output::
 
-        {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
-
-    Args:
-        src_filepath (str): Path to a zip file.
-        progress (Optional[TransferProgress]): Object to keep track about
-            upload state.
+        [
+            {
+                "name": "secret_1",
+                "value": "secret_value_1",
+            },
+            {
+                "name": "secret_2",
+                "value": "secret_value_2",
+            }
+        ]
 
     Returns:
-        dict[str, Any]: Response data from server.
+        list[SecretDict]: List of secret entities.
 
     """
     con = get_server_api_connection()
-    return con.upload_addon_zip(
-        src_filepath=src_filepath,
-        progress=progress,
+    return con.get_secrets()
+
+
+def get_secret(
+    secret_name: str,
+) -> SecretDict:
+    """Get secret by name.
+
+    Example output::
+
+        {
+            "name": "secret_name",
+            "value": "secret_value",
+        }
+
+    Args:
+        secret_name (str): Name of secret.
+
+    Returns:
+        dict[str, str]: Secret entity data.
+
+    """
+    con = get_server_api_connection()
+    return con.get_secret(
+        secret_name=secret_name,
     )
 
 
-def get_bundles() -> "BundlesInfoDict":
+def save_secret(
+    secret_name: str,
+    secret_value: str,
+) -> None:
+    """Save secret.
+
+    This endpoint can create and update secret.
+
+    Args:
+        secret_name (str): Name of secret.
+        secret_value (str): Value of secret.
+
+    """
+    con = get_server_api_connection()
+    return con.save_secret(
+        secret_name=secret_name,
+        secret_value=secret_value,
+    )
+
+
+def delete_secret(
+    secret_name: str,
+) -> None:
+    """Delete secret by name.
+
+    Args:
+        secret_name (str): Name of secret to delete.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_secret(
+        secret_name=secret_name,
+    )
+
+
+def get_actions(
+    project_name: Optional[str] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
+    entity_ids: Optional[list[str]] = None,
+    entity_subtypes: Optional[list[str]] = None,
+    form_data: Optional[dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+    mode: Optional[ActionModeType] = None,
+) -> list[ActionManifestDict]:
+    """Get actions for a context.
+
+    Args:
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[list[str]]): list of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[list[str]]): list of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+        mode (Optional[ActionModeType]): Action modes.
+
+    Returns:
+        list[ActionManifestDict]: list of action manifests.
+
+    """
+    con = get_server_api_connection()
+    return con.get_actions(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+        mode=mode,
+    )
+
+
+def trigger_action(
+    identifier: str,
+    addon_name: str,
+    addon_version: str,
+    project_name: Optional[str] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
+    entity_ids: Optional[list[str]] = None,
+    entity_subtypes: Optional[list[str]] = None,
+    form_data: Optional[dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+) -> ActionTriggerResponse:
+    """Trigger action.
+
+    Args:
+        identifier (str): Identifier of the action.
+        addon_name (str): Name of the addon.
+        addon_version (str): Version of the addon.
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[list[str]]): list of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[list[str]]): list of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+
+    """
+    con = get_server_api_connection()
+    return con.trigger_action(
+        identifier=identifier,
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+    )
+
+
+def get_action_config(
+    identifier: str,
+    addon_name: str,
+    addon_version: str,
+    project_name: Optional[str] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
+    entity_ids: Optional[list[str]] = None,
+    entity_subtypes: Optional[list[str]] = None,
+    form_data: Optional[dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+) -> ActionConfigResponse:
+    """Get action configuration.
+
+    Args:
+        identifier (str): Identifier of the action.
+        addon_name (str): Name of the addon.
+        addon_version (str): Version of the addon.
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[list[str]]): list of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[list[str]]): list of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+
+    Returns:
+        ActionConfigResponse: Action configuration data.
+
+    """
+    con = get_server_api_connection()
+    return con.get_action_config(
+        identifier=identifier,
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+    )
+
+
+def set_action_config(
+    identifier: str,
+    addon_name: str,
+    addon_version: str,
+    value: dict[str, Any],
+    project_name: Optional[str] = None,
+    entity_type: Optional[ActionEntityTypes] = None,
+    entity_ids: Optional[list[str]] = None,
+    entity_subtypes: Optional[list[str]] = None,
+    form_data: Optional[dict[str, Any]] = None,
+    *,
+    variant: Optional[str] = None,
+) -> ActionConfigResponse:
+    """Set action configuration.
+
+    Args:
+        identifier (str): Identifier of the action.
+        addon_name (str): Name of the addon.
+        addon_version (str): Version of the addon.
+        value (Optional[dict[str, Any]]): Value of the action
+            configuration.
+        project_name (Optional[str]): Name of the project. None for global
+            actions.
+        entity_type (Optional[ActionEntityTypes]): Entity type where the
+            action is triggered. None for global actions.
+        entity_ids (Optional[list[str]]): list of entity ids where the
+            action is triggered. None for global actions.
+        entity_subtypes (Optional[list[str]]): list of entity subtypes
+            folder types for folder ids, task types for tasks ids.
+        form_data (Optional[dict[str, Any]]): Form data of the action.
+        variant (Optional[str]): Settings variant.
+
+    Returns:
+        ActionConfigResponse: New action configuration data.
+
+    """
+    con = get_server_api_connection()
+    return con.set_action_config(
+        identifier=identifier,
+        addon_name=addon_name,
+        addon_version=addon_version,
+        value=value,
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        entity_subtypes=entity_subtypes,
+        form_data=form_data,
+        variant=variant,
+    )
+
+
+def take_action(
+    action_token: str,
+) -> ActionTakeResponse:
+    """Take action metadata using an action token.
+
+    Args:
+        action_token (str): AYON launcher action token.
+
+    Returns:
+        ActionTakeResponse: Action metadata describing how to launch
+            action.
+
+    """
+    con = get_server_api_connection()
+    return con.take_action(
+        action_token=action_token,
+    )
+
+
+def abort_action(
+    action_token: str,
+    message: Optional[str] = None,
+) -> None:
+    """Abort action using an action token.
+
+    Args:
+        action_token (str): AYON launcher action token.
+        message (Optional[str]): Message to display in the UI.
+
+    """
+    con = get_server_api_connection()
+    return con.abort_action(
+        action_token=action_token,
+        message=message,
+    )
+
+
+def get_activities(
+    project_name: str,
+    activity_ids: Optional[Iterable[str]] = None,
+    activity_types: Optional[Iterable[ActivityType]] = None,
+    entity_ids: Optional[Iterable[str]] = None,
+    entity_names: Optional[Iterable[str]] = None,
+    entity_type: Optional[str] = None,
+    changed_after: Optional[str] = None,
+    changed_before: Optional[str] = None,
+    reference_types: Optional[Iterable[ActivityReferenceType]] = None,
+    fields: Optional[Iterable[str]] = None,
+    limit: Optional[int] = None,
+    order: Optional[SortOrder] = None,
+) -> Generator[dict[str, Any], None, None]:
+    """Get activities from server with filtering options.
+
+    Args:
+        project_name (str): Project on which activities happened.
+        activity_ids (Optional[Iterable[str]]): Activity ids.
+        activity_types (Optional[Iterable[ActivityType]]): Activity types.
+        entity_ids (Optional[Iterable[str]]): Entity ids.
+        entity_names (Optional[Iterable[str]]): Entity names.
+        entity_type (Optional[str]): Entity type.
+        changed_after (Optional[str]): Return only activities changed
+            after given iso datetime string.
+        changed_before (Optional[str]): Return only activities changed
+            before given iso datetime string.
+        reference_types (Optional[Iterable[ActivityReferenceType]]):
+            Reference types filter. Defaults to `['origin']`.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+        limit (Optional[int]): Limit number of activities to be fetched.
+        order (Optional[SortOrder]): Order activities in ascending
+            or descending order. It is recommended to set 'limit'
+            when used descending.
+
+    Returns:
+        Generator[dict[str, Any]]: Available activities matching filters.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activities(
+        project_name=project_name,
+        activity_ids=activity_ids,
+        activity_types=activity_types,
+        entity_ids=entity_ids,
+        entity_names=entity_names,
+        entity_type=entity_type,
+        changed_after=changed_after,
+        changed_before=changed_before,
+        reference_types=reference_types,
+        fields=fields,
+        limit=limit,
+        order=order,
+    )
+
+
+def get_activity_by_id(
+    project_name: str,
+    activity_id: str,
+    reference_types: Optional[Iterable[ActivityReferenceType]] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Optional[dict[str, Any]]:
+    """Get activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        reference_types: Optional[Iterable[ActivityReferenceType]]: Filter
+            by reference types.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each activity.
+
+    Returns:
+        Optional[dict[str, Any]]: Activity data or None if activity is not
+            found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activity_by_id(
+        project_name=project_name,
+        activity_id=activity_id,
+        reference_types=reference_types,
+        fields=fields,
+    )
+
+
+def create_activity(
+    project_name: str,
+    entity_id: str,
+    entity_type: str,
+    activity_type: ActivityType,
+    activity_id: Optional[str] = None,
+    body: Optional[str] = None,
+    file_ids: Optional[list[str]] = None,
+    timestamp: Optional[str] = None,
+    data: Optional[dict[str, Any]] = None,
+) -> str:
+    """Create activity on a project.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        entity_id (str): Entity id.
+        entity_type (str): Entity type.
+        activity_type (ActivityType): Activity type.
+        activity_id (Optional[str]): Activity id.
+        body (Optional[str]): Activity body.
+        file_ids (Optional[list[str]]): List of file ids attached
+            to activity.
+        timestamp (Optional[str]): Activity timestamp.
+        data (Optional[dict[str, Any]]): Additional data.
+
+    Returns:
+        str: Activity id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_activity(
+        project_name=project_name,
+        entity_id=entity_id,
+        entity_type=entity_type,
+        activity_type=activity_type,
+        activity_id=activity_id,
+        body=body,
+        file_ids=file_ids,
+        timestamp=timestamp,
+        data=data,
+    )
+
+
+def update_activity(
+    project_name: str,
+    activity_id: str,
+    body: Optional[str] = None,
+    file_ids: Optional[list[str]] = None,
+    append_file_ids: Optional[bool] = False,
+    data: Optional[dict[str, Any]] = None,
+) -> None:
+    """Update activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id.
+        body (str): Activity body.
+        file_ids (Optional[list[str]]): List of file ids attached
+            to activity.
+        append_file_ids (Optional[bool]): Append file ids to existing
+            list of file ids.
+        data (Optional[dict[str, Any]]): Update data in activity.
+
+    """
+    con = get_server_api_connection()
+    return con.update_activity(
+        project_name=project_name,
+        activity_id=activity_id,
+        body=body,
+        file_ids=file_ids,
+        append_file_ids=append_file_ids,
+        data=data,
+    )
+
+
+def delete_activity(
+    project_name: str,
+    activity_id: str,
+) -> None:
+    """Delete activity by id.
+
+    Args:
+        project_name (str): Project on which activity happened.
+        activity_id (str): Activity id to remove.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_activity(
+        project_name=project_name,
+        activity_id=activity_id,
+    )
+
+
+def send_activities_batch_operations(
+    project_name: str,
+    operations: list[dict[str, Any]],
+    can_fail: bool = False,
+    raise_on_fail: bool = True,
+) -> list[dict[str, Any]]:
+    """Post multiple CRUD activities operations to server.
+
+    When multiple changes should be made on server side this is the best
+    way to go. It is possible to pass multiple operations to process on a
+    server side and do the changes in a transaction.
+
+    Args:
+        project_name (str): On which project should be operations
+            processed.
+        operations (list[dict[str, Any]]): Operations to be processed.
+        can_fail (Optional[bool]): Server will try to process all
+            operations even if one of them fails.
+        raise_on_fail (Optional[bool]): Raise exception if an operation
+            fails. You can handle failed operations on your own
+            when set to 'False'.
+
+    Raises:
+        ValueError: Operations can't be converted to json string.
+        FailedOperations: When output does not contain server operations
+            or 'raise_on_fail' is enabled and any operation fails.
+
+    Returns:
+        list[dict[str, Any]]: Operations result with process details.
+
+    """
+    con = get_server_api_connection()
+    return con.send_activities_batch_operations(
+        project_name=project_name,
+        operations=operations,
+        can_fail=can_fail,
+        raise_on_fail=raise_on_fail,
+    )
+
+
+def get_bundles() -> BundlesInfoDict:
     """Server bundles with basic information.
 
     This is example output::
@@ -2331,15 +2167,15 @@ def get_bundles() -> "BundlesInfoDict":
 
 def create_bundle(
     name: str,
-    addon_versions: Dict[str, str],
+    addon_versions: dict[str, str],
     installer_version: str,
-    dependency_packages: Optional[Dict[str, str]] = None,
+    dependency_packages: Optional[dict[str, str]] = None,
     is_production: Optional[bool] = None,
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
-):
+    dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
+) -> None:
     """Create bundle on server.
 
     Bundle cannot be changed once is created. Only isProduction, isStaging
@@ -2394,15 +2230,15 @@ def create_bundle(
 
 def update_bundle(
     bundle_name: str,
-    addon_versions: Optional[Dict[str, str]] = None,
+    addon_versions: Optional[dict[str, str]] = None,
     installer_version: Optional[str] = None,
-    dependency_packages: Optional[Dict[str, str]] = None,
+    dependency_packages: Optional[dict[str, str]] = None,
     is_production: Optional[bool] = None,
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
-    dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
-):
+    dev_active_user: Optional[str] = NOT_SET,
+    dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
+) -> None:
     """Update bundle on server.
 
     Dependency packages can be update only for single platform. Others
@@ -2443,15 +2279,15 @@ def update_bundle(
 
 def check_bundle_compatibility(
     name: str,
-    addon_versions: Dict[str, str],
+    addon_versions: dict[str, str],
     installer_version: str,
-    dependency_packages: Optional[Dict[str, str]] = None,
+    dependency_packages: Optional[dict[str, str]] = None,
     is_production: Optional[bool] = None,
     is_staging: Optional[bool] = None,
     is_dev: Optional[bool] = None,
     dev_active_user: Optional[str] = None,
-    dev_addons_config: Optional[Dict[str, "DevBundleAddonInfoDict"]] = None,
-) -> Dict[str, Any]:
+    dev_addons_config: Optional[dict[str, DevBundleAddonInfoDict]] = None,
+) -> dict[str, Any]:
     """Check bundle compatibility.
 
     Can be used as per-flight validation before creating bundle.
@@ -2473,7 +2309,7 @@ def check_bundle_compatibility(
             dev addons. Can be used only if 'is_dev' is set to 'True'.
 
     Returns:
-        Dict[str, Any]: Server response, with 'success' and 'issues'.
+        dict[str, Any]: Server response, with 'success' and 'issues'.
 
     """
     con = get_server_api_connection()
@@ -2492,7 +2328,7 @@ def check_bundle_compatibility(
 
 def delete_bundle(
     bundle_name: str,
-):
+) -> None:
     """Delete bundle from server.
 
     Args:
@@ -2505,239 +2341,200 @@ def delete_bundle(
     )
 
 
-def get_project_anatomy_presets() -> List["AnatomyPresetDict"]:
-    """Anatomy presets available on server.
+def get_addon_endpoint(
+    addon_name: str,
+    addon_version: str,
+    *subpaths,
+) -> str:
+    """Calculate endpoint to addon route.
 
-    Content has basic information about presets. Example output::
-
-        [
-            {
-                "name": "netflix_VFX",
-                "primary": false,
-                "version": "1.0.0"
-            },
-            {
-                ...
-            },
-            ...
-        ]
-
-    Returns:
-        list[dict[str, str]]: Anatomy presets available on server.
-
-    """
-    con = get_server_api_connection()
-    return con.get_project_anatomy_presets()
-
-
-def get_default_anatomy_preset_name() -> str:
-    """Name of default anatomy preset.
-
-    Primary preset is used as default preset. But when primary preset is
-    not set a built-in is used instead. Built-in preset is named '_'.
-
-    Returns:
-        str: Name of preset that can be used by
-            'get_project_anatomy_preset'.
-
-    """
-    con = get_server_api_connection()
-    return con.get_default_anatomy_preset_name()
-
-
-def get_project_anatomy_preset(
-    preset_name: Optional[str] = None,
-) -> "AnatomyPresetDict":
-    """Anatomy preset values by name.
-
-    Get anatomy preset values by preset name. Primary preset is returned
-    if preset name is set to 'None'.
+    Examples:
+        >>> from ayon_api import ServerAPI
+        >>> api = ServerAPI("https://your.url.com")
+        >>> api.get_addon_url(
+        ...     "example", "1.0.0", "private", "my.zip")
+        'addons/example/1.0.0/private/my.zip'
 
     Args:
-        preset_name (Optional[str]): Preset name.
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        *subpaths (str): Any amount of subpaths that are added to
+            addon url.
 
     Returns:
-        AnatomyPresetDict: Anatomy preset values.
+        str: Final url.
 
     """
     con = get_server_api_connection()
-    return con.get_project_anatomy_preset(
-        preset_name=preset_name,
+    return con.get_addon_endpoint(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        *subpaths,
     )
 
 
-def get_built_in_anatomy_preset() -> "AnatomyPresetDict":
-    """Get built-in anatomy preset.
-
-    Returns:
-        AnatomyPresetDict: Built-in anatomy preset.
-
-    """
-    con = get_server_api_connection()
-    return con.get_built_in_anatomy_preset()
-
-
-def get_build_in_anatomy_preset() -> "AnatomyPresetDict":
-    con = get_server_api_connection()
-    return con.get_build_in_anatomy_preset()
-
-
-def get_project_root_overrides(
-    project_name: str,
-) -> Dict[str, Dict[str, str]]:
-    """Root overrides per site name.
-
-    Method is based on logged user and can't be received for any other
-        user on server.
-
-    Output will contain only roots per site id used by logged user.
+def get_addons_info(
+    details: bool = True,
+) -> AddonsInfoDict:
+    """Get information about addons available on server.
 
     Args:
-        project_name (str): Name of project.
-
-    Returns:
-         dict[str, dict[str, str]]: Root values by root name by site id.
+        details (Optional[bool]): Detailed data with information how
+            to get client code.
 
     """
     con = get_server_api_connection()
-    return con.get_project_root_overrides(
-        project_name=project_name,
+    return con.get_addons_info(
+        details=details,
     )
 
 
-def get_project_roots_by_site(
-    project_name: str,
-) -> Dict[str, Dict[str, str]]:
-    """Root overrides per site name.
+def get_addon_url(
+    addon_name: str,
+    addon_version: str,
+    *subpaths,
+    use_rest: bool = True,
+) -> str:
+    """Calculate url to addon route.
 
-    Method is based on logged user and can't be received for any other
-    user on server.
-
-    Output will contain only roots per site id used by logged user.
-
-    Deprecated:
-        Use 'get_project_root_overrides' instead. Function
-            deprecated since 1.0.6
+    Examples:
+        >>> from ayon_api import ServerAPI
+        >>> api = ServerAPI("https://your.url.com")
+        >>> api.get_addon_url(
+        ...     "example", "1.0.0", "private", "my.zip")
+        'https://your.url.com/api/addons/example/1.0.0/private/my.zip'
 
     Args:
-        project_name (str): Name of project.
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        *subpaths (str): Any amount of subpaths that are added to
+            addon url.
+        use_rest (Optional[bool]): Use rest endpoint.
 
     Returns:
-         dict[str, dict[str, str]]: Root values by root name by site id.
+        str: Final url.
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_by_site(
-        project_name=project_name,
+    return con.get_addon_url(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        *subpaths,
+        use_rest=use_rest,
     )
 
 
-def get_project_root_overrides_by_site_id(
-    project_name: str,
-    site_id: Optional[str] = None,
-) -> Dict[str, str]:
-    """Root overrides for site.
+def delete_addon(
+    addon_name: str,
+    purge: Optional[bool] = None,
+) -> None:
+    """Delete addon from server.
 
-    If site id is not passed a site set in current api object is used
-    instead.
+    Delete all versions of addon from server.
 
     Args:
-        project_name (str): Name of project.
-        site_id (Optional[str]): Site id for which want to receive
-            site overrides.
-
-    Returns:
-        dict[str, str]: Root values by root name or None if
-            site does not have overrides.
+        addon_name (str): Addon name.
+        purge (Optional[bool]): Purge all data related to the addon.
 
     """
     con = get_server_api_connection()
-    return con.get_project_root_overrides_by_site_id(
-        project_name=project_name,
-        site_id=site_id,
+    return con.delete_addon(
+        addon_name=addon_name,
+        purge=purge,
     )
 
 
-def get_project_roots_for_site(
-    project_name: str,
-    site_id: Optional[str] = None,
-) -> Dict[str, str]:
-    """Root overrides for site.
+def delete_addon_version(
+    addon_name: str,
+    addon_version: str,
+    purge: Optional[bool] = None,
+) -> None:
+    """Delete addon version from server.
 
-    If site id is not passed a site set in current api object is used
-    instead.
+    Delete all versions of addon from server.
 
-    Deprecated:
-        Use 'get_project_root_overrides_by_site_id' instead. Function
-            deprecated since 1.0.6
     Args:
-        project_name (str): Name of project.
-        site_id (Optional[str]): Site id for which want to receive
-            site overrides.
-
-    Returns:
-        dict[str, str]: Root values by root name, root name is not
-            available if it does not have overrides.
+        addon_name (str): Addon name.
+        addon_version (str): Addon version.
+        purge (Optional[bool]): Purge all data related to the addon.
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_for_site(
-        project_name=project_name,
-        site_id=site_id,
+    return con.delete_addon_version(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        purge=purge,
     )
 
 
-def get_project_roots_by_site_id(
-    project_name: str,
-    site_id: Optional[str] = None,
-) -> Dict[str, str]:
-    """Root values for a site.
+def upload_addon_zip(
+    src_filepath: str,
+    progress: Optional[TransferProgress] = None,
+):
+    """Upload addon zip file to server.
 
-    If site id is not passed a site set in current api object is used
-    instead. If site id is not available, default roots are returned
-    for current platform.
+    File is validated on server. If it is valid, it is installed. It will
+        create an event job which can be tracked (tracking part is not
+        implemented yet).
+
+    Example output::
+
+        {'eventId': 'a1bfbdee27c611eea7580242ac120003'}
 
     Args:
-        project_name (str): Name of project.
-        site_id (Optional[str]): Site id for which want to receive
-            root values.
+        src_filepath (str): Path to a zip file.
+        progress (Optional[TransferProgress]): Object to keep track about
+            upload state.
 
     Returns:
-        dict[str, str]: Root values.
+        dict[str, Any]: Response data from server.
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_by_site_id(
-        project_name=project_name,
-        site_id=site_id,
+    return con.upload_addon_zip(
+        src_filepath=src_filepath,
+        progress=progress,
     )
 
 
-def get_project_roots_by_platform(
-    project_name: str,
-    platform_name: Optional[str] = None,
-) -> Dict[str, str]:
-    """Root values for a site.
+def download_addon_private_file(
+    addon_name: str,
+    addon_version: str,
+    filename: str,
+    destination_dir: str,
+    destination_filename: Optional[str] = None,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> str:
+    """Download a file from addon private files.
 
-    If platform name is not passed current platform name is used instead.
-
-    This function does return root values without site overrides. It is
-        possible to use the function to receive default root values.
+    This method requires to have authorized token available. Private files
+    are not under '/api' restpoint.
 
     Args:
-        project_name (str): Name of project.
-        platform_name (Optional[Literal["windows", "linux", "darwin"]]):
-            Platform name for which want to receive root values. Current
-            platform name is used if not passed.
+        addon_name (str): Addon name.
+        addon_version (str): Addon version.
+        filename (str): Filename in private folder on server.
+        destination_dir (str): Where the file should be downloaded.
+        destination_filename (Optional[str]): Name of destination
+            filename. Source filename is used if not passed.
+        chunk_size (Optional[int]): Download chunk size.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track download progress.
 
     Returns:
-        dict[str, str]: Root values.
+        str: Filepath to downloaded file.
 
     """
     con = get_server_api_connection()
-    return con.get_project_roots_by_platform(
-        project_name=project_name,
-        platform_name=platform_name,
+    return con.download_addon_private_file(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        filename=filename,
+        destination_dir=destination_dir,
+        destination_filename=destination_filename,
+        chunk_size=chunk_size,
+        progress=progress,
     )
 
 
@@ -2745,7 +2542,7 @@ def get_addon_settings_schema(
     addon_name: str,
     addon_version: str,
     project_name: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Sudio/Project settings schema of an addon.
 
     Project schema may look differently as some enums are based on project
@@ -2772,7 +2569,7 @@ def get_addon_settings_schema(
 def get_addon_site_settings_schema(
     addon_name: str,
     addon_version: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Site settings schema of an addon.
 
     Args:
@@ -2794,7 +2591,7 @@ def get_addon_studio_settings(
     addon_name: str,
     addon_version: str,
     variant: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Addon studio settings.
 
     Receive studio settings for specific version of an addon.
@@ -2824,7 +2621,7 @@ def get_addon_project_settings(
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Addon project settings.
 
     Receive project settings for specific version of an addon. The settings
@@ -2869,7 +2666,7 @@ def get_addon_settings(
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Receive addon settings.
 
     Receive addon settings based on project name value. Some arguments may
@@ -2909,7 +2706,7 @@ def get_addon_site_settings(
     addon_name: str,
     addon_version: str,
     site_id: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Site settings of an addon.
 
     If site id is not available an empty dictionary is returned.
@@ -2938,7 +2735,7 @@ def get_bundle_settings(
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get complete set of settings for given data.
 
     If project is not passed then studio settings are returned. If variant
@@ -2986,7 +2783,7 @@ def get_addons_studio_settings(
     site_id: Optional[str] = None,
     use_site: bool = True,
     only_values: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """All addons settings in one bulk.
 
     Warnings:
@@ -3028,7 +2825,7 @@ def get_addons_project_settings(
     site_id: Optional[str] = None,
     use_site: bool = True,
     only_values: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Project settings of all addons.
 
     Server returns information about used addon versions, so full output
@@ -3088,7 +2885,7 @@ def get_addons_settings(
     site_id: Optional[str] = None,
     use_site: bool = True,
     only_values: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Universal function to receive all addon settings.
 
     Based on 'project_name' will receive studio settings or project
@@ -3126,93 +2923,539 @@ def get_addons_settings(
     )
 
 
-def get_secrets() -> List["SecretDict"]:
-    """Get all secrets.
+def get_event(
+    event_id: str,
+) -> Optional[dict[str, Any]]:
+    """Query full event data by id.
 
-    Example output::
+    Events received using event server do not contain full information. To
+    get the full event information is required to receive it explicitly.
+
+    Args:
+        event_id (str): Event id.
+
+    Returns:
+        dict[str, Any]: Full event data.
+
+    """
+    con = get_server_api_connection()
+    return con.get_event(
+        event_id=event_id,
+    )
+
+
+def get_events(
+    topics: Optional[Iterable[str]] = None,
+    event_ids: Optional[Iterable[str]] = None,
+    project_names: Optional[Iterable[str]] = None,
+    statuses: Optional[Iterable[EventStatus]] = None,
+    users: Optional[Iterable[str]] = None,
+    include_logs: Optional[bool] = None,
+    has_children: Optional[bool] = None,
+    newer_than: Optional[str] = None,
+    older_than: Optional[str] = None,
+    fields: Optional[Iterable[str]] = None,
+    limit: Optional[int] = None,
+    order: Optional[SortOrder] = None,
+    states: Optional[Iterable[str]] = None,
+) -> Generator[dict[str, Any], None, None]:
+    """Get events from server with filtering options.
+
+    Notes:
+        Not all event happen on a project.
+
+    Args:
+        topics (Optional[Iterable[str]]): Name of topics.
+        event_ids (Optional[Iterable[str]]): Event ids.
+        project_names (Optional[Iterable[str]]): Project on which
+            event happened.
+        statuses (Optional[Iterable[EventStatus]]): Filtering by statuses.
+        users (Optional[Iterable[str]]): Filtering by users
+            who created/triggered an event.
+        include_logs (Optional[bool]): Query also log events.
+        has_children (Optional[bool]): Event is with/without children
+            events. If 'None' then all events are returned, default.
+        newer_than (Optional[str]): Return only events newer than given
+            iso datetime string.
+        older_than (Optional[str]): Return only events older than given
+            iso datetime string.
+        fields (Optional[Iterable[str]]): Fields that should be received
+            for each event.
+        limit (Optional[int]): Limit number of events to be fetched.
+        order (Optional[SortOrder]): Order events in ascending
+            or descending order. It is recommended to set 'limit'
+            when used descending.
+        states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
+            Use 'statuses' instead.
+
+    Returns:
+        Generator[dict[str, Any]]: Available events matching filters.
+
+    """
+    con = get_server_api_connection()
+    return con.get_events(
+        topics=topics,
+        event_ids=event_ids,
+        project_names=project_names,
+        statuses=statuses,
+        users=users,
+        include_logs=include_logs,
+        has_children=has_children,
+        newer_than=newer_than,
+        older_than=older_than,
+        fields=fields,
+        limit=limit,
+        order=order,
+        states=states,
+    )
+
+
+def update_event(
+    event_id: str,
+    sender: Optional[str] = None,
+    project_name: Optional[str] = None,
+    username: Optional[str] = None,
+    status: Optional[EventStatus] = None,
+    description: Optional[str] = None,
+    summary: Optional[dict[str, Any]] = None,
+    payload: Optional[dict[str, Any]] = None,
+    progress: Optional[int] = None,
+    retries: Optional[int] = None,
+) -> None:
+    """Update event data.
+
+    Args:
+        event_id (str): Event id.
+        sender (Optional[str]): New sender of event.
+        project_name (Optional[str]): New project name.
+        username (Optional[str]): New username.
+        status (Optional[EventStatus]): New event status. Enum: "pending",
+            "in_progress", "finished", "failed", "aborted", "restarted"
+        description (Optional[str]): New description.
+        summary (Optional[dict[str, Any]]): New summary.
+        payload (Optional[dict[str, Any]]): New payload.
+        progress (Optional[int]): New progress. Range [0-100].
+        retries (Optional[int]): New retries.
+
+    """
+    con = get_server_api_connection()
+    return con.update_event(
+        event_id=event_id,
+        sender=sender,
+        project_name=project_name,
+        username=username,
+        status=status,
+        description=description,
+        summary=summary,
+        payload=payload,
+        progress=progress,
+        retries=retries,
+    )
+
+
+def dispatch_event(
+    topic: str,
+    sender: Optional[str] = None,
+    event_hash: Optional[str] = None,
+    project_name: Optional[str] = None,
+    username: Optional[str] = None,
+    depends_on: Optional[str] = None,
+    description: Optional[str] = None,
+    summary: Optional[dict[str, Any]] = None,
+    payload: Optional[dict[str, Any]] = None,
+    finished: bool = True,
+    store: bool = True,
+    dependencies: Optional[list[str]] = None,
+) -> RestApiResponse:
+    """Dispatch event to server.
+
+    Args:
+        topic (str): Event topic used for filtering of listeners.
+        sender (Optional[str]): Sender of event.
+        event_hash (Optional[str]): Event hash.
+        project_name (Optional[str]): Project name.
+        depends_on (Optional[str]): Add dependency to another event.
+        username (Optional[str]): Username which triggered event.
+        description (Optional[str]): Description of event.
+        summary (Optional[dict[str, Any]]): Summary of event that can
+            be used for simple filtering on listeners.
+        payload (Optional[dict[str, Any]]): Full payload of event data with
+            all details.
+        finished (bool): Mark event as finished on dispatch.
+        store (bool): Store event in event queue for possible
+            future processing otherwise is event send only
+            to active listeners.
+        dependencies (Optional[list[str]]): Deprecated.
+            List of event id dependencies.
+
+    Returns:
+        RestApiResponse: Response from server.
+
+    """
+    con = get_server_api_connection()
+    return con.dispatch_event(
+        topic=topic,
+        sender=sender,
+        event_hash=event_hash,
+        project_name=project_name,
+        username=username,
+        depends_on=depends_on,
+        description=description,
+        summary=summary,
+        payload=payload,
+        finished=finished,
+        store=store,
+        dependencies=dependencies,
+    )
+
+
+def create_event(
+    topic: str,
+    sender: Optional[str] = None,
+    event_hash: Optional[str] = None,
+    project_name: Optional[str] = None,
+    username: Optional[str] = None,
+    depends_on: Optional[str] = None,
+    description: Optional[str] = None,
+    summary: Optional[dict[str, Any]] = None,
+    payload: Optional[dict[str, Any]] = None,
+    finished: bool = True,
+    store: bool = True,
+    dependencies: Optional[list[str]] = None,
+) -> str:
+    """Dispatch event to server.
+
+    Args:
+        topic (str): Event topic used for filtering of listeners.
+        sender (Optional[str]): Sender of event.
+        event_hash (Optional[str]): Event hash.
+        project_name (Optional[str]): Project name.
+        depends_on (Optional[str]): Add dependency to another event.
+        username (Optional[str]): Username which triggered event.
+        description (Optional[str]): Description of event.
+        summary (Optional[dict[str, Any]]): Summary of event that can
+            be used for simple filtering on listeners.
+        payload (Optional[dict[str, Any]]): Full payload of event data with
+            all details.
+        finished (bool): Mark event as finished on dispatch.
+        store (bool): Store event in event queue for possible
+            future processing otherwise is event send only
+            to active listeners.
+        dependencies (Optional[list[str]]): Deprecated.
+            List of event id dependencies.
+
+    Returns:
+        str: Event id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_event(
+        topic=topic,
+        sender=sender,
+        event_hash=event_hash,
+        project_name=project_name,
+        username=username,
+        depends_on=depends_on,
+        description=description,
+        summary=summary,
+        payload=payload,
+        finished=finished,
+        store=store,
+        dependencies=dependencies,
+    )
+
+
+def delete_event(
+    event_id: str,
+) -> None:
+    """Delete event by id.
+
+    Supported since AYON server 1.6.0.
+
+    Args:
+        event_id (str): Event id.
+
+    Returns:
+        RestApiResponse: Response from server.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_event(
+        event_id=event_id,
+    )
+
+
+def enroll_event_job(
+    source_topic: Union[str, list[str]],
+    target_topic: str,
+    sender: str,
+    description: Optional[str] = None,
+    sequential: Optional[bool] = None,
+    events_filter: Optional[EventFilter] = None,
+    max_retries: Optional[int] = None,
+    ignore_older_than: Optional[str] = None,
+    ignore_sender_types: Optional[str] = None,
+) -> Optional[EnrollEventData]:
+    """Enroll job based on events.
+
+    Enroll will find first unprocessed event with 'source_topic' and will
+    create new event with 'target_topic' for it and return the new event
+    data.
+
+    Use 'sequential' to control that only single target event is created
+    at same time. Creation of new target events is blocked while there is
+    at least one unfinished event with target topic, when set to 'True'.
+    This helps when order of events matter and more than one process using
+    the same target is running at the same time.
+
+    Make sure the new event has updated status to '"finished"' status
+    when you're done with logic
+
+    Target topic should not clash with other processes/services.
+
+    Created target event have 'dependsOn' key where is id of source topic.
+
+    Use-case:
+        - Service 1 is creating events with topic 'my.leech'
+        - Service 2 process 'my.leech' and uses target topic 'my.process'
+            - this service can run on 1-n machines
+            - all events must be processed in a sequence by their creation
+                time and only one event can be processed at a time
+            - in this case 'sequential' should be set to 'True' so only
+                one machine is actually processing events, but if one goes
+                down there are other that can take place
+        - Service 3 process 'my.leech' and uses target topic 'my.discover'
+            - this service can run on 1-n machines
+            - order of events is not important
+            - 'sequential' should be 'False'
+
+    Args:
+        source_topic (Union[str, list[str]]): Source topic to enroll with
+            wildcards '*', or explicit list of topics.
+        target_topic (str): Topic of dependent event.
+        sender (str): Identifier of sender (e.g. service name or username).
+        description (Optional[str]): Human readable text shown
+            in target event.
+        sequential (Optional[bool]): The source topic must be processed
+            in sequence.
+        events_filter (Optional[dict[str, Any]]): Filtering conditions
+            to filter the source event. For more technical specifications
+            look to server backed 'ayon_server.sqlfilter.Filter'.
+            TODO: Add example of filters.
+        max_retries (Optional[int]): How many times can be event retried.
+            Default value is based on server (3 at the time of this PR).
+        ignore_older_than (Optional[int]): Ignore events older than
+            given number in days.
+        ignore_sender_types (Optional[list[str]]): Ignore events triggered
+            by given sender types.
+
+    Returns:
+        Optional[EnrollEventData]: None if there is no event matching
+            filters. Created event with 'target_topic'.
+
+    """
+    con = get_server_api_connection()
+    return con.enroll_event_job(
+        source_topic=source_topic,
+        target_topic=target_topic,
+        sender=sender,
+        description=description,
+        sequential=sequential,
+        events_filter=events_filter,
+        max_retries=max_retries,
+        ignore_older_than=ignore_older_than,
+        ignore_sender_types=ignore_sender_types,
+    )
+
+
+def get_attributes_schema(
+    use_cache: bool = True,
+) -> AttributesSchemaDict:
+    con = get_server_api_connection()
+    return con.get_attributes_schema(
+        use_cache=use_cache,
+    )
+
+
+def reset_attributes_schema() -> None:
+    con = get_server_api_connection()
+    return con.reset_attributes_schema()
+
+
+def set_attribute_config(
+    attribute_name: str,
+    data: AttributeSchemaDataDict,
+    scope: list[AttributeScope],
+    position: Optional[int] = None,
+    builtin: bool = False,
+) -> None:
+    con = get_server_api_connection()
+    return con.set_attribute_config(
+        attribute_name=attribute_name,
+        data=data,
+        scope=scope,
+        position=position,
+        builtin=builtin,
+    )
+
+
+def remove_attribute_config(
+    attribute_name: str,
+) -> None:
+    """Remove attribute from server.
+
+    This can't be un-done, please use carefully.
+
+    Args:
+        attribute_name (str): Name of attribute to remove.
+
+    """
+    con = get_server_api_connection()
+    return con.remove_attribute_config(
+        attribute_name=attribute_name,
+    )
+
+
+def get_attributes_for_type(
+    entity_type: AttributeScope,
+) -> dict[str, AttributeSchemaDict]:
+    """Get attribute schemas available for an entity type.
+
+    Example::
+
+        ```
+        # Example attribute schema
+        {
+            # Common
+            "type": "integer",
+            "title": "Clip Out",
+            "description": null,
+            "example": 1,
+            "default": 1,
+            # These can be filled based on value of 'type'
+            "gt": null,
+            "ge": null,
+            "lt": null,
+            "le": null,
+            "minLength": null,
+            "maxLength": null,
+            "minItems": null,
+            "maxItems": null,
+            "regex": null,
+            "enum": null
+        }
+        ```
+
+    Args:
+        entity_type (str): Entity type for which should be attributes
+            received.
+
+    Returns:
+        dict[str, dict[str, Any]]: Attribute schemas that are available
+            for entered entity type.
+
+    """
+    con = get_server_api_connection()
+    return con.get_attributes_for_type(
+        entity_type=entity_type,
+    )
+
+
+def get_attributes_fields_for_type(
+    entity_type: AttributeScope,
+) -> set[str]:
+    """Prepare attribute fields for entity type.
+
+    Returns:
+        set[str]: Attributes fields for entity type.
+
+    """
+    con = get_server_api_connection()
+    return con.get_attributes_fields_for_type(
+        entity_type=entity_type,
+    )
+
+
+def get_project_anatomy_presets() -> list[AnatomyPresetDict]:
+    """Anatomy presets available on server.
+
+    Content has basic information about presets. Example output::
 
         [
             {
-                "name": "secret_1",
-                "value": "secret_value_1",
+                "name": "netflix_VFX",
+                "primary": false,
+                "version": "1.0.0"
             },
             {
-                "name": "secret_2",
-                "value": "secret_value_2",
-            }
+                ...
+            },
+            ...
         ]
 
     Returns:
-        list[SecretDict]: List of secret entities.
+        list[dict[str, str]]: Anatomy presets available on server.
 
     """
     con = get_server_api_connection()
-    return con.get_secrets()
+    return con.get_project_anatomy_presets()
 
 
-def get_secret(
-    secret_name: str,
-) -> "SecretDict":
-    """Get secret by name.
+def get_default_anatomy_preset_name() -> str:
+    """Name of default anatomy preset.
 
-    Example output::
-
-        {
-            "name": "secret_name",
-            "value": "secret_value",
-        }
-
-    Args:
-        secret_name (str): Name of secret.
+    Primary preset is used as default preset. But when primary preset is
+    not set a built-in is used instead. Built-in preset is named '_'.
 
     Returns:
-        dict[str, str]: Secret entity data.
+        str: Name of preset that can be used by
+            'get_project_anatomy_preset'.
 
     """
     con = get_server_api_connection()
-    return con.get_secret(
-        secret_name=secret_name,
-    )
+    return con.get_default_anatomy_preset_name()
 
 
-def save_secret(
-    secret_name: str,
-    secret_value: str,
-):
-    """Save secret.
+def get_project_anatomy_preset(
+    preset_name: Optional[str] = None,
+) -> AnatomyPresetDict:
+    """Anatomy preset values by name.
 
-    This endpoint can create and update secret.
+    Get anatomy preset values by preset name. Primary preset is returned
+    if preset name is set to 'None'.
 
     Args:
-        secret_name (str): Name of secret.
-        secret_value (str): Value of secret.
+        preset_name (Optional[str]): Preset name.
+
+    Returns:
+        AnatomyPresetDict: Anatomy preset values.
 
     """
     con = get_server_api_connection()
-    return con.save_secret(
-        secret_name=secret_name,
-        secret_value=secret_value,
+    return con.get_project_anatomy_preset(
+        preset_name=preset_name,
     )
 
 
-def delete_secret(
-    secret_name: str,
-):
-    """Delete secret by name.
+def get_built_in_anatomy_preset() -> AnatomyPresetDict:
+    """Get built-in anatomy preset.
 
-    Args:
-        secret_name (str): Name of secret to delete.
+    Returns:
+        AnatomyPresetDict: Built-in anatomy preset.
 
     """
     con = get_server_api_connection()
-    return con.delete_secret(
-        secret_name=secret_name,
-    )
+    return con.get_built_in_anatomy_preset()
+
+
+def get_build_in_anatomy_preset() -> AnatomyPresetDict:
+    con = get_server_api_connection()
+    return con.get_build_in_anatomy_preset()
 
 
 def get_rest_project(
     project_name: str,
-) -> Optional["ProjectDict"]:
+) -> Optional[ProjectDict]:
     """Query project by name.
 
     This call returns project with anatomy data.
@@ -3234,7 +3477,7 @@ def get_rest_project(
 def get_rest_projects(
     active: Optional[bool] = True,
     library: Optional[bool] = None,
-) -> Generator["ProjectDict", None, None]:
+) -> Generator[ProjectDict, None, None]:
     """Query available project entities.
 
     User must be logged in.
@@ -3256,35 +3499,368 @@ def get_rest_projects(
     )
 
 
-def get_rest_entity_by_id(
-    project_name: str,
-    entity_type: str,
-    entity_id: str,
-) -> Optional["AnyEntityDict"]:
-    """Get entity using REST on a project by its id.
+def get_project_names(
+    active: Optional[bool] = True,
+    library: Optional[bool] = None,
+) -> list[str]:
+    """Receive available project names.
+
+    User must be logged in.
 
     Args:
-        project_name (str): Name of project where entity is.
-        entity_type (Literal["folder", "task", "product", "version"]): The
-            entity type which should be received.
-        entity_id (str): Id of entity.
+        active (Optional[bool]): Filter active/inactive projects. Both
+            are returned if 'None' is passed.
+        library (Optional[bool]): Filter standard/library projects. Both
+            are returned if 'None' is passed.
 
     Returns:
-        Optional[AnyEntityDict]: Received entity data.
+        list[str]: List of available project names.
 
     """
     con = get_server_api_connection()
-    return con.get_rest_entity_by_id(
+    return con.get_project_names(
+        active=active,
+        library=library,
+    )
+
+
+def get_projects(
+    active: Optional[bool] = True,
+    library: Optional[bool] = None,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Generator[ProjectDict, None, None]:
+    """Get projects.
+
+    Args:
+        active (Optional[bool]): Filter active or inactive projects.
+            Filter is disabled when 'None' is passed.
+        library (Optional[bool]): Filter library projects. Filter is
+            disabled when 'None' is passed.
+        fields (Optional[Iterable[str]]): fields to be queried
+            for project.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Generator[ProjectDict, None, None]: Queried projects.
+
+    """
+    con = get_server_api_connection()
+    return con.get_projects(
+        active=active,
+        library=library,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_project(
+    project_name: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes: bool = False,
+) -> Optional[ProjectDict]:
+    """Get project.
+
+    Args:
+        project_name (str): Name of project.
+        fields (Optional[Iterable[str]]): fields to be queried
+            for project.
+        own_attributes (Optional[bool]): Attribute values that are
+            not explicitly set on entity will have 'None' value.
+
+    Returns:
+        Optional[ProjectDict]: Project entity data or None
+            if project was not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project(
         project_name=project_name,
-        entity_type=entity_type,
-        entity_id=entity_id,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def create_project(
+    project_name: str,
+    project_code: str,
+    library_project: bool = False,
+    preset_name: Optional[str] = None,
+) -> ProjectDict:
+    """Create project using AYON settings.
+
+    This project creation function is not validating project entity on
+    creation. It is because project entity is created blindly with only
+    minimum required information about project which is name and code.
+
+    Entered project name must be unique and project must not exist yet.
+
+    Note:
+        This function is here to be OP v4 ready but in v3 has more logic
+            to do. That's why inner imports are in the body.
+
+    Args:
+        project_name (str): New project name. Should be unique.
+        project_code (str): Project's code should be unique too.
+        library_project (Optional[bool]): Project is library project.
+        preset_name (Optional[str]): Name of anatomy preset. Default is
+            used if not passed.
+
+    Raises:
+        ValueError: When project name already exists.
+
+    Returns:
+        ProjectDict: Created project entity.
+
+    """
+    con = get_server_api_connection()
+    return con.create_project(
+        project_name=project_name,
+        project_code=project_code,
+        library_project=library_project,
+        preset_name=preset_name,
+    )
+
+
+def update_project(
+    project_name: str,
+    library: Optional[bool] = None,
+    folder_types: Optional[list[dict[str, Any]]] = None,
+    task_types: Optional[list[dict[str, Any]]] = None,
+    link_types: Optional[list[dict[str, Any]]] = None,
+    statuses: Optional[list[dict[str, Any]]] = None,
+    tags: Optional[list[dict[str, Any]]] = None,
+    config: Optional[dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    active: Optional[bool] = None,
+    project_code: Optional[str] = None,
+    **changes,
+) -> None:
+    """Update project entity on server.
+
+    Args:
+        project_name (str): Name of project.
+        library (Optional[bool]): Change library state.
+        folder_types (Optional[list[dict[str, Any]]]): Folder type
+            definitions.
+        task_types (Optional[list[dict[str, Any]]]): Task type
+            definitions.
+        link_types (Optional[list[dict[str, Any]]]): Link type
+            definitions.
+        statuses (Optional[list[dict[str, Any]]]): Status definitions.
+        tags (Optional[list[dict[str, Any]]]): List of tags available to
+            set on entities.
+        config (Optional[dict[str, Any]]): Project anatomy config
+            with templates and roots.
+        attrib (Optional[dict[str, Any]]): Project attributes to change.
+        data (Optional[dict[str, Any]]): Custom data of a project. This
+            value will 100% override project data.
+        active (Optional[bool]): Change active state of a project.
+        project_code (Optional[str]): Change project code. Not recommended
+            during production.
+        **changes: Other changed keys based on Rest API documentation.
+
+    """
+    con = get_server_api_connection()
+    return con.update_project(
+        project_name=project_name,
+        library=library,
+        folder_types=folder_types,
+        task_types=task_types,
+        link_types=link_types,
+        statuses=statuses,
+        tags=tags,
+        config=config,
+        attrib=attrib,
+        data=data,
+        active=active,
+        project_code=project_code,
+        **changes,
+    )
+
+
+def delete_project(
+    project_name: str,
+):
+    """Delete project from server.
+
+    This will completely remove project from server without any step back.
+
+    Args:
+        project_name (str): Project name that will be removed.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_project(
+        project_name=project_name,
+    )
+
+
+def get_project_root_overrides(
+    project_name: str,
+) -> dict[str, dict[str, str]]:
+    """Root overrides per site name.
+
+    Method is based on logged user and can't be received for any other
+        user on server.
+
+    Output will contain only roots per site id used by logged user.
+
+    Args:
+        project_name (str): Name of project.
+
+    Returns:
+         dict[str, dict[str, str]]: Root values by root name by site id.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_root_overrides(
+        project_name=project_name,
+    )
+
+
+def get_project_roots_by_site(
+    project_name: str,
+) -> dict[str, dict[str, str]]:
+    """Root overrides per site name.
+
+    Method is based on logged user and can't be received for any other
+    user on server.
+
+    Output will contain only roots per site id used by logged user.
+
+    Deprecated:
+        Use 'get_project_root_overrides' instead. Function
+            deprecated since 1.0.6
+
+    Args:
+        project_name (str): Name of project.
+
+    Returns:
+         dict[str, dict[str, str]]: Root values by root name by site id.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_roots_by_site(
+        project_name=project_name,
+    )
+
+
+def get_project_root_overrides_by_site_id(
+    project_name: str,
+    site_id: Optional[str] = None,
+) -> dict[str, str]:
+    """Root overrides for site.
+
+    If site id is not passed a site set in current api object is used
+    instead.
+
+    Args:
+        project_name (str): Name of project.
+        site_id (Optional[str]): Site id for which want to receive
+            site overrides.
+
+    Returns:
+        dict[str, str]: Root values by root name or None if
+            site does not have overrides.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_root_overrides_by_site_id(
+        project_name=project_name,
+        site_id=site_id,
+    )
+
+
+def get_project_roots_for_site(
+    project_name: str,
+    site_id: Optional[str] = None,
+) -> dict[str, str]:
+    """Root overrides for site.
+
+    If site id is not passed a site set in current api object is used
+    instead.
+
+    Deprecated:
+        Use 'get_project_root_overrides_by_site_id' instead. Function
+            deprecated since 1.0.6
+    Args:
+        project_name (str): Name of project.
+        site_id (Optional[str]): Site id for which want to receive
+            site overrides.
+
+    Returns:
+        dict[str, str]: Root values by root name, root name is not
+            available if it does not have overrides.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_roots_for_site(
+        project_name=project_name,
+        site_id=site_id,
+    )
+
+
+def get_project_roots_by_site_id(
+    project_name: str,
+    site_id: Optional[str] = None,
+) -> dict[str, str]:
+    """Root values for a site.
+
+    If site id is not passed a site set in current api object is used
+    instead. If site id is not available, default roots are returned
+    for current platform.
+
+    Args:
+        project_name (str): Name of project.
+        site_id (Optional[str]): Site id for which want to receive
+            root values.
+
+    Returns:
+        dict[str, str]: Root values.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_roots_by_site_id(
+        project_name=project_name,
+        site_id=site_id,
+    )
+
+
+def get_project_roots_by_platform(
+    project_name: str,
+    platform_name: Optional[str] = None,
+) -> dict[str, str]:
+    """Root values for a site.
+
+    If platform name is not passed current platform name is used instead.
+
+    This function does return root values without site overrides. It is
+        possible to use the function to receive default root values.
+
+    Args:
+        project_name (str): Name of project.
+        platform_name (Optional[Literal["windows", "linux", "darwin"]]):
+            Platform name for which want to receive root values. Current
+            platform name is used if not passed.
+
+    Returns:
+        dict[str, str]: Root values.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_roots_by_platform(
+        project_name=project_name,
+        platform_name=platform_name,
     )
 
 
 def get_rest_folder(
     project_name: str,
     folder_id: str,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     con = get_server_api_connection()
     return con.get_rest_folder(
         project_name=project_name,
@@ -3295,7 +3871,7 @@ def get_rest_folder(
 def get_rest_folders(
     project_name: str,
     include_attrib: bool = False,
-) -> List["FlatFolderDict"]:
+) -> list[FlatFolderDict]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -3333,7 +3909,7 @@ def get_rest_folders(
             in output. Slower to query.
 
     Returns:
-        List[FlatFolderDict]: List of folder entities.
+        list[FlatFolderDict]: List of folder entities.
 
     """
     con = get_server_api_connection()
@@ -3343,138 +3919,11 @@ def get_rest_folders(
     )
 
 
-def get_rest_task(
-    project_name: str,
-    task_id: str,
-) -> Optional["TaskDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_task(
-        project_name=project_name,
-        task_id=task_id,
-    )
-
-
-def get_rest_product(
-    project_name: str,
-    product_id: str,
-) -> Optional["ProductDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_product(
-        project_name=project_name,
-        product_id=product_id,
-    )
-
-
-def get_rest_version(
-    project_name: str,
-    version_id: str,
-) -> Optional["VersionDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_version(
-        project_name=project_name,
-        version_id=version_id,
-    )
-
-
-def get_rest_representation(
-    project_name: str,
-    representation_id: str,
-) -> Optional["RepresentationDict"]:
-    con = get_server_api_connection()
-    return con.get_rest_representation(
-        project_name=project_name,
-        representation_id=representation_id,
-    )
-
-
-def get_project_names(
-    active: "Union[bool, None]" = True,
-    library: "Union[bool, None]" = None,
-) -> List[str]:
-    """Receive available project names.
-
-    User must be logged in.
-
-    Args:
-        active (Union[bool, None]): Filter active/inactive projects. Both
-            are returned if 'None' is passed.
-        library (Union[bool, None]): Filter standard/library projects. Both
-            are returned if 'None' is passed.
-
-    Returns:
-        list[str]: List of available project names.
-
-    """
-    con = get_server_api_connection()
-    return con.get_project_names(
-        active=active,
-        library=library,
-    )
-
-
-def get_projects(
-    active: "Union[bool, None]" = True,
-    library: "Union[bool, None]" = None,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Generator["ProjectDict", None, None]:
-    """Get projects.
-
-    Args:
-        active (Optional[bool]): Filter active or inactive projects.
-            Filter is disabled when 'None' is passed.
-        library (Optional[bool]): Filter library projects. Filter is
-            disabled when 'None' is passed.
-        fields (Optional[Iterable[str]]): fields to be queried
-            for project.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Generator[ProjectDict, None, None]: Queried projects.
-
-    """
-    con = get_server_api_connection()
-    return con.get_projects(
-        active=active,
-        library=library,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
-def get_project(
-    project_name: str,
-    fields: Optional[Iterable[str]] = None,
-    own_attributes: bool = False,
-) -> Optional["ProjectDict"]:
-    """Get project.
-
-    Args:
-        project_name (str): Name of project.
-        fields (Optional[Iterable[str]]): fields to be queried
-            for project.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
-
-    Returns:
-        Optional[ProjectDict]: Project entity data or None
-            if project was not found.
-
-    """
-    con = get_server_api_connection()
-    return con.get_project(
-        project_name=project_name,
-        fields=fields,
-        own_attributes=own_attributes,
-    )
-
-
 def get_folders_hierarchy(
     project_name: str,
     search_string: Optional[str] = None,
     folder_types: Optional[Iterable[str]] = None,
-) -> "ProjectHierarchyDict":
+) -> ProjectHierarchyDict:
     """Get project hierarchy.
 
     All folders in project in hierarchy data structure.
@@ -3518,7 +3967,7 @@ def get_folders_hierarchy(
 def get_folders_rest(
     project_name: str,
     include_attrib: bool = False,
-) -> List["FlatFolderDict"]:
+) -> list[FlatFolderDict]:
     """Get simplified flat list of all project folders.
 
     Get all project folders in single REST call. This can be faster than
@@ -3562,7 +4011,7 @@ def get_folders_rest(
             in output. Slower to query.
 
     Returns:
-        List[FlatFolderDict]: List of folder entities.
+        list[FlatFolderDict]: List of folder entities.
 
     """
     con = get_server_api_connection()
@@ -3586,11 +4035,11 @@ def get_folders(
     statuses: Optional[Iterable[str]] = None,
     assignees_all: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     has_links: Optional[bool] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["FolderDict", None, None]:
+) -> Generator[FolderDict, None, None]:
     """Query folders from server.
 
     Todos:
@@ -3666,7 +4115,7 @@ def get_folder_by_id(
     folder_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     """Query folder entity by id.
 
     Args:
@@ -3697,7 +4146,7 @@ def get_folder_by_path(
     folder_path: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     """Query folder entity by path.
 
     Folder path is a path to folder with all parent names joined by slash.
@@ -3730,7 +4179,7 @@ def get_folder_by_name(
     folder_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["FolderDict"]:
+) -> Optional[FolderDict]:
     """Query folder entity by path.
 
     Warnings:
@@ -3763,7 +4212,7 @@ def get_folder_by_name(
 def get_folder_ids_with_products(
     project_name: str,
     folder_ids: Optional[Iterable[str]] = None,
-) -> Set[str]:
+) -> set[str]:
     """Find folders which have at least one product.
 
     Folders that have at least one product should be immutable, so they
@@ -3793,8 +4242,8 @@ def create_folder(
     folder_type: Optional[str] = None,
     parent_id: Optional[str] = None,
     label: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
@@ -3847,13 +4296,13 @@ def update_folder(
     folder_type: Optional[str] = None,
     parent_id: Optional[str] = NOT_SET,
     label: Optional[str] = NOT_SET,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
     thumbnail_id: Optional[str] = NOT_SET,
-):
+) -> None:
     """Update folder entity on server.
 
     Do not pass ``parent_id``, ``label`` amd ``thumbnail_id`` if you don't
@@ -3870,14 +4319,14 @@ def update_folder(
         folder_id (str): Folder id.
         name (Optional[str]): New name.
         folder_type (Optional[str]): New folder type.
-        parent_id (Optional[Union[str, None]]): New parent folder id.
-        label (Optional[Union[str, None]]): New label.
+        parent_id (Optional[str]): New parent folder id.
+        label (Optional[str]): New label.
         attrib (Optional[dict[str, Any]]): New attributes.
         data (Optional[dict[str, Any]]): New data.
         tags (Optional[Iterable[str]]): New tags.
         status (Optional[str]): New status.
         active (Optional[bool]): New active state.
-        thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+        thumbnail_id (Optional[str]): New thumbnail id.
 
     """
     con = get_server_api_connection()
@@ -3901,7 +4350,7 @@ def delete_folder(
     project_name: str,
     folder_id: str,
     force: bool = False,
-):
+) -> None:
     """Delete folder.
 
     Args:
@@ -3919,6 +4368,17 @@ def delete_folder(
     )
 
 
+def get_rest_task(
+    project_name: str,
+    task_id: str,
+) -> Optional[TaskDict]:
+    con = get_server_api_connection()
+    return con.get_rest_task(
+        project_name=project_name,
+        task_id=task_id,
+    )
+
+
 def get_tasks(
     project_name: str,
     task_ids: Optional[Iterable[str]] = None,
@@ -3929,10 +4389,10 @@ def get_tasks(
     assignees_all: Optional[Iterable[str]] = None,
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Generator["TaskDict", None, None]:
+) -> Generator[TaskDict, None, None]:
     """Query task entities from server.
 
     Args:
@@ -3987,7 +4447,7 @@ def get_task_by_name(
     task_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskDict"]:
+) -> Optional[TaskDict]:
     """Query task entity by name and folder id.
 
     Args:
@@ -4019,7 +4479,7 @@ def get_task_by_id(
     task_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskDict"]:
+) -> Optional[TaskDict]:
     """Query task entity by id.
 
     Args:
@@ -4053,10 +4513,10 @@ def get_tasks_by_folder_paths(
     assignees_all: Optional[Iterable[str]] = None,
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Dict[str, List["TaskDict"]]:
+) -> dict[str, list[TaskDict]]:
     """Query task entities from server by folder paths.
 
     Args:
@@ -4083,7 +4543,7 @@ def get_tasks_by_folder_paths(
             not explicitly set on entity will have 'None' value.
 
     Returns:
-        Dict[str, List[TaskDict]]: Task entities by
+        dict[str, list[TaskDict]]: Task entities by
             folder path.
 
     """
@@ -4112,10 +4572,10 @@ def get_tasks_by_folder_path(
     assignees_all: Optional[Iterable[str]] = None,
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> List["TaskDict"]:
+) -> list[TaskDict]:
     """Query task entities from server by folder path.
 
     Args:
@@ -4164,7 +4624,7 @@ def get_task_by_folder_path(
     task_name: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
-) -> Optional["TaskDict"]:
+) -> Optional[TaskDict]:
     """Query task entity by folder path and task name.
 
     Args:
@@ -4197,9 +4657,9 @@ def create_task(
     folder_id: str,
     label: Optional[str] = None,
     assignees: Optional[Iterable[str]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[List[str]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
     thumbnail_id: Optional[str] = None,
@@ -4252,14 +4712,14 @@ def update_task(
     task_type: Optional[str] = None,
     folder_id: Optional[str] = None,
     label: Optional[str] = NOT_SET,
-    assignees: Optional[List[str]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    tags: Optional[List[str]] = None,
+    assignees: Optional[list[str]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
     thumbnail_id: Optional[str] = NOT_SET,
-):
+) -> None:
     """Update task entity on server.
 
     Do not pass ``label`` amd ``thumbnail_id`` if you don't
@@ -4277,14 +4737,14 @@ def update_task(
         name (Optional[str]): New name.
         task_type (Optional[str]): New task type.
         folder_id (Optional[str]): New folder id.
-        label (Optional[Union[str, None]]): New label.
+        label (Optional[Optional[str]]): New label.
         assignees (Optional[str]): New assignees.
         attrib (Optional[dict[str, Any]]): New attributes.
         data (Optional[dict[str, Any]]): New data.
         tags (Optional[Iterable[str]]): New tags.
         status (Optional[str]): New status.
         active (Optional[bool]): New active state.
-        thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+        thumbnail_id (Optional[str]): New thumbnail id.
 
     """
     con = get_server_api_connection()
@@ -4308,7 +4768,7 @@ def update_task(
 def delete_task(
     project_name: str,
     task_id: str,
-):
+) -> None:
     """Delete task.
 
     Args:
@@ -4323,6 +4783,17 @@ def delete_task(
     )
 
 
+def get_rest_product(
+    project_name: str,
+    product_id: str,
+) -> Optional[ProductDict]:
+    con = get_server_api_connection()
+    return con.get_rest_product(
+        project_name=project_name,
+        product_id=product_id,
+    )
+
+
 def get_products(
     project_name: str,
     product_ids: Optional[Iterable[str]] = None,
@@ -4332,13 +4803,13 @@ def get_products(
     product_base_types: Optional[Iterable[str]] = None,
     product_name_regex: Optional[str] = None,
     product_path_regex: Optional[str] = None,
-    names_by_folder_ids: Optional[Dict[str, Iterable[str]]] = None,
+    names_by_folder_ids: Optional[dict[str, Iterable[str]]] = None,
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["ProductDict", None, None]:
+) -> Generator[ProductDict, None, None]:
     """Query products from the server.
 
     Todos:
@@ -4400,7 +4871,7 @@ def get_product_by_id(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["ProductDict"]:
+) -> Optional[ProductDict]:
     """Query product entity by id.
 
     Args:
@@ -4432,7 +4903,7 @@ def get_product_by_name(
     folder_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["ProductDict"]:
+) -> Optional[ProductDict]:
     """Query product entity by name and folder id.
 
     Args:
@@ -4462,7 +4933,7 @@ def get_product_by_name(
 
 def get_product_types(
     fields: Optional[Iterable[str]] = None,
-) -> List["ProductTypeDict"]:
+) -> list[ProductTypeDict]:
     """Types of products.
 
     This is the server-wide information. Product types have 'name', 'icon' and
@@ -4505,18 +4976,18 @@ def get_product_base_types(
 def get_project_product_types(
     project_name: str,
     fields: Optional[Iterable[str]] = None,
-) -> List["ProductTypeDict"]:
-    """Types of products available on a project.
+) -> list[ProductTypeDict]:
+    """DEPRECATED Types of products available in a project.
 
-    Filter only product types available on project.
+    Filter only product types available in a project.
 
     Args:
-        project_name (str): Name of project where to look for
+        project_name (str): Name of the project where to look for
             product types.
         fields (Optional[Iterable[str]]): Product types fields to query.
 
     Returns:
-        List[ProductTypeDict]: Product types information.
+        list[ProductTypeDict]: Product types information.
 
     """
     con = get_server_api_connection()
@@ -4553,8 +5024,8 @@ def get_project_product_base_types(
 def get_product_type_names(
     project_name: Optional[str] = None,
     product_ids: Optional[Iterable[str]] = None,
-) -> Set[str]:
-    """Product type names.
+) -> set[str]:
+    """DEPRECATED Product type names.
 
     Warnings:
         This function will be probably removed. Matters if 'products_id'
@@ -4609,11 +5080,11 @@ def create_product(
     name: str,
     product_type: str,
     folder_id: str,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
-    active: "Union[bool, None]" = None,
+    active: Optional[bool] = None,
     product_id: Optional[str] = None,
 ) -> str:
     """Create new product.
@@ -4656,12 +5127,12 @@ def update_product(
     name: Optional[str] = None,
     folder_id: Optional[str] = None,
     product_type: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
-):
+) -> None:
     """Update product entity on server.
 
     Update of ``data`` will override existing value on folder entity.
@@ -4700,7 +5171,7 @@ def update_product(
 def delete_product(
     project_name: str,
     product_id: str,
-):
+) -> None:
     """Delete product.
 
     Args:
@@ -4715,6 +5186,17 @@ def delete_product(
     )
 
 
+def get_rest_version(
+    project_name: str,
+    version_id: str,
+) -> Optional[VersionDict]:
+    con = get_server_api_connection()
+    return con.get_rest_version(
+        project_name=project_name,
+        version_id=version_id,
+    )
+
+
 def get_versions(
     project_name: str,
     version_ids: Optional[Iterable[str]] = None,
@@ -4726,10 +5208,10 @@ def get_versions(
     latest: Optional[bool] = None,
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["VersionDict", None, None]:
+) -> Generator[VersionDict, None, None]:
     """Get version entities based on passed filters from server.
 
     Args:
@@ -4786,7 +5268,7 @@ def get_version_by_id(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query version entity by id.
 
     Args:
@@ -4818,7 +5300,7 @@ def get_version_by_name(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query version entity by version and product id.
 
     Args:
@@ -4851,7 +5333,7 @@ def get_hero_version_by_id(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query hero version entity by id.
 
     Args:
@@ -4882,7 +5364,7 @@ def get_hero_version_by_product_id(
     product_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query hero version entity by product id.
 
     Only one hero version is available on a product.
@@ -4914,10 +5396,10 @@ def get_hero_versions(
     project_name: str,
     product_ids: Optional[Iterable[str]] = None,
     version_ids: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["VersionDict", None, None]:
+) -> Generator[VersionDict, None, None]:
     """Query hero versions by multiple filters.
 
     Only one hero version is available on a product.
@@ -4953,10 +5435,10 @@ def get_hero_versions(
 def get_last_versions(
     project_name: str,
     product_ids: Iterable[str],
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Dict[str, Optional["VersionDict"]]:
+) -> dict[str, Optional[VersionDict]]:
     """Query last version entities by product ids.
 
     Args:
@@ -4986,10 +5468,10 @@ def get_last_versions(
 def get_last_version_by_product_id(
     project_name: str,
     product_id: str,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query last version entity by product id.
 
     Args:
@@ -5020,10 +5502,10 @@ def get_last_version_by_product_name(
     project_name: str,
     product_name: str,
     folder_id: str,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["VersionDict"]:
+) -> Optional[VersionDict]:
     """Query last version entity by product name and folder id.
 
     Args:
@@ -5079,8 +5561,8 @@ def create_version(
     product_id: str,
     task_id: Optional[str] = None,
     author: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
@@ -5132,13 +5614,13 @@ def update_version(
     product_id: Optional[str] = None,
     task_id: Optional[str] = NOT_SET,
     author: Optional[str] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
     thumbnail_id: Optional[str] = NOT_SET,
-):
+) -> None:
     """Update version entity on server.
 
     Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
@@ -5155,14 +5637,14 @@ def update_version(
         version_id (str): Version id.
         version (Optional[int]): New version.
         product_id (Optional[str]): New product id.
-        task_id (Optional[Union[str, None]]): New task id.
+        task_id (Optional[str]): New task id.
         author (Optional[str]): New author username.
         attrib (Optional[dict[str, Any]]): New attributes.
         data (Optional[dict[str, Any]]): New data.
         tags (Optional[Iterable[str]]): New tags.
         status (Optional[str]): New status.
         active (Optional[bool]): New active state.
-        thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+        thumbnail_id (Optional[str]): New thumbnail id.
 
     """
     con = get_server_api_connection()
@@ -5185,7 +5667,7 @@ def update_version(
 def delete_version(
     project_name: str,
     version_id: str,
-):
+) -> None:
     """Delete version.
 
     Args:
@@ -5200,19 +5682,30 @@ def delete_version(
     )
 
 
+def get_rest_representation(
+    project_name: str,
+    representation_id: str,
+) -> Optional[RepresentationDict]:
+    con = get_server_api_connection()
+    return con.get_rest_representation(
+        project_name=project_name,
+        representation_id=representation_id,
+    )
+
+
 def get_representations(
     project_name: str,
     representation_ids: Optional[Iterable[str]] = None,
     representation_names: Optional[Iterable[str]] = None,
     version_ids: Optional[Iterable[str]] = None,
-    names_by_version_ids: Optional[Dict[str, Iterable[str]]] = None,
+    names_by_version_ids: Optional[dict[str, Iterable[str]]] = None,
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
-    active: "Union[bool, None]" = True,
+    active: Optional[bool] = True,
     has_links: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["RepresentationDict", None, None]:
+) -> Generator[RepresentationDict, None, None]:
     """Get representation entities based on passed filters from server.
 
     .. todo::
@@ -5229,7 +5722,7 @@ def get_representations(
         version_ids (Optional[Iterable[str]]): Version ids used for
             representation filtering. Versions are parents of
             representations.
-        names_by_version_ids (Optional[Dict[str, Iterable[str]]]): Find
+        names_by_version_ids (Optional[dict[str, Iterable[str]]]): Find
             representations by names and version ids. This filter
             discards all other filters.
         statuses (Optional[Iterable[str]]): Representation statuses used
@@ -5272,7 +5765,7 @@ def get_representation_by_id(
     representation_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["RepresentationDict"]:
+) -> Optional[RepresentationDict]:
     """Query representation entity from server based on id filter.
 
     Args:
@@ -5303,7 +5796,7 @@ def get_representation_by_name(
     version_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["RepresentationDict"]:
+) -> Optional[RepresentationDict]:
     """Query representation entity by name and version id.
 
     Args:
@@ -5339,7 +5832,7 @@ def get_representations_hierarchy(
     product_fields: Optional[Iterable[str]] = None,
     version_fields: Optional[Iterable[str]] = None,
     representation_fields: Optional[Iterable[str]] = None,
-) -> Dict[str, RepresentationHierarchy]:
+) -> dict[str, RepresentationHierarchy]:
     """Find representation with parents by representation id.
 
     Representation entity with parent entities up to project.
@@ -5426,7 +5919,7 @@ def get_representations_parents(
     folder_fields: Optional[Iterable[str]] = None,
     product_fields: Optional[Iterable[str]] = None,
     version_fields: Optional[Iterable[str]] = None,
-) -> Dict[str, RepresentationParents]:
+) -> dict[str, RepresentationParents]:
     """Find representations parents by representation id.
 
     Representation parent entities up to project.
@@ -5462,7 +5955,7 @@ def get_representation_parents(
     folder_fields: Optional[Iterable[str]] = None,
     product_fields: Optional[Iterable[str]] = None,
     version_fields: Optional[Iterable[str]] = None,
-) -> Optional["RepresentationParents"]:
+) -> Optional[RepresentationParents]:
     """Find representation parents by representation id.
 
     Representation parent entities up to project.
@@ -5492,10 +5985,10 @@ def get_representation_parents(
 
 def get_repre_ids_by_context_filters(
     project_name: str,
-    context_filters: Optional[Dict[str, Iterable[str]]],
+    context_filters: Optional[dict[str, Iterable[str]]],
     representation_names: Optional[Iterable[str]] = None,
     version_ids: Optional[Iterable[str]] = None,
-) -> List[str]:
+) -> list[str]:
     """Find representation ids which match passed context filters.
 
     Each representation has context integrated on representation entity in
@@ -5525,6 +6018,8 @@ def get_repre_ids_by_context_filters(
         The function returns just representation ids so if entities are
             required for funtionality they must be queried afterwards by
             their ids.
+        >>> from ayon_api import get_repre_ids_by_context_filters
+        >>> from ayon_api import get_representations
         >>> project_name = "testProject"
         >>> filters = {
         ...     "task.name": ["[aA]nimation"],
@@ -5548,11 +6043,11 @@ def create_representation(
     project_name: str,
     name: str,
     version_id: str,
-    files: Optional[List[Dict[str, Any]]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    traits: Optional[Dict[str, Any]] = None,
-    tags: Optional[List[str]] = None,
+    files: Optional[list[dict[str, Any]]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    traits: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
     representation_id: Optional[str] = None,
@@ -5599,14 +6094,14 @@ def update_representation(
     representation_id: str,
     name: Optional[str] = None,
     version_id: Optional[str] = None,
-    files: Optional[List[Dict[str, Any]]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    traits: Optional[Dict[str, Any]] = None,
-    tags: Optional[List[str]] = None,
+    files: Optional[list[dict[str, Any]]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    traits: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
-):
+) -> None:
     """Update representation entity on server.
 
     Update of ``data`` will override existing value on folder entity.
@@ -5648,7 +6143,7 @@ def update_representation(
 def delete_representation(
     project_name: str,
     representation_id: str,
-):
+) -> None:
     """Delete representation.
 
     Args:
@@ -5674,7 +6169,7 @@ def get_workfiles_info(
     has_links: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Generator["WorkfileInfoDict", None, None]:
+) -> Generator[WorkfileInfoDict, None, None]:
     """Workfile info entities by passed filters.
 
     Args:
@@ -5721,7 +6216,7 @@ def get_workfile_info(
     path: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["WorkfileInfoDict"]:
+) -> Optional[WorkfileInfoDict]:
     """Workfile info entity by task id and workfile path.
 
     Args:
@@ -5753,7 +6248,7 @@ def get_workfile_info_by_id(
     workfile_id: str,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
-) -> Optional["WorkfileInfoDict"]:
+) -> Optional[WorkfileInfoDict]:
     """Workfile info entity by id.
 
     Args:
@@ -5775,6 +6270,1030 @@ def get_workfile_info_by_id(
         workfile_id=workfile_id,
         fields=fields,
         own_attributes=own_attributes,
+    )
+
+
+def delete_workfile_info(
+    project_name: str,
+    workfile_id: str,
+) -> None:
+    """Delete workfile entity on server.
+
+    Args:
+        project_name (str): Project name.
+        workfile_id (str): Workfile id to delete.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_workfile_info(
+        project_name=project_name,
+        workfile_id=workfile_id,
+    )
+
+
+def update_workfile_info(
+    project_name: str,
+    workfile_id: str,
+    path: Optional[str] = None,
+    task_id: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = NOT_SET,
+    created_by: Optional[str] = None,
+    updated_by: Optional[str] = None,
+) -> None:
+    """Update workfile entity on server.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        workfile_id (str): Workfile id.
+        path (Optional[str]): New rootless workfile path..
+        task_id (Optional[str]): New parent task id.
+        attrib (Optional[dict[str, Any]]): New attributes.
+        data (Optional[dict[str, Any]]): New data.
+        tags (Optional[Iterable[str]]): New tags.
+        status (Optional[str]): New status.
+        active (Optional[bool]): New active state.
+        thumbnail_id (Optional[str]): New thumbnail id.
+        created_by (Optional[str]): New created by username.
+        updated_by (Optional[str]): New updated by username.
+
+    """
+    con = get_server_api_connection()
+    return con.update_workfile_info(
+        project_name=project_name,
+        workfile_id=workfile_id,
+        path=path,
+        task_id=task_id,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        created_by=created_by,
+        updated_by=updated_by,
+    )
+
+
+def get_full_link_type_name(
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+) -> str:
+    """Calculate full link type name used for query from server.
+
+    Args:
+        link_type_name (str): Type of link.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+
+    Returns:
+        str: Full name of link type used for query from server.
+
+    """
+    con = get_server_api_connection()
+    return con.get_full_link_type_name(
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
+
+
+def get_link_types(
+    project_name: str,
+) -> list[dict[str, Any]]:
+    """All link types available on a project.
+
+    Example output:
+        [
+            {
+                "name": "reference|folder|folder",
+                "link_type": "reference",
+                "input_type": "folder",
+                "output_type": "folder",
+                "data": {}
+            }
+        ]
+
+    Args:
+        project_name (str): Name of project where to look for link types.
+
+    Returns:
+        list[dict[str, Any]]: Link types available on project.
+
+    """
+    con = get_server_api_connection()
+    return con.get_link_types(
+        project_name=project_name,
+    )
+
+
+def get_link_type(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+) -> Optional[dict[str, Any]]:
+    """Get link type data.
+
+    There is not dedicated REST endpoint to get single link type,
+    so method 'get_link_types' is used.
+
+    Example output:
+        {
+            "name": "reference|folder|folder",
+            "link_type": "reference",
+            "input_type": "folder",
+            "output_type": "folder",
+            "data": {}
+        }
+
+    Args:
+        project_name (str): Project where link type is available.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+
+    Returns:
+        Optional[dict[str, Any]]: Link type information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
+
+
+def create_link_type(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+    data: Optional[dict[str, Any]] = None,
+) -> None:
+    """Create or update link type on server.
+
+    Warning:
+        Because PUT is used for creation it is also used for update.
+
+    Args:
+        project_name (str): Project where link type is created.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+        data (Optional[dict[str, Any]]): Additional data related to link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.create_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+        data=data,
+    )
+
+
+def delete_link_type(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+) -> None:
+    """Remove link type from project.
+
+    Args:
+        project_name (str): Project where link type is created.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_link_type(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+    )
+
+
+def make_sure_link_type_exists(
+    project_name: str,
+    link_type_name: str,
+    input_type: str,
+    output_type: str,
+    data: Optional[dict[str, Any]] = None,
+) -> None:
+    """Make sure link type exists on a project.
+
+    Args:
+        project_name (str): Name of project.
+        link_type_name (str): Name of link type.
+        input_type (str): Input entity type of link.
+        output_type (str): Output entity type of link.
+        data (Optional[dict[str, Any]]): Link type related data.
+
+    """
+    con = get_server_api_connection()
+    return con.make_sure_link_type_exists(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_type=input_type,
+        output_type=output_type,
+        data=data,
+    )
+
+
+def create_link(
+    project_name: str,
+    link_type_name: str,
+    input_id: str,
+    input_type: str,
+    output_id: str,
+    output_type: str,
+    link_name: Optional[str] = None,
+) -> CreateLinkData:
+    """Create link between 2 entities.
+
+    Link has a type which must already exists on a project.
+
+    Example output::
+
+        {
+            "id": "59a212c0d2e211eda0e20242ac120002"
+        }
+
+    Args:
+        project_name (str): Project where the link is created.
+        link_type_name (str): Type of link.
+        input_id (str): Input entity id.
+        input_type (str): Entity type of input entity.
+        output_id (str): Output entity id.
+        output_type (str): Entity type of output entity.
+        link_name (Optional[str]): Name of link.
+            Available from server version '1.0.0-rc.6'.
+
+    Returns:
+        CreateLinkData: Information about link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.create_link(
+        project_name=project_name,
+        link_type_name=link_type_name,
+        input_id=input_id,
+        input_type=input_type,
+        output_id=output_id,
+        output_type=output_type,
+        link_name=link_name,
+    )
+
+
+def delete_link(
+    project_name: str,
+    link_id: str,
+) -> None:
+    """Remove link by id.
+
+    Args:
+        project_name (str): Project where link exists.
+        link_id (str): Id of link.
+
+    Raises:
+        HTTPRequestError: Server error happened.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_link(
+        project_name=project_name,
+        link_id=link_id,
+    )
+
+
+def get_entities_links(
+    project_name: str,
+    entity_type: str,
+    entity_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+    link_names: Optional[Iterable[str]] = None,
+    link_name_regex: Optional[str] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Helper method to get links from server for entity types.
+
+    .. highlight:: text
+    .. code-block:: text
+
+        Example output:
+        {
+            "59a212c0d2e211eda0e20242ac120001": [
+                {
+                    "id": "59a212c0d2e211eda0e20242ac120002",
+                    "linkType": "reference",
+                    "description": "reference link between folders",
+                    "projectName": "my_project",
+                    "author": "frantadmin",
+                    "entityId": "b1df109676db11ed8e8c6c9466b19aa8",
+                    "entityType": "folder",
+                    "direction": "out"
+                },
+                ...
+            ],
+            ...
+        }
+
+    Args:
+        project_name (str): Project where links are.
+        entity_type (Literal["folder", "task", "product",
+            "version", "representations"]): Entity type.
+        entity_ids (Optional[Iterable[str]]): Ids of entities for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+        link_names (Optional[Iterable[str]]): Link name filters.
+        link_name_regex (Optional[str]): Regex filter for link name.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by entity ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entities_links(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+        link_names=link_names,
+        link_name_regex=link_name_regex,
+    )
+
+
+def get_folders_links(
+    project_name: str,
+    folder_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query folders links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        folder_ids (Optional[Iterable[str]]): Ids of folders for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by folder ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folders_links(
+        project_name=project_name,
+        folder_ids=folder_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_folder_links(
+    project_name: str,
+    folder_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> list[dict[str, Any]]:
+    """Query folder links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        folder_id (str): Folder id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of folder.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_links(
+        project_name=project_name,
+        folder_id=folder_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_tasks_links(
+    project_name: str,
+    task_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query tasks links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        task_ids (Optional[Iterable[str]]): Ids of tasks for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by task ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_tasks_links(
+        project_name=project_name,
+        task_ids=task_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_task_links(
+    project_name: str,
+    task_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> list[dict[str, Any]]:
+    """Query task links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        task_id (str): Task id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of task.
+
+    """
+    con = get_server_api_connection()
+    return con.get_task_links(
+        project_name=project_name,
+        task_id=task_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_products_links(
+    project_name: str,
+    product_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query products links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        product_ids (Optional[Iterable[str]]): Ids of products for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by product ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_products_links(
+        project_name=project_name,
+        product_ids=product_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_product_links(
+    project_name: str,
+    product_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> list[dict[str, Any]]:
+    """Query product links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        product_id (str): Product id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of product.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_links(
+        project_name=project_name,
+        product_id=product_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_versions_links(
+    project_name: str,
+    version_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query versions links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        version_ids (Optional[Iterable[str]]): Ids of versions for which
+            links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by version ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_versions_links(
+        project_name=project_name,
+        version_ids=version_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_version_links(
+    project_name: str,
+    version_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> list[dict[str, Any]]:
+    """Query version links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        version_id (str): Version id for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of version.
+
+    """
+    con = get_server_api_connection()
+    return con.get_version_links(
+        project_name=project_name,
+        version_id=version_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_representations_links(
+    project_name: str,
+    representation_ids: Optional[Iterable[str]] = None,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Query representations links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        representation_ids (Optional[Iterable[str]]): Ids of
+            representations for which links should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: Link info by representation ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_representations_links(
+        project_name=project_name,
+        representation_ids=representation_ids,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_representation_links(
+    project_name: str,
+    representation_id: str,
+    link_types: Optional[Iterable[str]] = None,
+    link_direction: Optional[LinkDirection] = None,
+) -> list[dict[str, Any]]:
+    """Query representation links from server.
+
+    Args:
+        project_name (str): Project where links are.
+        representation_id (str): Representation id for which links
+            should be received.
+        link_types (Optional[Iterable[str]]): Link type filters.
+        link_direction (Optional[Literal["in", "out"]]): Link direction
+            filter.
+
+    Returns:
+        list[dict[str, Any]]: Link info of representation.
+
+    """
+    con = get_server_api_connection()
+    return con.get_representation_links(
+        project_name=project_name,
+        representation_id=representation_id,
+        link_types=link_types,
+        link_direction=link_direction,
+    )
+
+
+def get_entity_lists(
+    project_name: str,
+    *,
+    list_ids: Optional[Iterable[str]] = None,
+    active: Optional[bool] = None,
+    fields: Optional[Iterable[str]] = None,
+) -> Generator[dict[str, Any], None, None]:
+    """Fetch entity lists from server.
+
+    Args:
+        project_name (str): Project name where entity lists are.
+        list_ids (Optional[Iterable[str]]): List of entity list ids to
+            fetch.
+        active (Optional[bool]): Filter by active state of entity lists.
+        fields (Optional[Iterable[str]]): Fields to fetch from server.
+
+    Returns:
+        Generator[dict[str, Any], None, None]: Entity list entities
+            matching defined filters.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_lists(
+        project_name=project_name,
+        list_ids=list_ids,
+        active=active,
+        fields=fields,
+    )
+
+
+def get_entity_list_rest(
+    project_name: str,
+    list_id: str,
+) -> Optional[dict[str, Any]]:
+    """Get entity list by id using REST API.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+
+    Returns:
+        Optional[dict[str, Any]]: Entity list data or None if not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_list_rest(
+        project_name=project_name,
+        list_id=list_id,
+    )
+
+
+def get_entity_list_by_id(
+    project_name: str,
+    list_id: str,
+    fields: Optional[Iterable[str]] = None,
+) -> Optional[dict[str, Any]]:
+    """Get entity list by id using GraphQl.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+        fields (Optional[Iterable[str]]): Fields to fetch from server.
+
+    Returns:
+        Optional[dict[str, Any]]: Entity list data or None if not found.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_list_by_id(
+        project_name=project_name,
+        list_id=list_id,
+        fields=fields,
+    )
+
+
+def create_entity_list(
+    project_name: str,
+    entity_type: EntityListEntityType,
+    label: str,
+    *,
+    list_type: Optional[str] = None,
+    access: Optional[dict[str, Any]] = None,
+    attrib: Optional[list[dict[str, Any]]] = None,
+    data: Optional[list[dict[str, Any]]] = None,
+    tags: Optional[list[str]] = None,
+    template: Optional[dict[str, Any]] = None,
+    owner: Optional[str] = None,
+    active: Optional[bool] = None,
+    items: Optional[list[dict[str, Any]]] = None,
+    list_id: Optional[str] = None,
+) -> str:
+    """Create entity list.
+
+    Args:
+        project_name (str): Project name where entity list lives.
+        entity_type (EntityListEntityType): Which entity types can be
+            used in list.
+        label (str): Entity list label.
+        list_type (Optional[str]): Entity list type.
+        access (Optional[dict[str, Any]]): Access control for entity list.
+        attrib (Optional[dict[str, Any]]): Attribute values of
+            entity list.
+        data (Optional[dict[str, Any]]): Custom data of entity list.
+        tags (Optional[list[str]]): Entity list tags.
+        template (Optional[dict[str, Any]]): Dynamic list template.
+        owner (Optional[str]): New owner of the list.
+        active (Optional[bool]): Change active state of entity list.
+        items (Optional[list[dict[str, Any]]]): Initial items in
+            entity list.
+        list_id (Optional[str]): Entity list id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_entity_list(
+        project_name=project_name,
+        entity_type=entity_type,
+        label=label,
+        list_type=list_type,
+        access=access,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        template=template,
+        owner=owner,
+        active=active,
+        items=items,
+        list_id=list_id,
+    )
+
+
+def update_entity_list(
+    project_name: str,
+    list_id: str,
+    *,
+    label: Optional[str] = None,
+    access: Optional[dict[str, Any]] = None,
+    attrib: Optional[list[dict[str, Any]]] = None,
+    data: Optional[list[dict[str, Any]]] = None,
+    tags: Optional[list[str]] = None,
+    owner: Optional[str] = None,
+    active: Optional[bool] = None,
+) -> None:
+    """Update entity list.
+
+    Args:
+        project_name (str): Project name where entity list lives.
+        list_id (str): Entity list id that will be updated.
+        label (Optional[str]): New label of entity list.
+        access (Optional[dict[str, Any]]): Access control for entity list.
+        attrib (Optional[dict[str, Any]]): Attribute values of
+            entity list.
+        data (Optional[dict[str, Any]]): Custom data of entity list.
+        tags (Optional[list[str]]): Entity list tags.
+        owner (Optional[str]): New owner of the list.
+        active (Optional[bool]): Change active state of entity list.
+
+    """
+    con = get_server_api_connection()
+    return con.update_entity_list(
+        project_name=project_name,
+        list_id=list_id,
+        label=label,
+        access=access,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        owner=owner,
+        active=active,
+    )
+
+
+def delete_entity_list(
+    project_name: str,
+    list_id: str,
+) -> None:
+    """Delete entity list from project.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id that will be removed.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_entity_list(
+        project_name=project_name,
+        list_id=list_id,
+    )
+
+
+def get_entity_list_attribute_definitions(
+    project_name: str,
+    list_id: str,
+) -> list[EntityListAttributeDefinitionDict]:
+    """Get attribute definitioins on entity list.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+
+    Returns:
+        list[EntityListAttributeDefinitionDict]: List of attribute
+            definitions.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_list_attribute_definitions(
+        project_name=project_name,
+        list_id=list_id,
+    )
+
+
+def set_entity_list_attribute_definitions(
+    project_name: str,
+    list_id: str,
+    attribute_definitions: list[EntityListAttributeDefinitionDict],
+) -> None:
+    """Set attribute definitioins on entity list.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+        attribute_definitions (list[EntityListAttributeDefinitionDict]):
+            List of attribute definitions.
+
+    """
+    con = get_server_api_connection()
+    return con.set_entity_list_attribute_definitions(
+        project_name=project_name,
+        list_id=list_id,
+        attribute_definitions=attribute_definitions,
+    )
+
+
+def create_entity_list_item(
+    project_name: str,
+    list_id: str,
+    *,
+    position: Optional[int] = None,
+    label: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
+    item_id: Optional[str] = None,
+) -> str:
+    """Create entity list item.
+
+    Args:
+        project_name (str): Project name where entity list lives.
+        list_id (str): Entity list id where item will be added.
+        position (Optional[int]): Position of item in entity list.
+        label (Optional[str]): Label of item in entity list.
+        attrib (Optional[dict[str, Any]]): Item attribute values.
+        data (Optional[dict[str, Any]]): Item data.
+        tags (Optional[list[str]]): Tags of item in entity list.
+        item_id (Optional[str]): Id of item that will be created.
+
+    Returns:
+        str: Item id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_entity_list_item(
+        project_name=project_name,
+        list_id=list_id,
+        position=position,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        item_id=item_id,
+    )
+
+
+def update_entity_list_items(
+    project_name: str,
+    list_id: str,
+    items: list[dict[str, Any]],
+    mode: EntityListItemMode,
+) -> None:
+    """Update items in entity list.
+
+    Args:
+        project_name (str): Project name where entity list live.
+        list_id (str): Entity list id.
+        items (list[dict[str, Any]]): Entity list items.
+        mode (EntityListItemMode): Mode of items update.
+
+    """
+    con = get_server_api_connection()
+    return con.update_entity_list_items(
+        project_name=project_name,
+        list_id=list_id,
+        items=items,
+        mode=mode,
+    )
+
+
+def update_entity_list_item(
+    project_name: str,
+    list_id: str,
+    item_id: str,
+    *,
+    new_list_id: Optional[str],
+    position: Optional[int] = None,
+    label: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
+) -> None:
+    """Update item in entity list.
+
+    Args:
+        project_name (str): Project name where entity list live.
+        list_id (str): Entity list id where item lives.
+        item_id (str): Item id that will be removed from entity list.
+        new_list_id (Optional[str]): New entity list id where item will be
+            added.
+        position (Optional[int]): Position of item in entity list.
+        label (Optional[str]): Label of item in entity list.
+        attrib (Optional[dict[str, Any]]): Attributes of item in entity
+            list.
+        data (Optional[dict[str, Any]]): Custom data of item in
+            entity list.
+        tags (Optional[list[str]]): Tags of item in entity list.
+
+    """
+    con = get_server_api_connection()
+    return con.update_entity_list_item(
+        project_name=project_name,
+        list_id=list_id,
+        item_id=item_id,
+        new_list_id=new_list_id,
+        position=position,
+        label=label,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+    )
+
+
+def delete_entity_list_item(
+    project_name: str,
+    list_id: str,
+    item_id: str,
+) -> None:
+    """Delete item from entity list.
+
+    Args:
+        project_name (str): Project name where entity list live.
+        list_id (str): Entity list id from which item will be removed.
+        item_id (str): Item id that will be removed from entity list.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_entity_list_item(
+        project_name=project_name,
+        list_id=list_id,
+        item_id=item_id,
     )
 
 
@@ -5989,7 +7508,7 @@ def update_thumbnail(
     project_name: str,
     thumbnail_id: str,
     src_filepath: str,
-):
+) -> None:
     """Change thumbnail content by id.
 
     Update can be also used to create new thumbnail.
@@ -6009,794 +7528,4 @@ def update_thumbnail(
         project_name=project_name,
         thumbnail_id=thumbnail_id,
         src_filepath=src_filepath,
-    )
-
-
-def create_project(
-    project_name: str,
-    project_code: str,
-    library_project: bool = False,
-    preset_name: Optional[str] = None,
-) -> "ProjectDict":
-    """Create project using AYON settings.
-
-    This project creation function is not validating project entity on
-    creation. It is because project entity is created blindly with only
-    minimum required information about project which is name and code.
-
-    Entered project name must be unique and project must not exist yet.
-
-    Note:
-        This function is here to be OP v4 ready but in v3 has more logic
-            to do. That's why inner imports are in the body.
-
-    Args:
-        project_name (str): New project name. Should be unique.
-        project_code (str): Project's code should be unique too.
-        library_project (Optional[bool]): Project is library project.
-        preset_name (Optional[str]): Name of anatomy preset. Default is
-            used if not passed.
-
-    Raises:
-        ValueError: When project name already exists.
-
-    Returns:
-        ProjectDict: Created project entity.
-
-    """
-    con = get_server_api_connection()
-    return con.create_project(
-        project_name=project_name,
-        project_code=project_code,
-        library_project=library_project,
-        preset_name=preset_name,
-    )
-
-
-def update_project(
-    project_name: str,
-    library: Optional[bool] = None,
-    folder_types: Optional[List[Dict[str, Any]]] = None,
-    task_types: Optional[List[Dict[str, Any]]] = None,
-    link_types: Optional[List[Dict[str, Any]]] = None,
-    statuses: Optional[List[Dict[str, Any]]] = None,
-    tags: Optional[List[Dict[str, Any]]] = None,
-    config: Optional[Dict[str, Any]] = None,
-    attrib: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    active: Optional[bool] = None,
-    project_code: Optional[str] = None,
-    **changes,
-):
-    """Update project entity on server.
-
-    Args:
-        project_name (str): Name of project.
-        library (Optional[bool]): Change library state.
-        folder_types (Optional[list[dict[str, Any]]]): Folder type
-            definitions.
-        task_types (Optional[list[dict[str, Any]]]): Task type
-            definitions.
-        link_types (Optional[list[dict[str, Any]]]): Link type
-            definitions.
-        statuses (Optional[list[dict[str, Any]]]): Status definitions.
-        tags (Optional[list[dict[str, Any]]]): List of tags available to
-            set on entities.
-        config (Optional[dict[str, Any]]): Project anatomy config
-            with templates and roots.
-        attrib (Optional[dict[str, Any]]): Project attributes to change.
-        data (Optional[dict[str, Any]]): Custom data of a project. This
-            value will 100% override project data.
-        active (Optional[bool]): Change active state of a project.
-        project_code (Optional[str]): Change project code. Not recommended
-            during production.
-        **changes: Other changed keys based on Rest API documentation.
-
-    """
-    con = get_server_api_connection()
-    return con.update_project(
-        project_name=project_name,
-        library=library,
-        folder_types=folder_types,
-        task_types=task_types,
-        link_types=link_types,
-        statuses=statuses,
-        tags=tags,
-        config=config,
-        attrib=attrib,
-        data=data,
-        active=active,
-        project_code=project_code,
-        **changes,
-    )
-
-
-def delete_project(
-    project_name: str,
-):
-    """Delete project from server.
-
-    This will completely remove project from server without any step back.
-
-    Args:
-        project_name (str): Project name that will be removed.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_project(
-        project_name=project_name,
-    )
-
-
-def get_full_link_type_name(
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-) -> str:
-    """Calculate full link type name used for query from server.
-
-    Args:
-        link_type_name (str): Type of link.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-
-    Returns:
-        str: Full name of link type used for query from server.
-
-    """
-    con = get_server_api_connection()
-    return con.get_full_link_type_name(
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-    )
-
-
-def get_link_types(
-    project_name: str,
-) -> List[Dict[str, Any]]:
-    """All link types available on a project.
-
-    Example output:
-        [
-            {
-                "name": "reference|folder|folder",
-                "link_type": "reference",
-                "input_type": "folder",
-                "output_type": "folder",
-                "data": {}
-            }
-        ]
-
-    Args:
-        project_name (str): Name of project where to look for link types.
-
-    Returns:
-        list[dict[str, Any]]: Link types available on project.
-
-    """
-    con = get_server_api_connection()
-    return con.get_link_types(
-        project_name=project_name,
-    )
-
-
-def get_link_type(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-) -> Optional[str]:
-    """Get link type data.
-
-    There is not dedicated REST endpoint to get single link type,
-    so method 'get_link_types' is used.
-
-    Example output:
-        {
-            "name": "reference|folder|folder",
-            "link_type": "reference",
-            "input_type": "folder",
-            "output_type": "folder",
-            "data": {}
-        }
-
-    Args:
-        project_name (str): Project where link type is available.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-
-    Returns:
-        Optional[str]: Link type information.
-
-    """
-    con = get_server_api_connection()
-    return con.get_link_type(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-    )
-
-
-def create_link_type(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-    data: Optional[Dict[str, Any]] = None,
-):
-    """Create or update link type on server.
-
-    Warning:
-        Because PUT is used for creation it is also used for update.
-
-    Args:
-        project_name (str): Project where link type is created.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-        data (Optional[dict[str, Any]]): Additional data related to link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.create_link_type(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-        data=data,
-    )
-
-
-def delete_link_type(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-):
-    """Remove link type from project.
-
-    Args:
-        project_name (str): Project where link type is created.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_link_type(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-    )
-
-
-def make_sure_link_type_exists(
-    project_name: str,
-    link_type_name: str,
-    input_type: str,
-    output_type: str,
-    data: Optional[Dict[str, Any]] = None,
-):
-    """Make sure link type exists on a project.
-
-    Args:
-        project_name (str): Name of project.
-        link_type_name (str): Name of link type.
-        input_type (str): Input entity type of link.
-        output_type (str): Output entity type of link.
-        data (Optional[dict[str, Any]]): Link type related data.
-
-    """
-    con = get_server_api_connection()
-    return con.make_sure_link_type_exists(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_type=input_type,
-        output_type=output_type,
-        data=data,
-    )
-
-
-def create_link(
-    project_name: str,
-    link_type_name: str,
-    input_id: str,
-    input_type: str,
-    output_id: str,
-    output_type: str,
-    link_name: Optional[str] = None,
-):
-    """Create link between 2 entities.
-
-    Link has a type which must already exists on a project.
-
-    Example output::
-
-        {
-            "id": "59a212c0d2e211eda0e20242ac120002"
-        }
-
-    Args:
-        project_name (str): Project where the link is created.
-        link_type_name (str): Type of link.
-        input_id (str): Input entity id.
-        input_type (str): Entity type of input entity.
-        output_id (str): Output entity id.
-        output_type (str): Entity type of output entity.
-        link_name (Optional[str]): Name of link.
-            Available from server version '1.0.0-rc.6'.
-
-    Returns:
-        dict[str, str]: Information about link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.create_link(
-        project_name=project_name,
-        link_type_name=link_type_name,
-        input_id=input_id,
-        input_type=input_type,
-        output_id=output_id,
-        output_type=output_type,
-        link_name=link_name,
-    )
-
-
-def delete_link(
-    project_name: str,
-    link_id: str,
-):
-    """Remove link by id.
-
-    Args:
-        project_name (str): Project where link exists.
-        link_id (str): Id of link.
-
-    Raises:
-        HTTPRequestError: Server error happened.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_link(
-        project_name=project_name,
-        link_id=link_id,
-    )
-
-
-def get_entities_links(
-    project_name: str,
-    entity_type: str,
-    entity_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-    link_names: Optional[Iterable[str]] = None,
-    link_name_regex: Optional[str] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Helper method to get links from server for entity types.
-
-    .. highlight:: text
-    .. code-block:: text
-
-        Example output:
-        {
-            "59a212c0d2e211eda0e20242ac120001": [
-                {
-                    "id": "59a212c0d2e211eda0e20242ac120002",
-                    "linkType": "reference",
-                    "description": "reference link between folders",
-                    "projectName": "my_project",
-                    "author": "frantadmin",
-                    "entityId": "b1df109676db11ed8e8c6c9466b19aa8",
-                    "entityType": "folder",
-                    "direction": "out"
-                },
-                ...
-            ],
-            ...
-        }
-
-    Args:
-        project_name (str): Project where links are.
-        entity_type (Literal["folder", "task", "product",
-            "version", "representations"]): Entity type.
-        entity_ids (Optional[Iterable[str]]): Ids of entities for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-        link_names (Optional[Iterable[str]]): Link name filters.
-        link_name_regex (Optional[str]): Regex filter for link name.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by entity ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_entities_links(
-        project_name=project_name,
-        entity_type=entity_type,
-        entity_ids=entity_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-        link_names=link_names,
-        link_name_regex=link_name_regex,
-    )
-
-
-def get_folders_links(
-    project_name: str,
-    folder_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query folders links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        folder_ids (Optional[Iterable[str]]): Ids of folders for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by folder ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folders_links(
-        project_name=project_name,
-        folder_ids=folder_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_folder_links(
-    project_name: str,
-    folder_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query folder links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        folder_id (str): Folder id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of folder.
-
-    """
-    con = get_server_api_connection()
-    return con.get_folder_links(
-        project_name=project_name,
-        folder_id=folder_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_tasks_links(
-    project_name: str,
-    task_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query tasks links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        task_ids (Optional[Iterable[str]]): Ids of tasks for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by task ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_tasks_links(
-        project_name=project_name,
-        task_ids=task_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_task_links(
-    project_name: str,
-    task_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query task links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        task_id (str): Task id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of task.
-
-    """
-    con = get_server_api_connection()
-    return con.get_task_links(
-        project_name=project_name,
-        task_id=task_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_products_links(
-    project_name: str,
-    product_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query products links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        product_ids (Optional[Iterable[str]]): Ids of products for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by product ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_products_links(
-        project_name=project_name,
-        product_ids=product_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_product_links(
-    project_name: str,
-    product_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query product links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        product_id (str): Product id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of product.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_links(
-        project_name=project_name,
-        product_id=product_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_versions_links(
-    project_name: str,
-    version_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query versions links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        version_ids (Optional[Iterable[str]]): Ids of versions for which
-            links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by version ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_versions_links(
-        project_name=project_name,
-        version_ids=version_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_version_links(
-    project_name: str,
-    version_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query version links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        version_id (str): Version id for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of version.
-
-    """
-    con = get_server_api_connection()
-    return con.get_version_links(
-        project_name=project_name,
-        version_id=version_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_representations_links(
-    project_name: str,
-    representation_ids: Optional[Iterable[str]] = None,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Query representations links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        representation_ids (Optional[Iterable[str]]): Ids of
-            representations for which links should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        dict[str, list[dict[str, Any]]]: Link info by representation ids.
-
-    """
-    con = get_server_api_connection()
-    return con.get_representations_links(
-        project_name=project_name,
-        representation_ids=representation_ids,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def get_representation_links(
-    project_name: str,
-    representation_id: str,
-    link_types: Optional[Iterable[str]] = None,
-    link_direction: Optional["LinkDirection"] = None,
-) -> List[Dict[str, Any]]:
-    """Query representation links from server.
-
-    Args:
-        project_name (str): Project where links are.
-        representation_id (str): Representation id for which links
-            should be received.
-        link_types (Optional[Iterable[str]]): Link type filters.
-        link_direction (Optional[Literal["in", "out"]]): Link direction
-            filter.
-
-    Returns:
-        list[dict[str, Any]]: Link info of representation.
-
-    """
-    con = get_server_api_connection()
-    return con.get_representation_links(
-        project_name=project_name,
-        representation_id=representation_id,
-        link_types=link_types,
-        link_direction=link_direction,
-    )
-
-
-def send_batch_operations(
-    project_name: str,
-    operations: List[Dict[str, Any]],
-    can_fail: bool = False,
-    raise_on_fail: bool = True,
-) -> List[Dict[str, Any]]:
-    """Post multiple CRUD operations to server.
-
-    When multiple changes should be made on server side this is the best
-    way to go. It is possible to pass multiple operations to process on a
-    server side and do the changes in a transaction.
-
-    Args:
-        project_name (str): On which project should be operations
-            processed.
-        operations (list[dict[str, Any]]): Operations to be processed.
-        can_fail (Optional[bool]): Server will try to process all
-            operations even if one of them fails.
-        raise_on_fail (Optional[bool]): Raise exception if an operation
-            fails. You can handle failed operations on your own
-            when set to 'False'.
-
-    Raises:
-        ValueError: Operations can't be converted to json string.
-        FailedOperations: When output does not contain server operations
-            or 'raise_on_fail' is enabled and any operation fails.
-
-    Returns:
-        list[dict[str, Any]]: Operations result with process details.
-
-    """
-    con = get_server_api_connection()
-    return con.send_batch_operations(
-        project_name=project_name,
-        operations=operations,
-        can_fail=can_fail,
-        raise_on_fail=raise_on_fail,
-    )
-
-
-def send_activities_batch_operations(
-    project_name: str,
-    operations: List[Dict[str, Any]],
-    can_fail: bool = False,
-    raise_on_fail: bool = True,
-) -> List[Dict[str, Any]]:
-    """Post multiple CRUD activities operations to server.
-
-    When multiple changes should be made on server side this is the best
-    way to go. It is possible to pass multiple operations to process on a
-    server side and do the changes in a transaction.
-
-    Args:
-        project_name (str): On which project should be operations
-            processed.
-        operations (list[dict[str, Any]]): Operations to be processed.
-        can_fail (Optional[bool]): Server will try to process all
-            operations even if one of them fails.
-        raise_on_fail (Optional[bool]): Raise exception if an operation
-            fails. You can handle failed operations on your own
-            when set to 'False'.
-
-    Raises:
-        ValueError: Operations can't be converted to json string.
-        FailedOperations: When output does not contain server operations
-            or 'raise_on_fail' is enabled and any operation fails.
-
-    Returns:
-        list[dict[str, Any]]: Operations result with process details.
-
-    """
-    con = get_server_api_connection()
-    return con.send_activities_batch_operations(
-        project_name=project_name,
-        operations=operations,
-        can_fail=can_fail,
-        raise_on_fail=raise_on_fail,
     )

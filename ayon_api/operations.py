@@ -1,16 +1,28 @@
 from __future__ import annotations
+
 import os
 import copy
 import collections
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, Optional
+import typing
+from typing import Optional, Any, Iterable
 
 from ._api import get_server_api_connection
 from .utils import create_entity_id, REMOVED_VALUE, NOT_SET
 
+if typing.TYPE_CHECKING:
+    from .server_api import ServerAPI
+    from .typing import (
+        NewFolderDict,
+        NewProductDict,
+        NewVersionDict,
+        NewRepresentationDict,
+        NewWorkfileDict,
+    )
 
-def _create_or_convert_to_id(entity_id=None):
+
+def _create_or_convert_to_id(entity_id: Optional[str] = None) -> str:
     if entity_id is None:
         return create_entity_id()
 
@@ -19,7 +31,11 @@ def _create_or_convert_to_id(entity_id=None):
     return entity_id
 
 
-def prepare_changes(old_entity, new_entity, entity_type):
+def prepare_changes(
+    old_entity: dict[str, Any],
+    new_entity: dict[str, Any],
+    entity_type: str,
+) -> dict[str, Any]:
     """Prepare changes for entity update.
 
     Notes:
@@ -56,16 +72,16 @@ def prepare_changes(old_entity, new_entity, entity_type):
 
 
 def new_folder_entity(
-    name,
-    folder_type,
-    parent_id=None,
-    status=None,
-    tags=None,
-    attribs=None,
-    data=None,
-    thumbnail_id=None,
-    entity_id=None
-):
+    name: str,
+    folder_type: str,
+    parent_id: Optional[str] = None,
+    status: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+    attribs: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    thumbnail_id: Optional[str] = None,
+    entity_id: Optional[str] = None
+) -> NewFolderDict:
     """Create skeleton data of folder entity.
 
     Args:
@@ -73,17 +89,17 @@ def new_folder_entity(
         folder_type (str): Type of folder.
         parent_id (Optional[str]): Parent folder id.
         status (Optional[str]): Product status.
-        tags (Optional[List[str]]): List of tags.
-        attribs (Optional[Dict[str, Any]]): Explicitly set attributes
+        tags (Optional[list[str]]): List of tags.
+        attribs (Optional[dict[str, Any]]): Explicitly set attributes
             of folder.
-        data (Optional[Dict[str, Any]]): Custom folder data. Empty dictionary
+        data (Optional[dict[str, Any]]): Custom folder data. Empty dictionary
             is used if not passed.
         thumbnail_id (Optional[str]): Thumbnail id related to folder.
         entity_id (Optional[str]): Predefined id of entity. New id is
             created if not passed.
 
     Returns:
-        Dict[str, Any]: Skeleton of folder entity.
+        NewFolderDict: Skeleton of folder entity.
 
     """
     if attribs is None:
@@ -103,7 +119,7 @@ def new_folder_entity(
         "parentId": parent_id,
         "data": data,
         "attrib": attribs,
-        "thumbnailId": thumbnail_id
+        "thumbnailId": thumbnail_id,
     }
     if status:
         output["status"] = status
@@ -122,26 +138,26 @@ def new_product_entity(
     data: Optional[dict[str, Any]] = None,
     entity_id: Optional[str] = None,
     product_base_type: Optional[str] = None,
-) -> dict[str, Any]:
+) -> NewProductDict:
     """Create skeleton data of the product entity.
 
     Args:
         name (str): Is considered as a unique identifier of
             the product under the folder.
-        product_base_type (str): Base type of the product, e.g. "render",
         product_type (str): Product type.
         folder_id (str): Parent folder id.
         status (Optional[str]): Product status.
-        tags (Optional[List[str]]): List of tags.
-        attribs (Optional[Dict[str, Any]]): Explicitly set attributes
-            of the product.
-        data (Optional[Dict[str, Any]]): product entity data. Empty dictionary
+        tags (Optional[list[str]]): List of tags.
+        attribs (Optional[dict[str, Any]]): Explicitly set attributes
+            of product.
+        data (Optional[dict[str, Any]]): product entity data. Empty dictionary
             is used if not passed.
         entity_id (Optional[str]): Predefined id of entity. New id is
             created if not passed.
+        product_base_type (str): Base type of the product, e.g. "render".
 
     Returns:
-        Dict[str, Any]: Skeleton of product entity.
+        NewProductDict: Skeleton of product entity.
 
     """
     if attribs is None:
@@ -169,17 +185,17 @@ def new_product_entity(
 
 
 def new_version_entity(
-    version,
-    product_id,
-    task_id=None,
-    thumbnail_id=None,
-    author=None,
-    status=None,
-    tags=None,
-    attribs=None,
-    data=None,
-    entity_id=None
-):
+    version: int,
+    product_id: str,
+    task_id: Optional[str] = None,
+    thumbnail_id: Optional[str] = None,
+    author: Optional[str] = None,
+    status: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+    attribs: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    entity_id: Optional[str] = None,
+) -> NewVersionDict:
     """Create skeleton data of version entity.
 
     Args:
@@ -190,15 +206,15 @@ def new_version_entity(
         thumbnail_id (Optional[str]): Thumbnail related to version.
         author (Optional[str]): Name of version author.
         status (Optional[str]): Version status.
-        tags (Optional[List[str]]): List of tags.
-        attribs (Optional[Dict[str, Any]]): Explicitly set attributes
+        tags (Optional[list[str]]): List of tags.
+        attribs (Optional[dict[str, Any]]): Explicitly set attributes
             of version.
-        data (Optional[Dict[str, Any]]): Version entity custom data.
+        data (Optional[dict[str, Any]]): Version entity custom data.
         entity_id (Optional[str]): Predefined id of entity. New id is
             created if not passed.
 
     Returns:
-        Dict[str, Any]: Skeleton of version entity.
+        NewVersionDict: Skeleton of version entity.
 
     """
     if attribs is None:
@@ -228,17 +244,17 @@ def new_version_entity(
 
 
 def new_hero_version_entity(
-    version,
-    product_id,
-    task_id=None,
-    thumbnail_id=None,
-    author=None,
-    status=None,
-    tags=None,
-    attribs=None,
-    data=None,
-    entity_id=None
-):
+    version: int,
+    product_id: str,
+    task_id: Optional[str] = None,
+    thumbnail_id: Optional[str] = None,
+    author: Optional[str] = None,
+    status: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+    attribs: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    entity_id: Optional[str] = None,
+) -> NewVersionDict:
     """Create skeleton data of hero version entity.
 
     Args:
@@ -249,18 +265,17 @@ def new_hero_version_entity(
         thumbnail_id (Optional[str]): Thumbnail related to version.
         author (Optional[str]): Name of version author.
         status (Optional[str]): Version status.
-        tags (Optional[List[str]]): List of tags.
-        attribs (Optional[Dict[str, Any]]): Explicitly set attributes
+        tags (Optional[list[str]]): List of tags.
+        attribs (Optional[dict[str, Any]]): Explicitly set attributes
             of version.
-        data (Optional[Dict[str, Any]]): Version entity data.
+        data (Optional[dict[str, Any]]): Version entity data.
         entity_id (Optional[str]): Predefined id of entity. New id is
             created if not passed.
 
     Returns:
-        Dict[str, Any]: Skeleton of version entity.
+        NewVersionDict: Skeleton of version entity.
 
     """
-
     return new_version_entity(
         -abs(int(version)),
         product_id,
@@ -276,16 +291,16 @@ def new_hero_version_entity(
 
 
 def new_representation_entity(
-    name,
-    version_id,
+    name: str,
+    version_id: str,
     files,
-    status=None,
-    tags=None,
-    attribs=None,
-    data=None,
-    traits=None,
-    entity_id=None,
-):
+    status: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+    attribs: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    traits: Optional[dict[str, Any]] = None,
+    entity_id: Optional[str] = None,
+) -> NewRepresentationDict:
     """Create skeleton data of representation entity.
 
     Args:
@@ -294,17 +309,17 @@ def new_representation_entity(
         version_id (str): Parent version id.
         files (list[dict[str, str]]): List of files in representation.
         status (Optional[str]): Representation status.
-        tags (Optional[List[str]]): List of tags.
-        attribs (Optional[Dict[str, Any]]): Explicitly set attributes
+        tags (Optional[list[str]]): List of tags.
+        attribs (Optional[dict[str, Any]]): Explicitly set attributes
             of representation.
-        data (Optional[Dict[str, Any]]): Representation entity data.
-        traits (Optional[Dict[str, Any]]): Representation traits. Empty
+        data (Optional[dict[str, Any]]): Representation entity data.
+        traits (Optional[dict[str, Any]]): Representation traits. Empty
             if not passed.
         entity_id (Optional[str]): Predefined id of entity. New id is created
             if not passed.
 
     Returns:
-        Dict[str, Any]: Skeleton of representation entity.
+        NewRepresentationDict: Skeleton of representation entity.
 
     """
     if attribs is None:
@@ -331,15 +346,15 @@ def new_representation_entity(
 
 
 def new_workfile_info(
-    filepath,
-    task_id,
-    status=None,
-    tags=None,
-    attribs=None,
-    description=None,
-    data=None,
-    entity_id=None
-):
+    filepath: str,
+    task_id: str,
+    status: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+    attribs: Optional[dict[str, Any]] = None,
+    description: Optional[str] = None,
+    data: Optional[dict[str, Any]] = None,
+    entity_id: Optional[str] = None,
+) -> NewWorkfileDict:
     """Create skeleton data of workfile info entity.
 
     Workfile entity is at this moment used primarily for artist notes.
@@ -348,15 +363,15 @@ def new_workfile_info(
         filepath (str): Rootless workfile filepath.
         task_id (str): Task under which was workfile created.
         status (Optional[str]): Workfile status.
-        tags (Optional[List[str]]): Workfile tags.
+        tags (Optional[list[str]]): Workfile tags.
         attribs (Options[dic[str, Any]]): Explicitly set attributes.
         description (Optional[str]): Workfile description.
-        data (Optional[Dict[str, Any]]): Additional metadata.
+        data (Optional[dict[str, Any]]): Additional metadata.
         entity_id (Optional[str]): Predefined id of entity. New id is created
             if not passed.
 
     Returns:
-        Dict[str, Any]: Skeleton of workfile info entity.
+        NewWorkfileDict: Skeleton of workfile info entity.
 
     """
     if attribs is None:
@@ -398,36 +413,49 @@ class AbstractOperation(ABC):
             e.g. 'folder', 'representation' etc.
 
     """
-    def __init__(self, project_name, entity_type, session):
+    def __init__(
+        self,
+        project_name: str,
+        entity_type: str,
+        session: OperationsSession,
+    ) -> None:
         self._project_name = project_name
         self._entity_type = entity_type
         self._session = session
         self._id = str(uuid.uuid4())
 
     @property
-    def project_name(self):
+    def project_name(self) -> str:
         return self._project_name
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Identifier of operation."""
         return self._id
 
     @property
-    def entity_type(self):
+    def entity_type(self) -> str:
         return self._entity_type
 
     @property
     @abstractmethod
-    def operation_name(self):
+    def operation_name(self) -> str:
         """Stringified type of operation."""
         pass
 
-    def to_data(self):
+    @property
+    def session(self) -> OperationsSession:
+        return self._session
+
+    @property
+    def con(self) -> ServerAPI:
+        return self.session.con
+
+    def to_data(self) -> dict[str, Any]:
         """Convert opration to data that can be converted to json or others.
 
         Returns:
-            Dict[str, Any]: Description of operation.
+            dict[str, Any]: Description of operation.
 
         """
         return {
@@ -445,12 +473,18 @@ class CreateOperation(AbstractOperation):
         project_name (str): On which project operation will happen.
         entity_type (str): Type of entity on which change happens.
             e.g. 'folder', 'representation' etc.
-        data (Dict[str, Any]): Data of entity that will be created.
+        data (dict[str, Any]): Data of entity that will be created.
 
     """
     operation_name = "create"
 
-    def __init__(self, project_name, entity_type, data, session):
+    def __init__(
+        self,
+        project_name: str,
+        entity_type: str,
+        data: Optional[dict[str, Any]],
+        session: OperationsSession,
+    ) -> None:
         if not data:
             data = {}
         else:
@@ -460,44 +494,34 @@ class CreateOperation(AbstractOperation):
             data["id"] = create_entity_id()
 
         self._data = data
-        super(CreateOperation, self).__init__(
-            project_name, entity_type, session
-        )
+        super().__init__(project_name, entity_type, session)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> None:
         self.set_value(key, value)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         return self.data[key]
 
-    def set_value(self, key, value):
+    def set_value(self, key: str, value: Any) -> None:
         self.data[key] = value
 
-    def get(self, key, *args, **kwargs):
+    def get(self, key: str, *args, **kwargs) -> Any:
         return self.data.get(key, *args, **kwargs)
 
     @property
-    def con(self):
-        return self.session.con
-
-    @property
-    def session(self):
-        return self._session
-
-    @property
-    def entity_id(self):
+    def entity_id(self) -> str:
         return self._data["id"]
 
     @property
-    def data(self):
+    def data(self) -> dict[str, Any]:
         return self._data
 
-    def to_data(self):
-        output = super(CreateOperation, self).to_data()
+    def to_data(self) -> dict[str, Any]:
+        output = super().to_data()
         output["data"] = copy.deepcopy(self.data)
         return output
 
-    def to_server_operation(self):
+    def to_server_operation(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "type": "create",
@@ -515,7 +539,7 @@ class UpdateOperation(AbstractOperation):
         entity_type (str): Type of entity on which change happens.
             e.g. 'folder', 'representation' etc.
         entity_id (str): Identifier of an entity.
-        update_data (Dict[str, Any]): Key -> value changes that will be set in
+        update_data (dict[str, Any]): Key -> value changes that will be set in
             database. If value is set to 'REMOVED_VALUE' the key will be
             removed. Only first level of dictionary is checked (on purpose).
 
@@ -523,46 +547,41 @@ class UpdateOperation(AbstractOperation):
     operation_name = "update"
 
     def __init__(
-        self, project_name, entity_type, entity_id, update_data, session
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+        update_data: dict[str, Any],
+        session: OperationsSession,
     ):
-        super(UpdateOperation, self).__init__(
-            project_name, entity_type, session
-        )
+        super().__init__(project_name, entity_type, session)
 
         self._entity_id = entity_id
         self._update_data = update_data
 
     @property
-    def entity_id(self):
+    def entity_id(self) -> str:
         return self._entity_id
 
     @property
-    def update_data(self):
+    def update_data(self) -> dict[str, Any]:
         return self._update_data
 
-    @property
-    def con(self):
-        return self.session.con
-
-    @property
-    def session(self):
-        return self._session
-
-    def to_data(self):
+    def to_data(self) -> dict[str, Any]:
         changes = {}
         for key, value in self._update_data.items():
             if value is REMOVED_VALUE:
                 value = None
             changes[key] = value
 
-        output = super(UpdateOperation, self).to_data()
+        output = super().to_data()
         output.update({
             "entity_id": self.entity_id,
             "changes": changes
         })
         return output
 
-    def to_server_operation(self):
+    def to_server_operation(self) -> Optional[dict[str, Any]]:
         if not self._update_data:
             return None
 
@@ -593,31 +612,27 @@ class DeleteOperation(AbstractOperation):
     """
     operation_name = "delete"
 
-    def __init__(self, project_name, entity_type, entity_id, session):
+    def __init__(
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+        session: OperationsSession,
+    ) -> None:
         self._entity_id = entity_id
 
-        super(DeleteOperation, self).__init__(
-            project_name, entity_type, session
-        )
+        super().__init__(project_name, entity_type, session)
 
     @property
-    def entity_id(self):
+    def entity_id(self) -> str:
         return self._entity_id
 
-    @property
-    def con(self):
-        return self.session.con
-
-    @property
-    def session(self):
-        return self._session
-
-    def to_data(self):
-        output = super(DeleteOperation, self).to_data()
+    def to_data(self) -> dict[str, Any]:
+        output = super().to_data()
         output["entity_id"] = self.entity_id
         return output
 
-    def to_server_operation(self):
+    def to_server_operation(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "type": self.operation_name,
@@ -641,7 +656,7 @@ class OperationsSession(object):
             is used if not passed.
 
     """
-    def __init__(self, con=None):
+    def __init__(self, con: Optional[ServerAPI] = None) -> None:
         if con is None:
             con = get_server_api_connection()
         self._con = con
@@ -650,19 +665,21 @@ class OperationsSession(object):
         self._nested_operations = collections.defaultdict(list)
 
     @property
-    def con(self):
+    def con(self) -> ServerAPI:
         return self._con
 
-    def get_project(self, project_name):
+    def get_project(
+        self, project_name: str
+    ) -> Optional[dict[str, Any]]:
         if project_name not in self._project_cache:
             self._project_cache[project_name] = self.con.get_project(
                 project_name)
         return copy.deepcopy(self._project_cache[project_name])
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._operations)
 
-    def add(self, operation):
+    def add(self, operation: AbstractOperation) -> None:
         """Add operation to be processed.
 
         Args:
@@ -679,7 +696,7 @@ class OperationsSession(object):
 
         self._operations.append(operation)
 
-    def append(self, operation):
+    def append(self, operation: AbstractOperation) -> None:
         """Add operation to be processed.
 
         Args:
@@ -688,32 +705,32 @@ class OperationsSession(object):
         """
         self.add(operation)
 
-    def extend(self, operations):
+    def extend(self, operations: list[AbstractOperation]) -> None:
         """Add operations to be processed.
 
         Args:
-            operations (List[BaseOperation]): Operations that should be
+            operations (list[BaseOperation]): Operations that should be
                 processed.
 
         """
         for operation in operations:
             self.add(operation)
 
-    def remove(self, operation):
+    def remove(self, operation: AbstractOperation) -> None:
         """Remove operation."""
         self._operations.remove(operation)
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all registered operations."""
         self._operations = []
 
-    def to_data(self):
+    def to_data(self) -> list[dict[str, Any]]:
         return [
             operation.to_data()
             for operation in self._operations
         ]
 
-    def commit(self):
+    def commit(self) -> None:
         """Commit session operations."""
         operations, self._operations = self._operations, []
         if not operations:
@@ -734,7 +751,13 @@ class OperationsSession(object):
                 project_name, operations_body, can_fail=False
             )
 
-    def create_entity(self, project_name, entity_type, data, nested_id=None):
+    def create_entity(
+        self,
+        project_name: str,
+        entity_type: str,
+        data: dict[str, Any],
+        nested_id: Optional[str] = None,
+    ) -> CreateOperation:
         """Fast access to 'CreateOperation'.
 
         Args:
@@ -763,8 +786,13 @@ class OperationsSession(object):
         return operation
 
     def update_entity(
-        self, project_name, entity_type, entity_id, update_data, nested_id=None
-    ):
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+        update_data: dict[str, Any],
+        nested_id: Optional[str] = None,
+    ) -> UpdateOperation:
         """Fast access to 'UpdateOperation'.
 
         Returns:
@@ -783,8 +811,12 @@ class OperationsSession(object):
         return operation
 
     def delete_entity(
-        self, project_name, entity_type, entity_id, nested_id=None
-    ):
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+        nested_id: Optional[str] = None,
+    ) -> DeleteOperation:
         """Fast access to 'DeleteOperation'.
 
         Returns:
@@ -804,19 +836,19 @@ class OperationsSession(object):
 
     def create_folder(
         self,
-        project_name,
-        name,
-        folder_type=None,
-        parent_id=None,
-        label=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=None,
-        folder_id=None,
-    ):
+        project_name: str,
+        name: str,
+        folder_type: Optional[str] = None,
+        parent_id: Optional[str] = None,
+        label: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = None,
+        folder_id: Optional[str] = None,
+    ) -> CreateOperation:
         """Create new folder.
 
         Args:
@@ -865,18 +897,18 @@ class OperationsSession(object):
 
     def update_folder(
         self,
-        project_name,
-        folder_id,
-        name=None,
-        folder_type=None,
-        parent_id=NOT_SET,
-        label=NOT_SET,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=NOT_SET,
+        project_name: str,
+        folder_id: str,
+        name: Optional[str] = None,
+        folder_type: Optional[str] = None,
+        parent_id: Optional[str] = NOT_SET,
+        label: Optional[str] = NOT_SET,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
     ):
         """Update folder entity on server.
 
@@ -894,14 +926,14 @@ class OperationsSession(object):
             folder_id (str): Folder id.
             name (Optional[str]): New name.
             folder_type (Optional[str]): New folder type.
-            parent_id (Optional[Union[str, None]]): New parent folder id.
-            label (Optional[Union[str, None]]): New label.
+            parent_id (Optional[str]): New parent folder id.
+            label (Optional[str]): New label.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
-            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+            thumbnail_id (Optional[str]): New thumbnail id.
 
         Returns:
             UpdateOperation: Object of update operation.
@@ -932,7 +964,11 @@ class OperationsSession(object):
             project_name, "folder", folder_id, update_data
         )
 
-    def delete_folder(self, project_name, folder_id):
+    def delete_folder(
+        self,
+        project_name: str,
+        folder_id: str,
+    ) -> DeleteOperation:
         """Delete folder.
 
         Args:
@@ -949,20 +985,20 @@ class OperationsSession(object):
 
     def create_task(
         self,
-        project_name,
-        name,
-        task_type,
-        folder_id,
-        label=None,
-        assignees=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=None,
-        task_id=None,
-    ):
+        project_name: str,
+        name: str,
+        task_type: str,
+        folder_id: str,
+        label: Optional[str] = None,
+        assignees: Optional[Iterable[str]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+    ) -> CreateOperation:
         """Create new task.
 
         Args:
@@ -1012,20 +1048,20 @@ class OperationsSession(object):
 
     def update_task(
         self,
-        project_name,
-        task_id,
-        name=None,
-        task_type=None,
-        folder_id=None,
-        label=NOT_SET,
-        assignees=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=NOT_SET,
-    ):
+        project_name: str,
+        task_id: str,
+        name: Optional[str] = None,
+        task_type: Optional[str] = None,
+        folder_id: Optional[str] = None,
+        label: Optional[str] = NOT_SET,
+        assignees: Optional[list[str]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
+    ) -> UpdateOperation:
         """Update task entity on server.
 
         Do not pass ``label`` amd ``thumbnail_id`` if you don't
@@ -1043,14 +1079,14 @@ class OperationsSession(object):
             name (Optional[str]): New name.
             task_type (Optional[str]): New task type.
             folder_id (Optional[str]): New folder id.
-            label (Optional[Union[str, None]]): New label.
+            label (Optional[str]): New label.
             assignees (Optional[str]): New assignees.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
-            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+            thumbnail_id (Optional[str]): New thumbnail id.
 
         Returns:
             UpdateOperation: Object of update operation.
@@ -1082,7 +1118,11 @@ class OperationsSession(object):
             project_name, "task", task_id, update_data
         )
 
-    def delete_task(self, project_name, task_id):
+    def delete_task(
+        self,
+        project_name: str,
+        task_id: str,
+    ) -> DeleteOperation:
         """Delete task.
 
         Args:
@@ -1103,18 +1143,17 @@ class OperationsSession(object):
         folder_id: str,
         attrib: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = None,
-        tags: Optional[Iterable[str]] = None,
+        tags: Optional[list[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
         product_id: Optional[str] = None,
         product_base_type: Optional[str] = None,
     ) -> CreateOperation:
-        """Create a new product.
+        """Create new product.
 
         Args:
             project_name (str): Project name.
             name (str): Product name.
-            product_base_type (str): Base type of the product, e.g. "render",
             folder_id (str): Parent folder id.
             attrib (Optional[dict[str, Any]]): Product attributes.
             data (Optional[dict[str, Any]]): Product data.
@@ -1159,11 +1198,11 @@ class OperationsSession(object):
         product_id: str,
         name: Optional[str] = None,
         folder_id: Optional[str] = None,
-        product_base_type: Optional[str] = None,
         product_type: Optional[str] = None,
+        product_base_type: Optional[str] = None,
         attrib: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = None,
-        tags: Optional[Iterable[str]] = None,
+        tags: Optional[list[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> UpdateOperation:
@@ -1180,8 +1219,8 @@ class OperationsSession(object):
             product_id (str): Product id.
             name (Optional[str]): New product name.
             folder_id (Optional[str]): New product id.
-            product_base_type (Optional[str]): New product base type.
             product_type (Optional[str]): New product type.
+            product_base_type (Optional[str]): New product base type.
             attrib (Optional[dict[str, Any]]): New product attributes.
             data (Optional[dict[str, Any]]): New product data.
             tags (Optional[Iterable[str]]): New product tags.
@@ -1214,8 +1253,12 @@ class OperationsSession(object):
             update_data
         )
 
-    def delete_product(self, project_name, product_id):
-        """Delete the product.
+    def delete_product(
+        self,
+        project_name: str,
+        product_id: str,
+    ) -> DeleteOperation:
+        """Delete a product.
 
         Args:
             project_name (str): Project name.
@@ -1231,19 +1274,19 @@ class OperationsSession(object):
 
     def create_version(
         self,
-        project_name,
-        version,
-        product_id,
-        task_id=None,
-        author=None,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=None,
-        version_id=None,
-    ):
+        project_name: str,
+        version: int,
+        product_id: str,
+        task_id: Optional[str] = None,
+        author: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = None,
+        version_id: Optional[str] = None,
+    ) -> CreateOperation:
         """Create new version.
 
         Args:
@@ -1291,18 +1334,18 @@ class OperationsSession(object):
 
     def update_version(
         self,
-        project_name,
-        version_id,
-        version=None,
-        product_id=None,
-        task_id=NOT_SET,
-        attrib=None,
-        data=None,
-        tags=None,
-        status=None,
-        active=None,
-        thumbnail_id=NOT_SET,
-    ):
+        project_name: str,
+        version_id: str,
+        version: Optional[int] = None,
+        product_id: Optional[str] = None,
+        task_id: Optional[str] = NOT_SET,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
+    ) -> UpdateOperation:
         """Update version entity on server.
 
         Do not pass ``task_id`` amd ``thumbnail_id`` if you don't
@@ -1319,13 +1362,13 @@ class OperationsSession(object):
             version_id (str): Version id.
             version (Optional[int]): New version.
             product_id (Optional[str]): New product id.
-            task_id (Optional[Union[str, None]]): New task id.
+            task_id (Optional[str]): New task id.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
-            thumbnail_id (Optional[Union[str, None]]): New thumbnail id.
+            thumbnail_id (Optional[str]): New thumbnail id.
 
         Returns:
             UpdateOperation: Object of update operation.
@@ -1335,7 +1378,6 @@ class OperationsSession(object):
         for key, value in (
             ("version", version),
             ("productId", product_id),
-            ("taskId", task_id),
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
@@ -1356,7 +1398,11 @@ class OperationsSession(object):
             project_name, "version", version_id, update_data
         )
 
-    def delete_version(self, project_name, version_id):
+    def delete_version(
+        self,
+        project_name: str,
+        version_id: str,
+    ) -> DeleteOperation:
         """Delete version.
 
         Args:
@@ -1373,18 +1419,18 @@ class OperationsSession(object):
 
     def create_representation(
         self,
-        project_name,
-        name,
-        version_id,
-        files=None,
-        attrib=None,
-        data=None,
-        traits=None,
-        tags=None,
-        status=None,
-        active=None,
-        representation_id=None,
-    ):
+        project_name: str,
+        name: str,
+        version_id: str,
+        files: Optional[list[dict[str, Any]]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        traits: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        representation_id: Optional[str] = None,
+    ) -> CreateOperation:
         """Create new representation.
 
         Args:
@@ -1394,7 +1440,7 @@ class OperationsSession(object):
             files (Optional[list[dict]]): Representation files information.
             attrib (Optional[dict[str, Any]]): Representation attributes.
             data (Optional[dict[str, Any]]): Representation data.
-            traits (Optional[Dict[str, Any]]): Representation traits. Empty
+            traits (Optional[dict[str, Any]]): Representation traits. Empty
                 if not passed.
             tags (Optional[Iterable[str]]): Representation tags.
             status (Optional[str]): Representation status.
@@ -1433,18 +1479,18 @@ class OperationsSession(object):
 
     def update_representation(
         self,
-        project_name,
-        representation_id,
-        name=None,
-        version_id=None,
-        files=None,
-        attrib=None,
-        data=None,
-        traits=None,
-        tags=None,
-        status=None,
-        active=None,
-    ):
+        project_name: str,
+        representation_id: str,
+        name: Optional[str] = None,
+        version_id: Optional[str] = None,
+        files: Optional[list[dict[str, Any]]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        traits: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> UpdateOperation:
         """Update representation entity on server.
 
         Update of ``data`` will override existing value on folder entity.
@@ -1461,7 +1507,7 @@ class OperationsSession(object):
                 information.
             attrib (Optional[dict[str, Any]]): New attributes.
             data (Optional[dict[str, Any]]): New data.
-            traits (Optional[Dict[str, Any]]): New representation traits.
+            traits (Optional[dict[str, Any]]): New representation traits.
             tags (Optional[Iterable[str]]): New tags.
             status (Optional[str]): New status.
             active (Optional[bool]): New active state.
@@ -1492,7 +1538,11 @@ class OperationsSession(object):
             update_data
         )
 
-    def delete_representation(self, project_name, representation_id):
+    def delete_representation(
+        self,
+        project_name: str,
+        representation_id: str,
+    ) -> DeleteOperation:
         """Delete representation.
 
         Args:
@@ -1504,5 +1554,5 @@ class OperationsSession(object):
 
         """
         return self.delete_entity(
-            project_name, "representaion", representation_id
+            project_name, "representation", representation_id
         )

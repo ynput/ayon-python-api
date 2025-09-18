@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import os
 import re
 import datetime
+import copy
 import uuid
 import string
 import platform
 import traceback
 import collections
+import itertools
 from urllib.parse import urlparse, urlencode
 import typing
-from typing import Optional, Dict, Set, Any, Iterable
+from typing import Optional, Any, Iterable, Union
 from enum import IntEnum
 
 import requests
@@ -19,16 +23,29 @@ from .constants import (
     DEFAULT_VARIANT_ENV_KEY,
     SITE_ID_ENV_KEY,
 )
-from .exceptions import UrlError
+from .exceptions import (
+    UrlError,
+    ServerError,
+    UnauthorizedError,
+    HTTPRequestError,
+    RequestsJSONDecodeError,
+)
+
+try:
+    from http import HTTPStatus
+except ImportError:
+    HTTPStatus = None
+
 
 if typing.TYPE_CHECKING:
-    from typing import Union
     from .typing import AnyEntityDict, StreamType
 
 REMOVED_VALUE = object()
 NOT_SET = object()
 SLUGIFY_WHITELIST = string.ascii_letters + string.digits
 SLUGIFY_SEP_WHITELIST = " ,./\\;:!|*^#@~+-_="
+
+PatternType = type(re.compile(""))
 
 RepresentationParents = collections.namedtuple(
     "RepresentationParents",
@@ -60,6 +77,190 @@ class SortOrder(IntEnum):
         if value in (cls.descending, "descending", "desc"):
             return cls.descending
         return default
+
+
+class RequestType:
+    def __init__(self, name: str):
+        self.name: str = name
+
+    def __hash__(self):
+        return self.name.__hash__()
+
+
+class RequestTypes:
+    get = RequestType("GET")
+    post = RequestType("POST")
+    put = RequestType("PUT")
+    patch = RequestType("PATCH")
+    delete = RequestType("DELETE")
+
+
+def _get_description(response):
+    if HTTPStatus is None:
+        return str(response.orig_response)
+    return HTTPStatus(response.status).description
+
+
+class RestApiResponse(object):
+    """API Response."""
+
+    def __init__(self, response, data=None):
+        if response is None:
+            status_code = 500
+        else:
+            status_code = response.status_code
+        self._response = response
+        self.status = status_code
+        self._data = data
+
+    @property
+    def text(self):
+        if self._response is None:
+            return self.detail
+        return self._response.text
+
+    @property
+    def orig_response(self):
+        return self._response
+
+    @property
+    def headers(self):
+        if self._response is None:
+            return {}
+        return self._response.headers
+
+    @property
+    def data(self):
+        if self._data is None:
+            try:
+                self._data = self.orig_response.json()
+            except RequestsJSONDecodeError:
+                self._data = {}
+        return self._data
+
+    @property
+    def content(self):
+        if self._response is None:
+            return b""
+        return self._response.content
+
+    @property
+    def content_type(self) -> Optional[str]:
+        return self.headers.get("Content-Type")
+
+    @property
+    def detail(self):
+        detail = self.get("detail")
+        if detail:
+            return detail
+        return _get_description(self)
+
+    @property
+    def status_code(self) -> int:
+        return self.status
+
+    @property
+    def ok(self) -> bool:
+        if self._response is not None:
+            return self._response.ok
+        return False
+
+    def raise_for_status(self, message=None):
+        if self._response is None:
+            if self._data and self._data.get("detail"):
+                raise ServerError(self._data["detail"])
+            raise ValueError("Response is not available.")
+
+        if self.status_code == 401:
+            raise UnauthorizedError("Missing or invalid authentication token")
+        try:
+            self._response.raise_for_status()
+        except requests.exceptions.HTTPError as exc:
+            if message is None:
+                message = str(exc)
+            raise HTTPRequestError(message, exc.response)
+
+    def __enter__(self, *args, **kwargs):
+        return self._response.__enter__(*args, **kwargs)
+
+    def __contains__(self, key):
+        return key in self.data
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} [{self.status}]>"
+
+    def __len__(self):
+        return int(200 <= self.status < 400)
+
+    def __bool__(self):
+        return 200 <= self.status < 400
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def get(self, key, default=None):
+        data = self.data
+        if isinstance(data, dict):
+            return self.data.get(key, default)
+        return default
+
+
+def fill_own_attribs(entity: AnyEntityDict) -> None:
+    """Fill own attributes.
+
+    Prepare data with own attributes. Prepare data based on a list of
+        attribute names in 'ownAttrib' and 'attrib'. If is not attribute in
+        'ownAttrib' then it's value is set to 'None'.
+
+    This can be used with a project, folder or task entity. All other entities
+        don't use hierarchical attributes and 'attrib' values are
+        "real values".
+
+    Args:
+        entity (dict): Entity dictionary.
+
+    """
+    if not entity or not entity.get("attrib"):
+        return
+
+    attributes = entity.get("ownAttrib")
+    if attributes is None:
+        return
+    attributes = set(attributes)
+
+    own_attrib = {}
+    entity["ownAttrib"] = own_attrib
+
+    for key, value in entity["attrib"].items():
+        if key not in attributes:
+            own_attrib[key] = None
+        else:
+            own_attrib[key] = copy.deepcopy(value)
+
+
+def _convert_list_filter_value(value: Any) -> Optional[list[Any]]:
+    if value is None:
+        return None
+
+    if isinstance(value, PatternType):
+        return [value.pattern]
+
+    if isinstance(value, (int, float, str, bool)):
+        return [value]
+    return list(set(value))
+
+
+def prepare_list_filters(
+    output: dict[str, Any], *args: tuple[str, Any], **kwargs: Any
+) -> bool:
+    for key, value in itertools.chain(args, kwargs.items()):
+        value = _convert_list_filter_value(value)
+        if value is None:
+            continue
+        if not value:
+            return False
+        output[key] = value
+    return True
 
 
 def get_default_timeout() -> float:
@@ -151,7 +352,7 @@ class ThumbnailContent:
 
 
 def prepare_query_string(
-    key_values: Dict[str, Any], skip_none: bool = True
+    key_values: dict[str, Any], skip_none: bool = True
 ) -> str:
     """Prepare data to query string.
 
@@ -221,7 +422,7 @@ def slugify_string(
     min_length: int = 1,
     lower: bool = False,
     make_set: bool = False,
-) -> "Union[str, Set[str]]":
+) -> Union[str, set[str]]:
     """Slugify a text string.
 
     This function removes transliterates input string to ASCII, removes
@@ -241,7 +442,7 @@ def slugify_string(
         min_length (int): Minimal length of an element (word).
 
     Returns:
-        Union[str, Set[str]]: Based on 'make_set' value returns slugified
+        Union[str, set[str]]: Based on 'make_set' value returns slugified
             string.
 
     """
@@ -271,8 +472,8 @@ def failed_json_default(value: Any) -> str:
 
 
 def prepare_attribute_changes(
-    old_entity: "AnyEntityDict",
-    new_entity: "AnyEntityDict",
+    old_entity: AnyEntityDict,
+    new_entity: AnyEntityDict,
     replace: int = False,
 ):
     attrib_changes = {}
@@ -300,10 +501,10 @@ def prepare_attribute_changes(
 
 
 def prepare_entity_changes(
-    old_entity: "AnyEntityDict",
-    new_entity: "AnyEntityDict",
+    old_entity: AnyEntityDict,
+    new_entity: AnyEntityDict,
     replace: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Prepare changes of entities."""
     changes = {}
     for key, new_value in new_entity.items():
@@ -335,7 +536,7 @@ def _try_parse_url(url: str) -> Optional[str]:
 def _try_connect_to_server(
     url: str,
     timeout: Optional[float],
-    verify: Optional["Union[str, bool]"],
+    verify: Optional[Union[str, bool]],
     cert: Optional[str],
 ) -> Optional[str]:
     if timeout is None:
@@ -435,7 +636,7 @@ def get_user_by_token(
     url: str,
     token: str,
     timeout: Optional[float] = None,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """Get user information by url and token.
 
     Args:
@@ -445,7 +646,7 @@ def get_user_by_token(
             'get_default_timeout' is used if not specified.
 
     Returns:
-        Optional[Dict[str, Any]]: User information if url and token are valid.
+        Optional[dict[str, Any]]: User information if url and token are valid.
 
     """
     if timeout is None:
@@ -497,7 +698,7 @@ def is_token_valid(
 def validate_url(
     url: str,
     timeout: Optional[int] = None,
-    verify: Optional["Union[str, bool]"] = None,
+    verify: Optional[Union[str, bool]] = None,
     cert: Optional[str] = None,
 ) -> str:
     """Validate url if is valid and server is available.
@@ -944,7 +1145,7 @@ def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
     return _get_svg_mime_type(content)
 
 
-def get_media_mime_type_for_stream(stream: "StreamType") -> Optional[str]:
+def get_media_mime_type_for_stream(stream: StreamType) -> Optional[str]:
     # Read only 12 bytes to determine mime type
     content = stream.read(12)
     if len(content) < 12:
@@ -976,7 +1177,7 @@ def get_media_mime_type(filepath: str) -> Optional[str]:
 def take_web_action_event(
     server_url: str,
     action_token: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Take web action event using action token.
 
     Action token is generated by AYON server and passed to AYON launcher.
@@ -986,7 +1187,7 @@ def take_web_action_event(
         action_token (str): Action token.
 
     Returns:
-        Dict[str, Any]: Web action event.
+        dict[str, Any]: Web action event.
 
     """
     response = requests.get(
