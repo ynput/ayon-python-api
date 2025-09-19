@@ -5,6 +5,7 @@ import warnings
 import typing
 from typing import Optional, Iterable, Generator, Any
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import (
     prepare_list_filters,
     create_entity_id,
@@ -378,6 +379,7 @@ class ProductsAPI(BaseServerAPI):
         tags: Optional[Iterable[str]] =None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
+        product_base_type: Optional[str] = None,
         product_id: Optional[str] = None,
     ) -> str:
         """Create new product.
@@ -392,6 +394,7 @@ class ProductsAPI(BaseServerAPI):
             tags (Optional[Iterable[str]]): Product tags.
             status (Optional[str]): Product status.
             active (Optional[bool]): Product active state.
+            product_base_type (Optional[str]): Product base type.
             product_id (Optional[str]): Product id. If not passed new id is
                 generated.
 
@@ -399,6 +402,14 @@ class ProductsAPI(BaseServerAPI):
             str: Product id.
 
         """
+        if (
+            product_base_type is not None
+            and not self.product_base_type_supported()
+        ):
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
+
         if not product_id:
             product_id = create_entity_id()
         create_data = {
@@ -408,6 +419,7 @@ class ProductsAPI(BaseServerAPI):
             "folderId": folder_id,
         }
         for key, value in (
+            ("productBaseType", product_base_type),
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
@@ -431,6 +443,7 @@ class ProductsAPI(BaseServerAPI):
         name: Optional[str] = None,
         folder_id: Optional[str] = None,
         product_type: Optional[str] = None,
+        product_base_type: Optional[str] = None,
         attrib: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = None,
         tags: Optional[Iterable[str]] = None,
@@ -450,6 +463,7 @@ class ProductsAPI(BaseServerAPI):
             name (Optional[str]): New product name.
             folder_id (Optional[str]): New product id.
             product_type (Optional[str]): New product type.
+            product_base_type (Optional[str]): New product base type.
             attrib (Optional[dict[str, Any]]): New product attributes.
             data (Optional[dict[str, Any]]): New product data.
             tags (Optional[Iterable[str]]): New product tags.
@@ -457,10 +471,19 @@ class ProductsAPI(BaseServerAPI):
             active (Optional[bool]): New product active state.
 
         """
+        if (
+            product_base_type is not None
+            and not self.product_base_type_supported()
+        ):
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
+
         update_data = {}
         for key, value in (
             ("name", name),
             ("productType", product_type),
+            ("productBaseType", product_base_type),
             ("folderId", folder_id),
             ("attrib", attrib),
             ("data", data),
