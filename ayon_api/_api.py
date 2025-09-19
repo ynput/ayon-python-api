@@ -4997,30 +4997,6 @@ def get_project_product_types(
     )
 
 
-def get_project_product_base_types(
-    project_name: str,
-    fields: Optional[Iterable[str]] = None,
-) -> List["ProductBaseTypeDict"]:
-    """Base types of products available in a project.
-
-    Filter only product base types available in a project.
-
-    Args:
-        project_name (str): Name of project where to look for
-            product base types.
-        fields (Optional[Iterable[str]]): Product base types fields to query.
-
-    Returns:
-        List[ProductBaseTypeDict]: Product base types information.
-
-    """
-    con = get_server_api_connection()
-    return con.get_project_product_base_types(
-        project_name=project_name,
-        fields=fields,
-    )
-
-
 def get_product_type_names(
     project_name: Optional[str] = None,
     product_ids: Optional[Iterable[str]] = None,
