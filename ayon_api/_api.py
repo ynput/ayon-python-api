@@ -5024,33 +5024,6 @@ def get_product_type_names(
     )
 
 
-def get_product_base_type_names(
-    project_name: Optional[str] = None,
-    product_ids: Optional[Iterable[str]] = None,
-) -> Set[str]:
-    """Base product type names.
-
-    Warnings:
-        Similar use case as `get_product_type_names` but for base
-        product types.
-
-    Args:
-        project_name (Optional[str]): Name of project where to look for
-            queried entities.
-        product_ids (Optional[Iterable[str]]): Product ids filter. Can be
-            used only with 'project_name'.
-
-    Returns:
-        set[str]: Base product type names.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_base_type_names(
-        project_name=project_name,
-        product_ids=product_ids,
-    )
-
-
 def create_product(
     project_name: str,
     name: str,
