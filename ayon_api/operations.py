@@ -136,8 +136,8 @@ def new_product_entity(
     tags: Optional[list[str]] = None,
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
-    entity_id: Optional[str] = None,
     product_base_type: Optional[str] = None,
+    entity_id: Optional[str] = None,
 ) -> NewProductDict:
     """Create skeleton data of the product entity.
 
