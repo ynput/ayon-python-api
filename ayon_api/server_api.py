@@ -1821,9 +1821,6 @@ class ServerAPI(
         elif entity_type == "productType":
             entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
 
-        elif entity_type == "productBaseType":
-            entity_type_defaults = set(DEFAULT_PRODUCT_BASE_TYPE_FIELDS)
-
         elif entity_type == "workfile":
             entity_type_defaults = set(DEFAULT_WORKFILE_INFO_FIELDS)
 
