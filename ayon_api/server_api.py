@@ -327,6 +327,7 @@ class ServerAPI(
         self._server_version_tuple = None
 
         self._graphql_allows_traits_in_representations: Optional[bool] = None
+        self._product_base_type_supported = None
 
         self._session = None
 
@@ -910,6 +911,17 @@ class ServerAPI(
                 (major, minor, patch) >= (1, 7, 5)
             )
         return self._graphql_allows_traits_in_representations
+
+    def product_base_type_supported(self) -> bool:
+        """Product base types are available on server."""
+        if self._product_base_type_supported is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            self._product_base_type_supported = False
+            # TODO implement when server version of the support is known
+            # self._product_base_type_supported = (
+            #     (major, minor, patch) >= (1, 12, 0)
+            # )
+        return self._product_base_type_supported
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
         if self._access_token is None:

@@ -130,6 +130,9 @@ class EntityHub:
             self.fill_project_from_server()
         return self._project_entity
 
+    def product_base_type_supported(self) -> bool:
+        return self._connection.product_base_type_supported()
+
     def get_attributes_for_type(
         self, entity_type: EntityType
     ) -> dict[str, AttributeSchemaDict]:
@@ -3526,7 +3529,6 @@ class TaskEntity(BaseEntity):
 class ProductEntity(BaseEntity):
     _supports_name = True
     _supports_tags = True
-    _supports_base_type = True
 
     entity_type = "product"
     parent_entity_types = ["folder"]
