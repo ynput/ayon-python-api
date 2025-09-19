@@ -84,9 +84,9 @@ DEFAULT_PRODUCT_TYPE_FIELDS = {
 
 # --- Product base type ---
 DEFAULT_PRODUCT_BASE_TYPE_FIELDS = {
+    # Ignore 'icon' and 'color'
+    # - current server implementation always returns 'null'
     "name",
-    "icon",
-    "color",
 }
 
 # --- Project ---
