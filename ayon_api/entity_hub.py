@@ -3562,6 +3562,7 @@ class ProductEntity(BaseEntity):
         self._product_base_type = product_base_type
 
         self._orig_product_type = product_type
+        self._orig_product_base_type = product_base_type
 
     def get_folder_id(self) -> Union[str, None, _CustomNone]:
         return self._parent_id
@@ -3597,6 +3598,7 @@ class ProductEntity(BaseEntity):
     def lock(self) -> None:
         super().lock()
         self._orig_product_type = self._product_type
+        self._orig_product_base_type = self._product_base_type
 
     @property
     def changes(self) -> dict[str, Any]:
@@ -3607,6 +3609,12 @@ class ProductEntity(BaseEntity):
 
         if self._orig_product_type != self._product_type:
             changes["productType"] = self._product_type
+
+        if (
+            self._entity_hub.product_base_type_supported()
+            and self._orig_product_base_type != self._product_base_type
+        ):
+            changes["productBaseType"] = self._product_base_type
 
         return changes
 
@@ -3638,7 +3646,10 @@ class ProductEntity(BaseEntity):
             "folderId": self.parent_id,
         }
 
-        if self._supports_base_type:
+        if (
+            self._entity_hub.product_base_type_supported()
+            and self.product_base_type
+        ):
             output["productBaseType"] = self.product_base_type
 
         attrib = self.attribs.to_dict()
