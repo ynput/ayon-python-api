@@ -4952,27 +4952,6 @@ def get_product_types(
     )
 
 
-def get_product_base_types(
-    fields: Optional[Iterable[str]] = None,
-) -> List["ProductBaseTypeDict"]:
-    """Base types of products.
-
-    This is the server-wide information. Product base types have 'name', 'icon'
-        and 'color'.
-
-    Args:
-        fields (Optional[Iterable[str]]): Product base types fields to query.
-
-    Returns:
-        list[ProductBaseTypeDict]: Product base types information.
-
-    """
-    con = get_server_api_connection()
-    return con.get_product_base_types(
-        fields=fields,
-    )
-
-
 def get_project_product_types(
     project_name: str,
     fields: Optional[Iterable[str]] = None,
