@@ -1146,8 +1146,8 @@ class OperationsSession(object):
         tags: Optional[list[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
-        product_id: Optional[str] = None,
         product_base_type: Optional[str] = None,
+        product_id: Optional[str] = None,
     ) -> CreateOperation:
         """Create new product.
 
@@ -1160,9 +1160,9 @@ class OperationsSession(object):
             tags (Optional[Iterable[str]]): Product tags.
             status (Optional[str]): Product status.
             active (Optional[bool]): Product active state.
+            product_base_type (Optional[str]): Product base type.
             product_id (Optional[str]): Product id. If not passed new id is
                 generated.
-            product_base_type (Optional[str]): Product base type.
 
         Returns:
             CreateOperation: Object of create operation.
