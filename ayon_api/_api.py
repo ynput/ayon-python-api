@@ -68,7 +68,6 @@ if typing.TYPE_CHECKING:
         FolderDict,
         TaskDict,
         ProductDict,
-        ProductBaseTypeDict,
         VersionDict,
         RepresentationDict,
         WorkfileInfoDict,

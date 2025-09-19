@@ -573,9 +573,3 @@ StreamType = Union[io.BytesIO, BinaryIO]
 class EntityListAttributeDefinitionDict(TypedDict):
     name: str
     data: dict[str, Any]
-
-
-class ProductBaseTypeDict(TypedDict):
-    name: str
-    color: Optional[str]
-    icon: Optional[str]
