@@ -33,9 +33,10 @@ class ProductsAPI(BaseServerAPI):
         self,
         project_name: str,
         product_ids: Optional[Iterable[str]] = None,
-        product_names: Optional[Iterable[str]]=None,
-        folder_ids: Optional[Iterable[str]]=None,
-        product_types: Optional[Iterable[str]]=None,
+        product_names: Optional[Iterable[str]] = None,
+        folder_ids: Optional[Iterable[str]] = None,
+        product_types: Optional[Iterable[str]] = None,
+        product_base_types: Optional[Iterable[str]] = None,
         product_name_regex: Optional[str] = None,
         product_path_regex: Optional[str] = None,
         names_by_folder_ids: Optional[dict[str, Iterable[str]]] = None,
@@ -60,6 +61,8 @@ class ProductsAPI(BaseServerAPI):
                 Use 'None' if folder is direct child of project.
             product_types (Optional[Iterable[str]]): Product types used for
                 filtering.
+            product_base_types (Optional[Iterable[str]]): Product base types
+                used for filtering.
             product_name_regex (Optional[str]): Filter products by name regex.
             product_path_regex (Optional[str]): Filter products by path regex.
                 Path starts with folder path and ends with product name.
@@ -83,6 +86,11 @@ class ProductsAPI(BaseServerAPI):
         """
         if not project_name:
             return
+
+        if product_base_types and not self.product_base_type_supported():
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
 
         # Prepare these filters before 'name_by_filter_ids' filter
         filter_product_names = None
@@ -151,6 +159,7 @@ class ProductsAPI(BaseServerAPI):
             filters,
             ("productIds", product_ids),
             ("productTypes", product_types),
+            ("productBaseTypes", product_base_types),
             ("productStatuses", statuses),
             ("productTags", tags),
         ):

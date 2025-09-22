@@ -719,6 +719,13 @@ def get_server_version_tuple() -> ServerVersion:
     return con.get_server_version_tuple()
 
 
+def product_base_type_supported() -> bool:
+    """Product base types are available on server.
+    """
+    con = get_server_api_connection()
+    return con.product_base_type_supported()
+
+
 def get_users(
     project_name: Optional[str] = None,
     usernames: Optional[Iterable[str]] = None,
@@ -4809,22 +4816,21 @@ def get_products(
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
 ) -> Generator[ProductDict, None, None]:
-    """Query products from the server.
+    """Query products from server.
 
     Todos:
         Separate 'name_by_folder_ids' filtering to separated method. It
             cannot be combined with some other filters.
 
     Args:
-        project_name (str): Name of the project.
+        project_name (str): Name of project.
         product_ids (Optional[Iterable[str]]): Task ids to filter.
         product_names (Optional[Iterable[str]]): Task names used for
             filtering.
         folder_ids (Optional[Iterable[str]]): Ids of task parents.
-            Use 'None' if folder is direct child of the project.
+            Use 'None' if folder is direct child of project.
         product_types (Optional[Iterable[str]]): Product types used for
             filtering.
-        product_base_types (Optional[Iterable[str]]): Product base types
         product_name_regex (Optional[str]): Filter products by name regex.
         product_path_regex (Optional[str]): Filter products by path regex.
             Path starts with folder path and ends with product name.
@@ -4935,7 +4941,7 @@ def get_product_types(
 ) -> list[ProductTypeDict]:
     """Types of products.
 
-    This is the server-wide information. Product types have 'name', 'icon' and
+    This is server wide information. Product types have 'name', 'icon' and
         'color'.
 
     Args:
@@ -5012,6 +5018,7 @@ def create_product(
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
+    product_base_type: Optional[str] = None,
     product_id: Optional[str] = None,
 ) -> str:
     """Create new product.
@@ -5026,6 +5033,7 @@ def create_product(
         tags (Optional[Iterable[str]]): Product tags.
         status (Optional[str]): Product status.
         active (Optional[bool]): Product active state.
+        product_base_type (Optional[str]): Product base type.
         product_id (Optional[str]): Product id. If not passed new id is
             generated.
 
@@ -5044,6 +5052,7 @@ def create_product(
         tags=tags,
         status=status,
         active=active,
+        product_base_type=product_base_type,
         product_id=product_id,
     )
 
@@ -5054,6 +5063,7 @@ def update_product(
     name: Optional[str] = None,
     folder_id: Optional[str] = None,
     product_type: Optional[str] = None,
+    product_base_type: Optional[str] = None,
     attrib: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
@@ -5073,6 +5083,7 @@ def update_product(
         name (Optional[str]): New product name.
         folder_id (Optional[str]): New product id.
         product_type (Optional[str]): New product type.
+        product_base_type (Optional[str]): New product base type.
         attrib (Optional[dict[str, Any]]): New product attributes.
         data (Optional[dict[str, Any]]): New product data.
         tags (Optional[Iterable[str]]): New product tags.
@@ -5087,6 +5098,7 @@ def update_product(
         name=name,
         folder_id=folder_id,
         product_type=product_type,
+        product_base_type=product_base_type,
         attrib=attrib,
         data=data,
         tags=tags,
