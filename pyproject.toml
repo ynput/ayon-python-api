@@ -28,7 +28,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "ayon-python-api"
-version = "1.2.0v"
+version = "1.2.0"
 description = "AYON Python API"
 authors = [
     "ynput.io <info@ynput.io>"
