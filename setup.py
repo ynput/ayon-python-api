@@ -13,7 +13,7 @@ setup(
     name="ayon_api",
     version=_version_content["__version__"],
     py_modules=["ayon_api"],
-    packages=["ayon_api"],
+    packages=["ayon_api", "ayon_api._api_helpers"],
     author="ynput.io",
     author_email="info@ynput.io",
     license="Apache License (2.0)",

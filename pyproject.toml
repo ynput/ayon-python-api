@@ -34,7 +34,8 @@ authors = [
     "ynput.io <info@ynput.io>"
 ]
 packages = [
-    { include = "ayon_api" }
+    { include = "ayon_api" },
+    { include = "ayon_api/_api_helpers/*.py" },
 ]
 
 [tool.poetry.dependencies]
