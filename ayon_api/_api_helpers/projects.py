@@ -6,7 +6,10 @@ import warnings
 import typing
 from typing import Optional, Generator, Iterable, Any
 
-from ayon_api.constants import PROJECT_NAME_REGEX
+from ayon_api.constants import (
+    PROJECT_NAME_REGEX,
+    DEFAULT_PRODUCT_BASE_TYPE_FIELDS,
+)
 from ayon_api.utils import prepare_query_string, fill_own_attribs
 from ayon_api.graphql_queries import projects_graphql_query
 
@@ -594,6 +597,11 @@ class ProjectsAPI(BaseServerAPI):
         """
         if fields is None:
             return set(), True
+
+        if "productBaseType" in fields:
+            fields.discard("productBaseType")
+            for pbt_field_name in DEFAULT_PRODUCT_BASE_TYPE_FIELDS:
+                fields.add(f"productBaseType.{pbt_field_name}")
 
         has_product_types = False
         graphql_fields = set()
