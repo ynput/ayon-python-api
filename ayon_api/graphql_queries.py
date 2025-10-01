@@ -278,6 +278,8 @@ def products_graphql_query(fields):
     product_names_var = query.add_variable("productNames", "[String!]")
     folder_ids_var = query.add_variable("folderIds", "[String!]")
     product_types_var = query.add_variable("productTypes", "[String!]")
+    product_base_types_var = query.add_variable(
+        "productBaseTypes", "[String!]")
     product_name_regex_var = query.add_variable("productNameRegex", "String!")
     product_path_regex_var = query.add_variable("productPathRegex", "String!")
     statuses_var = query.add_variable("productStatuses", "[String!]")
@@ -291,6 +293,7 @@ def products_graphql_query(fields):
     products_field.set_filter("names", product_names_var)
     products_field.set_filter("folderIds", folder_ids_var)
     products_field.set_filter("productTypes", product_types_var)
+    products_field.set_filter("productBaseTypes", product_base_types_var)
     products_field.set_filter("statuses", statuses_var)
     products_field.set_filter("tags", tags_var)
     products_field.set_filter("nameEx", product_name_regex_var)

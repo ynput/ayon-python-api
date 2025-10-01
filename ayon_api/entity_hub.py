@@ -130,6 +130,9 @@ class EntityHub:
             self.fill_project_from_server()
         return self._project_entity
 
+    def product_base_type_supported(self) -> bool:
+        return self._connection.product_base_type_supported()
+
     def get_attributes_for_type(
         self, entity_type: EntityType
     ) -> dict[str, AttributeSchemaDict]:
@@ -494,6 +497,7 @@ class EntityHub:
         self,
         name: str,
         product_type: str,
+        product_base_type: Optional[str] = None,
         folder_id: Optional[str] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = None,
@@ -502,10 +506,11 @@ class EntityHub:
         entity_id: Optional[str] = None,
         created: Optional[bool] = True,
     ) -> ProductEntity:
-        """Create task object and add it to entity hub.
+        """Create a product object and add it to the entity hub.
 
         Args:
             name (str): Name of entity.
+            product_base_type (str): Base type of product.
             product_type (str): Type of product.
             folder_id (Optional[str]): Parent folder id.
             tags (Optional[Iterable[str]]): Folder tags.
@@ -517,6 +522,11 @@ class EntityHub:
             created (Optional[bool]): Entity is new. When 'None' is passed the
                 value is defined based on value of 'entity_id'.
 
+        Todo:
+            - Once the product base type is implemented and established,
+              it should be made mandatory to pass it and product_type
+              itself should be optional.
+
         Returns:
             ProductEntity: Added product entity.
 
@@ -524,6 +534,7 @@ class EntityHub:
         product_entity = ProductEntity(
             name=name,
             product_type=product_type,
+            product_base_type=product_base_type,
             folder_id=folder_id,
             tags=tags,
             attribs=attribs,
@@ -3526,6 +3537,7 @@ class ProductEntity(BaseEntity):
         self,
         name: str,
         product_type: str,
+        product_base_type: Optional[str] = None,
         folder_id: Union[str, None, _CustomNone] = UNKNOWN_VALUE,
         tags: Optional[Iterable[str]] = None,
         attribs: Optional[dict[str, Any]] = None,
@@ -3547,8 +3559,10 @@ class ProductEntity(BaseEntity):
             entity_hub=entity_hub,
         )
         self._product_type = product_type
+        self._product_base_type = product_base_type
 
         self._orig_product_type = product_type
+        self._orig_product_base_type = product_base_type
 
     def get_folder_id(self) -> Union[str, None, _CustomNone]:
         return self._parent_id
@@ -3566,9 +3580,25 @@ class ProductEntity(BaseEntity):
 
     product_type = property(get_product_type, set_product_type)
 
+    def get_product_base_type(self) -> Optional[str]:
+        """Get the product base type.
+
+        Returns:
+            Optional[str]: The product base type, or None if not set.
+
+        """
+        return self._product_base_type
+
+    def set_product_base_type(self, product_base_type: str) -> None:
+        """Set the product base type."""
+        self._product_base_type = product_base_type
+
+    product_base_type = property(get_product_base_type, set_product_base_type)
+
     def lock(self) -> None:
         super().lock()
         self._orig_product_type = self._product_type
+        self._orig_product_base_type = self._product_base_type
 
     @property
     def changes(self) -> dict[str, Any]:
@@ -3580,6 +3610,12 @@ class ProductEntity(BaseEntity):
         if self._orig_product_type != self._product_type:
             changes["productType"] = self._product_type
 
+        if (
+            self._entity_hub.product_base_type_supported()
+            and self._orig_product_base_type != self._product_base_type
+        ):
+            changes["productBaseType"] = self._product_base_type
+
         return changes
 
     @classmethod
@@ -3589,6 +3625,7 @@ class ProductEntity(BaseEntity):
         return cls(
             name=product["name"],
             product_type=product["productType"],
+            product_base_type=product.get("productBaseType"),
             folder_id=product["folderId"],
             tags=product["tags"],
             attribs=product["attrib"],
@@ -3608,6 +3645,12 @@ class ProductEntity(BaseEntity):
             "productType": self.product_type,
             "folderId": self.parent_id,
         }
+
+        if (
+            self._entity_hub.product_base_type_supported()
+            and self.product_base_type
+        ):
+            output["productBaseType"] = self.product_base_type
 
         attrib = self.attribs.to_dict()
         if attrib:

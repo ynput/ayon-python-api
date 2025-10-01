@@ -23,6 +23,9 @@ class BaseServerAPI:
     def log(self) -> logging.Logger:
         raise NotImplementedError()
 
+    def product_base_type_supported(self) -> bool:
+        raise NotImplementedError()
+
     def get_server_version(self) -> str:
         raise NotImplementedError()
 
