@@ -238,6 +238,13 @@ class WorkfilesAPI(BaseServerAPI):
             if value is not None:
                 create_data[key] = value
 
+        major, minor, patch, _, _ = self.get_server_version_tuple()
+        if (major, minor, patch) < (1, 1, 3):
+            user = self.get_user()
+            username = user["name"]
+            create_data["createdBy"] = username
+            create_data["updatedBy"] = username
+
         response = self.post(
             f"projects/{project_name}/workfiles",
             **create_data
