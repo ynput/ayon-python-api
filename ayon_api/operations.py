@@ -1544,3 +1544,143 @@ class OperationsSession(object):
         return self.delete_entity(
             project_name, "representation", representation_id
         )
+
+    def create_workfile_info(
+        self,
+        project_name: str,
+        path: str,
+        task_id: str,
+        *,
+        thumbnail_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        workfile_id: Optional[str] = None,
+    ) -> CreateOperation:
+        """Create new workfile.
+
+        Args:
+            project_name (str): Project name.
+            path (str): Representation name.
+            task_id (str): Parent task id.
+            thumbnail_id (Optional[str]): Thumbnail id.
+            attrib (Optional[dict[str, Any]]): Representation attributes.
+            data (Optional[dict[str, Any]]): Representation data.
+            tags (Optional[Iterable[str]]): Representation tags.
+            status (Optional[str]): Representation status.
+            active (Optional[bool]): Representation active state.
+            workfile_id (Optional[str]): Workfile info id. If not
+                passed new id is generated.
+
+        Returns:
+            CreateOperation: Object of create operation.
+
+        """
+        if workfile_id is None:
+            workfile_id = create_entity_id()
+
+        create_data = {
+            "id": workfile_id,
+            "path": path,
+            "taskId": task_id,
+        }
+        for key, value in (
+            ("thumbnailId", thumbnail_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        return self.create_entity(
+            project_name,
+            "workfile",
+            create_data
+        )
+
+    def update_workfile_info(
+        self,
+        project_name: str,
+        workfile_id: str,
+        path: Optional[str] = None,
+        task_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
+        created_by: Optional[str] = None,
+        updated_by: Optional[str] = None,
+    ) -> UpdateOperation:
+        """Update workfile info entity on server.
+
+        Update of ``data`` will override existing value on folder entity.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile id.
+            path (Optional[str]): New rootless workfile path..
+            task_id (Optional[str]): New parent task id.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+            thumbnail_id (Optional[str]): New thumbnail id.
+            created_by (Optional[str]): New created by username.
+            updated_by (Optional[str]): New updated by username.
+
+        Returns:
+            UpdateOperation: Object of update operation.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("path", path),
+            ("taskId", task_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+            ("thumbnailId", thumbnail_id),
+            ("createdBy", created_by),
+            ("updatedBy", updated_by),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        return self.update_entity(
+            project_name,
+            "workfile",
+            workfile_id,
+            update_data
+        )
+
+    def delete_workfile(
+        self,
+        project_name: str,
+        workfile_id: str,
+    ) -> DeleteOperation:
+        """Delete representation.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile info id to delete.
+
+        Returns:
+            DeleteOperation: Object of delete operation.
+
+        """
+        return self.delete_entity(
+            project_name, "workfile", workfile_id
+        )
