@@ -5,7 +5,8 @@ import typing
 from typing import Optional, Iterable, Generator, Any
 
 from ayon_api.graphql_queries import workfiles_info_graphql_query
-from ayon_api.utils import NOT_SET
+from ayon_api.utils import NOT_SET, create_entity_id
+
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
@@ -184,6 +185,65 @@ class WorkfilesAPI(BaseServerAPI):
         ):
             return workfile_info
         return None
+
+    def create_workfile_info(
+        self,
+        project_name: str,
+        path: str,
+        task_id: str,
+        *,
+        thumbnail_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        workfile_id: Optional[str] = None,
+    ) -> str:
+        """Create new workfile.
+
+        Args:
+            project_name (str): Project name.
+            path (str): Representation name.
+            task_id (str): Parent task id.
+            thumbnail_id (Optional[str]): Thumbnail id.
+            attrib (Optional[dict[str, Any]]): Representation attributes.
+            data (Optional[dict[str, Any]]): Representation data.
+            tags (Optional[Iterable[str]]): Representation tags.
+            status (Optional[str]): Representation status.
+            active (Optional[bool]): Representation active state.
+            workfile_id (Optional[str]): Workfile info id. If not
+                passed new id is generated.
+
+        Returns:
+            str: Workfile info id.
+
+        """
+        if workfile_id is None:
+            workfile_id = create_entity_id()
+
+        create_data = {
+            "id": workfile_id,
+            "path": path,
+            "taskId": task_id,
+        }
+        for key, value in (
+            ("thumbnailId", thumbnail_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        response = self.post(
+            f"projects/{project_name}/workfiles",
+            **create_data
+        )
+        response.raise_for_status()
+        return workfile_id
 
     def delete_workfile_info(
         self,
