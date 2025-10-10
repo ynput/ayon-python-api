@@ -1225,8 +1225,11 @@ class EntityHub:
             if not entity.created:
                 operations_body.append(self._get_delete_body(entity))
 
-        self._connection.send_batch_operations(
-            self.project_name, operations_body
+        self._connection.send_background_batch_operations(
+            self.project_name,
+            operations_body,
+            can_fail=False,
+            wait=True,
         )
         if post_project_changes:
             self._connection.update_project(
