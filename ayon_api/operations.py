@@ -1581,7 +1581,7 @@ class OperationsSession(object):
         active: Optional[bool] = None,
         workfile_id: Optional[str] = None,
     ) -> CreateOperation:
-        """Create new workfile.
+        """Create new workfile entity.
 
         Args:
             project_name (str): Project name.
@@ -1640,7 +1640,7 @@ class OperationsSession(object):
         created_by: Optional[str] = None,
         updated_by: Optional[str] = None,
     ) -> UpdateOperation:
-        """Update workfile info entity on server.
+        """Update workfile entity on server.
 
         Update of ``data`` will override existing value on folder entity.
 
