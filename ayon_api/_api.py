@@ -6157,8 +6157,9 @@ def delete_representation(
     )
 
 
-def get_workfiles_info(
+def get_workfile_entities(
     project_name: str,
+    *,
     workfile_ids: Optional[Iterable[str]] = None,
     task_ids: Optional[Iterable[str]] = None,
     paths: Optional[Iterable[str]] = None,
@@ -6167,7 +6168,6 @@ def get_workfiles_info(
     tags: Optional[Iterable[str]] = None,
     has_links: Optional[str] = None,
     fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
 ) -> Generator[WorkfileInfoDict, None, None]:
     """Workfile info entities by passed filters.
 
@@ -6186,8 +6186,6 @@ def get_workfiles_info(
         fields (Optional[Iterable[str]]): Fields to be queried for
             representation. All possible fields are returned if 'None' is
             passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            workfiles.
 
     Returns:
         Generator[WorkfileInfoDict, None, None]: Queried workfile info
@@ -6195,7 +6193,7 @@ def get_workfiles_info(
 
     """
     con = get_server_api_connection()
-    return con.get_workfiles_info(
+    return con.get_workfile_entities(
         project_name=project_name,
         workfile_ids=workfile_ids,
         task_ids=task_ids,
@@ -6205,16 +6203,15 @@ def get_workfiles_info(
         tags=tags,
         has_links=has_links,
         fields=fields,
-        own_attributes=own_attributes,
     )
 
 
-def get_workfile_info(
+def get_workfile_entity(
     project_name: str,
     task_id: str,
     path: str,
+    *,
     fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
 ) -> Optional[WorkfileInfoDict]:
     """Workfile info entity by task id and workfile path.
 
@@ -6225,28 +6222,25 @@ def get_workfile_info(
         fields (Optional[Iterable[str]]): Fields to be queried for
             representation. All possible fields are returned if 'None' is
             passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            workfiles.
 
     Returns:
         Optional[WorkfileInfoDict]: Workfile info entity or None.
 
     """
     con = get_server_api_connection()
-    return con.get_workfile_info(
+    return con.get_workfile_entity(
         project_name=project_name,
         task_id=task_id,
         path=path,
         fields=fields,
-        own_attributes=own_attributes,
     )
 
 
-def get_workfile_info_by_id(
+def get_workfile_entity_by_id(
     project_name: str,
     workfile_id: str,
+    *,
     fields: Optional[Iterable[str]] = None,
-    own_attributes=_PLACEHOLDER,
 ) -> Optional[WorkfileInfoDict]:
     """Workfile info entity by id.
 
@@ -6256,19 +6250,16 @@ def get_workfile_info_by_id(
         fields (Optional[Iterable[str]]): Fields to be queried for
             representation. All possible fields are returned if 'None' is
             passed.
-        own_attributes (Optional[bool]): DEPRECATED: Not supported for
-            workfiles.
 
     Returns:
         Optional[WorkfileInfoDict]: Workfile info entity or None.
 
     """
     con = get_server_api_connection()
-    return con.get_workfile_info_by_id(
+    return con.get_workfile_entity_by_id(
         project_name=project_name,
         workfile_id=workfile_id,
         fields=fields,
-        own_attributes=own_attributes,
     )
 
 
@@ -6319,7 +6310,59 @@ def create_workfile_entity(
     )
 
 
-def delete_workfile_info(
+def update_workfile_entity(
+    project_name: str,
+    workfile_id: str,
+    *,
+    path: Optional[str] = None,
+    task_id: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[Iterable[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = NOT_SET,
+    created_by: Optional[str] = None,
+    updated_by: Optional[str] = None,
+) -> None:
+    """Update workfile entity on server.
+
+    Update of ``attrib`` does change only passed attributes. If you want
+        to unset value, use ``None``.
+
+    Args:
+        project_name (str): Project name.
+        workfile_id (str): Workfile id.
+        path (Optional[str]): New rootless workfile path..
+        task_id (Optional[str]): New parent task id.
+        attrib (Optional[dict[str, Any]]): New attributes.
+        data (Optional[dict[str, Any]]): New data.
+        tags (Optional[Iterable[str]]): New tags.
+        status (Optional[str]): New status.
+        active (Optional[bool]): New active state.
+        thumbnail_id (Optional[str]): New thumbnail id.
+        created_by (Optional[str]): New created by username.
+        updated_by (Optional[str]): New updated by username.
+
+    """
+    con = get_server_api_connection()
+    return con.update_workfile_entity(
+        project_name=project_name,
+        workfile_id=workfile_id,
+        path=path,
+        task_id=task_id,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        thumbnail_id=thumbnail_id,
+        created_by=created_by,
+        updated_by=updated_by,
+    )
+
+
+def delete_workfile_entity(
     project_name: str,
     workfile_id: str,
 ) -> None:
@@ -6331,9 +6374,124 @@ def delete_workfile_info(
 
     """
     con = get_server_api_connection()
-    return con.delete_workfile_info(
+    return con.delete_workfile_entity(
         project_name=project_name,
         workfile_id=workfile_id,
+    )
+
+
+def get_workfiles_info(
+    project_name: str,
+    workfile_ids: Optional[Iterable[str]] = None,
+    task_ids: Optional[Iterable[str]] = None,
+    paths: Optional[Iterable[str]] = None,
+    path_regex: Optional[str] = None,
+    statuses: Optional[Iterable[str]] = None,
+    tags: Optional[Iterable[str]] = None,
+    has_links: Optional[str] = None,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Generator[WorkfileInfoDict, None, None]:
+    """DEPRECATED Workfile info entities by passed filters.
+
+    Args:
+        project_name (str): Project under which the entity is located.
+        workfile_ids (Optional[Iterable[str]]): Workfile ids.
+        task_ids (Optional[Iterable[str]]): Task ids.
+        paths (Optional[Iterable[str]]): Rootless workfiles paths.
+        path_regex (Optional[str]): Regex filter for workfile path.
+        statuses (Optional[Iterable[str]]): Workfile info statuses used
+            for filtering.
+        tags (Optional[Iterable[str]]): Workfile info tags used
+            for filtering.
+        has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+            representations with IN/OUT/ANY links.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            representation. All possible fields are returned if 'None' is
+            passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            workfiles.
+
+    Returns:
+        Generator[WorkfileInfoDict, None, None]: Queried workfile info
+            entites.
+
+    """
+    con = get_server_api_connection()
+    return con.get_workfiles_info(
+        project_name=project_name,
+        workfile_ids=workfile_ids,
+        task_ids=task_ids,
+        paths=paths,
+        path_regex=path_regex,
+        statuses=statuses,
+        tags=tags,
+        has_links=has_links,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_workfile_info(
+    project_name: str,
+    task_id: str,
+    path: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional[WorkfileInfoDict]:
+    """DEPRECATED Workfile info entity by task id and workfile path.
+
+    Args:
+        project_name (str): Project under which the entity is located.
+        task_id (str): Task id.
+        path (str): Rootless workfile path.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            representation. All possible fields are returned if 'None' is
+            passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            workfiles.
+
+    Returns:
+        Optional[WorkfileInfoDict]: Workfile info entity or None.
+
+    """
+    con = get_server_api_connection()
+    return con.get_workfile_info(
+        project_name=project_name,
+        task_id=task_id,
+        path=path,
+        fields=fields,
+        own_attributes=own_attributes,
+    )
+
+
+def get_workfile_info_by_id(
+    project_name: str,
+    workfile_id: str,
+    fields: Optional[Iterable[str]] = None,
+    own_attributes=_PLACEHOLDER,
+) -> Optional[WorkfileInfoDict]:
+    """DEPRECATED Workfile info entity by id.
+
+    Args:
+        project_name (str): Project under which the entity is located.
+        workfile_id (str): Workfile info id.
+        fields (Optional[Iterable[str]]): Fields to be queried for
+            representation. All possible fields are returned if 'None' is
+            passed.
+        own_attributes (Optional[bool]): DEPRECATED: Not supported for
+            workfiles.
+
+    Returns:
+        Optional[WorkfileInfoDict]: Workfile info entity or None.
+
+    """
+    con = get_server_api_connection()
+    return con.get_workfile_info_by_id(
+        project_name=project_name,
+        workfile_id=workfile_id,
+        fields=fields,
+        own_attributes=own_attributes,
     )
 
 
@@ -6351,7 +6509,7 @@ def update_workfile_info(
     created_by: Optional[str] = None,
     updated_by: Optional[str] = None,
 ) -> None:
-    """Update workfile entity on server.
+    """DEPRECATED Update workfile entity on server.
 
     Update of ``attrib`` does change only passed attributes. If you want
         to unset value, use ``None``.
@@ -6385,6 +6543,24 @@ def update_workfile_info(
         thumbnail_id=thumbnail_id,
         created_by=created_by,
         updated_by=updated_by,
+    )
+
+
+def delete_workfile_info(
+    project_name: str,
+    workfile_id: str,
+) -> None:
+    """DEPRECATED Delete workfile entity on server.
+
+    Args:
+        project_name (str): Project name.
+        workfile_id (str): Workfile id to delete.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_workfile_info(
+        project_name=project_name,
+        workfile_id=workfile_id,
     )
 
 
