@@ -89,6 +89,12 @@ class EventFilter(TypedDict):
     operator: Literal["and", "or"]
 
 
+class BackgroundOperation(TypedDict):
+    id: str
+    status: Literal["pending", "in_progress", "completed"]
+    result: Optional[dict[str, Any]]
+
+
 AttributeScope = Literal[
     "project",
     "folder",

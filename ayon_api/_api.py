@@ -1253,6 +1253,80 @@ def send_batch_operations(
     )
 
 
+def send_background_batch_operations(
+    project_name: str,
+    operations: list[dict[str, Any]],
+    *,
+    can_fail: bool = False,
+    wait: bool = False,
+    raise_on_fail: bool = True,
+) -> BackgroundOperation:
+    """Post multiple CRUD operations to server.
+
+    When multiple changes should be made on server side this is the best
+    way to go. It is possible to pass multiple operations to process on a
+    server side and do the changes in a transaction.
+
+    Compared to 'send_batch_operations' this function creates a task on
+        server which then can be periodically checked for a status and
+        receive it's result.
+
+    When used with 'wait' set to 'True' this method blocks until task is
+        finished. Which makes it work as 'send_batch_operations'
+        but safer for large operations batch as is not bound to
+        response timeout.
+
+    Args:
+        project_name (str): On which project should be operations
+            processed.
+        operations (list[dict[str, Any]]): Operations to be processed.
+        can_fail (Optional[bool]): Server will try to process all
+            operations even if one of them fails.
+        wait (bool): Wait for operations to end.
+        raise_on_fail (Optional[bool]): Raise exception if an operation
+            fails. You can handle failed operations on your own
+            when set to 'False'. Used when 'wait' is enabled.
+
+    Raises:
+        ValueError: Operations can't be converted to json string.
+        FailedOperations: When output does not contain server operations
+            or 'raise_on_fail' is enabled and any operation fails.
+
+    Returns:
+        BackgroundOperation: Background operation.
+
+    """
+    con = get_server_api_connection()
+    return con.send_background_batch_operations(
+        project_name=project_name,
+        operations=operations,
+        can_fail=can_fail,
+        wait=wait,
+        raise_on_fail=raise_on_fail,
+    )
+
+
+def get_background_operations_status(
+    project_name: str,
+    task_id: str,
+) -> BackgroundOperation:
+    """Get status of background operations task.
+
+    Args:
+        project_name (str): Project name.
+        task_id (str): Backgorund operation task id.
+
+    Returns:
+        BackgroundOperation: Background operation.
+
+    """
+    con = get_server_api_connection()
+    return con.get_background_operations_status(
+        project_name=project_name,
+        task_id=task_id,
+    )
+
+
 def get_installers(
     version: Optional[str] = None,
     platform_name: Optional[str] = None,
