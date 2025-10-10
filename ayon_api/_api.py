@@ -6197,6 +6197,53 @@ def get_workfile_info_by_id(
     )
 
 
+def create_workfile_info(
+    project_name: str,
+    path: str,
+    task_id: str,
+    *,
+    thumbnail_id: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    workfile_id: Optional[str] = None,
+) -> str:
+    """Create new workfile.
+
+    Args:
+        project_name (str): Project name.
+        path (str): Representation name.
+        task_id (str): Parent task id.
+        thumbnail_id (Optional[str]): Thumbnail id.
+        attrib (Optional[dict[str, Any]]): Representation attributes.
+        data (Optional[dict[str, Any]]): Representation data.
+        tags (Optional[Iterable[str]]): Representation tags.
+        status (Optional[str]): Representation status.
+        active (Optional[bool]): Representation active state.
+        workfile_id (Optional[str]): Workfile info id. If not
+            passed new id is generated.
+
+    Returns:
+        str: Workfile info id.
+
+    """
+    con = get_server_api_connection()
+    return con.create_workfile_info(
+        project_name=project_name,
+        path=path,
+        task_id=task_id,
+        thumbnail_id=thumbnail_id,
+        attrib=attrib,
+        data=data,
+        tags=tags,
+        status=status,
+        active=active,
+        workfile_id=workfile_id,
+    )
+
+
 def delete_workfile_info(
     project_name: str,
     workfile_id: str,
