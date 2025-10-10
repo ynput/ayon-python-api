@@ -48,6 +48,7 @@ if typing.TYPE_CHECKING:
         ActivityReferenceType,
         EntityListEntityType,
         EntityListItemMode,
+        BackgroundOperation,
         LinkDirection,
         EventFilter,
         EventStatus,
