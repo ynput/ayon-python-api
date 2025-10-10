@@ -89,7 +89,7 @@ class EventFilter(TypedDict):
     operator: Literal["and", "or"]
 
 
-class BackgroundOperation(TypedDict):
+class BackgroundOperationTask(TypedDict):
     id: str
     status: Literal["pending", "in_progress", "completed"]
     result: Optional[dict[str, Any]]

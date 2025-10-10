@@ -48,7 +48,7 @@ if typing.TYPE_CHECKING:
         ActivityReferenceType,
         EntityListEntityType,
         EntityListItemMode,
-        BackgroundOperation,
+        BackgroundOperationTask,
         LinkDirection,
         EventFilter,
         EventStatus,
@@ -1261,7 +1261,7 @@ def send_background_batch_operations(
     can_fail: bool = False,
     wait: bool = False,
     raise_on_fail: bool = True,
-) -> BackgroundOperation:
+) -> BackgroundOperationTask:
     """Post multiple CRUD operations to server.
 
     When multiple changes should be made on server side this is the best
@@ -1294,7 +1294,7 @@ def send_background_batch_operations(
             or 'raise_on_fail' is enabled and any operation fails.
 
     Returns:
-        BackgroundOperation: Background operation.
+        BackgroundOperationTask: Background operation.
 
     """
     con = get_server_api_connection()
@@ -1310,7 +1310,7 @@ def send_background_batch_operations(
 def get_background_operations_status(
     project_name: str,
     task_id: str,
-) -> BackgroundOperation:
+) -> BackgroundOperationTask:
     """Get status of background operations task.
 
     Args:
@@ -1318,7 +1318,7 @@ def get_background_operations_status(
         task_id (str): Backgorund operation task id.
 
     Returns:
-        BackgroundOperation: Background operation.
+        BackgroundOperationTask: Background operation.
 
     """
     con = get_server_api_connection()

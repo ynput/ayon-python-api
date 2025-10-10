@@ -91,7 +91,7 @@ if typing.TYPE_CHECKING:
         ServerVersion,
         AnyEntityDict,
         StreamType,
-        BackgroundOperation,
+        BackgroundOperationTask,
     )
 
 VERSION_REGEX = re.compile(
@@ -1913,7 +1913,7 @@ class ServerAPI(
         can_fail: bool = False,
         wait: bool = False,
         raise_on_fail: bool = True,
-    ) -> BackgroundOperation:
+    ) -> BackgroundOperationTask:
         """Post multiple CRUD operations to server.
 
         When multiple changes should be made on server side this is the best
@@ -1946,7 +1946,7 @@ class ServerAPI(
                 or 'raise_on_fail' is enabled and any operation fails.
 
         Returns:
-            BackgroundOperation: Background operation.
+            BackgroundOperationTask: Background operation.
 
         """
         operations_body = self._prepare_operations_body(operations)
@@ -1977,7 +1977,7 @@ class ServerAPI(
 
     def get_background_operations_status(
         self, project_name: str, task_id: str
-    ) -> BackgroundOperation:
+    ) -> BackgroundOperationTask:
         """Get status of background operations task.
 
         Args:
@@ -1985,7 +1985,7 @@ class ServerAPI(
             task_id (str): Backgorund operation task id.
 
         Returns:
-            BackgroundOperation: Background operation.
+            BackgroundOperationTask: Background operation.
 
         """
         response = self.get(
