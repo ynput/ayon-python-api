@@ -340,7 +340,7 @@ def new_representation_entity(
     return output
 
 
-def new_workfile_info(
+def new_workfile_entity(
     filepath: str,
     task_id: str,
     status: Optional[str] = None,
@@ -394,6 +394,28 @@ def new_workfile_info(
     if tags:
         output["tags"] = tags
     return output
+
+
+def new_workfile_info(
+    filepath: str,
+    task_id: str,
+    status: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+    attribs: Optional[dict[str, Any]] = None,
+    description: Optional[str] = None,
+    data: Optional[dict[str, Any]] = None,
+    entity_id: Optional[str] = None,
+) -> NewWorkfileDict:
+    return new_workfile_entity(
+        filepath,
+        task_id,
+        status,
+        tags,
+        attribs,
+        description,
+        data,
+        entity_id,
+    )
 
 
 class AbstractOperation(ABC):
@@ -1545,7 +1567,7 @@ class OperationsSession(object):
             project_name, "representation", representation_id
         )
 
-    def create_workfile_info(
+    def create_workfile_entity(
         self,
         project_name: str,
         path: str,
@@ -1603,7 +1625,7 @@ class OperationsSession(object):
             create_data
         )
 
-    def update_workfile_info(
+    def update_workfile_entity(
         self,
         project_name: str,
         workfile_id: str,
