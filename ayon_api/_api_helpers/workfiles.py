@@ -186,7 +186,7 @@ class WorkfilesAPI(BaseServerAPI):
             return workfile_info
         return None
 
-    def create_workfile_info(
+    def create_workfile_entity(
         self,
         project_name: str,
         path: str,

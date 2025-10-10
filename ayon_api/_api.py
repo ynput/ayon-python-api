@@ -6272,7 +6272,7 @@ def get_workfile_info_by_id(
     )
 
 
-def create_workfile_info(
+def create_workfile_entity(
     project_name: str,
     path: str,
     task_id: str,
@@ -6305,7 +6305,7 @@ def create_workfile_info(
 
     """
     con = get_server_api_connection()
-    return con.create_workfile_info(
+    return con.create_workfile_entity(
         project_name=project_name,
         path=path,
         task_id=task_id,
