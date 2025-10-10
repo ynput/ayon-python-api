@@ -1688,12 +1688,12 @@ class OperationsSession(object):
             update_data
         )
 
-    def delete_workfile(
+    def delete_workfile_entity(
         self,
         project_name: str,
         workfile_id: str,
     ) -> DeleteOperation:
-        """Delete representation.
+        """Delete workfile entity.
 
         Args:
             project_name (str): Project name.
