@@ -5,7 +5,8 @@ import typing
 from typing import Optional, Iterable, Generator, Any
 
 from ayon_api.graphql_queries import workfiles_info_graphql_query
-from ayon_api.utils import NOT_SET
+from ayon_api.utils import NOT_SET, create_entity_id
+
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
@@ -13,9 +14,10 @@ if typing.TYPE_CHECKING:
 
 
 class WorkfilesAPI(BaseServerAPI):
-    def get_workfiles_info(
+    def get_workfile_entities(
         self,
         project_name: str,
+        *,
         workfile_ids: Optional[Iterable[str]] = None,
         task_ids: Optional[Iterable[str]] =None,
         paths: Optional[Iterable[str]] =None,
@@ -24,7 +26,6 @@ class WorkfilesAPI(BaseServerAPI):
         tags: Optional[Iterable[str]] = None,
         has_links: Optional[str]=None,
         fields: Optional[Iterable[str]] = None,
-        own_attributes=_PLACEHOLDER,
     ) -> Generator[WorkfileInfoDict, None, None]:
         """Workfile info entities by passed filters.
 
@@ -43,8 +44,6 @@ class WorkfilesAPI(BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (Optional[bool]): DEPRECATED: Not supported for
-                workfiles.
 
         Returns:
             Generator[WorkfileInfoDict, None, None]: Queried workfile info
@@ -94,16 +93,6 @@ class WorkfilesAPI(BaseServerAPI):
             fields = set(fields)
             self._prepare_fields("workfile", fields)
 
-        if own_attributes is not _PLACEHOLDER:
-            warnings.warn(
-                (
-                    "'own_attributes' is not supported for workfiles. The"
-                    " argument will be removed form function signature in"
-                    " future (apx. version 1.0.10 or 1.1.0)."
-                ),
-                DeprecationWarning
-            )
-
         query = workfiles_info_graphql_query(fields)
 
         for attr, filter_value in filters.items():
@@ -114,13 +103,13 @@ class WorkfilesAPI(BaseServerAPI):
                 self._convert_entity_data(workfile_info)
                 yield workfile_info
 
-    def get_workfile_info(
+    def get_workfile_entity(
         self,
         project_name: str,
         task_id: str,
         path: str,
+        *,
         fields: Optional[Iterable[str]] = None,
-        own_attributes=_PLACEHOLDER,
     ) -> Optional[WorkfileInfoDict]:
         """Workfile info entity by task id and workfile path.
 
@@ -131,8 +120,6 @@ class WorkfilesAPI(BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (Optional[bool]): DEPRECATED: Not supported for
-                workfiles.
 
         Returns:
             Optional[WorkfileInfoDict]: Workfile info entity or None.
@@ -141,22 +128,21 @@ class WorkfilesAPI(BaseServerAPI):
         if not task_id or not path:
             return None
 
-        for workfile_info in self.get_workfiles_info(
+        for workfile_info in self.get_workfile_entities(
             project_name,
             task_ids=[task_id],
             paths=[path],
             fields=fields,
-            own_attributes=own_attributes
         ):
             return workfile_info
         return None
 
-    def get_workfile_info_by_id(
+    def get_workfile_entity_by_id(
         self,
         project_name: str,
         workfile_id: str,
+        *,
         fields: Optional[Iterable[str]] = None,
-        own_attributes=_PLACEHOLDER,
     ) -> Optional[WorkfileInfoDict]:
         """Workfile info entity by id.
 
@@ -166,8 +152,6 @@ class WorkfilesAPI(BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
-            own_attributes (Optional[bool]): DEPRECATED: Not supported for
-                workfiles.
 
         Returns:
             Optional[WorkfileInfoDict]: Workfile info entity or None.
@@ -176,36 +160,85 @@ class WorkfilesAPI(BaseServerAPI):
         if not workfile_id:
             return None
 
-        for workfile_info in self.get_workfiles_info(
+        for workfile_info in self.get_workfile_entities(
             project_name,
             workfile_ids=[workfile_id],
             fields=fields,
-            own_attributes=own_attributes
         ):
             return workfile_info
         return None
 
-    def delete_workfile_info(
+    def create_workfile_entity(
         self,
         project_name: str,
-        workfile_id: str,
-    ) -> None:
-        """Delete workfile entity on server.
+        path: str,
+        task_id: str,
+        *,
+        thumbnail_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        workfile_id: Optional[str] = None,
+    ) -> str:
+        """Create new workfile.
 
         Args:
             project_name (str): Project name.
-            workfile_id (str): Workfile id to delete.
+            path (str): Representation name.
+            task_id (str): Parent task id.
+            thumbnail_id (Optional[str]): Thumbnail id.
+            attrib (Optional[dict[str, Any]]): Representation attributes.
+            data (Optional[dict[str, Any]]): Representation data.
+            tags (Optional[Iterable[str]]): Representation tags.
+            status (Optional[str]): Representation status.
+            active (Optional[bool]): Representation active state.
+            workfile_id (Optional[str]): Workfile info id. If not
+                passed new id is generated.
+
+        Returns:
+            str: Workfile info id.
 
         """
-        response = self.delete(
-            f"projects/{project_name}/workfiles/{workfile_id}"
+        if workfile_id is None:
+            workfile_id = create_entity_id()
+
+        create_data = {
+            "id": workfile_id,
+            "path": path,
+            "taskId": task_id,
+        }
+        for key, value in (
+            ("thumbnailId", thumbnail_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        major, minor, patch, _, _ = self.get_server_version_tuple()
+        if (major, minor, patch) < (1, 1, 3):
+            user = self.get_user()
+            username = user["name"]
+            create_data["createdBy"] = username
+            create_data["updatedBy"] = username
+
+        response = self.post(
+            f"projects/{project_name}/workfiles",
+            **create_data
         )
         response.raise_for_status()
+        return workfile_id
 
-    def update_workfile_info(
+    def update_workfile_entity(
         self,
         project_name: str,
         workfile_id: str,
+        *,
         path: Optional[str] = None,
         task_id: Optional[str] = None,
         attrib: Optional[dict[str, Any]] = None,
@@ -263,3 +296,226 @@ class WorkfilesAPI(BaseServerAPI):
             **update_data
         )
         response.raise_for_status()
+
+    def delete_workfile_entity(
+        self,
+        project_name: str,
+        workfile_id: str,
+    ) -> None:
+        """Delete workfile entity on server.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile id to delete.
+
+        """
+        response = self.delete(
+            f"projects/{project_name}/workfiles/{workfile_id}"
+        )
+        response.raise_for_status()
+
+    # --- DEPRECATED ---
+    def get_workfiles_info(
+        self,
+        project_name: str,
+        workfile_ids: Optional[Iterable[str]] = None,
+        task_ids: Optional[Iterable[str]] =None,
+        paths: Optional[Iterable[str]] =None,
+        path_regex: Optional[str] = None,
+        statuses: Optional[Iterable[str]] = None,
+        tags: Optional[Iterable[str]] = None,
+        has_links: Optional[str]=None,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Generator[WorkfileInfoDict, None, None]:
+        """DEPRECATED Workfile info entities by passed filters.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            workfile_ids (Optional[Iterable[str]]): Workfile ids.
+            task_ids (Optional[Iterable[str]]): Task ids.
+            paths (Optional[Iterable[str]]): Rootless workfiles paths.
+            path_regex (Optional[str]): Regex filter for workfile path.
+            statuses (Optional[Iterable[str]]): Workfile info statuses used
+                for filtering.
+            tags (Optional[Iterable[str]]): Workfile info tags used
+                for filtering.
+            has_links (Optional[Literal[IN, OUT, ANY]]): Filter
+                representations with IN/OUT/ANY links.
+            fields (Optional[Iterable[str]]): Fields to be queried for
+                representation. All possible fields are returned if 'None' is
+                passed.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                workfiles.
+
+        Returns:
+            Generator[WorkfileInfoDict, None, None]: Queried workfile info
+                entites.
+
+        """
+        if own_attributes is not _PLACEHOLDER:
+            warnings.warn(
+                (
+                    "'own_attributes' is not supported for workfiles. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        return self.get_workfile_entities(
+            project_name,
+            workfile_ids=workfile_ids,
+            task_ids=task_ids,
+            paths=paths,
+            path_regex=path_regex,
+            statuses=statuses,
+            tags=tags,
+            has_links=has_links,
+            fields=fields,
+        )
+
+    def get_workfile_info(
+        self,
+        project_name: str,
+        task_id: str,
+        path: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional[WorkfileInfoDict]:
+        """DEPRECATED Workfile info entity by task id and workfile path.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            task_id (str): Task id.
+            path (str): Rootless workfile path.
+            fields (Optional[Iterable[str]]): Fields to be queried for
+                representation. All possible fields are returned if 'None' is
+                passed.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                workfiles.
+
+        Returns:
+            Optional[WorkfileInfoDict]: Workfile info entity or None.
+
+        """
+        if own_attributes is not _PLACEHOLDER:
+            warnings.warn(
+                (
+                    "'own_attributes' is not supported for workfiles. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        return self.get_workfile_entity(
+            project_name, task_id, path,fields=fields
+        )
+
+    def get_workfile_info_by_id(
+        self,
+        project_name: str,
+        workfile_id: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes=_PLACEHOLDER,
+    ) -> Optional[WorkfileInfoDict]:
+        """DEPRECATED Workfile info entity by id.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            workfile_id (str): Workfile info id.
+            fields (Optional[Iterable[str]]): Fields to be queried for
+                representation. All possible fields are returned if 'None' is
+                passed.
+            own_attributes (Optional[bool]): DEPRECATED: Not supported for
+                workfiles.
+
+        Returns:
+            Optional[WorkfileInfoDict]: Workfile info entity or None.
+
+        """
+        if own_attributes is not _PLACEHOLDER:
+            warnings.warn(
+                (
+                    "'own_attributes' is not supported for workfiles. The"
+                    " argument will be removed form function signature in"
+                    " future (apx. version 1.0.10 or 1.1.0)."
+                ),
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return self.get_workfile_entity_by_id(
+            project_name,
+            workfile_id,
+            fields=fields,
+        )
+
+    def update_workfile_info(
+        self,
+        project_name: str,
+        workfile_id: str,
+        path: Optional[str] = None,
+        task_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
+        created_by: Optional[str] = None,
+        updated_by: Optional[str] = None,
+    ) -> None:
+        """DEPRECATED Update workfile entity on server.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile id.
+            path (Optional[str]): New rootless workfile path..
+            task_id (Optional[str]): New parent task id.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+            thumbnail_id (Optional[str]): New thumbnail id.
+            created_by (Optional[str]): New created by username.
+            updated_by (Optional[str]): New updated by username.
+
+        """
+        return self.update_workfile_entity(
+            project_name,
+            workfile_id,
+            path=path,
+            task_id=task_id,
+            attrib=attrib,
+            data=data,
+            tags=tags,
+            status=status,
+            active=active,
+            thumbnail_id=thumbnail_id,
+            created_by=created_by,
+            updated_by=updated_by,
+        )
+
+    def delete_workfile_info(
+        self,
+        project_name: str,
+        workfile_id: str,
+    ) -> None:
+        """DEPRECATED Delete workfile entity on server.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile id to delete.
+
+        """
+        return self.delete_workfile_entity(
+            project_name,
+            workfile_id,
+        )

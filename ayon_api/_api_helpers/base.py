@@ -109,6 +109,11 @@ class BaseServerAPI:
     ) -> Optional[ProjectDict]:
         raise NotImplementedError()
 
+    def get_user(
+        self, username: Optional[str] = None
+    ) -> Optional[dict[str, Any]]:
+        raise NotImplementedError()
+
     def _prepare_fields(
         self,
         entity_type: str,
