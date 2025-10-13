@@ -91,6 +91,7 @@ if typing.TYPE_CHECKING:
         ServerVersion,
         AnyEntityDict,
         StreamType,
+        BackgroundOperationTask,
     )
 
 VERSION_REGEX = re.compile(
@@ -1870,7 +1871,7 @@ class ServerAPI(
         project_name: str,
         operations: list[dict[str, Any]],
         can_fail: bool = False,
-        raise_on_fail: bool = True
+        raise_on_fail: bool = True,
     ) -> list[dict[str, Any]]:
         """Post multiple CRUD operations to server.
 
@@ -1904,17 +1905,98 @@ class ServerAPI(
             raise_on_fail,
         )
 
-    def _send_batch_operations(
+    def send_background_batch_operations(
         self,
-        uri: str,
+        project_name: str,
         operations: list[dict[str, Any]],
-        can_fail: bool,
-        raise_on_fail: bool
-    ) -> list[dict[str, Any]]:
-        if not operations:
-            return []
+        *,
+        can_fail: bool = False,
+        wait: bool = False,
+        raise_on_fail: bool = True,
+    ) -> BackgroundOperationTask:
+        """Post multiple CRUD operations to server.
 
-        body_by_id = {}
+        When multiple changes should be made on server side this is the best
+        way to go. It is possible to pass multiple operations to process on a
+        server side and do the changes in a transaction.
+
+        Compared to 'send_batch_operations' this function creates a task on
+            server which then can be periodically checked for a status and
+            receive it's result.
+
+        When used with 'wait' set to 'True' this method blocks until task is
+            finished. Which makes it work as 'send_batch_operations'
+            but safer for large operations batch as is not bound to
+            response timeout.
+
+        Args:
+            project_name (str): On which project should be operations
+                processed.
+            operations (list[dict[str, Any]]): Operations to be processed.
+            can_fail (Optional[bool]): Server will try to process all
+                operations even if one of them fails.
+            wait (bool): Wait for operations to end.
+            raise_on_fail (Optional[bool]): Raise exception if an operation
+                fails. You can handle failed operations on your own
+                when set to 'False'. Used when 'wait' is enabled.
+
+        Raises:
+            ValueError: Operations can't be converted to json string.
+            FailedOperations: When output does not contain server operations
+                or 'raise_on_fail' is enabled and any operation fails.
+
+        Returns:
+            BackgroundOperationTask: Background operation.
+
+        """
+        operations_body = self._prepare_operations_body(operations)
+        response = self.post(
+            f"projects/{project_name}/operations/background",
+            operations=operations_body,
+            canFail=can_fail
+        )
+        response.raise_for_status()
+        if not wait:
+            return response.data
+
+        task_id = response["id"]
+        time.sleep(0.1)
+        while True:
+            op_status = self.get_background_operations_status(
+                project_name, task_id
+            )
+            if op_status["status"] == "completed":
+                break
+            time.sleep(1)
+
+        if raise_on_fail:
+            self._validate_operations_result(
+                op_status["result"], operations_body
+            )
+        return op_status
+
+    def get_background_operations_status(
+        self, project_name: str, task_id: str
+    ) -> BackgroundOperationTask:
+        """Get status of background operations task.
+
+        Args:
+            project_name (str): Project name.
+            task_id (str): Backgorund operation task id.
+
+        Returns:
+            BackgroundOperationTask: Background operation.
+
+        """
+        response = self.get(
+            f"projects/{project_name}/operations/background/{task_id}"
+        )
+        response.raise_for_status()
+        return response.data
+
+    def _prepare_operations_body(
+        self, operations: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         operations_body = []
         for operation in operations:
             if not operation:
@@ -1936,41 +2018,67 @@ class ServerAPI(
                     )
                 ))
 
-            body_by_id[op_id] = body
             operations_body.append(body)
+        return operations_body
 
+    def _send_batch_operations(
+        self,
+        uri: str,
+        operations: list[dict[str, Any]],
+        can_fail: bool,
+        raise_on_fail: bool
+    ) -> list[dict[str, Any]]:
+        if not operations:
+            return []
+
+        operations_body = self._prepare_operations_body(operations)
         if not operations_body:
             return []
 
-        result = self.post(
+        response = self.post(
             uri,
             operations=operations_body,
             canFail=can_fail
         )
 
-        op_results = result.get("operations")
+        op_results = response.get("operations")
         if op_results is None:
-            detail = result.get("detail")
+            detail = response.get("detail")
             if detail:
                 raise FailedOperations(f"Operation failed. Detail: {detail}")
             raise FailedOperations(
-                f"Operation failed. Content: {result.text}"
+                f"Operation failed. Content: {response.text}"
             )
 
-        if result.get("success") or not raise_on_fail:
-            return op_results
-
-        for op_result in op_results:
-            if not op_result["success"]:
-                operation_id = op_result["id"]
-                raise FailedOperations((
-                    "Operation \"{}\" failed with data:\n{}\nDetail: {}."
-                ).format(
-                    operation_id,
-                    json.dumps(body_by_id[operation_id], indent=4),
-                    op_result["detail"],
-                ))
+        if raise_on_fail:
+            self._validate_operations_result(response.data, operations_body)
         return op_results
+
+    def _validate_operations_result(
+        self,
+        result: dict[str, Any],
+        operations_body: list[dict[str, Any]],
+    ) -> None:
+        if result.get("success"):
+            return None
+
+        print(result)
+        for op_result in result["operations"]:
+            if op_result["success"]:
+                continue
+
+            operation_id = op_result["id"]
+            operation = next(
+                op
+                for op in operations_body
+                if op["id"] == operation_id
+            )
+            detail = op_result["detail"]
+            raise FailedOperations(
+                f"Operation \"{operation_id}\" failed with data:"
+                f"\n{json.dumps(operation, indent=4)}"
+                f"\nDetail: {detail}."
+            )
 
     def _prepare_fields(
         self, entity_type: str, fields: set[str], own_attributes: bool = False
