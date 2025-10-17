@@ -283,14 +283,14 @@ class EntityHub:
                     self.project_name,
                     entity_id,
                     fields=self._get_folder_fields(),
-                    own_attributes=True
+                    own_attributes=True,
                 )
             elif entity_type == "task":
                 entity_data = self._connection.get_task_by_id(
                     self.project_name,
                     entity_id,
                     fields=self._get_task_fields(),
-                    own_attributes=True
+                    own_attributes=True,
                 )
             elif entity_type == "product":
                 entity_data = self._connection.get_product_by_id(
@@ -781,6 +781,7 @@ class EntityHub:
                 parent_ids=[entity.id],
                 fields=folder_fields,
                 own_attributes=True,
+                active=None,
             ))
 
         elif entity.entity_type == "folder":
@@ -789,6 +790,7 @@ class EntityHub:
                 parent_ids=[entity.id],
                 fields=folder_fields,
                 own_attributes=True,
+                active=None,
             ))
 
             tasks = list(self._connection.get_tasks(
@@ -796,6 +798,7 @@ class EntityHub:
                 folder_ids=[entity.id],
                 fields=task_fields,
                 own_attributes=True,
+                active=None,
             ))
 
         children_ids = {
@@ -897,7 +900,7 @@ class EntityHub:
         project_name = self.project_name
         project = self._connection.get_project(
             project_name,
-            own_attributes=True
+            own_attributes=True,
         )
         if not project:
             raise ValueError(f"Project \"{project_name}\" was not found.")
@@ -949,11 +952,13 @@ class EntityHub:
             project_entity.name,
             fields=folder_fields,
             own_attributes=True,
+            active=None,
         )
         tasks = self._connection.get_tasks(
             project_entity.name,
             fields=task_fields,
             own_attributes=True,
+            active=None,
         )
         folders_by_parent_id = collections.defaultdict(list)
         for folder in folders:
