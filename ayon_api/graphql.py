@@ -857,8 +857,8 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         self._edge_children.append(field)
         field.set_parent(self)
 
-    def add_edge_field(self, name: str) -> GraphQlQueryEdgeField:
-        item = GraphQlQueryEdgeField(name, self, self._order)
+    def add_edge_field(self, name: str) -> GraphQlQueryField:
+        item = GraphQlQueryField(name, self, self._order)
         self.add_obj_edge_field(item)
         return item
 

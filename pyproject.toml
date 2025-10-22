@@ -1,6 +1,6 @@
 [project]
-name = "ayon-python-api"
-version = "1.1.5-dev"
+name = "ayon_python_api"
+version = "1.2.4-dev"
 description = "AYON Python API"
 license = {file = "LICENSE"}
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -27,14 +27,15 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "ayon-python-api"
-version = "1.1.5-dev"
+name = "ayon_python_api"
+version = "1.2.2"
 description = "AYON Python API"
 authors = [
     "ynput.io <info@ynput.io>"
 ]
 packages = [
-    { include = "ayon_api" }
+    { include = "ayon_api" },
+    { include = "ayon_api/_api_helpers/*.py" },
 ]
 
 [tool.poetry.dependencies]
