@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
     from .server_api import ServerAPI
     from .typing import (
         NewFolderDict,
+        NewTaskDict,
         NewProductDict,
         NewVersionDict,
         NewRepresentationDict,
@@ -76,6 +77,7 @@ def new_folder_entity(
     folder_type: str,
     parent_id: Optional[str] = None,
     status: Optional[str] = None,
+    active: Optional[bool] = None,
     tags: Optional[list[str]] = None,
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
@@ -89,6 +91,7 @@ def new_folder_entity(
         folder_type (str): Type of folder.
         parent_id (Optional[str]): Parent folder id.
         status (Optional[str]): Product status.
+        active (Optional[bool]): Active status..
         tags (Optional[list[str]]): List of tags.
         attribs (Optional[dict[str, Any]]): Explicitly set attributes
             of folder.
@@ -125,6 +128,67 @@ def new_folder_entity(
         output["status"] = status
     if tags:
         output["tags"] = tags
+    if active is not None:
+        output["active"] = active
+    return output
+
+
+def new_task_entity(
+    name: str,
+    task_type: str,
+    folder_id: str,
+    *,
+    label: Optional[str] = None,
+    assignees: Optional[list[str]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = None,
+    task_id: Optional[str] = None,
+) -> NewTaskDict:
+    """Create skeleton data of task entity.
+
+    Args:
+        name (str): Folder name.
+        task_type (str): Task type.
+        folder_id (str): Parent folder id.
+        label (Optional[str]): Label of folder.
+        assignees (Optional[list[str]]): Task assignees.
+        attrib (Optional[dict[str, Any]]): Task attributes.
+        data (Optional[dict[str, Any]]): Task data.
+        tags (Optional[list[str]]): Task tags.
+        status (Optional[str]): Task status.
+        active (Optional[bool]): Task active state.
+        thumbnail_id (Optional[str]): Task thumbnail id.
+        task_id (Optional[str]): Task id. If not passed new id is
+            generated.
+
+    Returns:
+        NewTaskDict: Skeleton of task entity.
+
+    """
+    if not task_id:
+        task_id = create_entity_id()
+    output = {
+        "id": task_id,
+        "name": name,
+        "taskType": task_type,
+        "folderId": folder_id,
+    }
+    for key, value in (
+        ("label", label),
+        ("attrib", attrib),
+        ("data", data),
+        ("tags", tags),
+        ("status", status),
+        ("assignees", assignees),
+        ("active", active),
+        ("thumbnailId", thumbnail_id),
+    ):
+        if value is not None:
+            output[key] = value
     return output
 
 
@@ -1046,6 +1110,10 @@ class OperationsSession(object):
             "taskType": task_type,
             "folderId": folder_id,
         }
+        if tags is not None:
+            tags = list(tags)
+        if assignees is not None:
+            assignees = list(assignees)
         for key, value in (
             ("label", label),
             ("attrib", attrib),
