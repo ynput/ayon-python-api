@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import warnings
+import typing
 from typing import Optional
 
 from ayon_api.utils import (
@@ -13,6 +14,9 @@ from ayon_api.utils import (
 )
 
 from .base import BaseServerAPI
+
+if typing.TYPE_CHECKING:
+    from .typing import StreamType
 
 
 class ThumbnailsAPI(BaseServerAPI):
