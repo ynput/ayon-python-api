@@ -7731,7 +7731,7 @@ def create_thumbnail_with_stream(
     stream: StreamType,
     thumbnail_id: Optional[str] = None,
 ) -> str:
-    """Create new thumbnail on server from passed path.
+    """Create new thumbnail on server from byte stream.
 
     Args:
         project_name (str): Project where the thumbnail will be created
@@ -7743,7 +7743,7 @@ def create_thumbnail_with_stream(
         str: Created thumbnail id.
 
     Raises:
-        ValueError: When thumbnail source cannot be processed.
+        ValueError: When a thumbnail source cannot be processed.
 
     """
     con = get_server_api_connection()
