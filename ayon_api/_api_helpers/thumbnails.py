@@ -266,7 +266,7 @@ class ThumbnailsAPI(BaseServerAPI):
         stream: StreamType,
         thumbnail_id: Optional[str] = None,
     ) -> str:
-        """Create new thumbnail on server from passed path.
+        """Create new thumbnail on server from byte stream.
 
         Args:
             project_name (str): Project where the thumbnail will be created
@@ -278,12 +278,9 @@ class ThumbnailsAPI(BaseServerAPI):
             str: Created thumbnail id.
 
         Raises:
-            ValueError: When thumbnail source cannot be processed.
+            ValueError: When a thumbnail source cannot be processed.
 
         """
-        if not os.path.exists(src_filepath):
-            raise ValueError("Entered filepath does not exist.")
-
         if thumbnail_id:
             self.update_thumbnail_from_stream(
                 project_name,
@@ -348,10 +345,7 @@ class ThumbnailsAPI(BaseServerAPI):
             stream (StreamType): Thumbnail content stream.
 
         """
-        if not os.path.exists(src_filepath):
-            raise ValueError("Entered filepath does not exist.")
-
-        mime_type = get_media_mime_type_for_stream(src_filepath)
+        mime_type = get_media_mime_type_for_stream(stream)
         response = self.upload_file_from_stream(
             f"projects/{project_name}/thumbnails/{thumbnail_id}",
             stream,
