@@ -136,13 +136,14 @@ def new_product_entity(
     tags: Optional[list[str]] = None,
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
+    product_base_type: Optional[str] = None,
     entity_id: Optional[str] = None,
 ) -> NewProductDict:
-    """Create skeleton data of product entity.
+    """Create skeleton data of the product entity.
 
     Args:
-        name (str): Is considered as unique identifier of
-            product under folder.
+        name (str): Is considered as a unique identifier of
+            the product under the folder.
         product_type (str): Product type.
         folder_id (str): Parent folder id.
         status (Optional[str]): Product status.
@@ -153,6 +154,7 @@ def new_product_entity(
             is used if not passed.
         entity_id (Optional[str]): Predefined id of entity. New id is
             created if not passed.
+        product_base_type (str): Base type of the product, e.g. "render".
 
     Returns:
         NewProductDict: Skeleton of product entity.
@@ -172,6 +174,9 @@ def new_product_entity(
         "data": data,
         "folderId": _create_or_convert_to_id(folder_id),
     }
+    if product_base_type:
+        output["productBaseType"] = product_base_type
+
     if status:
         output["status"] = status
     if tags:
@@ -1163,6 +1168,7 @@ class OperationsSession(object):
         tags: Optional[list[str]] = None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
+        product_base_type: Optional[str] = None,
         product_id: Optional[str] = None,
     ) -> CreateOperation:
         """Create new product.
@@ -1170,13 +1176,13 @@ class OperationsSession(object):
         Args:
             project_name (str): Project name.
             name (str): Product name.
-            product_type (str): Product type.
             folder_id (str): Parent folder id.
             attrib (Optional[dict[str, Any]]): Product attributes.
             data (Optional[dict[str, Any]]): Product data.
             tags (Optional[Iterable[str]]): Product tags.
             status (Optional[str]): Product status.
             active (Optional[bool]): Product active state.
+            product_base_type (Optional[str]): Product base type.
             product_id (Optional[str]): Product id. If not passed new id is
                 generated.
 
@@ -1192,12 +1198,14 @@ class OperationsSession(object):
             "productType": product_type,
             "folderId": folder_id,
         }
+
         for key, value in (
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
             ("status", status),
             ("active", active),
+            ("productBaseType", product_base_type)
         ):
             if value is not None:
                 create_data[key] = value
@@ -1213,6 +1221,7 @@ class OperationsSession(object):
         name: Optional[str] = None,
         folder_id: Optional[str] = None,
         product_type: Optional[str] = None,
+        product_base_type: Optional[str] = None,
         attrib: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = None,
         tags: Optional[list[str]] = None,
@@ -1221,7 +1230,8 @@ class OperationsSession(object):
     ) -> UpdateOperation:
         """Update product entity on server.
 
-        Update of ``data`` will override existing value on folder entity.
+        Update of ``data`` will override the existing value on
+        the folder entity.
 
         Update of ``attrib`` does change only passed attributes. If you want
             to unset value, use ``None``.
@@ -1232,6 +1242,7 @@ class OperationsSession(object):
             name (Optional[str]): New product name.
             folder_id (Optional[str]): New product id.
             product_type (Optional[str]): New product type.
+            product_base_type (Optional[str]): New product base type.
             attrib (Optional[dict[str, Any]]): New product attributes.
             data (Optional[dict[str, Any]]): New product data.
             tags (Optional[Iterable[str]]): New product tags.
@@ -1242,20 +1253,21 @@ class OperationsSession(object):
             UpdateOperation: Object of update operation.
 
         """
-        update_data = {}
-        for key, value in (
-            ("name", name),
-            ("productType", product_type),
-            ("folderId", folder_id),
-            ("attrib", attrib),
-            ("data", data),
-            ("tags", tags),
-            ("status", status),
-            ("active", active),
-        ):
-            if value is not None:
-                update_data[key] = value
-
+        update_data = {
+            key: value
+            for key, value in (
+                ("name", name),
+                ("productBaseType", product_base_type),
+                ("productType", product_type),
+                ("folderId", folder_id),
+                ("attrib", attrib),
+                ("data", data),
+                ("tags", tags),
+                ("status", status),
+                ("active", active),
+            )
+            if value is not None
+        }
         return self.update_entity(
             project_name,
             "product",
@@ -1268,7 +1280,7 @@ class OperationsSession(object):
         project_name: str,
         product_id: str,
     ) -> DeleteOperation:
-        """Delete product.
+        """Delete a product.
 
         Args:
             project_name (str): Project name.

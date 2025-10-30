@@ -720,6 +720,13 @@ def get_server_version_tuple() -> ServerVersion:
     return con.get_server_version_tuple()
 
 
+def product_base_type_supported() -> bool:
+    """Product base types are available on server.
+    """
+    con = get_server_api_connection()
+    return con.product_base_type_supported()
+
+
 def get_users(
     project_name: Optional[str] = None,
     usernames: Optional[Iterable[str]] = None,
@@ -4874,6 +4881,7 @@ def get_products(
     product_names: Optional[Iterable[str]] = None,
     folder_ids: Optional[Iterable[str]] = None,
     product_types: Optional[Iterable[str]] = None,
+    product_base_types: Optional[Iterable[str]] = None,
     product_name_regex: Optional[str] = None,
     product_path_regex: Optional[str] = None,
     names_by_folder_ids: Optional[dict[str, Iterable[str]]] = None,
@@ -4926,6 +4934,7 @@ def get_products(
         product_names=product_names,
         folder_ids=folder_ids,
         product_types=product_types,
+        product_base_types=product_base_types,
         product_name_regex=product_name_regex,
         product_path_regex=product_path_regex,
         names_by_folder_ids=names_by_folder_ids,
@@ -5084,6 +5093,7 @@ def create_product(
     tags: Optional[Iterable[str]] = None,
     status: Optional[str] = None,
     active: Optional[bool] = None,
+    product_base_type: Optional[str] = None,
     product_id: Optional[str] = None,
 ) -> str:
     """Create new product.
@@ -5098,6 +5108,7 @@ def create_product(
         tags (Optional[Iterable[str]]): Product tags.
         status (Optional[str]): Product status.
         active (Optional[bool]): Product active state.
+        product_base_type (Optional[str]): Product base type.
         product_id (Optional[str]): Product id. If not passed new id is
             generated.
 
@@ -5116,6 +5127,7 @@ def create_product(
         tags=tags,
         status=status,
         active=active,
+        product_base_type=product_base_type,
         product_id=product_id,
     )
 
@@ -5126,6 +5138,7 @@ def update_product(
     name: Optional[str] = None,
     folder_id: Optional[str] = None,
     product_type: Optional[str] = None,
+    product_base_type: Optional[str] = None,
     attrib: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
     tags: Optional[Iterable[str]] = None,
@@ -5145,6 +5158,7 @@ def update_product(
         name (Optional[str]): New product name.
         folder_id (Optional[str]): New product id.
         product_type (Optional[str]): New product type.
+        product_base_type (Optional[str]): New product base type.
         attrib (Optional[dict[str, Any]]): New product attributes.
         data (Optional[dict[str, Any]]): New product data.
         tags (Optional[Iterable[str]]): New product tags.
@@ -5159,6 +5173,7 @@ def update_product(
         name=name,
         folder_id=folder_id,
         product_type=product_type,
+        product_base_type=product_base_type,
         attrib=attrib,
         data=data,
         tags=tags,
