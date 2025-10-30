@@ -271,7 +271,9 @@ from ._api import (
     get_version_thumbnail,
     get_workfile_thumbnail,
     create_thumbnail,
+    create_thumbnail_with_stream,
     update_thumbnail,
+    update_thumbnail_from_stream,
 )
 
 
@@ -546,5 +548,7 @@ __all__ = (
     "get_version_thumbnail",
     "get_workfile_thumbnail",
     "create_thumbnail",
+    "create_thumbnail_with_stream",
     "update_thumbnail",
+    "update_thumbnail_from_stream",
 )
