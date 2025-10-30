@@ -362,6 +362,21 @@ class NewFolderDict(TypedDict):
     tags: NotRequired[list[str]]
 
 
+class NewTaskDict(TypedDict):
+    id: str
+    name: str
+    task_type: str
+    folder_id: str
+    label: NotRequired[str]
+    assignees: NotRequired[list[str]]
+    attrib: NotRequired[dict[str, Any]]
+    data: NotRequired[dict[str, Any]]
+    thumbnailId: NotRequired[str]
+    active: NotRequired[bool]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
 class NewProductDict(TypedDict):
     id: str
     name: str
