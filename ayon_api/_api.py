@@ -7726,6 +7726,34 @@ def create_thumbnail(
     )
 
 
+def create_thumbnail_with_stream(
+    project_name: str,
+    stream: StreamType,
+    thumbnail_id: Optional[str] = None,
+) -> str:
+    """Create new thumbnail on server from byte stream.
+
+    Args:
+        project_name (str): Project where the thumbnail will be created
+            and can be used.
+        stream (StreamType): Thumbnail content stream.
+        thumbnail_id (Optional[str]): Prepared if of thumbnail.
+
+    Returns:
+        str: Created thumbnail id.
+
+    Raises:
+        ValueError: When a thumbnail source cannot be processed.
+
+    """
+    con = get_server_api_connection()
+    return con.create_thumbnail_with_stream(
+        project_name=project_name,
+        stream=stream,
+        thumbnail_id=thumbnail_id,
+    )
+
+
 def update_thumbnail(
     project_name: str,
     thumbnail_id: str,
@@ -7750,4 +7778,28 @@ def update_thumbnail(
         project_name=project_name,
         thumbnail_id=thumbnail_id,
         src_filepath=src_filepath,
+    )
+
+
+def update_thumbnail_from_stream(
+    project_name: str,
+    thumbnail_id: str,
+    stream: StreamType,
+) -> None:
+    """Change thumbnail content by id.
+
+    Update can be also used to create new thumbnail.
+
+    Args:
+        project_name (str): Project where the thumbnail will be created
+            and can be used.
+        thumbnail_id (str): Thumbnail id to update.
+        stream (StreamType): Thumbnail content stream.
+
+    """
+    con = get_server_api_connection()
+    return con.update_thumbnail_from_stream(
+        project_name=project_name,
+        thumbnail_id=thumbnail_id,
+        stream=stream,
     )

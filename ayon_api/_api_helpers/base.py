@@ -13,6 +13,7 @@ if typing.TYPE_CHECKING:
         AnyEntityDict,
         ServerVersion,
         ProjectDict,
+        StreamType,
     )
 
 _PLACEHOLDER = object()
@@ -78,6 +79,16 @@ class BaseServerAPI:
         self,
         endpoint: str,
         filepath: str,
+        progress: Optional[TransferProgress] = None,
+        request_type: Optional[RequestType] = None,
+        **kwargs
+    ) -> requests.Response:
+        raise NotImplementedError()
+
+    def upload_file_from_stream(
+        self,
+        endpoint: str,
+        stream: StreamType,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
         **kwargs
