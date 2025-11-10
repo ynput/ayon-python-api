@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
     from .server_api import ServerAPI
     from .typing import (
         NewFolderDict,
+        NewTaskDict,
         NewProductDict,
         NewVersionDict,
         NewRepresentationDict,
@@ -76,6 +77,7 @@ def new_folder_entity(
     folder_type: str,
     parent_id: Optional[str] = None,
     status: Optional[str] = None,
+    active: Optional[bool] = None,
     tags: Optional[list[str]] = None,
     attribs: Optional[dict[str, Any]] = None,
     data: Optional[dict[str, Any]] = None,
@@ -89,6 +91,7 @@ def new_folder_entity(
         folder_type (str): Type of folder.
         parent_id (Optional[str]): Parent folder id.
         status (Optional[str]): Product status.
+        active (Optional[bool]): Active status..
         tags (Optional[list[str]]): List of tags.
         attribs (Optional[dict[str, Any]]): Explicitly set attributes
             of folder.
@@ -125,6 +128,67 @@ def new_folder_entity(
         output["status"] = status
     if tags:
         output["tags"] = tags
+    if active is not None:
+        output["active"] = active
+    return output
+
+
+def new_task_entity(
+    name: str,
+    task_type: str,
+    folder_id: str,
+    *,
+    label: Optional[str] = None,
+    assignees: Optional[list[str]] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    tags: Optional[list[str]] = None,
+    status: Optional[str] = None,
+    active: Optional[bool] = None,
+    thumbnail_id: Optional[str] = None,
+    task_id: Optional[str] = None,
+) -> NewTaskDict:
+    """Create skeleton data of task entity.
+
+    Args:
+        name (str): Folder name.
+        task_type (str): Task type.
+        folder_id (str): Parent folder id.
+        label (Optional[str]): Label of folder.
+        assignees (Optional[list[str]]): Task assignees.
+        attrib (Optional[dict[str, Any]]): Task attributes.
+        data (Optional[dict[str, Any]]): Task data.
+        tags (Optional[list[str]]): Task tags.
+        status (Optional[str]): Task status.
+        active (Optional[bool]): Task active state.
+        thumbnail_id (Optional[str]): Task thumbnail id.
+        task_id (Optional[str]): Task id. If not passed new id is
+            generated.
+
+    Returns:
+        NewTaskDict: Skeleton of task entity.
+
+    """
+    if not task_id:
+        task_id = create_entity_id()
+    output = {
+        "id": task_id,
+        "name": name,
+        "taskType": task_type,
+        "folderId": folder_id,
+    }
+    for key, value in (
+        ("label", label),
+        ("attrib", attrib),
+        ("data", data),
+        ("tags", tags),
+        ("status", status),
+        ("assignees", assignees),
+        ("active", active),
+        ("thumbnailId", thumbnail_id),
+    ):
+        if value is not None:
+            output[key] = value
     return output
 
 
@@ -345,7 +409,7 @@ def new_representation_entity(
     return output
 
 
-def new_workfile_info(
+def new_workfile_entity(
     filepath: str,
     task_id: str,
     status: Optional[str] = None,
@@ -399,6 +463,28 @@ def new_workfile_info(
     if tags:
         output["tags"] = tags
     return output
+
+
+def new_workfile_info(
+    filepath: str,
+    task_id: str,
+    status: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+    attribs: Optional[dict[str, Any]] = None,
+    description: Optional[str] = None,
+    data: Optional[dict[str, Any]] = None,
+    entity_id: Optional[str] = None,
+) -> NewWorkfileDict:
+    return new_workfile_entity(
+        filepath,
+        task_id,
+        status,
+        tags,
+        attribs,
+        description,
+        data,
+        entity_id,
+    )
 
 
 class AbstractOperation(ABC):
@@ -1029,6 +1115,10 @@ class OperationsSession(object):
             "taskType": task_type,
             "folderId": folder_id,
         }
+        if tags is not None:
+            tags = list(tags)
+        if assignees is not None:
+            assignees = list(assignees)
         for key, value in (
             ("label", label),
             ("attrib", attrib),
@@ -1555,4 +1645,144 @@ class OperationsSession(object):
         """
         return self.delete_entity(
             project_name, "representation", representation_id
+        )
+
+    def create_workfile_entity(
+        self,
+        project_name: str,
+        path: str,
+        task_id: str,
+        *,
+        thumbnail_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        workfile_id: Optional[str] = None,
+    ) -> CreateOperation:
+        """Create new workfile entity.
+
+        Args:
+            project_name (str): Project name.
+            path (str): Representation name.
+            task_id (str): Parent task id.
+            thumbnail_id (Optional[str]): Thumbnail id.
+            attrib (Optional[dict[str, Any]]): Representation attributes.
+            data (Optional[dict[str, Any]]): Representation data.
+            tags (Optional[Iterable[str]]): Representation tags.
+            status (Optional[str]): Representation status.
+            active (Optional[bool]): Representation active state.
+            workfile_id (Optional[str]): Workfile info id. If not
+                passed new id is generated.
+
+        Returns:
+            CreateOperation: Object of create operation.
+
+        """
+        if workfile_id is None:
+            workfile_id = create_entity_id()
+
+        create_data = {
+            "id": workfile_id,
+            "path": path,
+            "taskId": task_id,
+        }
+        for key, value in (
+            ("thumbnailId", thumbnail_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+        ):
+            if value is not None:
+                create_data[key] = value
+
+        return self.create_entity(
+            project_name,
+            "workfile",
+            create_data
+        )
+
+    def update_workfile_entity(
+        self,
+        project_name: str,
+        workfile_id: str,
+        path: Optional[str] = None,
+        task_id: Optional[str] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        tags: Optional[Iterable[str]] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        thumbnail_id: Optional[str] = NOT_SET,
+        created_by: Optional[str] = None,
+        updated_by: Optional[str] = None,
+    ) -> UpdateOperation:
+        """Update workfile entity on server.
+
+        Update of ``data`` will override existing value on folder entity.
+
+        Update of ``attrib`` does change only passed attributes. If you want
+            to unset value, use ``None``.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile id.
+            path (Optional[str]): New rootless workfile path..
+            task_id (Optional[str]): New parent task id.
+            attrib (Optional[dict[str, Any]]): New attributes.
+            data (Optional[dict[str, Any]]): New data.
+            tags (Optional[Iterable[str]]): New tags.
+            status (Optional[str]): New status.
+            active (Optional[bool]): New active state.
+            thumbnail_id (Optional[str]): New thumbnail id.
+            created_by (Optional[str]): New created by username.
+            updated_by (Optional[str]): New updated by username.
+
+        Returns:
+            UpdateOperation: Object of update operation.
+
+        """
+        update_data = {}
+        for key, value in (
+            ("path", path),
+            ("taskId", task_id),
+            ("attrib", attrib),
+            ("data", data),
+            ("tags", tags),
+            ("status", status),
+            ("active", active),
+            ("thumbnailId", thumbnail_id),
+            ("createdBy", created_by),
+            ("updatedBy", updated_by),
+        ):
+            if value is not None:
+                update_data[key] = value
+
+        return self.update_entity(
+            project_name,
+            "workfile",
+            workfile_id,
+            update_data
+        )
+
+    def delete_workfile_entity(
+        self,
+        project_name: str,
+        workfile_id: str,
+    ) -> DeleteOperation:
+        """Delete workfile entity.
+
+        Args:
+            project_name (str): Project name.
+            workfile_id (str): Workfile info id to delete.
+
+        Returns:
+            DeleteOperation: Object of delete operation.
+
+        """
+        return self.delete_entity(
+            project_name, "workfile", workfile_id
         )

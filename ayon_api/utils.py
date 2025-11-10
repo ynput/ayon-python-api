@@ -416,9 +416,9 @@ def entity_data_json_default(value: Any) -> Any:
 
 def slugify_string(
     input_string: str,
-    separator: Optional[str] = "_",
-    slug_whitelist: Optional[Iterable[str]] = SLUGIFY_WHITELIST,
-    split_chars: Optional[Iterable[str]] = SLUGIFY_SEP_WHITELIST,
+    separator: str = "_",
+    slug_whitelist: Iterable[str] = SLUGIFY_WHITELIST,
+    split_chars: Iterable[str] = SLUGIFY_SEP_WHITELIST,
     min_length: int = 1,
     lower: bool = False,
     make_set: bool = False,

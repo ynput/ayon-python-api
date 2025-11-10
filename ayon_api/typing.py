@@ -89,6 +89,12 @@ class EventFilter(TypedDict):
     operator: Literal["and", "or"]
 
 
+class BackgroundOperationTask(TypedDict):
+    id: str
+    status: Literal["pending", "in_progress", "completed"]
+    result: Optional[dict[str, Any]]
+
+
 AttributeScope = Literal[
     "project",
     "folder",
@@ -352,6 +358,21 @@ class NewFolderDict(TypedDict):
     data: dict[str, Any]
     attrib: dict[str, Any]
     thumbnailId: Optional[str]
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewTaskDict(TypedDict):
+    id: str
+    name: str
+    task_type: str
+    folder_id: str
+    label: NotRequired[str]
+    assignees: NotRequired[list[str]]
+    attrib: NotRequired[dict[str, Any]]
+    data: NotRequired[dict[str, Any]]
+    thumbnailId: NotRequired[str]
+    active: NotRequired[bool]
     status: NotRequired[str]
     tags: NotRequired[list[str]]
 

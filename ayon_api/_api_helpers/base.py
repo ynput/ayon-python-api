@@ -13,6 +13,7 @@ if typing.TYPE_CHECKING:
         AnyEntityDict,
         ServerVersion,
         ProjectDict,
+        StreamType,
     )
 
 _PLACEHOLDER = object()
@@ -87,6 +88,16 @@ class BaseServerAPI:
     ) -> requests.Response:
         raise NotImplementedError()
 
+    def upload_file_from_stream(
+        self,
+        endpoint: str,
+        stream: StreamType,
+        progress: Optional[TransferProgress] = None,
+        request_type: Optional[RequestType] = None,
+        **kwargs
+    ) -> requests.Response:
+        raise NotImplementedError()
+
     def download_file(
         self,
         endpoint: str,
@@ -110,6 +121,11 @@ class BaseServerAPI:
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
     ) -> Optional[ProjectDict]:
+        raise NotImplementedError()
+
+    def get_user(
+        self, username: Optional[str] = None
+    ) -> Optional[dict[str, Any]]:
         raise NotImplementedError()
 
     def _prepare_fields(

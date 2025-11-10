@@ -10,10 +10,10 @@ _version_content = {}
 exec(open(VERSION_PATH).read(), _version_content)
 
 setup(
-    name="ayon_api",
+    name="ayon_python_api",
     version=_version_content["__version__"],
     py_modules=["ayon_api"],
-    packages=["ayon_api"],
+    packages=["ayon_api", "ayon_api._api_helpers"],
     author="ynput.io",
     author_email="info@ynput.io",
     license="Apache License (2.0)",

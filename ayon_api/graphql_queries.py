@@ -683,9 +683,25 @@ def entity_lists_graphql_query(fields):
     entity_lists_field = project_field.add_field_with_edges("entityLists")
     entity_lists_field.set_filter("ids", entity_list_ids)
 
-    nested_fields = fields_to_dict(set(fields))
+    fields = set(fields)
+    items_field_names = set()
+    for field_name in set(fields):
+        field_name.removeprefix("items")
+        if not field_name.startswith("items"):
+            continue
+
+        fields.discard(field_name)
+        field_name = field_name.removeprefix("items").lstrip(".")
+        if field_name:
+            items_field_names.add(field_name)
 
     query_queue = collections.deque()
+    if items_field_names:
+        items_field = entity_lists_field.add_field_with_edges("items")
+        for field_name in items_field_names:
+            items_field.add_edge_field(field_name)
+
+    nested_fields = fields_to_dict(set(fields))
     for key, value in nested_fields.items():
         query_queue.append((key, value, entity_lists_field))
 
