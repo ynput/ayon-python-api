@@ -916,11 +916,9 @@ class ServerAPI(
         """Product base types are available on server."""
         if self._product_base_type_supported is None:
             major, minor, patch, _, _ = self.server_version_tuple
-            self._product_base_type_supported = False
-            # TODO implement when server version of the support is known
-            # self._product_base_type_supported = (
-            #     (major, minor, patch) >= (1, 12, 0)
-            # )
+            self._product_base_type_supported = (
+                    (major, minor, patch) >= (1, 13, 0)
+            )
         return self._product_base_type_supported
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
