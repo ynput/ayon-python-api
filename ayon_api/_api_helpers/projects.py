@@ -14,7 +14,11 @@ from ayon_api.graphql_queries import projects_graphql_query
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import ProjectDict, AnatomyPresetDict
+    from ayon_api.typing import (
+        ProjectDict,
+        AnatomyPresetDict,
+        ProjectListDict,
+    )
 
 
 class ProjectFetchType(Enum):
@@ -163,6 +167,43 @@ class ProjectsAPI(BaseServerAPI):
             if project:
                 yield project
 
+    def get_rest_projects_list(
+        self,
+        active: Optional[bool] = True,
+        library: Optional[bool] = None,
+    ) -> list[ProjectListDict]:
+        """Receive available projects.
+
+        User must be logged in.
+
+        Args:
+            active (Optional[bool]): Filter active/inactive projects. Both
+                are returned if 'None' is passed.
+            library (Optional[bool]): Filter standard/library projects. Both
+                are returned if 'None' is passed.
+
+        Returns:
+            list[ProjectListDict]: List of available projects.
+
+        """
+        if active is not None:
+            active = "true" if active else "false"
+
+        if library is not None:
+            library = "true" if library else "false"
+
+        query = prepare_query_string({
+            "active": active,
+            "library": library,
+        })
+
+        response = self.get(f"projects{query}")
+        response.raise_for_status()
+        data = response.data
+        if data:
+            return data["projects"]
+        return []
+
     def get_project_names(
         self,
         active: Optional[bool] = True,
@@ -182,22 +223,10 @@ class ProjectsAPI(BaseServerAPI):
             list[str]: List of available project names.
 
         """
-        if active is not None:
-            active = "true" if active else "false"
-
-        if library is not None:
-            library = "true" if library else "false"
-
-        query = prepare_query_string({"active": active, "library": library})
-
-        response = self.get(f"projects{query}")
-        response.raise_for_status()
-        data = response.data
-        project_names = []
-        if data:
-            for project in data["projects"]:
-                project_names.append(project["name"])
-        return project_names
+        return [
+            project["name"]
+            for project in self.get_rest_projects_list(active, library)
+        ]
 
     def get_projects(
         self,

@@ -64,6 +64,7 @@ if typing.TYPE_CHECKING:
         BundlesInfoDict,
         AnatomyPresetDict,
         SecretDict,
+        ProjectListDict,
         AnyEntityDict,
         ProjectDict,
         FolderDict,
@@ -3568,6 +3569,31 @@ def get_rest_projects(
     """
     con = get_server_api_connection()
     return con.get_rest_projects(
+        active=active,
+        library=library,
+    )
+
+
+def get_rest_projects_list(
+    active: Optional[bool] = True,
+    library: Optional[bool] = None,
+) -> list[ProjectListDict]:
+    """Receive available projects.
+
+    User must be logged in.
+
+    Args:
+        active (Optional[bool]): Filter active/inactive projects. Both
+            are returned if 'None' is passed.
+        library (Optional[bool]): Filter standard/library projects. Both
+            are returned if 'None' is passed.
+
+    Returns:
+        list[ProjectListDict]: List of available projects.
+
+    """
+    con = get_server_api_connection()
+    return con.get_rest_projects_list(
         active=active,
         library=library,
     )
