@@ -695,7 +695,7 @@ class ProjectsAPI(BaseServerAPI):
 
         graphql_fields.add("name")
         fetch_type = (
-            ProjectFetchType.Both
+            ProjectFetchType.GraphQlAndREST
             if has_product_types
             else ProjectFetchType.REST
         )
