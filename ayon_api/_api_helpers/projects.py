@@ -24,7 +24,8 @@ if typing.TYPE_CHECKING:
 class ProjectFetchType(Enum):
     GraphQl = "GraphQl"
     REST = "REST"
-    Both = "Both"
+    RESTList = "RESTList"
+    GraphQlAndREST = "GraphQlAndREST"
 
 
 class ProjectsAPI(BaseServerAPI):
@@ -255,6 +256,9 @@ class ProjectsAPI(BaseServerAPI):
             fields = set(fields)
 
         graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
+        if fetch_type == ProjectFetchType.RESTList:
+            return self.get_rest_projects_list(active, library)
+
         projects_by_name = {}
         if graphql_fields:
             projects = list(self._get_graphql_projects(
@@ -631,8 +635,18 @@ class ProjectsAPI(BaseServerAPI):
         if fields is None:
             return set(), ProjectFetchType.REST
 
-        has_product_types = False
+        rest_list_fields = {
+            "name",
+            "code",
+            "active",
+            "createdAt",
+            "updatedAt",
+        }
         graphql_fields = set()
+        if len(fields - rest_list_fields) == 0:
+            return graphql_fields, ProjectFetchType.RESTList
+
+        has_product_types = False
         for field in tuple(fields):
             # Product types are available only in GraphQl
             if field == "productTypes":
