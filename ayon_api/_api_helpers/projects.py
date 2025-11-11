@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import platform
 import warnings
+from enum import Enum
 import typing
 from typing import Optional, Generator, Iterable, Any
 
@@ -14,6 +15,12 @@ from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
     from ayon_api.typing import ProjectDict, AnatomyPresetDict
+
+
+class ProjectFetchType(Enum):
+    GraphQl = "GraphQl"
+    REST = "REST"
+    Both = "Both"
 
 
 class ProjectsAPI(BaseServerAPI):
@@ -218,7 +225,7 @@ class ProjectsAPI(BaseServerAPI):
         if fields is not None:
             fields = set(fields)
 
-        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         projects_by_name = {}
         if graphql_fields:
             projects = list(self._get_graphql_projects(
@@ -227,7 +234,7 @@ class ProjectsAPI(BaseServerAPI):
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ))
-            if not use_rest:
+            if fetch_type == ProjectFetchType.GraphQl:
                 yield from projects
                 return
             projects_by_name = {p["name"]: p for p in projects}
@@ -262,7 +269,7 @@ class ProjectsAPI(BaseServerAPI):
         if fields is not None:
             fields = set(fields)
 
-        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         graphql_project = None
         if graphql_fields:
             graphql_project = next(self._get_graphql_projects(
@@ -271,7 +278,7 @@ class ProjectsAPI(BaseServerAPI):
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ), None)
-            if not graphql_project or not use_rest:
+            if not graphql_project or fetch_type == fetch_type.GraphQl:
                 return graphql_project
 
         project = self.get_rest_project(project_name)
@@ -585,34 +592,71 @@ class ProjectsAPI(BaseServerAPI):
 
     def _get_project_graphql_fields(
         self, fields: Optional[set[str]]
-    ) -> tuple[set[str], bool]:
-        """Fetch of project must be done using REST endpoint.
+    ) -> tuple[set[str], ProjectFetchType]:
+        """Find out if project can be fetched with GraphQl, REST or both.
 
         Returns:
             set[str]: GraphQl fields.
 
         """
         if fields is None:
-            return set(), True
+            return set(), ProjectFetchType.REST
 
         has_product_types = False
         graphql_fields = set()
-        for field in fields:
+        for field in tuple(fields):
             # Product types are available only in GraphQl
-            if field.startswith("productTypes"):
+            if field == "productTypes":
+                has_product_types = True
+                fields.discard(field)
+                graphql_fields.add("productTypes.name")
+                graphql_fields.add("productTypes.icon")
+                graphql_fields.add("productTypes.color")
+
+            elif field.startswith("productTypes"):
                 has_product_types = True
                 graphql_fields.add(field)
 
-        if not has_product_types:
-            return set(), True
+            elif field == "productBaseTypes":
+                has_product_types = True
+                fields.discard(field)
+                graphql_fields.add("productBaseTypes.name")
 
-        inters = fields & {"name", "code", "active", "library"}
+            elif field.startswith("productBaseTypes"):
+                has_product_types = True
+                graphql_fields.add("productBaseTypes.name")
+
+            elif field == "bundles":
+                fields.discard("bundles")
+                graphql_fields.add("bundles.production")
+                graphql_fields.add("bundles.staging")
+
+            elif field == "attrib":
+                fields.discard("attrib")
+                graphql_fields |= self.get_attributes_fields_for_type(
+                    "project"
+                )
+
+        inters = fields & {
+            "name",
+            "code",
+            "active",
+            "library",
+            "usedTags",
+            "data",
+        }
         remainders = fields - (inters | graphql_fields)
-        if remainders:
-            graphql_fields.add("name")
-            return graphql_fields, True
-        graphql_fields |= inters
-        return graphql_fields, False
+        if not remainders:
+            graphql_fields |= inters
+            return graphql_fields, ProjectFetchType.GraphQl
+
+        graphql_fields.add("name")
+        fetch_type = (
+            ProjectFetchType.Both
+            if has_product_types
+            else ProjectFetchType.REST
+        )
+        return graphql_fields, fetch_type
 
     def _fill_project_entity_data(self, project: dict[str, Any]) -> None:
         # Add fake scope to statuses if not available
