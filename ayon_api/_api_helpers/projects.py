@@ -719,7 +719,9 @@ class ProjectsAPI(BaseServerAPI):
         # Convert 'data' from string to dict if needed
         if "data" in project:
             project_data = project["data"]
-            if isinstance(project_data, str):
+            if project_data is None:
+                project["data"] = {}
+            elif isinstance(project_data, str):
                 project_data = json.loads(project_data)
                 project["data"] = project_data
 
