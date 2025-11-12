@@ -644,27 +644,29 @@ class ProjectsAPI(BaseServerAPI):
         if len(fields - rest_list_fields) == 0:
             return graphql_fields, ProjectFetchType.RESTList
 
-        has_product_types = False
+        must_use_graphql = False
         for field in tuple(fields):
             # Product types are available only in GraphQl
-            if field == "productTypes":
-                has_product_types = True
+            if field == "usedTags":
+                graphql_fields.add("usedTags")
+            elif field == "productTypes":
+                must_use_graphql = True
                 fields.discard(field)
                 graphql_fields.add("productTypes.name")
                 graphql_fields.add("productTypes.icon")
                 graphql_fields.add("productTypes.color")
 
             elif field.startswith("productTypes"):
-                has_product_types = True
+                must_use_graphql = True
                 graphql_fields.add(field)
 
             elif field == "productBaseTypes":
-                has_product_types = True
+                must_use_graphql = True
                 fields.discard(field)
                 graphql_fields.add("productBaseTypes.name")
 
             elif field.startswith("productBaseTypes"):
-                has_product_types = True
+                must_use_graphql = True
                 graphql_fields.add(field)
 
             elif field == "bundle" or field == "bundles":
@@ -696,7 +698,7 @@ class ProjectsAPI(BaseServerAPI):
             graphql_fields |= inters
             return graphql_fields, ProjectFetchType.GraphQl
 
-        if has_product_types:
+        if must_use_graphql:
             graphql_fields.add("name")
             return graphql_fields, ProjectFetchType.GraphQlAndREST
 
