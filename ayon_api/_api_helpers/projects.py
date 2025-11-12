@@ -197,13 +197,10 @@ class ProjectsAPI(BaseServerAPI):
             "active": active,
             "library": library,
         })
-
         response = self.get(f"projects{query}")
         response.raise_for_status()
         data = response.data
-        if data:
-            return data["projects"]
-        return []
+        return data["projects"]
 
     def get_project_names(
         self,
@@ -257,7 +254,8 @@ class ProjectsAPI(BaseServerAPI):
 
         graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         if fetch_type == ProjectFetchType.RESTList:
-            return self.get_rest_projects_list(active, library)
+            yield from self.get_rest_projects_list(active, library)
+            return
 
         projects_by_name = {}
         if graphql_fields:
@@ -275,7 +273,7 @@ class ProjectsAPI(BaseServerAPI):
         for project in self.get_rest_projects(active, library):
             name = project["name"]
             graphql_p = projects_by_name.get(name)
-            if graphql_p:
+            if graphql_p and "productTypes" in graphql_p:
                 project["productTypes"] = graphql_p["productTypes"]
             yield project
 
@@ -667,12 +665,15 @@ class ProjectsAPI(BaseServerAPI):
 
             elif field.startswith("productBaseTypes"):
                 has_product_types = True
-                graphql_fields.add("productBaseTypes.name")
+                graphql_fields.add(field)
 
-            elif field == "bundles":
-                fields.discard("bundles")
-                graphql_fields.add("bundles.production")
-                graphql_fields.add("bundles.staging")
+            elif field == "bundle" or field == "bundles":
+                fields.discard(field)
+                graphql_fields.add("bundle.production")
+                graphql_fields.add("bundle.staging")
+
+            elif field.startswith("bundle"):
+                graphql_fields.add(field)
 
             elif field == "attrib":
                 fields.discard("attrib")
@@ -680,6 +681,8 @@ class ProjectsAPI(BaseServerAPI):
                     "project"
                 )
 
+        # NOTE 'config' in GraphQl is NOT the same as from REST api.
+        # - At the moment of this comment there is missing 'productBaseTypes'.
         inters = fields & {
             "name",
             "code",
@@ -693,13 +696,11 @@ class ProjectsAPI(BaseServerAPI):
             graphql_fields |= inters
             return graphql_fields, ProjectFetchType.GraphQl
 
-        graphql_fields.add("name")
-        fetch_type = (
-            ProjectFetchType.GraphQlAndREST
-            if has_product_types
-            else ProjectFetchType.REST
-        )
-        return graphql_fields, fetch_type
+        if has_product_types:
+            graphql_fields.add("name")
+            return graphql_fields, ProjectFetchType.GraphQlAndREST
+
+        return set(), ProjectFetchType.REST
 
     def _fill_project_entity_data(self, project: dict[str, Any]) -> None:
         # Add fake scope to statuses if not available
@@ -727,7 +728,7 @@ class ProjectsAPI(BaseServerAPI):
 
             # Fill 'bundle' from data if is not filled
             if "bundle" not in project:
-                bundle_data = project["data"].get("bundle", {})
+                bundle_data = project["data"].get("bundle") or {}
                 prod_bundle = bundle_data.get("production")
                 staging_bundle = bundle_data.get("staging")
                 project["bundle"] = {
@@ -736,9 +737,12 @@ class ProjectsAPI(BaseServerAPI):
                 }
 
         # Convert 'config' from string to dict if needed
-        config = project.get("config")
-        if isinstance(config, str):
-            project["config"] = json.loads(config)
+        if "config" in project:
+            config = project["config"]
+            if config is None:
+                project["config"] = {}
+            elif isinstance(config, str):
+                project["config"] = json.loads(config)
 
         # Unifiy 'linkTypes' data structure from REST and GraphQL
         if "linkTypes" in project:
