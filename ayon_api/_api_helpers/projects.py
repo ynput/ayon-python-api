@@ -273,8 +273,13 @@ class ProjectsAPI(BaseServerAPI):
         for project in self.get_rest_projects(active, library):
             name = project["name"]
             graphql_p = projects_by_name.get(name)
-            if graphql_p and "productTypes" in graphql_p:
-                project["productTypes"] = graphql_p["productTypes"]
+            if graphql_p:
+                for key in (
+                    "productTypes",
+                    "usedTags",
+                ):
+                    if key in graphql_p:
+                        project[key] = graphql_p[key]
             yield project
 
     def get_project(
@@ -316,7 +321,12 @@ class ProjectsAPI(BaseServerAPI):
         if own_attributes:
             fill_own_attribs(project)
         if graphql_project:
-            project["productTypes"] = graphql_project["productTypes"]
+            for key in (
+                "productTypes",
+                "usedTags",
+            ):
+                if key in graphql_project:
+                    project[key] = graphql_project[key]
         return project
 
     def create_project(
