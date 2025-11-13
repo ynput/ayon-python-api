@@ -1299,7 +1299,7 @@ class OperationsSession(object):
         """Update product entity on server.
 
         Update of ``data`` will override the existing value on
-        the folder entity.
+            the product entity.
 
         Update of ``attrib`` does change only passed attributes. If you want
             to unset value, use ``None``.
