@@ -9,6 +9,7 @@ import typing
 from typing import Optional, Any, Iterable
 
 from ._api import get_server_api_connection
+from .exceptions import UnsupportedServerVersion
 from .utils import create_entity_id, REMOVED_VALUE, NOT_SET
 
 if typing.TYPE_CHECKING:
@@ -1267,6 +1268,14 @@ class OperationsSession(object):
             "folderId": folder_id,
         }
 
+        if (
+            product_base_type
+            and not self._con.is_product_base_type_supported()
+        ):
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
+
         for key, value in (
             ("attrib", attrib),
             ("data", data),
@@ -1321,6 +1330,14 @@ class OperationsSession(object):
             UpdateOperation: Object of update operation.
 
         """
+        if (
+            product_base_type
+            and not self._con.is_product_base_type_supported()
+        ):
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
+
         update_data = {
             key: value
             for key, value in (
