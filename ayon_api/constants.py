@@ -144,7 +144,6 @@ DEFAULT_PRODUCT_FIELDS = {
     "folderId",
     "active",
     "productType",
-    "productBaseType",
     "data",
     "status",
     "tags",

@@ -1815,6 +1815,9 @@ class ServerAPI(
 
         elif entity_type == "product":
             entity_type_defaults = set(DEFAULT_PRODUCT_FIELDS)
+            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+            if self.is_product_base_type_supported():
+                entity_type_defaults.add("productBaseType")
 
         elif entity_type == "version":
             entity_type_defaults = set(DEFAULT_VERSION_FIELDS)
