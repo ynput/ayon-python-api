@@ -130,8 +130,8 @@ class EntityHub:
             self.fill_project_from_server()
         return self._project_entity
 
-    def product_base_type_supported(self) -> bool:
-        return self._connection.product_base_type_supported()
+    def is_product_base_type_supported(self) -> bool:
+        return self._connection.is_product_base_type_supported()
 
     def get_attributes_for_type(
         self, entity_type: EntityType
@@ -3619,7 +3619,7 @@ class ProductEntity(BaseEntity):
             changes["productType"] = self._product_type
 
         if (
-            self._entity_hub.product_base_type_supported()
+            self._entity_hub.is_product_base_type_supported()
             and self._orig_product_base_type != self._product_base_type
         ):
             changes["productBaseType"] = self._product_base_type
@@ -3655,7 +3655,7 @@ class ProductEntity(BaseEntity):
         }
 
         if (
-            self._entity_hub.product_base_type_supported()
+            self._entity_hub.is_product_base_type_supported()
             and self.product_base_type
         ):
             output["productBaseType"] = self.product_base_type

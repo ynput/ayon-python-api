@@ -87,7 +87,7 @@ class ProductsAPI(BaseServerAPI):
         if not project_name:
             return
 
-        if product_base_types and not self.product_base_type_supported():
+        if product_base_types and not self.is_product_base_type_supported():
             raise UnsupportedServerVersion(
                 "Product base type is not supported for your server version."
             )
@@ -413,7 +413,7 @@ class ProductsAPI(BaseServerAPI):
         """
         if (
             product_base_type is not None
-            and not self.product_base_type_supported()
+            and not self.is_product_base_type_supported()
         ):
             raise UnsupportedServerVersion(
                 "Product base type is not supported for your server version."
@@ -482,7 +482,7 @@ class ProductsAPI(BaseServerAPI):
         """
         if (
             product_base_type is not None
-            and not self.product_base_type_supported()
+            and not self.is_product_base_type_supported()
         ):
             raise UnsupportedServerVersion(
                 "Product base type is not supported for your server version."

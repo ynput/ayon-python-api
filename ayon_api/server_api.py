@@ -912,7 +912,7 @@ class ServerAPI(
             )
         return self._graphql_allows_traits_in_representations
 
-    def product_base_type_supported(self) -> bool:
+    def is_product_base_type_supported(self) -> bool:
         """Product base types are available on server."""
         if self._product_base_type_supported is None:
             major, minor, patch, _, _ = self.server_version_tuple

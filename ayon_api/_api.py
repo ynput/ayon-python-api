@@ -720,11 +720,11 @@ def get_server_version_tuple() -> ServerVersion:
     return con.get_server_version_tuple()
 
 
-def product_base_type_supported() -> bool:
+def is_product_base_type_supported() -> bool:
     """Product base types are available on server.
     """
     con = get_server_api_connection()
-    return con.product_base_type_supported()
+    return con.is_product_base_type_supported()
 
 
 def get_users(
