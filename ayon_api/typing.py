@@ -328,6 +328,14 @@ class SecretDict(TypedDict):
     value: str
 
 
+class ProjectListDict(TypedDict):
+    name: str
+    code: str
+    active: bool
+    createdAt: str
+    updatedAt: str
+
+
 ProjectDict = dict[str, Any]
 FolderDict = dict[str, Any]
 TaskDict = dict[str, Any]

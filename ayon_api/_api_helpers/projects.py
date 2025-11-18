@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import platform
 import warnings
+from enum import Enum
 import typing
 from typing import Optional, Generator, Iterable, Any
 
@@ -13,7 +14,35 @@ from ayon_api.graphql_queries import projects_graphql_query
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import ProjectDict, AnatomyPresetDict
+    from ayon_api.typing import (
+        ProjectDict,
+        AnatomyPresetDict,
+        ProjectListDict,
+    )
+
+
+class ProjectFetchType(Enum):
+    """How a project has to be fetched to get all requested data.
+
+    Some project data can be received only from GraphQl, and some can be
+        received only with REST. That is based on requested fields.
+
+    There is also a dedicated endpoint to get information about all projects
+        but returns very limited information about the project.
+
+    Enums:
+        GraphQl: Requested project data can be received with GraphQl.
+        REST: Requested project data can be received with /projects/{project}.
+        RESTList: Requested project data can be received with /projects.
+            Can be considered as a subset of 'REST'.
+        GraphQlAndREST: It is necessary to use GraphQl and REST to get all
+            requested data.
+
+    """
+    GraphQl = "GraphQl"
+    REST = "REST"
+    RESTList = "RESTList"
+    GraphQlAndREST = "GraphQlAndREST"
 
 
 class ProjectsAPI(BaseServerAPI):
@@ -156,6 +185,40 @@ class ProjectsAPI(BaseServerAPI):
             if project:
                 yield project
 
+    def get_rest_projects_list(
+        self,
+        active: Optional[bool] = True,
+        library: Optional[bool] = None,
+    ) -> list[ProjectListDict]:
+        """Receive available projects.
+
+        User must be logged in.
+
+        Args:
+            active (Optional[bool]): Filter active/inactive projects. Both
+                are returned if 'None' is passed.
+            library (Optional[bool]): Filter standard/library projects. Both
+                are returned if 'None' is passed.
+
+        Returns:
+            list[ProjectListDict]: List of available projects.
+
+        """
+        if active is not None:
+            active = "true" if active else "false"
+
+        if library is not None:
+            library = "true" if library else "false"
+
+        query = prepare_query_string({
+            "active": active,
+            "library": library,
+        })
+        response = self.get(f"projects{query}")
+        response.raise_for_status()
+        data = response.data
+        return data["projects"]
+
     def get_project_names(
         self,
         active: Optional[bool] = True,
@@ -175,22 +238,10 @@ class ProjectsAPI(BaseServerAPI):
             list[str]: List of available project names.
 
         """
-        if active is not None:
-            active = "true" if active else "false"
-
-        if library is not None:
-            library = "true" if library else "false"
-
-        query = prepare_query_string({"active": active, "library": library})
-
-        response = self.get(f"projects{query}")
-        response.raise_for_status()
-        data = response.data
-        project_names = []
-        if data:
-            for project in data["projects"]:
-                project_names.append(project["name"])
-        return project_names
+        return [
+            project["name"]
+            for project in self.get_rest_projects_list(active, library)
+        ]
 
     def get_projects(
         self,
@@ -218,7 +269,11 @@ class ProjectsAPI(BaseServerAPI):
         if fields is not None:
             fields = set(fields)
 
-        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
+        if fetch_type == ProjectFetchType.RESTList:
+            yield from self.get_rest_projects_list(active, library)
+            return
+
         projects_by_name = {}
         if graphql_fields:
             projects = list(self._get_graphql_projects(
@@ -227,7 +282,7 @@ class ProjectsAPI(BaseServerAPI):
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ))
-            if not use_rest:
+            if fetch_type == ProjectFetchType.GraphQl:
                 yield from projects
                 return
             projects_by_name = {p["name"]: p for p in projects}
@@ -236,7 +291,12 @@ class ProjectsAPI(BaseServerAPI):
             name = project["name"]
             graphql_p = projects_by_name.get(name)
             if graphql_p:
-                project["productTypes"] = graphql_p["productTypes"]
+                for key in (
+                    "productTypes",
+                    "usedTags",
+                ):
+                    if key in graphql_p:
+                        project[key] = graphql_p[key]
             yield project
 
     def get_project(
@@ -262,7 +322,7 @@ class ProjectsAPI(BaseServerAPI):
         if fields is not None:
             fields = set(fields)
 
-        graphql_fields, use_rest = self._get_project_graphql_fields(fields)
+        graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         graphql_project = None
         if graphql_fields:
             graphql_project = next(self._get_graphql_projects(
@@ -271,14 +331,19 @@ class ProjectsAPI(BaseServerAPI):
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ), None)
-            if not graphql_project or not use_rest:
+            if not graphql_project or fetch_type == fetch_type.GraphQl:
                 return graphql_project
 
         project = self.get_rest_project(project_name)
         if own_attributes:
             fill_own_attribs(project)
         if graphql_project:
-            project["productTypes"] = graphql_project["productTypes"]
+            for key in (
+                "productTypes",
+                "usedTags",
+            ):
+                if key in graphql_project:
+                    project[key] = graphql_project[key]
         return project
 
     def create_project(
@@ -585,34 +650,86 @@ class ProjectsAPI(BaseServerAPI):
 
     def _get_project_graphql_fields(
         self, fields: Optional[set[str]]
-    ) -> tuple[set[str], bool]:
-        """Fetch of project must be done using REST endpoint.
+    ) -> tuple[set[str], ProjectFetchType]:
+        """Find out if project can be fetched with GraphQl, REST or both.
 
         Returns:
             set[str]: GraphQl fields.
 
         """
         if fields is None:
-            return set(), True
+            return set(), ProjectFetchType.REST
 
-        has_product_types = False
+        rest_list_fields = {
+            "name",
+            "code",
+            "active",
+            "createdAt",
+            "updatedAt",
+        }
         graphql_fields = set()
-        for field in fields:
+        if len(fields - rest_list_fields) == 0:
+            return graphql_fields, ProjectFetchType.RESTList
+
+        must_use_graphql = False
+        for field in tuple(fields):
             # Product types are available only in GraphQl
-            if field.startswith("productTypes"):
-                has_product_types = True
+            if field == "usedTags":
+                graphql_fields.add("usedTags")
+            elif field == "productTypes":
+                must_use_graphql = True
+                fields.discard(field)
+                graphql_fields.add("productTypes.name")
+                graphql_fields.add("productTypes.icon")
+                graphql_fields.add("productTypes.color")
+
+            elif field.startswith("productTypes"):
+                must_use_graphql = True
                 graphql_fields.add(field)
 
-        if not has_product_types:
-            return set(), True
+            elif field == "productBaseTypes":
+                must_use_graphql = True
+                fields.discard(field)
+                graphql_fields.add("productBaseTypes.name")
 
-        inters = fields & {"name", "code", "active", "library"}
+            elif field.startswith("productBaseTypes"):
+                must_use_graphql = True
+                graphql_fields.add(field)
+
+            elif field == "bundle" or field == "bundles":
+                fields.discard(field)
+                graphql_fields.add("bundle.production")
+                graphql_fields.add("bundle.staging")
+
+            elif field.startswith("bundle"):
+                graphql_fields.add(field)
+
+            elif field == "attrib":
+                fields.discard("attrib")
+                graphql_fields |= self.get_attributes_fields_for_type(
+                    "project"
+                )
+
+        # NOTE 'config' in GraphQl is NOT the same as from REST api.
+        # - At the moment of this comment there is missing 'productBaseTypes'.
+        inters = fields & {
+            "name",
+            "code",
+            "active",
+            "library",
+            "usedTags",
+            "data",
+        }
         remainders = fields - (inters | graphql_fields)
-        if remainders:
+        if not remainders:
+            graphql_fields |= inters
+            return graphql_fields, ProjectFetchType.GraphQl
+
+        if must_use_graphql:
             graphql_fields.add("name")
-            return graphql_fields, True
-        graphql_fields |= inters
-        return graphql_fields, False
+            return graphql_fields, ProjectFetchType.GraphQlAndREST
+
+        return set(), ProjectFetchType.REST
 
     def _fill_project_entity_data(self, project: dict[str, Any]) -> None:
         # Add fake scope to statuses if not available
@@ -632,13 +749,15 @@ class ProjectsAPI(BaseServerAPI):
         # Convert 'data' from string to dict if needed
         if "data" in project:
             project_data = project["data"]
-            if isinstance(project_data, str):
+            if project_data is None:
+                project["data"] = {}
+            elif isinstance(project_data, str):
                 project_data = json.loads(project_data)
                 project["data"] = project_data
 
             # Fill 'bundle' from data if is not filled
             if "bundle" not in project:
-                bundle_data = project["data"].get("bundle", {})
+                bundle_data = project["data"].get("bundle") or {}
                 prod_bundle = bundle_data.get("production")
                 staging_bundle = bundle_data.get("staging")
                 project["bundle"] = {
@@ -647,9 +766,12 @@ class ProjectsAPI(BaseServerAPI):
                 }
 
         # Convert 'config' from string to dict if needed
-        config = project.get("config")
-        if isinstance(config, str):
-            project["config"] = json.loads(config)
+        if "config" in project:
+            config = project["config"]
+            if config is None:
+                project["config"] = {}
+            elif isinstance(config, str):
+                project["config"] = json.loads(config)
 
         # Unifiy 'linkTypes' data structure from REST and GraphQL
         if "linkTypes" in project:
