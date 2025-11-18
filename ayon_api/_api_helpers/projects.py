@@ -22,6 +22,23 @@ if typing.TYPE_CHECKING:
 
 
 class ProjectFetchType(Enum):
+    """How a project has to be fetched to get all requested data.
+
+    Some project data can be received only from GraphQl, and some can be
+        received only with REST. That is based on requested fields.
+
+    There is also a dedicated endpoint to get information about all projects
+        but returns very limited information about the project.
+
+    Enums:
+        GraphQl: Requested project data can be received with GraphQl.
+        REST: Requested project data can be received with /projects/{project}.
+        RESTList: Requested project data can be received with /projects.
+            Can be considered as a subset of 'REST'.
+        GraphQlAndREST: It is necessary to use GraphQl and REST to get all
+            requested data.
+
+    """
     GraphQl = "GraphQl"
     REST = "REST"
     RESTList = "RESTList"
