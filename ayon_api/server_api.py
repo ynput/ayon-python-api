@@ -327,6 +327,7 @@ class ServerAPI(
         self._server_version_tuple = None
 
         self._graphql_allows_traits_in_representations: Optional[bool] = None
+        self._product_base_type_supported = None
 
         self._session = None
 
@@ -910,6 +911,15 @@ class ServerAPI(
                 (major, minor, patch) >= (1, 7, 5)
             )
         return self._graphql_allows_traits_in_representations
+
+    def is_product_base_type_supported(self) -> bool:
+        """Product base types are available on server."""
+        if self._product_base_type_supported is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            self._product_base_type_supported = (
+                    (major, minor, patch) >= (1, 13, 0)
+            )
+        return self._product_base_type_supported
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
         if self._access_token is None:
@@ -1805,6 +1815,9 @@ class ServerAPI(
 
         elif entity_type == "product":
             entity_type_defaults = set(DEFAULT_PRODUCT_FIELDS)
+            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+            if self.is_product_base_type_supported():
+                entity_type_defaults.add("productBaseType")
 
         elif entity_type == "version":
             entity_type_defaults = set(DEFAULT_VERSION_FIELDS)

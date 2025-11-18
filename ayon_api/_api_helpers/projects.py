@@ -7,7 +7,11 @@ from enum import Enum
 import typing
 from typing import Optional, Generator, Iterable, Any
 
-from ayon_api.constants import PROJECT_NAME_REGEX
+from ayon_api.constants import (
+    PROJECT_NAME_REGEX,
+    DEFAULT_PRODUCT_BASE_TYPE_FIELDS,
+    DEFAULT_PRODUCT_TYPE_FIELDS,
+)
 from ayon_api.utils import prepare_query_string, fill_own_attribs
 from ayon_api.graphql_queries import projects_graphql_query
 
@@ -679,9 +683,8 @@ class ProjectsAPI(BaseServerAPI):
             elif field == "productTypes":
                 must_use_graphql = True
                 fields.discard(field)
-                graphql_fields.add("productTypes.name")
-                graphql_fields.add("productTypes.icon")
-                graphql_fields.add("productTypes.color")
+                for f_name in DEFAULT_PRODUCT_TYPE_FIELDS:
+                    fields.add(f"{field}.{f_name}")
 
             elif field.startswith("productTypes"):
                 must_use_graphql = True
@@ -690,7 +693,8 @@ class ProjectsAPI(BaseServerAPI):
             elif field == "productBaseTypes":
                 must_use_graphql = True
                 fields.discard(field)
-                graphql_fields.add("productBaseTypes.name")
+                for f_name in DEFAULT_PRODUCT_BASE_TYPE_FIELDS:
+                    fields.add(f"{field}.{f_name}")
 
             elif field.startswith("productBaseTypes"):
                 must_use_graphql = True
