@@ -14,6 +14,7 @@ if typing.TYPE_CHECKING:
         ServerVersion,
         ProjectDict,
         StreamType,
+        AttributeScope,
     )
 
 _PLACEHOLDER = object()
@@ -126,6 +127,11 @@ class BaseServerAPI:
     def get_user(
         self, username: Optional[str] = None
     ) -> Optional[dict[str, Any]]:
+        raise NotImplementedError()
+
+    def get_attributes_fields_for_type(
+        self, entity_type: AttributeScope
+    ) -> set[str]:
         raise NotImplementedError()
 
     def _prepare_fields(
