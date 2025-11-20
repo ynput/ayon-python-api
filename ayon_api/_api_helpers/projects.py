@@ -684,7 +684,7 @@ class ProjectsAPI(BaseServerAPI):
                 must_use_graphql = True
                 fields.discard(field)
                 for f_name in DEFAULT_PRODUCT_TYPE_FIELDS:
-                    fields.add(f"{field}.{f_name}")
+                    graphql_fields.add(f"{field}.{f_name}")
 
             elif field.startswith("productTypes"):
                 must_use_graphql = True
@@ -694,7 +694,7 @@ class ProjectsAPI(BaseServerAPI):
                 must_use_graphql = True
                 fields.discard(field)
                 for f_name in DEFAULT_PRODUCT_BASE_TYPE_FIELDS:
-                    fields.add(f"{field}.{f_name}")
+                    graphql_fields.add(f"{field}.{f_name}")
 
             elif field.startswith("productBaseTypes"):
                 must_use_graphql = True
