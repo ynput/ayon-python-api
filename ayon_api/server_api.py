@@ -1569,11 +1569,26 @@ class ServerAPI(
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
 
-        response = post_func(
-            url,
-            data=self._upload_chunks_iter(stream, progress, chunk_size),
-            **kwargs
-        )
+        retries = self.get_default_max_retries()
+        response = None
+        for attempt in range(retries):
+            try:
+                response = post_func(
+                    url,
+                    data=self._upload_chunks_iter(
+                        stream, progress, chunk_size
+                    ),
+                    **kwargs
+                )
+                break
+
+            except (
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+            ):
+                if attempt == retries:
+                    raise
+                progress.next_attempt()
 
         response.raise_for_status()
         return response
