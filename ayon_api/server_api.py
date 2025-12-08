@@ -1329,7 +1329,7 @@ class ServerAPI(
     def _endpoint_to_url(
         self,
         endpoint: str,
-        use_rest: Optional[bool] = True
+        use_rest: bool = True,
     ) -> str:
         """Cleanup endpoint and return full url to AYON server.
 
@@ -1347,7 +1347,7 @@ class ServerAPI(
         endpoint = endpoint.lstrip("/").rstrip("/")
         if endpoint.startswith(self._base_url):
             return endpoint
-        base_url = self._rest_url if use_rest else self._graphql_url
+        base_url = self._rest_url if use_rest else self._base_url
         return f"{base_url}/{endpoint}"
 
     def _download_file_to_stream(
@@ -1399,7 +1399,7 @@ class ServerAPI(
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
-        url = self._endpoint_to_url(endpoint)
+        url = self._endpoint_to_url(endpoint, use_rest=False)
 
         if progress is None:
             progress = TransferProgress()
@@ -1580,7 +1580,7 @@ class ServerAPI(
             requests.Response: Response object
 
         """
-        url = self._endpoint_to_url(endpoint)
+        url = self._endpoint_to_url(endpoint, use_rest=False)
 
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
