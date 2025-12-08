@@ -1351,21 +1351,47 @@ class ServerAPI(
         return f"{base_url}/{endpoint}"
 
     def _download_file_to_stream(
-        self, url: str, stream, chunk_size, progress
+        self,
+        url: str,
+        stream: StreamType,
+        chunk_size: int,
+        progress: TransferProgress,
     ):
-        kwargs = {"stream": True}
+        headers = self.get_headers()
+        kwargs = {
+            "stream": True,
+            "headers": headers,
+        }
         if self._session is None:
-            kwargs["headers"] = self.get_headers()
             get_func = self._base_functions_mapping[RequestTypes.get]
         else:
             get_func = self._session_functions_mapping[RequestTypes.get]
 
-        with get_func(url, **kwargs) as response:
-            response.raise_for_status()
-            progress.set_content_size(response.headers["Content-length"])
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                stream.write(chunk)
-                progress.add_transferred_chunk(len(chunk))
+        retries = self.get_default_max_retries()
+        for attempt in range(retries):
+            # Continue in download
+            offset = progress.get_transferred_size()
+            if offset > 0:
+                headers["Range"] = f"bytes={offset}-"
+
+            try:
+                with get_func(url, **kwargs) as response:
+                    response.raise_for_status()
+                    progress.set_content_size(
+                        response.headers["Content-length"]
+                    )
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        stream.write(chunk)
+                        progress.add_transferred_chunk(len(chunk))
+                break
+
+            except (
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+            ):
+                if attempt == retries:
+                    raise
+                progress.next_attempt()
 
     def download_file_to_stream(
         self,
