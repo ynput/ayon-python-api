@@ -1469,7 +1469,7 @@ class EntityData(dict):
             except RecursionError:
                 raise RuntimeError(
                     f"Failed to create copy of key '{key}'"
-                    " because of recursion!!!"
+                    " because of recursion."
                 )
 
             try:
@@ -1477,7 +1477,7 @@ class EntityData(dict):
             except RecursionError:
                 raise RuntimeError(
                     f"Failed to create copy of value '{key}'"
-                    " because of recursion!!!"
+                    " because of recursion."
                 )
 
         self._orig_data = orig_data
