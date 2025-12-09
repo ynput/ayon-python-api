@@ -796,6 +796,7 @@ class TransferProgress:
     """Object to store progress of download/upload from/to server."""
 
     def __init__(self):
+        self._attempt: int = 0
         self._started: bool = False
         self._transfer_done: bool = False
         self._transferred: int = 0
@@ -850,6 +851,17 @@ class TransferProgress:
         if self._started:
             raise ValueError("Progress already started")
         self._started = True
+        self._attempt = 1
+
+    def get_attempt(self) -> int:
+        """Find out which attempt of progress it is."""
+        return self._attempt
+
+    def next_attempt(self) -> None:
+        """Start new attempt of progress."""
+        if not self._started:
+            raise ValueError("Progress did not start yet")
+        self._attempt += 1
 
     def get_transfer_done(self) -> bool:
         """Transfer finished.
@@ -920,6 +932,10 @@ class TransferProgress:
 
         """
         self._transferred = transferred
+
+    def reset_transferred(self) -> None:
+        """Reset transferred size to initial value."""
+        self._transferred = 0
 
     def add_transferred_chunk(self, chunk_size: int):
         """Add transferred chunk size in bytes.

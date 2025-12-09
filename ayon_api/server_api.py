@@ -1329,7 +1329,7 @@ class ServerAPI(
     def _endpoint_to_url(
         self,
         endpoint: str,
-        use_rest: Optional[bool] = True
+        use_rest: bool = True,
     ) -> str:
         """Cleanup endpoint and return full url to AYON server.
 
@@ -1347,25 +1347,51 @@ class ServerAPI(
         endpoint = endpoint.lstrip("/").rstrip("/")
         if endpoint.startswith(self._base_url):
             return endpoint
-        base_url = self._rest_url if use_rest else self._graphql_url
+        base_url = self._rest_url if use_rest else self._base_url
         return f"{base_url}/{endpoint}"
 
     def _download_file_to_stream(
-        self, url: str, stream, chunk_size, progress
+        self,
+        url: str,
+        stream: StreamType,
+        chunk_size: int,
+        progress: TransferProgress,
     ):
-        kwargs = {"stream": True}
+        headers = self.get_headers()
+        kwargs = {
+            "stream": True,
+            "headers": headers,
+        }
         if self._session is None:
-            kwargs["headers"] = self.get_headers()
             get_func = self._base_functions_mapping[RequestTypes.get]
         else:
             get_func = self._session_functions_mapping[RequestTypes.get]
 
-        with get_func(url, **kwargs) as response:
-            response.raise_for_status()
-            progress.set_content_size(response.headers["Content-length"])
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                stream.write(chunk)
-                progress.add_transferred_chunk(len(chunk))
+        retries = self.get_default_max_retries()
+        for attempt in range(retries):
+            # Continue in download
+            offset = progress.get_transferred_size()
+            if offset > 0:
+                headers["Range"] = f"bytes={offset}-"
+
+            try:
+                with get_func(url, **kwargs) as response:
+                    response.raise_for_status()
+                    progress.set_content_size(
+                        response.headers["Content-length"]
+                    )
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        stream.write(chunk)
+                        progress.add_transferred_chunk(len(chunk))
+                break
+
+            except (
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+            ):
+                if attempt == retries:
+                    raise
+                progress.next_attempt()
 
     def download_file_to_stream(
         self,
@@ -1399,7 +1425,7 @@ class ServerAPI(
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
-        url = self._endpoint_to_url(endpoint)
+        url = self._endpoint_to_url(endpoint, use_rest=False)
 
         if progress is None:
             progress = TransferProgress()
@@ -1543,11 +1569,27 @@ class ServerAPI(
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
 
-        response = post_func(
-            url,
-            data=self._upload_chunks_iter(stream, progress, chunk_size),
-            **kwargs
-        )
+        retries = self.get_default_max_retries()
+        response = None
+        for attempt in range(retries):
+            try:
+                response = post_func(
+                    url,
+                    data=self._upload_chunks_iter(
+                        stream, progress, chunk_size
+                    ),
+                    **kwargs
+                )
+                break
+
+            except (
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+            ):
+                if attempt == retries:
+                    raise
+                progress.next_attempt()
+                progress.reset_transferred()
 
         response.raise_for_status()
         return response
@@ -1580,7 +1622,7 @@ class ServerAPI(
             requests.Response: Response object
 
         """
-        url = self._endpoint_to_url(endpoint)
+        url = self._endpoint_to_url(endpoint, use_rest=False)
 
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
