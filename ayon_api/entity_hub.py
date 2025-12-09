@@ -1468,14 +1468,18 @@ class EntityData(dict):
             try:
                 key = copy.deepcopy(key)
             except RecursionError:
-                print(f"Failed to create copy of key '{key}'!!!")
-                raise
+                raise RuntimeError(
+                    f"Failed to create copy of key '{key}'"
+                    " because of recursion!!!"
+                )
 
             try:
                 orig_data[key] = copy.deepcopy(value)
             except RecursionError:
-                print(f"Failed to create copy of value '{key}'!!!")
-                raise
+                raise RuntimeError(
+                    f"Failed to create copy of value '{key}'"
+                    " because of recursion!!!"
+                )
 
         self._orig_data = orig_data
 
