@@ -1622,7 +1622,7 @@ class ServerAPI(
             requests.Response: Response object
 
         """
-        url = self._endpoint_to_url(endpoint, use_rest=False)
+        url = self._endpoint_to_url(endpoint)
 
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
