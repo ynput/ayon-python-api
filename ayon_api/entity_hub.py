@@ -1418,10 +1418,9 @@ class EntityData(dict):
     """
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._orig_data = {
-            key: copy.deepcopy(value)
-            for key, value in self.items()
-        }
+        self._orig_data = {}
+        # Fill orig data
+        self.lock()
 
     def get_changes(self) -> dict[str, Any]:
         """Changes in entity data.
