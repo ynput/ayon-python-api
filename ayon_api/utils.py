@@ -862,7 +862,6 @@ class TransferProgress:
         if not self._started:
             raise ValueError("Progress did not start yet")
         self._attempt += 1
-        self._transferred = 0
 
     def get_transfer_done(self) -> bool:
         """Transfer finished.
@@ -933,6 +932,10 @@ class TransferProgress:
 
         """
         self._transferred = transferred
+
+    def reset_transferred(self) -> None:
+        """Reset transferred size to initial value."""
+        self._transferred = 0
 
     def add_transferred_chunk(self, chunk_size: int):
         """Add transferred chunk size in bytes.

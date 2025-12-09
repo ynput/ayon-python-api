@@ -1589,6 +1589,7 @@ class ServerAPI(
                 if attempt == retries:
                     raise
                 progress.next_attempt()
+                progress.reset_transferred()
 
         response.raise_for_status()
         return response
