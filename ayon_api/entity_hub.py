@@ -1418,7 +1418,9 @@ class EntityData(dict):
     """
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._orig_data = copy.deepcopy(self)
+        self._orig_data = {}
+        # Fill orig data
+        self.lock()
 
     def get_changes(self) -> dict[str, Any]:
         """Changes in entity data.
@@ -1437,10 +1439,10 @@ class EntityData(dict):
                 output[key] = None
             elif key not in self._orig_data:
                 # New value was set
-                output[key] = self[key]
+                output[key] = copy.deepcopy(self[key])
             elif self[key] != self._orig_data[key]:
                 # Value was changed
-                output[key] = self[key]
+                output[key] = copy.deepcopy(self[key])
         return output
 
     def get_new_entity_value(self) -> dict[str, AttributeValueType]:
@@ -1460,7 +1462,25 @@ class EntityData(dict):
     def lock(self) -> None:
         """Lock changes of entity data."""
 
-        self._orig_data = copy.deepcopy(self)
+        orig_data = {}
+        for key, value in self.items():
+            try:
+                key = copy.deepcopy(key)
+            except RecursionError:
+                raise RuntimeError(
+                    f"Failed to create copy of key '{key}'"
+                    " because of recursion."
+                )
+
+            try:
+                orig_data[key] = copy.deepcopy(value)
+            except RecursionError:
+                raise RuntimeError(
+                    f"Failed to create copy of value '{key}'"
+                    " because of recursion."
+                )
+
+        self._orig_data = orig_data
 
 
 class BaseEntity(ABC):
