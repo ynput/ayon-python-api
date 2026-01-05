@@ -108,6 +108,28 @@ class BaseServerAPI:
     ) -> TransferProgress:
         raise NotImplementedError()
 
+    def download_project_file(
+        self,
+        project_name: str,
+        file_id: str,
+        filepath: str,
+        *,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> TransferProgress:
+        raise NotImplementedError()
+
+    def download_project_file_to_stream(
+        self,
+        project_name: str,
+        file_id: str,
+        stream: StreamType,
+        *,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> TransferProgress:
+        raise NotImplementedError()
+
     def get_rest_entity_by_id(
         self,
         project_name: str,

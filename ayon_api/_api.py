@@ -992,6 +992,80 @@ def download_file(
     )
 
 
+def download_project_file(
+    project_name: str,
+    file_id: str,
+    filepath: str,
+    *,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> TransferProgress:
+    """Download project file to filepath.
+
+    Project files are usually binary files, such as images, videos,
+        or other media files that can be accessed via api endpoint
+        '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+    Args:
+        project_name (str): Project name.
+        file_id (str): File id.
+        filepath (str): Path where file will be downloaded.
+        chunk_size (Optional[int]): Size of chunks that are received
+            in single loop.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track download progress.
+
+    Returns:
+        TransferProgress: Progress object.
+
+    """
+    con = get_server_api_connection()
+    return con.download_project_file(
+        project_name=project_name,
+        file_id=file_id,
+        filepath=filepath,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
+def download_project_file_to_stream(
+    project_name: str,
+    file_id: str,
+    stream: StreamType,
+    *,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> TransferProgress:
+    """Download project file to a stream.
+
+    Project files are usually binary files, such as images, videos,
+        or other media files that can be accessed via api endpoint
+        '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+    Args:
+        project_name (str): Project name.
+        file_id (str): File id.
+        stream (StreamType): Stream where output will be stored.
+        chunk_size (Optional[int]): Size of chunks that are received
+            in single loop.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track download progress.
+
+    Returns:
+        TransferProgress: Progress object.
+
+    """
+    con = get_server_api_connection()
+    return con.download_project_file_to_stream(
+        project_name=project_name,
+        file_id=file_id,
+        stream=stream,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
 def upload_file_from_stream(
     endpoint: str,
     stream: StreamType,
