@@ -1368,6 +1368,7 @@ class ServerAPI(
             get_func = self._session_functions_mapping[RequestTypes.get]
 
         retries = self.get_default_max_retries()
+        content_size_set = False
         for attempt in range(retries):
             # Continue in download
             offset = progress.get_transferred_size()
@@ -1377,9 +1378,12 @@ class ServerAPI(
             try:
                 with get_func(url, **kwargs) as response:
                     response.raise_for_status()
-                    progress.set_content_size(
-                        response.headers["Content-length"]
-                    )
+                    if not content_size_set:
+                        content_size_set = True
+                        progress.set_content_size(
+                            response.headers["Content-length"]
+                        )
+
                     for chunk in response.iter_content(chunk_size=chunk_size):
                         stream.write(chunk)
                         progress.add_transferred_chunk(len(chunk))
