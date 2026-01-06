@@ -5006,6 +5006,8 @@ def get_products(
             Use 'None' if folder is direct child of project.
         product_types (Optional[Iterable[str]]): Product types used for
             filtering.
+        product_base_types (Optional[Iterable[str]]): Product base types
+            used for filtering.
         product_name_regex (Optional[str]): Filter products by name regex.
         product_path_regex (Optional[str]): Filter products by path regex.
             Path starts with folder path and ends with product name.
