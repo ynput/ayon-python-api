@@ -1368,7 +1368,6 @@ class ServerAPI(
             get_func = self._session_functions_mapping[RequestTypes.get]
 
         retries = self.get_default_max_retries()
-        content_size_set = False
         for attempt in range(retries):
             # Continue in download
             offset = progress.get_transferred_size()
@@ -1378,8 +1377,7 @@ class ServerAPI(
             try:
                 with get_func(url, **kwargs) as response:
                     response.raise_for_status()
-                    if not content_size_set:
-                        content_size_set = True
+                    if progress.get_content_size() is None:
                         progress.set_content_size(
                             response.headers["Content-length"]
                         )
