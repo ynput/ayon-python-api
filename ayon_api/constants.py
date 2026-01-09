@@ -247,6 +247,7 @@ DEFAULT_ACTIVITY_FIELDS = {
 DEFAULT_ENTITY_LIST_FIELDS = {
     "id",
     "count",
+    "allAttrib",
     "attributes",
     "active",
     "createdBy",
