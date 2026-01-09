@@ -1582,6 +1582,8 @@ class BaseEntity(ABC):
         self._tags = copy.deepcopy(tags)
         self._thumbnail_id = thumbnail_id
 
+        if name == label:
+            label = None
         self._orig_name = name
         self._orig_label = label
         self._orig_status = status
