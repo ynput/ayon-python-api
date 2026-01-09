@@ -26,7 +26,15 @@ class ListsAPI(BaseServerAPI):
         active: Optional[bool] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Generator[dict[str, Any], None, None]:
-        """Fetch entity lists from server.
+        """Fetch entity lists from AYON server.
+
+        Warnings:
+            You can't get list items for lists with different 'entityType' in
+                one call.
+
+        Notes:
+            To get list items, you have to pass 'items' field or
+                'items.{sub-fields you want}' to 'fields' argument.
 
         Args:
             project_name (str): Project name where entity lists are.
@@ -43,6 +51,14 @@ class ListsAPI(BaseServerAPI):
         if fields is None:
             fields = self.get_default_fields_for_type("entityList")
         fields = set(fields)
+        if "items" in fields:
+            fields.discard("items")
+            fields |= {
+                "items.id",
+                "items.entityId",
+                "items.entityType",
+                "items.position",
+            }
 
         if active is not None:
             fields.add("active")

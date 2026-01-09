@@ -259,8 +259,4 @@ DEFAULT_ENTITY_LIST_FIELDS = {
     "tags",
     "updatedAt",
     "updatedBy",
-    "items.id",
-    "items.entityId",
-    "items.entityType",
-    "items.position",
 }
