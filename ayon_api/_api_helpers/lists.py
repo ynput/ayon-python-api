@@ -210,9 +210,8 @@ class ListsAPI(BaseServerAPI):
                 kwargs[key] = value
 
         response = self.post(
-            f"projects/{project_name}/lists/{list_id}/items",
+            f"projects/{project_name}/lists",
             **kwargs
-
         )
         response.raise_for_status()
         return list_id
