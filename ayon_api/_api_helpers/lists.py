@@ -382,7 +382,7 @@ class ListsAPI(BaseServerAPI):
             mode (EntityListItemMode): Mode of items update.
 
         """
-        response = self.post(
+        response = self.patch(
             f"projects/{project_name}/lists/{list_id}/items",
             items=items,
             mode=mode,
