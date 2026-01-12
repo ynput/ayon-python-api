@@ -1956,6 +1956,8 @@ class ServerAPI(
 
         elif entity_type == "entityList":
             entity_type_defaults = set(DEFAULT_ENTITY_LIST_FIELDS)
+            # Attributes scope is 'list'
+            entity_type = "list"
 
         else:
             raise ValueError(f"Unknown entity type \"{entity_type}\"")
