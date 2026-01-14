@@ -602,3 +602,23 @@ StreamType = Union[io.BytesIO, BinaryIO]
 class EntityListAttributeDefinitionDict(TypedDict):
     name: str
     data: dict[str, Any]
+
+
+AdvancedFilterOperator = Literal["and", "or"]
+AdvancedFilterConditionOperator = Literal[
+    "eq", "lt", "gt", "lte", "gte", "ne",
+    "isnull", "notnull",
+    "in", "notin", "contains", "excludes",
+    "any", "like"
+]
+
+
+class AdvancedFilterConditionDict(TypedDict):
+    key: str
+    value: Any
+    operator: AdvancedFilterConditionOperator
+
+
+class AdvancedFilterDict(TypedDict):
+    conditions: list[Union[AdvancedFilterConditionDict, "AdvancedFilterDict"]]
+    operator: AdvancedFilterOperator
