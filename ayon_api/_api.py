@@ -84,6 +84,7 @@ if typing.TYPE_CHECKING:
         ActionModeType,
         StreamType,
         EntityListAttributeDefinitionDict,
+        AdvancedFilterDict,
     )
     from ._api_helpers.links import CreateLinkData
 
@@ -4218,6 +4219,7 @@ def get_folders(
     tags: Optional[Iterable[str]] = None,
     active: Optional[bool] = True,
     has_links: Optional[bool] = None,
+    filters: Optional[AdvancedFilterDict] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
 ) -> Generator[FolderDict, None, None]:
@@ -4259,6 +4261,7 @@ def get_folders(
             Both are returned if is set to None.
         has_links (Optional[Literal[IN, OUT, ANY]]): Filter
             representations with IN/OUT/ANY links.
+        filters (Optional[AdvancedFilterDict]): Advanced filtering options.
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
@@ -4286,6 +4289,7 @@ def get_folders(
         tags=tags,
         active=active,
         has_links=has_links,
+        filters=filters,
         fields=fields,
         own_attributes=own_attributes,
     )
@@ -4571,6 +4575,7 @@ def get_tasks(
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
     active: Optional[bool] = True,
+    filters: Optional[AdvancedFilterDict] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
 ) -> Generator[TaskDict, None, None]:
@@ -4595,6 +4600,7 @@ def get_tasks(
             filtering.
         active (Optional[bool]): Filter active/inactive tasks.
             Both are returned if is set to None.
+        filters (Optional[AdvancedFilterDict]): Advanced filtering options.
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
@@ -4617,6 +4623,7 @@ def get_tasks(
         statuses=statuses,
         tags=tags,
         active=active,
+        filters=filters,
         fields=fields,
         own_attributes=own_attributes,
     )
@@ -4695,6 +4702,7 @@ def get_tasks_by_folder_paths(
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
     active: Optional[bool] = True,
+    filters: Optional[AdvancedFilterDict] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
 ) -> dict[str, list[TaskDict]]:
@@ -4717,6 +4725,7 @@ def get_tasks_by_folder_paths(
             filtering.
         active (Optional[bool]): Filter active/inactive tasks.
             Both are returned if is set to None.
+        filters (Optional[AdvancedFilterDict]): Advanced filtering options.
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
@@ -4739,6 +4748,7 @@ def get_tasks_by_folder_paths(
         statuses=statuses,
         tags=tags,
         active=active,
+        filters=filters,
         fields=fields,
         own_attributes=own_attributes,
     )
@@ -4988,6 +4998,7 @@ def get_products(
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
     active: Optional[bool] = True,
+    filters: Optional[AdvancedFilterDict] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
 ) -> Generator[ProductDict, None, None]:
@@ -5019,6 +5030,7 @@ def get_products(
             for filtering.
         active (Optional[bool]): Filter active/inactive products.
             Both are returned if is set to None.
+        filters (Optional[AdvancedFilterDict]): Advanced filtering options.
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
@@ -5043,6 +5055,7 @@ def get_products(
         statuses=statuses,
         tags=tags,
         active=active,
+        filters=filters,
         fields=fields,
         own_attributes=own_attributes,
     )
@@ -5325,6 +5338,7 @@ def get_versions(
     statuses: Optional[Iterable[str]] = None,
     tags: Optional[Iterable[str]] = None,
     active: Optional[bool] = True,
+    filters: Optional[AdvancedFilterDict] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
 ) -> Generator[VersionDict, None, None]:
@@ -5351,6 +5365,7 @@ def get_versions(
             for filtering.
         active (Optional[bool]): Receive active/inactive entities.
             Both are returned when 'None' is passed.
+        filters (Optional[AdvancedFilterDict]): Advanced filtering options.
         fields (Optional[Iterable[str]]): Fields to be queried
             for version. All possible folder fields are returned
             if 'None' is passed.
@@ -5374,6 +5389,7 @@ def get_versions(
         statuses=statuses,
         tags=tags,
         active=active,
+        filters=filters,
         fields=fields,
         own_attributes=own_attributes,
     )
@@ -5819,6 +5835,7 @@ def get_representations(
     tags: Optional[Iterable[str]] = None,
     active: Optional[bool] = True,
     has_links: Optional[str] = None,
+    filters: Optional[AdvancedFilterDict] = None,
     fields: Optional[Iterable[str]] = None,
     own_attributes=_PLACEHOLDER,
 ) -> Generator[RepresentationDict, None, None]:
@@ -5849,6 +5866,7 @@ def get_representations(
             Both are returned when 'None' is passed.
         has_links (Optional[Literal[IN, OUT, ANY]]): Filter
             representations with IN/OUT/ANY links.
+        filters (Optional[AdvancedFilterDict]): Advanced filtering options.
         fields (Optional[Iterable[str]]): Fields to be queried for
             representation. All possible fields are returned if 'None' is
             passed.
@@ -5871,6 +5889,7 @@ def get_representations(
         tags=tags,
         active=active,
         has_links=has_links,
+        filters=filters,
         fields=fields,
         own_attributes=own_attributes,
     )
@@ -7282,7 +7301,15 @@ def get_entity_lists(
     active: Optional[bool] = None,
     fields: Optional[Iterable[str]] = None,
 ) -> Generator[dict[str, Any], None, None]:
-    """Fetch entity lists from server.
+    """Fetch entity lists from AYON server.
+
+    Warnings:
+        You can't get list items for lists with different 'entityType' in
+            one call.
+
+    Notes:
+        To get list items, you have to pass 'items' field or
+            'items.{sub-fields you want}' to 'fields' argument.
 
     Args:
         project_name (str): Project name where entity lists are.
