@@ -17,7 +17,7 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import TaskDict
+    from ayon_api.typing import TaskDict, AdvancedFilterDict
 
 
 class TasksAPI(BaseServerAPI):
@@ -38,6 +38,7 @@ class TasksAPI(BaseServerAPI):
         statuses: Optional[Iterable[str]] = None,
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
     ) -> Generator[TaskDict, None, None]:
@@ -62,6 +63,7 @@ class TasksAPI(BaseServerAPI):
                 filtering.
             active (Optional[bool]): Filter active/inactive tasks.
                 Both are returned if is set to None.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -75,11 +77,11 @@ class TasksAPI(BaseServerAPI):
         if not project_name:
             return
 
-        filters = {
+        graphql_filters = {
             "projectName": project_name
         }
         if not prepare_list_filters(
-            filters,
+            graphql_filters,
             ("taskIds", task_ids),
             ("taskNames", task_names),
             ("taskTypes", task_types),
@@ -91,6 +93,10 @@ class TasksAPI(BaseServerAPI):
         ):
             return
 
+        filters = self._prepare_advanced_filters(filters)
+        if filters:
+            graphql_filters["filter"] = filters
+
         if not fields:
             fields = self.get_default_fields_for_type("task")
         else:
@@ -101,7 +107,7 @@ class TasksAPI(BaseServerAPI):
             fields.add("active")
 
         query = tasks_graphql_query(fields)
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         for parsed_data in query.continuous_query(self):
@@ -193,6 +199,7 @@ class TasksAPI(BaseServerAPI):
         statuses: Optional[Iterable[str]] = None,
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
     ) -> dict[str, list[TaskDict]]:
@@ -215,6 +222,7 @@ class TasksAPI(BaseServerAPI):
                 filtering.
             active (Optional[bool]): Filter active/inactive tasks.
                 Both are returned if is set to None.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -230,12 +238,13 @@ class TasksAPI(BaseServerAPI):
         if not project_name or not folder_paths:
             return {}
 
-        filters = {
+        graphql_filters = {
             "projectName": project_name,
             "folderPaths": list(folder_paths),
         }
+
         if not prepare_list_filters(
-            filters,
+            graphql_filters,
             ("taskNames", task_names),
             ("taskTypes", task_types),
             ("taskAssigneesAny", assignees),
@@ -244,6 +253,10 @@ class TasksAPI(BaseServerAPI):
             ("taskTags", tags),
         ):
             return {}
+
+        filters = self._prepare_advanced_filters(filters)
+        if filters:
+            graphql_filters["filter"] = filters
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -255,7 +268,7 @@ class TasksAPI(BaseServerAPI):
             fields.add("active")
 
         query = tasks_by_folder_paths_graphql_query(fields)
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         output = {

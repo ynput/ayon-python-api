@@ -139,6 +139,7 @@ def folders_graphql_query(fields):
         "folderAssigneesAll", "[String!]"
     )
     tags_var = query.add_variable("folderTags", "[String!]")
+    filter_var = query.add_variable("filter", "String!")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -157,6 +158,7 @@ def folders_graphql_query(fields):
     folders_field.set_filter("hasTasks", has_tasks_var)
     folders_field.set_filter("hasLinks", has_links_var)
     folders_field.set_filter("hasChildren", has_children_var)
+    folders_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
     add_links_fields(folders_field, nested_fields)
@@ -188,6 +190,7 @@ def tasks_graphql_query(fields):
     assignees_all_var = query.add_variable("taskAssigneesAll", "[String!]")
     statuses_var = query.add_variable("taskStatuses", "[String!]")
     tags_var = query.add_variable("taskTags", "[String!]")
+    filter_var = query.add_variable("filter", "String!")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -203,6 +206,7 @@ def tasks_graphql_query(fields):
     tasks_field.set_filter("assignees", assignees_all_var)
     tasks_field.set_filter("statuses", statuses_var)
     tasks_field.set_filter("tags", tags_var)
+    tasks_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
     add_links_fields(tasks_field, nested_fields)
@@ -233,6 +237,7 @@ def tasks_by_folder_paths_graphql_query(fields):
     assignees_all_var = query.add_variable("taskAssigneesAll", "[String!]")
     statuses_var = query.add_variable("taskStatuses", "[String!]")
     tags_var = query.add_variable("taskTags", "[String!]")
+    filter_var = query.add_variable("filter", "String!")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -250,6 +255,7 @@ def tasks_by_folder_paths_graphql_query(fields):
     tasks_field.set_filter("assignees", assignees_all_var)
     tasks_field.set_filter("statuses", statuses_var)
     tasks_field.set_filter("tags", tags_var)
+    tasks_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
     add_links_fields(tasks_field, nested_fields)
@@ -284,6 +290,7 @@ def products_graphql_query(fields):
     product_path_regex_var = query.add_variable("productPathRegex", "String!")
     statuses_var = query.add_variable("productStatuses", "[String!]")
     tags_var = query.add_variable("productTags", "[String!]")
+    filter_var = query.add_variable("filter", "String!")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -298,6 +305,7 @@ def products_graphql_query(fields):
     products_field.set_filter("tags", tags_var)
     products_field.set_filter("nameEx", product_name_regex_var)
     products_field.set_filter("pathEx", product_path_regex_var)
+    products_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(set(fields))
     add_links_fields(products_field, nested_fields)
@@ -333,6 +341,7 @@ def versions_graphql_query(fields):
     )
     statuses_var = query.add_variable("versionStatuses", "[String!]")
     tags_var = query.add_variable("versionTags", "[String!]")
+    filter_var = query.add_variable("filter", "String!")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -347,6 +356,7 @@ def versions_graphql_query(fields):
     versions_field.set_filter("heroOrLatestOnly", hero_or_latest_only_var)
     versions_field.set_filter("statuses", statuses_var)
     versions_field.set_filter("tags", tags_var)
+    versions_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(set(fields))
     add_links_fields(versions_field, nested_fields)
@@ -383,6 +393,7 @@ def representations_graphql_query(fields):
     tags_var = query.add_variable(
         "representationTags", "[String!]"
     )
+    filter_var = query.add_variable("filter", "String!")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
@@ -394,6 +405,7 @@ def representations_graphql_query(fields):
     repres_field.set_filter("hasLinks", has_links_var)
     repres_field.set_filter("statuses", statuses_var)
     repres_field.set_filter("tags", tags_var)
+    repres_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(set(fields))
     add_links_fields(repres_field, nested_fields)

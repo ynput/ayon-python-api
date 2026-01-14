@@ -15,7 +15,7 @@ from ayon_api.graphql_queries import versions_graphql_query
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import VersionDict
+    from ayon_api.typing import VersionDict, AdvancedFilterDict
 
 
 class VersionsAPI(BaseServerAPI):
@@ -37,6 +37,7 @@ class VersionsAPI(BaseServerAPI):
         statuses: Optional[Iterable[str]] = None,
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
     ) -> Generator[VersionDict, None, None]:
@@ -63,6 +64,7 @@ class VersionsAPI(BaseServerAPI):
                 for filtering.
             active (Optional[bool]): Receive active/inactive entities.
                 Both are returned when 'None' is passed.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried
                 for version. All possible folder fields are returned
                 if 'None' is passed.
@@ -98,11 +100,12 @@ class VersionsAPI(BaseServerAPI):
         if not hero and not standard:
             return
 
-        filters = {
+        graphql_filters = {
             "projectName": project_name
         }
+
         if not prepare_list_filters(
-            filters,
+            graphql_filters,
             ("taskIds", task_ids),
             ("versionIds", version_ids),
             ("productIds", product_ids),
@@ -112,6 +115,11 @@ class VersionsAPI(BaseServerAPI):
             ("versionTags", tags),
         ):
             return
+
+
+        filters = self._prepare_advanced_filters(filters)
+        if filters:
+            graphql_filters["filter"] = filters
 
         queries = []
         # Add filters based on 'hero' and 'standard'
@@ -123,14 +131,14 @@ class VersionsAPI(BaseServerAPI):
             # This query all versions standard + hero
             # - hero must be filtered out if is not enabled during loop
             query = versions_graphql_query(fields)
-            for attr, filter_value in filters.items():
+            for attr, filter_value in graphql_filters.items():
                 query.set_variable_value(attr, filter_value)
             queries.append(query)
         else:
             if hero:
                 # Add hero query if hero is enabled
                 hero_query = versions_graphql_query(fields)
-                for attr, filter_value in filters.items():
+                for attr, filter_value in graphql_filters.items():
                     hero_query.set_variable_value(attr, filter_value)
 
                 hero_query.set_variable_value("heroOnly", True)
@@ -138,7 +146,7 @@ class VersionsAPI(BaseServerAPI):
 
             if standard:
                 standard_query = versions_graphql_query(fields)
-                for attr, filter_value in filters.items():
+                for attr, filter_value in graphql_filters.items():
                     standard_query.set_variable_value(attr, filter_value)
 
                 if latest:

@@ -18,7 +18,7 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import ProductDict, ProductTypeDict
+    from ayon_api.typing import ProductDict, ProductTypeDict, AdvancedFilterDict
 
 
 class ProductsAPI(BaseServerAPI):
@@ -43,6 +43,7 @@ class ProductsAPI(BaseServerAPI):
         statuses: Optional[Iterable[str]] = None,
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
     ) -> Generator[ProductDict, None, None]:
@@ -74,6 +75,7 @@ class ProductsAPI(BaseServerAPI):
                 for filtering.
             active (Optional[bool]): Filter active/inactive products.
                 Both are returned if is set to None.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -145,18 +147,18 @@ class ProductsAPI(BaseServerAPI):
             fields.add("folderId")
 
         # Prepare filters for query
-        filters = {
+        graphql_filters = {
             "projectName": project_name
         }
 
         if filter_folder_ids:
-            filters["folderIds"] = list(filter_folder_ids)
+            graphql_filters["folderIds"] = list(filter_folder_ids)
 
         if filter_product_names:
-            filters["productNames"] = list(filter_product_names)
+            graphql_filters["productNames"] = list(filter_product_names)
 
         if not prepare_list_filters(
-            filters,
+            graphql_filters,
             ("productIds", product_ids),
             ("productTypes", product_types),
             ("productBaseTypes", product_base_types),
@@ -168,12 +170,13 @@ class ProductsAPI(BaseServerAPI):
         for filter_key, filter_value in (
             ("productNameRegex", product_name_regex),
             ("productPathRegex", product_path_regex),
+            ("filter", self._prepare_advanced_filters(filters)),
         ):
             if filter_value:
-                filters[filter_key] = filter_value
+                graphql_filters[filter_key] = filter_value
 
         query = products_graphql_query(fields)
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         parsed_data = query.query(self)
