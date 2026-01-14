@@ -18,7 +18,11 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import ProductDict, ProductTypeDict, AdvancedFilterDict
+    from ayon_api.typing import (
+        ProductDict,
+        ProductTypeDict,
+        AdvancedFilterDict,
+    )
 
 
 class ProductsAPI(BaseServerAPI):

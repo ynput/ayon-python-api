@@ -145,7 +145,9 @@ class RepresentationsAPI(BaseServerAPI):
             graphql_filters["versionIds"] = list(version_ids_filter)
 
         if representation_names_filter:
-            graphql_filters["representationNames"] = list(representation_names_filter)
+            graphql_filters["representationNames"] = list(
+                representation_names_filter
+            )
 
         if statuses is not None:
             statuses = set(statuses)
