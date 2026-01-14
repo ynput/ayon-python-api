@@ -20,7 +20,7 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import RepresentationDict
+    from ayon_api.typing import RepresentationDict, AdvancedFilterDict
 
 
 class RepresentationsAPI(BaseServerAPI):
@@ -42,6 +42,7 @@ class RepresentationsAPI(BaseServerAPI):
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
         has_links: Optional[str] = None,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER,
     ) -> Generator[RepresentationDict, None, None]:
@@ -72,6 +73,7 @@ class RepresentationsAPI(BaseServerAPI):
                 Both are returned when 'None' is passed.
             has_links (Optional[Literal[IN, OUT, ANY]]): Filter
                 representations with IN/OUT/ANY links.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 representation. All possible fields are returned if 'None' is
                 passed.
@@ -106,7 +108,7 @@ class RepresentationsAPI(BaseServerAPI):
             fields.discard("files")
             fields |= REPRESENTATION_FILES_FIELDS
 
-        filters = {
+        graphql_filters = {
             "projectName": project_name
         }
 
@@ -114,7 +116,7 @@ class RepresentationsAPI(BaseServerAPI):
             representation_ids = set(representation_ids)
             if not representation_ids:
                 return
-            filters["representationIds"] = list(representation_ids)
+            graphql_filters["representationIds"] = list(representation_ids)
 
         version_ids_filter = None
         representation_names_filter = None
@@ -140,29 +142,35 @@ class RepresentationsAPI(BaseServerAPI):
                     return
 
         if version_ids_filter:
-            filters["versionIds"] = list(version_ids_filter)
+            graphql_filters["versionIds"] = list(version_ids_filter)
 
         if representation_names_filter:
-            filters["representationNames"] = list(representation_names_filter)
+            graphql_filters["representationNames"] = list(
+                representation_names_filter
+            )
 
         if statuses is not None:
             statuses = set(statuses)
             if not statuses:
                 return
-            filters["representationStatuses"] = list(statuses)
+            graphql_filters["representationStatuses"] = list(statuses)
 
         if tags is not None:
             tags = set(tags)
             if not tags:
                 return
-            filters["representationTags"] = list(tags)
+            graphql_filters["representationTags"] = list(tags)
 
         if has_links is not None:
-            filters["representationHasLinks"] = has_links.upper()
+            graphql_filters["representationHasLinks"] = has_links.upper()
+
+        filters = self._prepare_advanced_filters(filters)
+        if filters:
+            graphql_filters["filter"] = filters
 
         query = representations_graphql_query(fields)
 
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         for parsed_data in query.continuous_query(self):

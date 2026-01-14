@@ -21,6 +21,7 @@ if typing.TYPE_CHECKING:
         FolderDict,
         FlatFolderDict,
         ProjectHierarchyDict,
+        AdvancedFilterDict,
     )
 
 
@@ -216,6 +217,7 @@ class FoldersAPI(BaseServerAPI):
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
         has_links: Optional[bool] = None,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
     ) -> Generator[FolderDict, None, None]:
@@ -257,6 +259,7 @@ class FoldersAPI(BaseServerAPI):
                 Both are returned if is set to None.
             has_links (Optional[Literal[IN, OUT, ANY]]): Filter
                 representations with IN/OUT/ANY links.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -270,11 +273,11 @@ class FoldersAPI(BaseServerAPI):
         if not project_name:
             return
 
-        filters = {
+        graphql_filters = {
             "projectName": project_name
         }
         if not prepare_list_filters(
-            filters,
+            graphql_filters,
             ("folderIds", folder_ids),
             ("folderPaths", folder_paths),
             ("folderNames", folder_names),
@@ -291,9 +294,10 @@ class FoldersAPI(BaseServerAPI):
             ("folderHasTasks", has_tasks),
             ("folderHasLinks", has_links),
             ("folderHasChildren", has_children),
+            ("filter", self._prepare_advanced_filters(filters)),
         ):
             if filter_value is not None:
-                filters[filter_key] = filter_value
+                graphql_filters[filter_key] = filter_value
 
         if parent_ids is not None:
             parent_ids = set(parent_ids)
@@ -313,7 +317,7 @@ class FoldersAPI(BaseServerAPI):
                 parent_ids.remove(project_name)
                 parent_ids.add("root")
 
-            filters["parentFolderIds"] = list(parent_ids)
+            graphql_filters["parentFolderIds"] = list(parent_ids)
 
         if not fields:
             fields = self.get_default_fields_for_type("folder")
@@ -328,7 +332,7 @@ class FoldersAPI(BaseServerAPI):
             fields.add("ownAttrib")
 
         query = folders_graphql_query(fields)
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         for parsed_data in query.continuous_query(self):

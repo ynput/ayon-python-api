@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing
-from typing import Optional, Any, Iterable
+from typing import Optional, Any, Iterable, Union
 
 import requests
 
@@ -140,6 +140,11 @@ class BaseServerAPI:
         fields: set[str],
         own_attributes: bool = False,
     ):
+        raise NotImplementedError()
+
+    def _prepare_advanced_filters(
+        self, filters: Union[str, dict[str, Any], None]
+    ) -> Optional[str]:
         raise NotImplementedError()
 
     def _convert_entity_data(self, entity: AnyEntityDict):

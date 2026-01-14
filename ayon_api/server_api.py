@@ -2265,6 +2265,16 @@ class ServerAPI(
                 )
             }
 
+    def _prepare_advanced_filters(
+        self, filters: Union[str, dict[str, Any], None]
+    ) -> Optional[str]:
+        if not filters:
+            return None
+
+        if isinstance(filters, dict):
+            return json.dumps(filters)
+        return filters
+
     def _convert_entity_data(self, entity: AnyEntityDict):
         if not entity or "data" not in entity:
             return
