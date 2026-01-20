@@ -203,6 +203,7 @@ class LinksAPI(BaseServerAPI):
         output_id: str,
         output_type: str,
         link_name: Optional[str] = None,
+        data: Optional[dict[str, Any]] = None,
     ) -> CreateLinkData:
         """Create link between 2 entities.
 
@@ -222,7 +223,8 @@ class LinksAPI(BaseServerAPI):
             output_id (str): Output entity id.
             output_type (str): Entity type of output entity.
             link_name (Optional[str]): Name of link.
-                Available from server version '1.0.0-rc.6'.
+            data (Optional[dict[str, Any]]): Additional data to be stored
+                with the link.
 
         Returns:
             CreateLinkData: Information about link.
@@ -241,6 +243,9 @@ class LinksAPI(BaseServerAPI):
         }
         if link_name:
             kwargs["name"] = link_name
+
+        if data:
+            kwargs["data"] = data
 
         response = self.post(
             f"projects/{project_name}/links", **kwargs
