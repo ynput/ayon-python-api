@@ -178,6 +178,17 @@ class RestApiResponse(object):
         except requests.exceptions.HTTPError as exc:
             if message is None:
                 message = str(exc)
+
+            # Get 'detail' from response.json() if possible because it'll be
+            # more descriptive than default http error message
+            try:
+                detail = exc.response.json()["detail"]
+            except (AttributeError, KeyError):
+                pass
+            else:
+                if detail:
+                    message = f"{message}\n\tDetail: {detail}"
+
             raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
