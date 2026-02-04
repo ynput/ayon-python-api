@@ -187,7 +187,7 @@ class RestApiResponse(object):
                 pass
             else:
                 if detail:
-                    message = f"{message}\n\tDetail: {detail}"
+                    message = f"{message} ({detail})"
 
             raise HTTPRequestError(message, exc.response)
 
