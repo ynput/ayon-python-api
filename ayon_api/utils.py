@@ -191,7 +191,7 @@ class RestApiResponse:
             detail = data.get("detail")
             if detail:
                 message = f"{message} ({detail})"
-            self.log.debug(
+            self.log.warning(
                 "HTTP request error: %s\n%s",
                 message,
                 json.dumps(data, indent=4),
