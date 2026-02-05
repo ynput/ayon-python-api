@@ -183,11 +183,10 @@ class RestApiResponse(object):
             # more descriptive than default http error message
             try:
                 detail = exc.response.json()["detail"]
-            except (AttributeError, KeyError, RequestsJSONDecodeError):
-                pass
-            else:
                 if detail:
                     message = f"{message} ({detail})"
+            except (AttributeError, KeyError, RequestsJSONDecodeError):
+                pass
 
             raise HTTPRequestError(message, exc.response)
 
