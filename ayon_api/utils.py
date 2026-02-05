@@ -188,14 +188,20 @@ class RestApiResponse:
             except (AttributeError, KeyError, RequestsJSONDecodeError):
                 pass
 
+            submsg = ""
+            if data:
+                submsg = json.dumps(data, indent=4)
+
+            self.log.warning(
+                "HTTP request error: %s%s%s",
+                message,
+                "\n" if submsg else "",
+                submsg,
+            )
+
             detail = data.get("detail")
             if detail:
                 message = f"{message} ({detail})"
-            self.log.warning(
-                "HTTP request error: %s\n%s",
-                message,
-                json.dumps(data, indent=4),
-            )
             raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
