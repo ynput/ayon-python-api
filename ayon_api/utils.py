@@ -184,7 +184,7 @@ class RestApiResponse:
 
             submsg = ""
             if self.data:
-                submsg = json.dumps(data, indent=4)
+                submsg = json.dumps(self.data, indent=4)
 
             self.log.warning(
                 "HTTP request error: %s%s%s",
