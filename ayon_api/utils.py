@@ -137,7 +137,7 @@ class RestApiResponse:
         if self._data is None:
             try:
                 self._data = self.orig_response.json()
-            except RequestsJSONDecodeError:
+            except (AttributeError, RequestsJSONDecodeError):
                 self._data = {}
         return self._data
 
