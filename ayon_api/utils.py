@@ -4,6 +4,8 @@ import os
 import re
 import datetime
 import copy
+import logging
+import json
 import uuid
 import string
 import platform
@@ -101,8 +103,9 @@ def _get_description(response):
     return HTTPStatus(response.status).description
 
 
-class RestApiResponse(object):
+class RestApiResponse:
     """API Response."""
+    log = logging.getLogger("RestApiResponse")
 
     def __init__(self, response, data=None):
         if response is None:
@@ -134,7 +137,7 @@ class RestApiResponse(object):
         if self._data is None:
             try:
                 self._data = self.orig_response.json()
-            except RequestsJSONDecodeError:
+            except (AttributeError, RequestsJSONDecodeError):
                 self._data = {}
         return self._data
 
@@ -179,15 +182,20 @@ class RestApiResponse(object):
             if message is None:
                 message = str(exc)
 
-            # Get 'detail' from response.json() if possible because it'll be
-            # more descriptive than default http error message
-            try:
-                detail = exc.response.json()["detail"]
-                if detail:
-                    message = f"{message} ({detail})"
-            except (AttributeError, KeyError, RequestsJSONDecodeError):
-                pass
+            submsg = ""
+            if self.data:
+                submsg = json.dumps(self.data, indent=4)
 
+            self.log.warning(
+                "HTTP request error: %s%s%s",
+                message,
+                "\n" if submsg else "",
+                submsg,
+            )
+
+            detail = self.data.get("detail")
+            if detail:
+                message = f"{message} ({detail})"
             raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
