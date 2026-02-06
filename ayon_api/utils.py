@@ -182,14 +182,8 @@ class RestApiResponse:
             if message is None:
                 message = str(exc)
 
-            data = {}
-            try:
-                data = self.data or data
-            except (AttributeError, KeyError, RequestsJSONDecodeError):
-                pass
-
             submsg = ""
-            if data:
+            if self.data:
                 submsg = json.dumps(data, indent=4)
 
             self.log.warning(
@@ -199,7 +193,7 @@ class RestApiResponse:
                 submsg,
             )
 
-            detail = data.get("detail")
+            detail = self.data.get("detail")
             if detail:
                 message = f"{message} ({detail})"
             raise HTTPRequestError(message, exc.response)
