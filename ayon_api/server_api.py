@@ -1352,7 +1352,7 @@ class ServerAPI(
 
     def _download_file_to_stream(
         self,
-        url: str,
+        endpoint: str,
         stream: StreamType,
         chunk_size: int,
         progress: TransferProgress,
@@ -1367,7 +1367,11 @@ class ServerAPI(
         else:
             get_func = self._session_functions_mapping[RequestTypes.get]
 
+        url = self._endpoint_to_url(endpoint, use_rest=False)
+        progress.set_source_url(url)
+
         retries = self.get_default_max_retries()
+        api_prepended = False
         for attempt in range(retries):
             # Continue in download
             offset = progress.get_transferred_size()
@@ -1376,6 +1380,18 @@ class ServerAPI(
 
             try:
                 with get_func(url, **kwargs) as response:
+                    # Auto-fix missing 'api/'
+                    if response.status_code == 405 and not api_prepended:
+                        api_prepended = True
+                        if (
+                            not endpoint.startswith(self._base_url)
+                            and not endpoint.startswith("api/")
+                        ):
+                            url = self._endpoint_to_url(
+                                endpoint, use_rest=True
+                            )
+                            progress.set_destination_url(url)
+                            continue
                     response.raise_for_status()
                     if progress.get_content_size() is None:
                         progress.set_content_size(
@@ -1427,17 +1443,14 @@ class ServerAPI(
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
-        url = self._endpoint_to_url(endpoint, use_rest=False)
-
         if progress is None:
             progress = TransferProgress()
 
-        progress.set_source_url(url)
         progress.set_started()
 
         try:
             self._download_file_to_stream(
-                url, stream, chunk_size, progress
+                endpoint, stream, chunk_size, progress
             )
 
         except Exception as exc:
@@ -1648,7 +1661,6 @@ class ServerAPI(
         # Set content size to progress object
         progress.set_content_size(size)
 
-        api_prepended = False
         for attempt in range(retries):
             try:
                 response = post_func(
