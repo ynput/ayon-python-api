@@ -1661,7 +1661,10 @@ class ServerAPI(
                 # Auto-fix missing 'api/'
                 if response.status_code == 405 and not api_prepended:
                     api_prepended = True
-                    if not endpoint.startswith("api/"):
+                    if (
+                        not endpoint.startswith(self._base_url)
+                        and not endpoint.startswith("api/")
+                    ):
                         url = self._endpoint_to_url(endpoint, use_rest=True)
                         progress.set_destination_url(url)
                         continue
