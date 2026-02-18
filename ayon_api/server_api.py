@@ -1411,6 +1411,12 @@ class ServerAPI(
                     raise
                 progress.next_attempt()
 
+        if api_prepended:
+            self.log.warning(
+                f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
+                " Please fix the endpoit passed to the function."
+            )
+
     def download_file_to_stream(
         self,
         endpoint: str,
