@@ -1352,7 +1352,7 @@ class ServerAPI(
 
     def _download_file_to_stream(
         self,
-        url: str,
+        endpoint: str,
         stream: StreamType,
         chunk_size: int,
         progress: TransferProgress,
@@ -1367,7 +1367,11 @@ class ServerAPI(
         else:
             get_func = self._session_functions_mapping[RequestTypes.get]
 
+        url = self._endpoint_to_url(endpoint, use_rest=False)
+        progress.set_source_url(url)
+
         retries = self.get_default_max_retries()
+        api_prepended = False
         for attempt in range(retries):
             # Continue in download
             offset = progress.get_transferred_size()
@@ -1376,6 +1380,18 @@ class ServerAPI(
 
             try:
                 with get_func(url, **kwargs) as response:
+                    # Auto-fix missing 'api/'
+                    if response.status_code == 405 and not api_prepended:
+                        api_prepended = True
+                        if (
+                            not endpoint.startswith(self._base_url)
+                            and not endpoint.startswith("api/")
+                        ):
+                            url = self._endpoint_to_url(
+                                endpoint, use_rest=True
+                            )
+                            progress.set_destination_url(url)
+                            continue
                     response.raise_for_status()
                     if progress.get_content_size() is None:
                         progress.set_content_size(
@@ -1394,6 +1410,12 @@ class ServerAPI(
                 if attempt == retries:
                     raise
                 progress.next_attempt()
+
+        if api_prepended:
+            self.log.warning(
+                f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
+                " Please fix the endpoit passed to the function."
+            )
 
     def download_file_to_stream(
         self,
@@ -1427,17 +1449,14 @@ class ServerAPI(
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
-        url = self._endpoint_to_url(endpoint, use_rest=False)
-
         if progress is None:
             progress = TransferProgress()
 
-        progress.set_source_url(url)
         progress.set_started()
 
         try:
             self._download_file_to_stream(
-                url, stream, chunk_size, progress
+                endpoint, stream, chunk_size, progress
             )
 
         except Exception as exc:
@@ -1585,13 +1604,7 @@ class ServerAPI(
             bytes: Chunk of file.
 
         """
-        # Get size of file
-        file_stream.seek(0, io.SEEK_END)
-        size = file_stream.tell()
         file_stream.seek(0)
-        # Set content size to progress object
-        progress.set_content_size(size)
-
         while True:
             chunk = file_stream.read(chunk_size)
             if not chunk:
@@ -1601,7 +1614,7 @@ class ServerAPI(
 
     def _upload_file(
         self,
-        url: str,
+        endpoint: str,
         stream: StreamType,
         progress: TransferProgress,
         request_type: Optional[RequestType] = None,
@@ -1611,7 +1624,7 @@ class ServerAPI(
         """Upload file to server.
 
         Args:
-            url (str): Url where file will be uploaded.
+            endpoint (str): Endpoint used to upload.
             stream (StreamType): File stream.
             progress (TransferProgress): Object that gives ability to track
                 progress.
@@ -1629,6 +1642,10 @@ class ServerAPI(
         if request_type is None:
             request_type = RequestTypes.put
 
+        endpoint = endpoint.lstrip("/")
+        url = self._endpoint_to_url(endpoint, use_rest=False)
+        progress.set_destination_url(url)
+
         if self._session is None:
             headers = kwargs.setdefault("headers", {})
             for key, value in self.get_headers().items():
@@ -1643,6 +1660,14 @@ class ServerAPI(
 
         retries = self.get_default_max_retries()
         response = None
+
+        # Get size of file
+        stream.seek(0, io.SEEK_END)
+        size = stream.tell()
+        # Set content size to progress object
+        progress.set_content_size(size)
+
+        api_prepended = False
         for attempt in range(retries):
             try:
                 response = post_func(
@@ -1652,6 +1677,16 @@ class ServerAPI(
                     ),
                     **kwargs
                 )
+                # Auto-fix missing 'api/'
+                if response.status_code == 405 and not api_prepended:
+                    api_prepended = True
+                    if (
+                        not endpoint.startswith(self._base_url)
+                        and not endpoint.startswith("api/")
+                    ):
+                        url = self._endpoint_to_url(endpoint, use_rest=True)
+                        progress.set_destination_url(url)
+                        continue
                 break
 
             except (
@@ -1664,6 +1699,11 @@ class ServerAPI(
                 progress.reset_transferred()
 
         response.raise_for_status()
+        if api_prepended:
+            self.log.warning(
+                f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
+                " Please fix the endpoit passed to the function."
+            )
         return response
 
     def upload_file_from_stream(
@@ -1694,19 +1734,20 @@ class ServerAPI(
             requests.Response: Response object
 
         """
-        url = self._endpoint_to_url(endpoint)
-
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
         if progress is None:
             progress = TransferProgress()
 
-        progress.set_destination_url(url)
         progress.set_started()
 
         try:
             return self._upload_file(
-                url, stream, progress, request_type, **kwargs
+                endpoint,
+                stream,
+                progress,
+                request_type,
+                **kwargs
             )
 
         except Exception as exc:
@@ -1751,7 +1792,11 @@ class ServerAPI(
 
         with open(filepath, "rb") as stream:
             return self.upload_file_from_stream(
-                endpoint, stream, progress, request_type, **kwargs
+                endpoint,
+                stream,
+                progress,
+                request_type,
+                **kwargs
             )
 
     def upload_reviewable(
@@ -1813,7 +1858,7 @@ class ServerAPI(
 
         query = prepare_query_string({"label": label or None})
         endpoint = (
-            f"/projects/{project_name}"
+            f"api/projects/{project_name}"
             f"/versions/{version_id}/reviewables{query}"
         )
         return self.upload_file(
