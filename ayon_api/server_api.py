@@ -1667,6 +1667,7 @@ class ServerAPI(
         # Set content size to progress object
         progress.set_content_size(size)
 
+        api_prepended = False
         for attempt in range(retries):
             try:
                 response = post_func(
