@@ -1585,13 +1585,7 @@ class ServerAPI(
             bytes: Chunk of file.
 
         """
-        # Get size of file
-        file_stream.seek(0, io.SEEK_END)
-        size = file_stream.tell()
         file_stream.seek(0)
-        # Set content size to progress object
-        progress.set_content_size(size)
-
         while True:
             chunk = file_stream.read(chunk_size)
             if not chunk:
@@ -1643,6 +1637,12 @@ class ServerAPI(
 
         retries = self.get_default_max_retries()
         response = None
+
+        # Get size of file
+        stream.seek(0, io.SEEK_END)
+        size = stream.tell()
+        # Set content size to progress object
+        progress.set_content_size(size)
         for attempt in range(retries):
             try:
                 response = post_func(
