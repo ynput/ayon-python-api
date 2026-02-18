@@ -256,7 +256,7 @@ class ThumbnailsAPI(BaseServerAPI):
 
         mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
-            f"projects/{project_name}/thumbnails",
+            f"api/projects/{project_name}/thumbnails",
             src_filepath,
             request_type=RequestTypes.post,
             headers={"Content-Type": mime_type},
@@ -295,7 +295,7 @@ class ThumbnailsAPI(BaseServerAPI):
 
         mime_type = get_media_mime_type_for_stream(stream)
         response = self.upload_file_from_stream(
-            f"projects/{project_name}/thumbnails",
+            f"api/projects/{project_name}/thumbnails",
             stream,
             request_type=RequestTypes.post,
             headers={"Content-Type": mime_type},
@@ -325,7 +325,7 @@ class ThumbnailsAPI(BaseServerAPI):
 
         mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
-            f"projects/{project_name}/thumbnails/{thumbnail_id}",
+            f"api/projects/{project_name}/thumbnails/{thumbnail_id}",
             src_filepath,
             request_type=RequestTypes.put,
             headers={"Content-Type": mime_type},
@@ -351,7 +351,7 @@ class ThumbnailsAPI(BaseServerAPI):
         """
         mime_type = get_media_mime_type_for_stream(stream)
         response = self.upload_file_from_stream(
-            f"projects/{project_name}/thumbnails/{thumbnail_id}",
+            f"api/projects/{project_name}/thumbnails/{thumbnail_id}",
             stream,
             request_type=RequestTypes.put,
             headers={"Content-Type": mime_type},

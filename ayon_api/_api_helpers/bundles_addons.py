@@ -398,7 +398,7 @@ class BundlesAddonsAPI(BaseServerAPI):
 
         """
         response = self.upload_file(
-            "addons/install",
+            "api/addons/install",
             src_filepath,
             progress=progress,
             request_type=RequestTypes.post,
@@ -448,9 +448,11 @@ class BundlesAddonsAPI(BaseServerAPI):
             "private",
             filename
         )
-        url = f"{self.get_base_url()}/{endpoint}"
         self.download_file(
-            url, dst_filepath, chunk_size=chunk_size, progress=progress
+            endpoint,
+            dst_filepath,
+            chunk_size=chunk_size,
+            progress=progress,
         )
         return dst_filepath
 

@@ -1813,7 +1813,7 @@ class ServerAPI(
 
         query = prepare_query_string({"label": label or None})
         endpoint = (
-            f"/projects/{project_name}"
+            f"api/projects/{project_name}"
             f"/versions/{version_id}/reviewables{query}"
         )
         return self.upload_file(
