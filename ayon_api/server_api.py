@@ -1595,17 +1595,18 @@ class ServerAPI(
 
     def _upload_file(
         self,
-        url: str,
+        endpoint: str,
         stream: StreamType,
         progress: TransferProgress,
         request_type: Optional[RequestType] = None,
         chunk_size: Optional[int] = None,
+        use_rest: bool = False,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
 
         Args:
-            url (str): Url where file will be uploaded.
+            endpoint (str): Endpoint used to upload.
             stream (StreamType): File stream.
             progress (TransferProgress): Object that gives ability to track
                 progress.
@@ -1622,6 +1623,11 @@ class ServerAPI(
         """
         if request_type is None:
             request_type = RequestTypes.put
+
+        endpoint = endpoint.lstrip("/")
+        url = self._endpoint_to_url(endpoint, use_rest=use_rest)
+
+        progress.set_destination_url(url)
 
         if self._session is None:
             headers = kwargs.setdefault("headers", {})
@@ -1672,6 +1678,7 @@ class ServerAPI(
         stream: StreamType,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
+        use_rest: bool = False,
         **kwargs
     ) -> requests.Response:
         """Upload file to server from bytes.
@@ -1687,6 +1694,8 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+            use_rest (bool): Use rest api endpoint (prefix
+                endpoint with 'api/').
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1694,19 +1703,21 @@ class ServerAPI(
             requests.Response: Response object
 
         """
-        url = self._endpoint_to_url(endpoint)
-
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
         if progress is None:
             progress = TransferProgress()
 
-        progress.set_destination_url(url)
         progress.set_started()
 
         try:
             return self._upload_file(
-                url, stream, progress, request_type, **kwargs
+                endpoint,
+                stream,
+                progress,
+                request_type,
+                use_rest=use_rest,
+                **kwargs
             )
 
         except Exception as exc:
@@ -1722,6 +1733,7 @@ class ServerAPI(
         filepath: str,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
+        use_rest: bool = False,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1737,6 +1749,8 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+            use_rest (bool): Use rest api endpoint (prefix
+                endpoint with 'api/').
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1751,7 +1765,12 @@ class ServerAPI(
 
         with open(filepath, "rb") as stream:
             return self.upload_file_from_stream(
-                endpoint, stream, progress, request_type, **kwargs
+                endpoint,
+                stream,
+                progress,
+                request_type,
+                use_rest=use_rest,
+                **kwargs
             )
 
     def upload_reviewable(
