@@ -1600,7 +1600,6 @@ class ServerAPI(
         progress: TransferProgress,
         request_type: Optional[RequestType] = None,
         chunk_size: Optional[int] = None,
-        use_rest: bool = False,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1625,8 +1624,7 @@ class ServerAPI(
             request_type = RequestTypes.put
 
         endpoint = endpoint.lstrip("/")
-        url = self._endpoint_to_url(endpoint, use_rest=use_rest)
-
+        url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_destination_url(url)
 
         if self._session is None:
@@ -1649,6 +1647,8 @@ class ServerAPI(
         size = stream.tell()
         # Set content size to progress object
         progress.set_content_size(size)
+
+        api_prepended = False
         for attempt in range(retries):
             try:
                 response = post_func(
@@ -1658,6 +1658,13 @@ class ServerAPI(
                     ),
                     **kwargs
                 )
+                # Auto-fix missing 'api/'
+                if response.status_code == 405 and not api_prepended:
+                    api_prepended = True
+                    if not endpoint.startswith("api/"):
+                        url = self._endpoint_to_url(endpoint, use_rest=True)
+                        progress.set_destination_url(url)
+                        continue
                 break
 
             except (
@@ -1670,6 +1677,11 @@ class ServerAPI(
                 progress.reset_transferred()
 
         response.raise_for_status()
+        if api_prepended:
+            self.log.warning(
+                f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
+                " Please fix the endpoit passed to the function."
+            )
         return response
 
     def upload_file_from_stream(
@@ -1678,7 +1690,6 @@ class ServerAPI(
         stream: StreamType,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
-        use_rest: bool = False,
         **kwargs
     ) -> requests.Response:
         """Upload file to server from bytes.
@@ -1694,8 +1705,6 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
-            use_rest (bool): Use rest api endpoint (prefix
-                endpoint with 'api/').
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1716,7 +1725,6 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
-                use_rest=use_rest,
                 **kwargs
             )
 
@@ -1733,7 +1741,6 @@ class ServerAPI(
         filepath: str,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
-        use_rest: bool = False,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1749,8 +1756,6 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
-            use_rest (bool): Use rest api endpoint (prefix
-                endpoint with 'api/').
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1769,7 +1774,6 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
-                use_rest=use_rest,
                 **kwargs
             )
 
