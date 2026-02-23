@@ -1414,7 +1414,7 @@ class ServerAPI(
         if api_prepended:
             self.log.warning(
                 f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
-                " Please fix the endpoit passed to the function."
+                " Please fix the endpoint passed to the function."
             )
 
     def download_file_to_stream(
@@ -1702,7 +1702,7 @@ class ServerAPI(
         if api_prepended:
             self.log.warning(
                 f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
-                " Please fix the endpoit passed to the function."
+                " Please fix the endpoint passed to the function."
             )
         return response
 
