@@ -6887,6 +6887,7 @@ def create_link(
     output_id: str,
     output_type: str,
     link_name: Optional[str] = None,
+    data: Optional[dict[str, Any]] = None,
 ) -> CreateLinkData:
     """Create link between 2 entities.
 
@@ -6906,7 +6907,8 @@ def create_link(
         output_id (str): Output entity id.
         output_type (str): Entity type of output entity.
         link_name (Optional[str]): Name of link.
-            Available from server version '1.0.0-rc.6'.
+        data (Optional[dict[str, Any]]): Additional data to be stored
+            with the link.
 
     Returns:
         CreateLinkData: Information about link.
@@ -6924,6 +6926,7 @@ def create_link(
         output_id=output_id,
         output_type=output_type,
         link_name=link_name,
+        data=data,
     )
 
 
