@@ -993,6 +993,74 @@ def download_file(
     )
 
 
+def upload_project_file(
+    project_name: str,
+    filepath: str,
+    *,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> requests.Response:
+    """Upload project file from a filepath.
+
+    Project files are usually binary files, such as images, videos,
+        or other media files that can be accessed via api endpoint
+        '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+    Args:
+        project_name (str): Project name.
+        filepath (str): Path where file will be downloaded.
+        chunk_size (Optional[int]): Size of chunks that are received
+            in single loop.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track download progress.
+
+    Returns:
+        requests.Response: Requests response.
+
+    """
+    con = get_server_api_connection()
+    return con.upload_project_file(
+        project_name=project_name,
+        filepath=filepath,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
+def upload_project_file_from_stream(
+    project_name: str,
+    stream: StreamType,
+    *,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> requests.Response:
+    """Upload project file from a filepath.
+
+    Project files are usually binary files, such as images, videos,
+        or other media files that can be accessed via api endpoint
+        '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+    Args:
+        project_name (str): Project name.
+        stream (StreamType): Stream used as source for upload.
+        chunk_size (Optional[int]): Size of chunks that are received
+            in single loop.
+        progress (Optional[TransferProgress]): Object that gives ability
+            to track download progress.
+
+    Returns:
+        requests.Response: Requests response.
+
+    """
+    con = get_server_api_connection()
+    return con.upload_project_file_from_stream(
+        project_name=project_name,
+        stream=stream,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
 def download_project_file(
     project_name: str,
     file_id: str,
