@@ -2984,6 +2984,7 @@ def get_addon_site_settings(
 def get_bundle_settings(
     bundle_name: Optional[str] = None,
     project_name: Optional[str] = None,
+    project_bundle_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
@@ -3023,6 +3024,7 @@ def get_bundle_settings(
     return con.get_bundle_settings(
         bundle_name=bundle_name,
         project_name=project_name,
+        project_bundle_name=project_bundle_name,
         variant=variant,
         site_id=site_id,
         use_site=use_site,
@@ -3031,6 +3033,7 @@ def get_bundle_settings(
 
 def get_addons_studio_settings(
     bundle_name: Optional[str] = None,
+    project_bundle_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
@@ -3046,6 +3049,8 @@ def get_addons_studio_settings(
     Args:
         bundle_name (Optional[str]): Name of bundle for which should be
             settings received.
+        project_bundle_name (Optional[str]): Project bundle name for
+            which should be settings received.
         variant (Optional[Literal['production', 'staging']]): Name of
             settings variant. Used 'default_settings_variant' by default.
         site_id (Optional[str]): Site id for which want to receive
@@ -3063,6 +3068,7 @@ def get_addons_studio_settings(
     con = get_server_api_connection()
     return con.get_addons_studio_settings(
         bundle_name=bundle_name,
+        project_bundle_name=project_bundle_name,
         variant=variant,
         site_id=site_id,
         use_site=use_site,
@@ -3073,6 +3079,7 @@ def get_addons_studio_settings(
 def get_addons_project_settings(
     project_name: str,
     bundle_name: Optional[str] = None,
+    project_bundle_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     use_site: bool = True,
@@ -3104,6 +3111,8 @@ def get_addons_project_settings(
             received.
         bundle_name (Optional[str]): Name of bundle for which should be
             settings received.
+        project_bundle_name (Optional[str]): Project bundle name for which
+            should be settings received.
         variant (Optional[Literal['production', 'staging']]): Name of
             settings variant. Used 'default_settings_variant' by default.
         site_id (Optional[str]): Site id for which want to receive
@@ -3123,6 +3132,7 @@ def get_addons_project_settings(
     return con.get_addons_project_settings(
         project_name=project_name,
         bundle_name=bundle_name,
+        project_bundle_name=project_bundle_name,
         variant=variant,
         site_id=site_id,
         use_site=use_site,
@@ -3132,6 +3142,7 @@ def get_addons_project_settings(
 
 def get_addons_settings(
     bundle_name: Optional[str] = None,
+    project_bundle_name: Optional[str] = None,
     project_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
@@ -3151,6 +3162,8 @@ def get_addons_settings(
     Args:
         bundle_name (Optional[str]): Name of bundle for which should be
             settings received.
+        project_bundle_name (Optional[str]): Name of project bundle
+            for which should be settings received.
         project_name (Optional[str]): Name of project for which should be
             settings received.
         variant (Optional[Literal['production', 'staging']]): Name of
@@ -3167,6 +3180,7 @@ def get_addons_settings(
     con = get_server_api_connection()
     return con.get_addons_settings(
         bundle_name=bundle_name,
+        project_bundle_name=project_bundle_name,
         project_name=project_name,
         variant=variant,
         site_id=site_id,
