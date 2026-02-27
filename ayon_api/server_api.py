@@ -1771,11 +1771,10 @@ class ServerAPI(
         ):
             if not value:
                 continue
-
-            orig_key = headers_keys_by_low_key.get(key)
+            orig_key = headers_keys_by_low_key.get(key.lower())
             if orig_key:
                 headers.pop(orig_key)
-            headers[key] = filename
+            headers[key] = value
 
         retries = self.get_default_max_retries()
         response = None
