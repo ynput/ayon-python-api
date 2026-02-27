@@ -1827,8 +1827,8 @@ class ServerAPI(
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
         *,
-        filename: Optional[str] = None,
         content_type: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server from bytes.
@@ -1844,8 +1844,8 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
-            filename (Optional[str]): Filename of file on server.
             content_type (Optional[str]): MIME type of the file.
+            filename (Optional[str]): Filename of file on server.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1866,8 +1866,8 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
-                filename=filename,
                 content_type=content_type,
+                filename=filename,
                 **kwargs
             )
 
@@ -1885,8 +1885,8 @@ class ServerAPI(
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
         *,
-        filename: Optional[str] = None,
         content_type: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1922,8 +1922,8 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
-                filename=filename,
                 content_type=content_type,
+                filename=filename,
                 **kwargs
             )
 
