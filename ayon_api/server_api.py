@@ -1687,6 +1687,9 @@ class ServerAPI(
         progress: TransferProgress,
         request_type: Optional[RequestType] = None,
         chunk_size: Optional[int] = None,
+        *,
+        content_type: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1714,17 +1717,32 @@ class ServerAPI(
         url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_destination_url(url)
 
+        headers = kwargs.setdefault("headers", {})
+        headers_keys_by_low_key = {key.lower(): key for key in headers}
         if self._session is None:
-            headers = kwargs.setdefault("headers", {})
             for key, value in self.get_headers().items():
-                if key not in headers:
+                orig_key = headers_keys_by_low_key.get(key)
+                if not orig_key:
                     headers[key] = value
+
             post_func = self._base_functions_mapping[request_type]
         else:
             post_func = self._session_functions_mapping[request_type]
 
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
+
+        for key, value in (
+            ("x-file-name", filename),
+            ("Content-Type", content_type),
+        ):
+            if not value:
+                continue
+
+            orig_key = headers_keys_by_low_key.get(key)
+            if orig_key:
+                headers.pop(orig_key)
+            headers[key] = filename
 
         retries = self.get_default_max_retries()
         response = None
@@ -1905,24 +1923,9 @@ class ServerAPI(
                 f"Could not determine MIME type of file '{filepath}'"
             )
 
-        if headers is None:
-            headers = self.get_headers(content_type)
-        else:
-            # Make sure content-type is filled with file content type
-            content_type_key = next(
-                (
-                    key
-                    for key in headers
-                    if key.lower() == "content-type"
-                ),
-                "Content-Type"
-            )
-            headers[content_type_key] = content_type
-
         # Fill original filename if not explicitly defined
         if not filename:
             filename = os.path.basename(filepath)
-        headers["x-file-name"] = filename
 
         query = prepare_query_string({"label": label or None})
         endpoint = (
