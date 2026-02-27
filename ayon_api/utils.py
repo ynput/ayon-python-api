@@ -1180,23 +1180,32 @@ def _get_svg_mime_type(content: bytes) -> Optional[str]:
     return None
 
 
+def _get_json_mime_type(content: bytes) -> Optional[str]:
+    # json
+    try:
+        json.loads(content.decode("utf-8"))
+        return "application/json"
+    except (UnicodeDecodeError, ValueError):
+        pass
+    return None
+
+
 def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
     mime_type = _get_media_mime_type_for_content_base(content)
     if mime_type is not None:
         return mime_type
-    return _get_svg_mime_type(content)
+    return _get_svg_mime_type(content) or _get_json_mime_type(content)
 
 
 def get_media_mime_type_for_stream(stream: StreamType) -> Optional[str]:
     # Read only 12 bytes to determine mime type
     content = stream.read(12)
-    if len(content) < 12:
-        return None
     mime_type = _get_media_mime_type_for_content_base(content)
-    if mime_type is None:
-        content += stream.read()
-        mime_type = _get_svg_mime_type(content)
-    return mime_type
+    if mime_type is not None:
+        return mime_type
+
+    content += stream.read()
+    return _get_svg_mime_type(content) or _get_json_mime_type(content)
 
 
 def get_media_mime_type(filepath: str) -> Optional[str]:
