@@ -62,6 +62,7 @@ from .utils import (
     get_default_site_id,
     NOT_SET,
     get_media_mime_type,
+    get_media_mime_type_for_stream,
     get_machine_name,
     fill_own_attribs,
 )
@@ -1522,6 +1523,8 @@ class ServerAPI(
         project_name: str,
         filepath: str,
         *,
+        content_type: Optional[str] = None,
+        filename: Optional[str] = None,
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
     ) -> requests.Response:
@@ -1534,6 +1537,9 @@ class ServerAPI(
         Args:
             project_name (str): Project name.
             filepath (str): Path where file will be downloaded.
+            content_type (Optional[str]): MIME type of file.
+            filename (Optional[str]): Server filename, filename from filepath
+                is used if not passed.
             chunk_size (Optional[int]): Size of chunks that are received
                 in single loop.
             progress (Optional[TransferProgress]): Object that gives ability
@@ -1543,9 +1549,18 @@ class ServerAPI(
             requests.Response: Requests response.
 
         """
+        if not filename:
+            filename = os.path.basename(filepath)
+
+        if not content_type:
+            content_type = get_media_mime_type(filepath)
+            if not content_type:
+                content_type = "application/octet-stream"
+
         return self.upload_file(
             f"api/projects/{project_name}/files",
             filepath,
+            filename=filename,
             chunk_size=chunk_size,
             progress=progress,
             request_type=RequestTypes.post,
@@ -1555,7 +1570,9 @@ class ServerAPI(
         self,
         project_name: str,
         stream: StreamType,
+        filename: str,
         *,
+        content_type: Optional[str] = None,
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
     ) -> requests.Response:
@@ -1568,6 +1585,8 @@ class ServerAPI(
         Args:
             project_name (str): Project name.
             stream (StreamType): Stream used as source for upload.
+            filename (str): Name of file on server.
+            content_type (Optional[str]): MIME type of file.
             chunk_size (Optional[int]): Size of chunks that are received
                 in single loop.
             progress (Optional[TransferProgress]): Object that gives ability
@@ -1577,11 +1596,19 @@ class ServerAPI(
             requests.Response: Requests response.
 
         """
+        if not content_type:
+            stream.seek(0)
+            content_type = get_media_mime_type_for_stream(stream)
+            if not content_type:
+                content_type = "application/octet-stream"
+
         return self.upload_file_from_stream(
             f"api/projects/{project_name}/files",
             stream,
+            filename=filename,
             chunk_size=chunk_size,
             progress=progress,
+            content_type=content_type,
             request_type=RequestTypes.post,
         )
 
@@ -1761,6 +1788,7 @@ class ServerAPI(
                     data=self._upload_chunks_iter(
                         stream, progress, chunk_size
                     ),
+                    headers=headers,
                     **kwargs
                 )
                 # Auto-fix missing 'api/'
@@ -1798,6 +1826,9 @@ class ServerAPI(
         stream: StreamType,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
+        *,
+        filename: Optional[str] = None,
+        content_type: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server from bytes.
@@ -1813,6 +1844,8 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+            filename (Optional[str]): Filename of file on server.
+            content_type (Optional[str]): MIME type of the file.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1833,6 +1866,8 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
+                filename=filename,
+                content_type=content_type,
                 **kwargs
             )
 
@@ -1849,6 +1884,9 @@ class ServerAPI(
         filepath: str,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
+        *,
+        filename: Optional[str] = None,
+        content_type: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1864,6 +1902,8 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+            content_type (Optional[str]): MIME type of the file.
+            filename (Optional[str]): Filename of file on server.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1882,6 +1922,8 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
+                filename=filename,
+                content_type=content_type,
                 **kwargs
             )
 
@@ -1936,6 +1978,8 @@ class ServerAPI(
             endpoint,
             filepath,
             progress=progress,
+            content_type=content_type,
+            filename=filename,
             headers=headers,
             request_type=RequestTypes.post,
             **kwargs
