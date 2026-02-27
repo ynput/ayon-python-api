@@ -999,6 +999,8 @@ def upload_project_file(
     *,
     content_type: Optional[str] = None,
     filename: Optional[str] = None,
+    file_id: Optional[str] = None,
+    activity_id: Optional[str] = None,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
 ) -> requests.Response:
@@ -1014,6 +1016,8 @@ def upload_project_file(
         content_type (Optional[str]): MIME type of file.
         filename (Optional[str]): Server filename, filename from filepath
             is used if not passed.
+        file_id (Optional[str]): File id.
+        activity_id (Optional[str]): To which activity is file related.
         chunk_size (Optional[int]): Size of chunks that are received
             in single loop.
         progress (Optional[TransferProgress]): Object that gives ability
@@ -1029,6 +1033,8 @@ def upload_project_file(
         filepath=filepath,
         content_type=content_type,
         filename=filename,
+        file_id=file_id,
+        activity_id=activity_id,
         chunk_size=chunk_size,
         progress=progress,
     )
@@ -1040,6 +1046,8 @@ def upload_project_file_from_stream(
     filename: str,
     *,
     content_type: Optional[str] = None,
+    file_id: Optional[str] = None,
+    activity_id: Optional[str] = None,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
 ) -> requests.Response:
@@ -1054,6 +1062,8 @@ def upload_project_file_from_stream(
         stream (StreamType): Stream used as source for upload.
         filename (str): Name of file on server.
         content_type (Optional[str]): MIME type of file.
+        file_id (Optional[str]): File id.
+        activity_id (Optional[str]): To which activity is file related.
         chunk_size (Optional[int]): Size of chunks that are received
             in single loop.
         progress (Optional[TransferProgress]): Object that gives ability
@@ -1069,6 +1079,8 @@ def upload_project_file_from_stream(
         stream=stream,
         filename=filename,
         content_type=content_type,
+        file_id=file_id,
+        activity_id=activity_id,
         chunk_size=chunk_size,
         progress=progress,
     )
@@ -1148,14 +1160,27 @@ def download_project_file_to_stream(
     )
 
 
+def delete_project_file(
+    project_name: str,
+    file_id: str,
+) -> None:
+    """Delete project file.
+    """
+    con = get_server_api_connection()
+    return con.delete_project_file(
+        project_name=project_name,
+        file_id=file_id,
+    )
+
+
 def upload_file_from_stream(
     endpoint: str,
     stream: StreamType,
     progress: Optional[TransferProgress] = None,
     request_type: Optional[RequestType] = None,
     *,
-    filename: Optional[str] = None,
     content_type: Optional[str] = None,
+    filename: Optional[str] = None,
     **kwargs,
 ) -> requests.Response:
     """Upload file to server from bytes.
@@ -1171,8 +1196,8 @@ def upload_file_from_stream(
             to track upload progress.
         request_type (Optional[RequestType]): Type of request that will
             be used to upload file.
-        filename (Optional[str]): Filename of file on server.
         content_type (Optional[str]): MIME type of the file.
+        filename (Optional[str]): Filename of file on server.
         **kwargs (Any): Additional arguments that will be passed
             to request function.
 
@@ -1186,8 +1211,8 @@ def upload_file_from_stream(
         stream=stream,
         progress=progress,
         request_type=request_type,
-        filename=filename,
         content_type=content_type,
+        filename=filename,
         **kwargs,
     )
 
@@ -1198,8 +1223,8 @@ def upload_file(
     progress: Optional[TransferProgress] = None,
     request_type: Optional[RequestType] = None,
     *,
-    filename: Optional[str] = None,
     content_type: Optional[str] = None,
+    filename: Optional[str] = None,
     **kwargs,
 ) -> requests.Response:
     """Upload file to server.
@@ -1230,8 +1255,8 @@ def upload_file(
         filepath=filepath,
         progress=progress,
         request_type=request_type,
-        filename=filename,
         content_type=content_type,
+        filename=filename,
         **kwargs,
     )
 
