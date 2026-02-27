@@ -1118,12 +1118,12 @@ def _get_media_mime_type_for_content_base(content: bytes) -> Optional[str]:
     content_len = len(content)
     # Pre-validation (largest definition check)
     # - hopefully there cannot be media defined in less than 12 bytes
-    if content_len < 12:
+    if content_len < 4:
         return None
 
-    # FTYP
-    if content[4:8] == b"ftyp":
-        return _get_media_mime_type_from_ftyp(content)
+    # PDF
+    if content[0:4] == b"%PDF":
+        return "application/pdf"
 
     # BMP
     if content[0:2] == b"BM":
@@ -1162,6 +1162,14 @@ def _get_media_mime_type_for_content_base(content: bytes) -> Optional[str]:
     #   with this header
     if content[0:4] == b"\x00\x00\x01\x00":
         return "image/x-icon"
+
+    if content_len < 8:
+        return None
+
+    # FTYP
+    if content[4:8] == b"ftyp":
+        return _get_media_mime_type_from_ftyp(content)
+
     return None
 
 
