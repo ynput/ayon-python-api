@@ -1525,6 +1525,8 @@ class ServerAPI(
         *,
         content_type: Optional[str] = None,
         filename: Optional[str] = None,
+        file_id: Optional[str] = None,
+        activity_id: Optional[str] = None,
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
     ) -> requests.Response:
@@ -1540,6 +1542,8 @@ class ServerAPI(
             content_type (Optional[str]): MIME type of file.
             filename (Optional[str]): Server filename, filename from filepath
                 is used if not passed.
+            file_id (Optional[str]): File id.
+            activity_id (Optional[str]): To which activity is file related.
             chunk_size (Optional[int]): Size of chunks that are received
                 in single loop.
             progress (Optional[TransferProgress]): Object that gives ability
@@ -1557,8 +1561,12 @@ class ServerAPI(
             if not content_type:
                 content_type = "application/octet-stream"
 
+        query = prepare_query_string({
+            "x_file_id": file_id,
+            "x_activity_id": activity_id,
+        })
         return self.upload_file(
-            f"api/projects/{project_name}/files",
+            f"api/projects/{project_name}/files{query}",
             filepath,
             content_type=content_type,
             filename=filename,
@@ -1574,6 +1582,8 @@ class ServerAPI(
         filename: str,
         *,
         content_type: Optional[str] = None,
+        file_id: Optional[str] = None,
+        activity_id: Optional[str] = None,
         chunk_size: Optional[int] = None,
         progress: Optional[TransferProgress] = None,
     ) -> requests.Response:
@@ -1588,6 +1598,8 @@ class ServerAPI(
             stream (StreamType): Stream used as source for upload.
             filename (str): Name of file on server.
             content_type (Optional[str]): MIME type of file.
+            file_id (Optional[str]): File id.
+            activity_id (Optional[str]): To which activity is file related.
             chunk_size (Optional[int]): Size of chunks that are received
                 in single loop.
             progress (Optional[TransferProgress]): Object that gives ability
@@ -1603,8 +1615,12 @@ class ServerAPI(
             if not content_type:
                 content_type = "application/octet-stream"
 
+        query = prepare_query_string({
+            "x_file_id": file_id,
+            "x_activity_id": activity_id,
+        })
         return self.upload_file_from_stream(
-            f"api/projects/{project_name}/files",
+            f"api/projects/{project_name}/files{query}",
             stream,
             content_type=content_type,
             filename=filename,
