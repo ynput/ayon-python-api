@@ -1682,6 +1682,11 @@ class ServerAPI(
             progress=progress,
         )
 
+    def delete_project_file(self, project_name: str, file_id: str) -> None:
+        """Delete project file."""
+        response = self.delete(f"projects/{project_name}/files/{file_id}")
+        response.raise_for_status()
+
     @staticmethod
     def _upload_chunks_iter(
         file_stream: StreamType,
