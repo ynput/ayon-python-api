@@ -1793,7 +1793,6 @@ class ServerAPI(
                     data=self._upload_chunks_iter(
                         stream, progress, chunk_size
                     ),
-                    headers=headers,
                     **kwargs
                 )
                 # Auto-fix missing 'api/'
