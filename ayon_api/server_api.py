@@ -1560,6 +1560,7 @@ class ServerAPI(
         return self.upload_file(
             f"api/projects/{project_name}/files",
             filepath,
+            content_type=content_type,
             filename=filename,
             chunk_size=chunk_size,
             progress=progress,
@@ -1605,10 +1606,10 @@ class ServerAPI(
         return self.upload_file_from_stream(
             f"api/projects/{project_name}/files",
             stream,
+            content_type=content_type,
             filename=filename,
             chunk_size=chunk_size,
             progress=progress,
-            content_type=content_type,
             request_type=RequestTypes.post,
         )
 
