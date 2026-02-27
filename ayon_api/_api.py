@@ -997,6 +997,8 @@ def upload_project_file(
     project_name: str,
     filepath: str,
     *,
+    content_type: Optional[str] = None,
+    filename: Optional[str] = None,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
 ) -> requests.Response:
@@ -1009,6 +1011,9 @@ def upload_project_file(
     Args:
         project_name (str): Project name.
         filepath (str): Path where file will be downloaded.
+        content_type (Optional[str]): MIME type of file.
+        filename (Optional[str]): Server filename, filename from filepath
+            is used if not passed.
         chunk_size (Optional[int]): Size of chunks that are received
             in single loop.
         progress (Optional[TransferProgress]): Object that gives ability
@@ -1022,6 +1027,8 @@ def upload_project_file(
     return con.upload_project_file(
         project_name=project_name,
         filepath=filepath,
+        content_type=content_type,
+        filename=filename,
         chunk_size=chunk_size,
         progress=progress,
     )
@@ -1030,7 +1037,9 @@ def upload_project_file(
 def upload_project_file_from_stream(
     project_name: str,
     stream: StreamType,
+    filename: str,
     *,
+    content_type: Optional[str] = None,
     chunk_size: Optional[int] = None,
     progress: Optional[TransferProgress] = None,
 ) -> requests.Response:
@@ -1043,6 +1052,8 @@ def upload_project_file_from_stream(
     Args:
         project_name (str): Project name.
         stream (StreamType): Stream used as source for upload.
+        filename (str): Name of file on server.
+        content_type (Optional[str]): MIME type of file.
         chunk_size (Optional[int]): Size of chunks that are received
             in single loop.
         progress (Optional[TransferProgress]): Object that gives ability
@@ -1056,6 +1067,8 @@ def upload_project_file_from_stream(
     return con.upload_project_file_from_stream(
         project_name=project_name,
         stream=stream,
+        filename=filename,
+        content_type=content_type,
         chunk_size=chunk_size,
         progress=progress,
     )
@@ -1140,6 +1153,9 @@ def upload_file_from_stream(
     stream: StreamType,
     progress: Optional[TransferProgress] = None,
     request_type: Optional[RequestType] = None,
+    *,
+    filename: Optional[str] = None,
+    content_type: Optional[str] = None,
     **kwargs,
 ) -> requests.Response:
     """Upload file to server from bytes.
@@ -1155,6 +1171,8 @@ def upload_file_from_stream(
             to track upload progress.
         request_type (Optional[RequestType]): Type of request that will
             be used to upload file.
+        filename (Optional[str]): Filename of file on server.
+        content_type (Optional[str]): MIME type of the file.
         **kwargs (Any): Additional arguments that will be passed
             to request function.
 
@@ -1168,6 +1186,8 @@ def upload_file_from_stream(
         stream=stream,
         progress=progress,
         request_type=request_type,
+        filename=filename,
+        content_type=content_type,
         **kwargs,
     )
 
@@ -1177,6 +1197,9 @@ def upload_file(
     filepath: str,
     progress: Optional[TransferProgress] = None,
     request_type: Optional[RequestType] = None,
+    *,
+    filename: Optional[str] = None,
+    content_type: Optional[str] = None,
     **kwargs,
 ) -> requests.Response:
     """Upload file to server.
@@ -1192,6 +1215,8 @@ def upload_file(
             to track upload progress.
         request_type (Optional[RequestType]): Type of request that will
             be used to upload file.
+        content_type (Optional[str]): MIME type of the file.
+        filename (Optional[str]): Filename of file on server.
         **kwargs (Any): Additional arguments that will be passed
             to request function.
 
@@ -1205,6 +1230,8 @@ def upload_file(
         filepath=filepath,
         progress=progress,
         request_type=request_type,
+        filename=filename,
+        content_type=content_type,
         **kwargs,
     )
 
@@ -6955,6 +6982,7 @@ def create_link(
     output_id: str,
     output_type: str,
     link_name: Optional[str] = None,
+    data: Optional[dict[str, Any]] = None,
 ) -> CreateLinkData:
     """Create link between 2 entities.
 
@@ -6974,7 +7002,8 @@ def create_link(
         output_id (str): Output entity id.
         output_type (str): Entity type of output entity.
         link_name (Optional[str]): Name of link.
-            Available from server version '1.0.0-rc.6'.
+        data (Optional[dict[str, Any]]): Additional data to be stored
+            with the link.
 
     Returns:
         CreateLinkData: Information about link.
@@ -6992,6 +7021,7 @@ def create_link(
         output_id=output_id,
         output_type=output_type,
         link_name=link_name,
+        data=data,
     )
 
 
