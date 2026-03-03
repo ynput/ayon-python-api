@@ -62,6 +62,7 @@ from .utils import (
     get_default_site_id,
     NOT_SET,
     get_media_mime_type,
+    get_media_mime_type_for_stream,
     get_machine_name,
     fill_own_attribs,
 )
@@ -1517,6 +1518,117 @@ class ServerAPI(
 
         return progress
 
+    def upload_project_file(
+        self,
+        project_name: str,
+        filepath: str,
+        *,
+        content_type: Optional[str] = None,
+        filename: Optional[str] = None,
+        file_id: Optional[str] = None,
+        activity_id: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> requests.Response:
+        """Upload project file from a filepath.
+
+        Project files are usually binary files, such as images, videos,
+            or other media files that can be accessed via api endpoint
+            '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+        Args:
+            project_name (str): Project name.
+            filepath (str): Path where file will be downloaded.
+            content_type (Optional[str]): MIME type of file.
+            filename (Optional[str]): Server filename, filename from filepath
+                is used if not passed.
+            file_id (Optional[str]): File id.
+            activity_id (Optional[str]): To which activity is file related.
+            chunk_size (Optional[int]): Size of chunks that are received
+                in single loop.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
+
+        Returns:
+            requests.Response: Requests response.
+
+        """
+        if not filename:
+            filename = os.path.basename(filepath)
+
+        if not content_type:
+            content_type = get_media_mime_type(filepath)
+            if not content_type:
+                content_type = "application/octet-stream"
+
+        query = prepare_query_string({
+            "x_file_id": file_id,
+            "x_activity_id": activity_id,
+        })
+        return self.upload_file(
+            f"api/projects/{project_name}/files{query}",
+            filepath,
+            content_type=content_type,
+            filename=filename,
+            chunk_size=chunk_size,
+            progress=progress,
+            request_type=RequestTypes.post,
+        )
+
+    def upload_project_file_from_stream(
+        self,
+        project_name: str,
+        stream: StreamType,
+        filename: str,
+        *,
+        content_type: Optional[str] = None,
+        file_id: Optional[str] = None,
+        activity_id: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> requests.Response:
+        """Upload project file from a filepath.
+
+        Project files are usually binary files, such as images, videos,
+            or other media files that can be accessed via api endpoint
+            '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+        Args:
+            project_name (str): Project name.
+            stream (StreamType): Stream used as source for upload.
+            filename (str): Name of file on server.
+            content_type (Optional[str]): MIME type of file.
+            file_id (Optional[str]): File id.
+            activity_id (Optional[str]): To which activity is file related.
+            chunk_size (Optional[int]): Size of chunks that are received
+                in single loop.
+            progress (Optional[TransferProgress]): Object that gives ability
+                to track download progress.
+
+        Returns:
+            requests.Response: Requests response.
+
+        """
+        if not content_type:
+            stream.seek(0)
+            content_type = get_media_mime_type_for_stream(stream)
+            if not content_type:
+                content_type = "application/octet-stream"
+
+        query = prepare_query_string({
+            "x_file_id": file_id,
+            "x_activity_id": activity_id,
+        })
+        return self.upload_file_from_stream(
+            f"api/projects/{project_name}/files{query}",
+            stream,
+            content_type=content_type,
+            filename=filename,
+            chunk_size=chunk_size,
+            progress=progress,
+            request_type=RequestTypes.post,
+        )
+
     def download_project_file(
         self,
         project_name: str,
@@ -1587,6 +1699,11 @@ class ServerAPI(
             progress=progress,
         )
 
+    def delete_project_file(self, project_name: str, file_id: str) -> None:
+        """Delete project file."""
+        response = self.delete(f"projects/{project_name}/files/{file_id}")
+        response.raise_for_status()
+
     @staticmethod
     def _upload_chunks_iter(
         file_stream: StreamType,
@@ -1619,6 +1736,9 @@ class ServerAPI(
         progress: TransferProgress,
         request_type: Optional[RequestType] = None,
         chunk_size: Optional[int] = None,
+        *,
+        content_type: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1646,17 +1766,31 @@ class ServerAPI(
         url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_destination_url(url)
 
+        headers = kwargs.setdefault("headers", {})
+        headers_keys_by_low_key = {key.lower(): key for key in headers}
         if self._session is None:
-            headers = kwargs.setdefault("headers", {})
             for key, value in self.get_headers().items():
-                if key not in headers:
+                orig_key = headers_keys_by_low_key.get(key)
+                if not orig_key:
                     headers[key] = value
+
             post_func = self._base_functions_mapping[request_type]
         else:
             post_func = self._session_functions_mapping[request_type]
 
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
+
+        for key, value in (
+            ("x-file-name", filename),
+            ("Content-Type", content_type),
+        ):
+            if not value:
+                continue
+            orig_key = headers_keys_by_low_key.get(key.lower())
+            if orig_key:
+                headers.pop(orig_key)
+            headers[key] = value
 
         retries = self.get_default_max_retries()
         response = None
@@ -1712,6 +1846,9 @@ class ServerAPI(
         stream: StreamType,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
+        *,
+        content_type: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server from bytes.
@@ -1727,6 +1864,8 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+            content_type (Optional[str]): MIME type of the file.
+            filename (Optional[str]): Filename of file on server.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1747,6 +1886,8 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
+                content_type=content_type,
+                filename=filename,
                 **kwargs
             )
 
@@ -1763,6 +1904,9 @@ class ServerAPI(
         filepath: str,
         progress: Optional[TransferProgress] = None,
         request_type: Optional[RequestType] = None,
+        *,
+        content_type: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1778,6 +1922,8 @@ class ServerAPI(
                 to track upload progress.
             request_type (Optional[RequestType]): Type of request that will
                 be used to upload file.
+            content_type (Optional[str]): MIME type of the file.
+            filename (Optional[str]): Filename of file on server.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1796,6 +1942,8 @@ class ServerAPI(
                 stream,
                 progress,
                 request_type,
+                content_type=content_type,
+                filename=filename,
                 **kwargs
             )
 
@@ -1837,24 +1985,9 @@ class ServerAPI(
                 f"Could not determine MIME type of file '{filepath}'"
             )
 
-        if headers is None:
-            headers = self.get_headers(content_type)
-        else:
-            # Make sure content-type is filled with file content type
-            content_type_key = next(
-                (
-                    key
-                    for key in headers
-                    if key.lower() == "content-type"
-                ),
-                "Content-Type"
-            )
-            headers[content_type_key] = content_type
-
         # Fill original filename if not explicitly defined
         if not filename:
             filename = os.path.basename(filepath)
-        headers["x-file-name"] = filename
 
         query = prepare_query_string({"label": label or None})
         endpoint = (
@@ -1865,6 +1998,8 @@ class ServerAPI(
             endpoint,
             filepath,
             progress=progress,
+            content_type=content_type,
+            filename=filename,
             headers=headers,
             request_type=RequestTypes.post,
             **kwargs
