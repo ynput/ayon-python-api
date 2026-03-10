@@ -9,7 +9,7 @@ on:
         type: boolean
         default: false
       version:
-        description: 'Release version (optional, if not provided will use version from develop without -dev)'
+        description: 'Release version (optional)'
         required: false
         type: string
 
