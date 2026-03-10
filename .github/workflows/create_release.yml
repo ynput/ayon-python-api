@@ -58,13 +58,25 @@ jobs:
         run: |
           git add ayon_api/version.py pyproject.toml
           git commit -m "Release version ${{ steps.get_version.outputs.version }}"
-          git push origin develop
+
+      - name: Push to protected develop branch
+        uses: CasperWA/push-protected@v2.10.0
+        with:
+          token: ${{ secrets.YNPUT_BOT_TOKEN }}
+          branch: develop
+          unprotect_reviews: true
 
       - name: Rebase main on develop
         run: |
           git checkout main
           git rebase develop
-          git push origin main
+
+      - name: Push to protected main branch
+        uses: CasperWA/push-protected@v2.10.0
+        with:
+          token: ${{ secrets.YNPUT_BOT_TOKEN }}
+          branch: main
+          unprotect_reviews: true
 
       - name: Create and push tag
         run: |
@@ -78,7 +90,13 @@ jobs:
           python manage_version.py update --version $NEW_VERSION
           git add ayon_api/version.py pyproject.toml
           git commit -m "Bump version to $NEW_VERSION"
-          git push origin develop
+
+      - name: Push to protected develop branch
+        uses: CasperWA/push-protected@v2.10.0
+        with:
+          token: ${{ secrets.YNPUT_BOT_TOKEN }}
+          branch: develop
+          unprotect_reviews: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
