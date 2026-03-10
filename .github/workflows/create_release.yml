@@ -70,13 +70,6 @@ jobs:
           git tag ${{ steps.get_version.outputs.version }}
           git push origin ${{ steps.get_version.outputs.version }}
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          generate_release_notes: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Bump version on develop
         run: |
           git checkout develop
@@ -85,3 +78,10 @@ jobs:
           git add ayon_api/version.py pyproject.toml
           git commit -m "Bump version to $NEW_VERSION"
           git push origin develop
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
