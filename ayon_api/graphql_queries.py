@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
 def add_links_fields(
     entity_field: GraphQlQueryEdgeField,
     nested_fields: dict | None,
+    *,
     supports_data: bool = False,
 ) -> None:
     if "links" not in nested_fields:
