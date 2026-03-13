@@ -329,6 +329,7 @@ class ServerAPI(
 
         self._graphql_allows_traits_in_representations: Optional[bool] = None
         self._product_base_type_supported = None
+        self._links_graphql_support_data = None
 
         self._session = None
 
@@ -921,6 +922,15 @@ class ServerAPI(
                     (major, minor, patch) >= (1, 13, 0)
             )
         return self._product_base_type_supported
+
+    def links_graphql_support_data(self) -> bool:
+        """Links data can be received by GraphQl."""
+        if self._links_graphql_support_data is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            self._links_graphql_support_data = (
+                (major, minor, patch) >= (1, 14, 2)
+            )
+        return self._links_graphql_support_data
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
         if self._access_token is None:

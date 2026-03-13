@@ -28,6 +28,9 @@ class BaseServerAPI:
     def is_product_base_type_supported(self) -> bool:
         raise NotImplementedError()
 
+    def links_graphql_support_data(self) -> bool:
+        raise NotImplementedError()
+
     def get_server_version(self) -> str:
         raise NotImplementedError()
 
