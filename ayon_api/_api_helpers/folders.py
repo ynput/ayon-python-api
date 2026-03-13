@@ -331,7 +331,10 @@ class FoldersAPI(BaseServerAPI):
         if own_attributes:
             fields.add("ownAttrib")
 
-        query = folders_graphql_query(fields)
+        query = folders_graphql_query(
+            fields,
+            links_support_data=self.links_graphql_support_data(),
+        )
         for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
@@ -478,7 +481,10 @@ class FoldersAPI(BaseServerAPI):
             if not folder_ids:
                 return set()
 
-        query = folders_graphql_query({"id"})
+        query = folders_graphql_query(
+            {"id"},
+            links_support_data=self.links_graphql_support_data(),
+        )
         query.set_variable_value("projectName", project_name)
         query.set_variable_value("folderHasProducts", True)
         if folder_ids:

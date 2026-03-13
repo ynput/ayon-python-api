@@ -106,7 +106,10 @@ class TasksAPI(BaseServerAPI):
         if active is not None:
             fields.add("active")
 
-        query = tasks_graphql_query(fields)
+        query = tasks_graphql_query(
+            fields,
+            links_support_data=self.links_graphql_support_data(),
+        )
         for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
@@ -267,7 +270,10 @@ class TasksAPI(BaseServerAPI):
         if active is not None:
             fields.add("active")
 
-        query = tasks_by_folder_paths_graphql_query(fields)
+        query = tasks_by_folder_paths_graphql_query(
+            fields,
+            links_support_data=self.links_graphql_support_data(),
+        )
         for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 

@@ -362,7 +362,10 @@ class LinksAPI(BaseServerAPI):
             return output
 
         link_fields = {"id", "links"}
-        query = query_func(link_fields)
+        query = query_func(
+            link_fields,
+            links_support_data=self.links_graphql_support_data(),
+        )
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 

@@ -93,7 +93,10 @@ class WorkfilesAPI(BaseServerAPI):
             fields = set(fields)
             self._prepare_fields("workfile", fields)
 
-        query = workfiles_info_graphql_query(fields)
+        query = workfiles_info_graphql_query(
+            fields,
+            links_support_data=self.links_graphql_support_data(),
+        )
 
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
