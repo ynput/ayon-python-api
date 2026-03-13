@@ -729,6 +729,13 @@ def is_product_base_type_supported() -> bool:
     return con.is_product_base_type_supported()
 
 
+def links_graphql_support_data() -> bool:
+    """Links data can be received by GraphQl.
+    """
+    con = get_server_api_connection()
+    return con.links_graphql_support_data()
+
+
 def get_users(
     project_name: Optional[str] = None,
     usernames: Optional[Iterable[str]] = None,
