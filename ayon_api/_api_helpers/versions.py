@@ -87,6 +87,8 @@ class VersionsAPI(BaseServerAPI):
         if active is not None:
             fields.add("active")
 
+        self._prepare_link_fields(fields)
+
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
                 (
@@ -116,7 +118,6 @@ class VersionsAPI(BaseServerAPI):
         ):
             return
 
-
         filters = self._prepare_advanced_filters(filters)
         if filters:
             graphql_filters["filter"] = filters
@@ -130,20 +131,14 @@ class VersionsAPI(BaseServerAPI):
         if standard and not latest:
             # This query all versions standard + hero
             # - hero must be filtered out if is not enabled during loop
-            query = versions_graphql_query(
-                fields,
-                links_support_data=self.links_graphql_support_data(),
-            )
+            query = versions_graphql_query(fields)
             for attr, filter_value in graphql_filters.items():
                 query.set_variable_value(attr, filter_value)
             queries.append(query)
         else:
             if hero:
                 # Add hero query if hero is enabled
-                hero_query = versions_graphql_query(
-                    fields,
-                    links_support_data=self.links_graphql_support_data(),
-                )
+                hero_query = versions_graphql_query(fields)
                 for attr, filter_value in graphql_filters.items():
                     hero_query.set_variable_value(attr, filter_value)
 
@@ -151,10 +146,7 @@ class VersionsAPI(BaseServerAPI):
                 queries.append(hero_query)
 
             if standard:
-                standard_query = versions_graphql_query(
-                    fields,
-                    links_support_data=self.links_graphql_support_data(),
-                )
+                standard_query = versions_graphql_query(fields)
                 for attr, filter_value in graphql_filters.items():
                     standard_query.set_variable_value(attr, filter_value)
 

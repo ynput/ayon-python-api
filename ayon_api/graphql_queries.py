@@ -15,20 +15,17 @@ if typing.TYPE_CHECKING:
 def add_links_fields(
     entity_field: GraphQlQueryEdgeField,
     nested_fields: dict | None,
-    *,
-    supports_data: bool = False,
 ) -> None:
     if "links" not in nested_fields:
         return
     links_fields = nested_fields.pop("links")
-
     link_edge_fields = set(DEFAULT_LINK_FIELDS)
-    if supports_data:
-        link_edge_fields.add("data")
 
     if isinstance(links_fields, dict):
         simple_fields = set(links_fields)
-        simple_variant = len(simple_fields - link_edge_fields) == 0
+        diff = simple_fields - link_edge_fields
+        diff.discard("data")
+        simple_variant = len(diff) == 0
     else:
         simple_variant = True
         simple_fields = link_edge_fields
@@ -137,11 +134,7 @@ def product_types_query(fields):
     return query
 
 
-def folders_graphql_query(
-    fields: set[str],
-    *,
-    links_support_data: bool = False,
-) -> GraphQlQuery:
+def folders_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("FoldersQuery")
     project_name_var = query.add_variable("projectName", "String!")
     folder_ids_var = query.add_variable("folderIds", "[String!]")
@@ -181,11 +174,8 @@ def folders_graphql_query(
     folders_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
-    add_links_fields(
-        folders_field,
-        nested_fields,
-        supports_data=links_support_data,
-    )
+
+    add_links_fields(folders_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -203,11 +193,7 @@ def folders_graphql_query(
     return query
 
 
-def tasks_graphql_query(
-    fields: set[str],
-    *,
-    links_support_data: bool = False,
-) -> GraphQlQuery:
+def tasks_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("TasksQuery")
     project_name_var = query.add_variable("projectName", "String!")
     task_ids_var = query.add_variable("taskIds", "[String!]")
@@ -237,11 +223,7 @@ def tasks_graphql_query(
     tasks_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
-    add_links_fields(
-        tasks_field,
-        nested_fields,
-        supports_data=links_support_data,
-    )
+    add_links_fields(tasks_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -259,11 +241,7 @@ def tasks_graphql_query(
     return query
 
 
-def tasks_by_folder_paths_graphql_query(
-    fields: set[str],
-    *,
-    links_support_data: bool = False,
-) -> GraphQlQuery:
+def tasks_by_folder_paths_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("TasksByFolderPathQuery")
     project_name_var = query.add_variable("projectName", "String!")
     task_names_var = query.add_variable("taskNames", "[String!]")
@@ -294,11 +272,8 @@ def tasks_by_folder_paths_graphql_query(
     tasks_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
-    add_links_fields(
-        tasks_field,
-        nested_fields,
-        supports_data=links_support_data,
-    )
+
+    add_links_fields(tasks_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -316,11 +291,7 @@ def tasks_by_folder_paths_graphql_query(
     return query
 
 
-def products_graphql_query(
-    fields: set[str],
-    *,
-    links_support_data: bool = False,
-) -> GraphQlQuery:
+def products_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("ProductsQuery")
 
     project_name_var = query.add_variable("projectName", "String!")
@@ -352,11 +323,7 @@ def products_graphql_query(
     products_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(set(fields))
-    add_links_fields(
-        products_field,
-        nested_fields,
-        supports_data=links_support_data,
-    )
+    add_links_fields(products_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -374,11 +341,7 @@ def products_graphql_query(
     return query
 
 
-def versions_graphql_query(
-    fields: set[str],
-    *,
-    links_support_data: bool = False,
-) -> GraphQlQuery:
+def versions_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("VersionsQuery")
 
     project_name_var = query.add_variable("projectName", "String!")
@@ -411,11 +374,7 @@ def versions_graphql_query(
     versions_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(set(fields))
-    add_links_fields(
-        versions_field,
-        nested_fields,
-        supports_data=links_support_data,
-    )
+    add_links_fields(versions_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -433,11 +392,7 @@ def versions_graphql_query(
     return query
 
 
-def representations_graphql_query(
-    fields: set[str],
-    *,
-    links_support_data: bool = False,
-) -> GraphQlQuery:
+def representations_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("RepresentationsQuery")
 
     project_name_var = query.add_variable("projectName", "String!")
@@ -468,11 +423,7 @@ def representations_graphql_query(
     repres_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(set(fields))
-    add_links_fields(
-        repres_field,
-        nested_fields,
-        supports_data=links_support_data,
-    )
+    add_links_fields(repres_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
@@ -589,11 +540,7 @@ def representations_hierarchy_qraphql_query(
     return query
 
 
-def workfiles_info_graphql_query(
-    fields: set[str],
-    *,
-    links_support_data: bool = False,
-) -> GraphQlQuery:
+def workfiles_info_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("WorkfilesInfo")
     project_name_var = query.add_variable("projectName", "String!")
     workfiles_info_ids = query.add_variable("workfileIds", "[String!]")
@@ -617,11 +564,7 @@ def workfiles_info_graphql_query(
     workfiles_field.set_filter("tags", tags_var)
 
     nested_fields = fields_to_dict(set(fields))
-    add_links_fields(
-        workfiles_field,
-        nested_fields,
-        supports_data=links_support_data,
-    )
+    add_links_fields(workfiles_field, nested_fields)
 
     query_queue = collections.deque()
     for key, value in nested_fields.items():
