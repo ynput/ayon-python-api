@@ -2465,7 +2465,7 @@ class ServerAPI(
             fields.add(f"links.{field}")
 
         if self.links_graphql_support_data():
-            fields.add(f"links.data")
+            fields.add("links.data")
 
     def _prepare_advanced_filters(
         self, filters: Union[str, dict[str, Any], None]
