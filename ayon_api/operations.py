@@ -834,8 +834,8 @@ class OperationsSession(object):
                 if body is not None:
                     operations_body.append(body)
 
-            self._con.send_batch_operations(
-                project_name, operations_body, can_fail=False
+            self._con.send_background_batch_operations(
+                project_name, operations_body, wait=True, can_fail=False
             )
 
     def create_entity(
