@@ -145,6 +145,9 @@ class BaseServerAPI:
     ):
         raise NotImplementedError()
 
+    def _prepare_link_fields(self, fields: set[str]) -> None:
+        raise NotImplementedError()
+
     def _prepare_advanced_filters(
         self, filters: Union[str, dict[str, Any], None]
     ) -> Optional[str]:

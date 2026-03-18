@@ -38,6 +38,7 @@ from .constants import (
     DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
     DEFAULT_ENTITY_LIST_FIELDS,
+    DEFAULT_LINK_FIELDS,
 )
 from .graphql import INTROSPECTION_QUERY
 from .graphql_queries import users_graphql_query
@@ -2454,6 +2455,17 @@ class ServerAPI(
                     "productType"
                 )
             }
+
+    def _prepare_link_fields(self, fields: set[str]) -> None:
+        if "links" not in fields:
+            return
+
+        fields.discard("links")
+        for field in DEFAULT_LINK_FIELDS:
+            fields.add(f"links.{field}")
+
+        if self.links_graphql_support_data():
+            fields.add(f"links.data")
 
     def _prepare_advanced_filters(
         self, filters: Union[str, dict[str, Any], None]
