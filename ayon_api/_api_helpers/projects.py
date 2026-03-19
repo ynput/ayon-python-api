@@ -332,6 +332,7 @@ class ProjectsAPI(BaseServerAPI):
             graphql_project = next(self._get_graphql_projects(
                 None,
                 None,
+                project_name=project_name,
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ), None)
