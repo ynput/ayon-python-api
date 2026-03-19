@@ -108,6 +108,8 @@ class RepresentationsAPI(BaseServerAPI):
             fields.discard("files")
             fields |= REPRESENTATION_FILES_FIELDS
 
+        self._prepare_link_fields(fields)
+
         graphql_filters = {
             "projectName": project_name
         }

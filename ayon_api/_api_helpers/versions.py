@@ -87,6 +87,8 @@ class VersionsAPI(BaseServerAPI):
         if active is not None:
             fields.add("active")
 
+        self._prepare_link_fields(fields)
+
         if own_attributes is not _PLACEHOLDER:
             warnings.warn(
                 (
@@ -115,7 +117,6 @@ class VersionsAPI(BaseServerAPI):
             ("versionTags", tags),
         ):
             return
-
 
         filters = self._prepare_advanced_filters(filters)
         if filters:

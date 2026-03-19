@@ -1,18 +1,31 @@
+from __future__ import annotations
+
 import collections
+import typing
 
 from .constants import DEFAULT_LINK_FIELDS
 from .graphql import FIELD_VALUE, GraphQlQuery, fields_to_dict
 
+if typing.TYPE_CHECKING:
+    from .graphql import (
+        GraphQlQueryEdgeField,
+    )
 
-def add_links_fields(entity_field, nested_fields):
+
+def add_links_fields(
+    entity_field: GraphQlQueryEdgeField,
+    nested_fields: dict | None,
+) -> None:
     if "links" not in nested_fields:
         return
     links_fields = nested_fields.pop("links")
-
     link_edge_fields = set(DEFAULT_LINK_FIELDS)
+
     if isinstance(links_fields, dict):
         simple_fields = set(links_fields)
-        simple_variant = len(simple_fields - link_edge_fields) == 0
+        diff = simple_fields - link_edge_fields
+        diff.discard("data")
+        simple_variant = len(diff) == 0
     else:
         simple_variant = True
         simple_fields = link_edge_fields
@@ -121,7 +134,7 @@ def product_types_query(fields):
     return query
 
 
-def folders_graphql_query(fields):
+def folders_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("FoldersQuery")
     project_name_var = query.add_variable("projectName", "String!")
     folder_ids_var = query.add_variable("folderIds", "[String!]")
@@ -161,6 +174,7 @@ def folders_graphql_query(fields):
     folders_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
+
     add_links_fields(folders_field, nested_fields)
 
     query_queue = collections.deque()
@@ -179,7 +193,7 @@ def folders_graphql_query(fields):
     return query
 
 
-def tasks_graphql_query(fields):
+def tasks_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("TasksQuery")
     project_name_var = query.add_variable("projectName", "String!")
     task_ids_var = query.add_variable("taskIds", "[String!]")
@@ -227,7 +241,7 @@ def tasks_graphql_query(fields):
     return query
 
 
-def tasks_by_folder_paths_graphql_query(fields):
+def tasks_by_folder_paths_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("TasksByFolderPathQuery")
     project_name_var = query.add_variable("projectName", "String!")
     task_names_var = query.add_variable("taskNames", "[String!]")
@@ -258,6 +272,7 @@ def tasks_by_folder_paths_graphql_query(fields):
     tasks_field.set_filter("filter", filter_var)
 
     nested_fields = fields_to_dict(fields)
+
     add_links_fields(tasks_field, nested_fields)
 
     query_queue = collections.deque()
@@ -276,7 +291,7 @@ def tasks_by_folder_paths_graphql_query(fields):
     return query
 
 
-def products_graphql_query(fields):
+def products_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("ProductsQuery")
 
     project_name_var = query.add_variable("projectName", "String!")
@@ -326,7 +341,7 @@ def products_graphql_query(fields):
     return query
 
 
-def versions_graphql_query(fields):
+def versions_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("VersionsQuery")
 
     project_name_var = query.add_variable("projectName", "String!")
@@ -377,7 +392,7 @@ def versions_graphql_query(fields):
     return query
 
 
-def representations_graphql_query(fields):
+def representations_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("RepresentationsQuery")
 
     project_name_var = query.add_variable("projectName", "String!")
@@ -525,7 +540,7 @@ def representations_hierarchy_qraphql_query(
     return query
 
 
-def workfiles_info_graphql_query(fields):
+def workfiles_info_graphql_query(fields: set[str]) -> GraphQlQuery:
     query = GraphQlQuery("WorkfilesInfo")
     project_name_var = query.add_variable("projectName", "String!")
     workfiles_info_ids = query.add_variable("workfileIds", "[String!]")

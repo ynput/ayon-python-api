@@ -331,6 +331,8 @@ class FoldersAPI(BaseServerAPI):
         if own_attributes:
             fields.add("ownAttrib")
 
+        self._prepare_link_fields(fields)
+
         query = folders_graphql_query(fields)
         for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)

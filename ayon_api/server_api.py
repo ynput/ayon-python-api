@@ -38,6 +38,7 @@ from .constants import (
     DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
     DEFAULT_ENTITY_LIST_FIELDS,
+    DEFAULT_LINK_FIELDS,
 )
 from .graphql import INTROSPECTION_QUERY
 from .graphql_queries import users_graphql_query
@@ -329,6 +330,7 @@ class ServerAPI(
 
         self._graphql_allows_traits_in_representations: Optional[bool] = None
         self._product_base_type_supported = None
+        self._links_graphql_support_data = None
 
         self._session = None
 
@@ -921,6 +923,15 @@ class ServerAPI(
                     (major, minor, patch) >= (1, 13, 0)
             )
         return self._product_base_type_supported
+
+    def links_graphql_support_data(self) -> bool:
+        """Links data can be received by GraphQl."""
+        if self._links_graphql_support_data is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            self._links_graphql_support_data = (
+                (major, minor, patch) >= (1, 14, 2)
+            )
+        return self._links_graphql_support_data
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
         if self._access_token is None:
@@ -2444,6 +2455,17 @@ class ServerAPI(
                     "productType"
                 )
             }
+
+    def _prepare_link_fields(self, fields: set[str]) -> None:
+        if "links" not in fields:
+            return
+
+        fields.discard("links")
+        for field in DEFAULT_LINK_FIELDS:
+            fields.add(f"links.{field}")
+
+        if self.links_graphql_support_data():
+            fields.add("links.data")
 
     def _prepare_advanced_filters(
         self, filters: Union[str, dict[str, Any], None]

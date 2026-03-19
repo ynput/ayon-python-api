@@ -362,6 +362,7 @@ class LinksAPI(BaseServerAPI):
             return output
 
         link_fields = {"id", "links"}
+        self._prepare_link_fields(link_fields)
         query = query_func(link_fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
