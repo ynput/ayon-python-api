@@ -99,7 +99,15 @@ jobs:
           unprotect_reviews: true
 
       - name: Create GitHub Release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.YNPUT_BOT_TOKEN }}
           tag_name: ${{ steps.get_version.outputs.version }}
           generate_release_notes: true
+
+  publish:
+    needs: release
+    uses: ./.github/workflows/python-publish.yml
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}

@@ -6,11 +6,15 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: ⬆️ Upload Python Package
+name: ⬆️ Upload PyPi Package
 
 on:
   release:
     types: [published]
+  workflow_call:
+    secrets:
+      PYPI_API_TOKEN:
+        required: true
 
 permissions:
   contents: read
@@ -23,9 +27,9 @@ jobs:
       url: https://pypi.org/p/ayon-python-api
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10.x'
     - name: Install dependencies
