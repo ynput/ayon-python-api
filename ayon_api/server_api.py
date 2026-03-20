@@ -1228,6 +1228,20 @@ class ServerAPI(
         for retry_idx in reversed(range(max_retries)):
             try:
                 response = function(url, **kwargs)
+
+                # Usually these mean, try later.
+                # 502: returned by the proxy: nginx
+                # 503: returned by the server: if no capacity
+                if response.status_code in {502, 503}:
+                    new_response = RestApiResponse(response)
+                    self.log.warning(
+                        "Server returned %s status code."
+                        " Retrying with longer delay...",
+                        response.status_code
+                    )
+                    if retry_idx != 0:
+                        time.sleep(2)
+                    continue
                 break
 
             except ConnectionRefusedError:
@@ -1269,7 +1283,8 @@ class ServerAPI(
                     }
                 )
 
-            time.sleep(0.1)
+            if retry_idx != 0:
+                time.sleep(0.1)
 
         if new_response is not None:
             return new_response
