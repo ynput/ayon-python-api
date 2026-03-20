@@ -162,6 +162,9 @@ class ProjectsAPI(BaseServerAPI):
         if response.status != 200:
             return None
         project = response.data
+        attrib = project["attrib"]
+        for attr_name in self.get_attributes_for_type("project"):
+            attrib.setdefault(attr_name, None)
         self._fill_project_entity_data(project)
         return project
 
