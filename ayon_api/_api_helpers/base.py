@@ -132,6 +132,11 @@ class BaseServerAPI:
     ) -> Optional[dict[str, Any]]:
         raise NotImplementedError()
 
+    def get_attributes_for_type(
+        self, entity_type: AttributeScope
+    ) -> set[str]:
+        raise NotImplementedError()
+
     def get_attributes_fields_for_type(
         self, entity_type: AttributeScope
     ) -> set[str]:
