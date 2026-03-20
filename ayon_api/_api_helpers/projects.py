@@ -162,6 +162,9 @@ class ProjectsAPI(BaseServerAPI):
         if response.status != 200:
             return None
         project = response.data
+        attrib = project["attrib"]
+        for attr_name in self.get_attributes_for_type("project"):
+            attrib.setdefault(attr_name, None)
         self._fill_project_entity_data(project)
         return project
 
@@ -291,16 +294,14 @@ class ProjectsAPI(BaseServerAPI):
                 return
             projects_by_name = {p["name"]: p for p in projects}
 
-        for project in self.get_rest_projects(active, library):
+        for project in self.get_rest_projects(active=active, library=library):
+            if own_attributes:
+                fill_own_attribs(project)
+
             name = project["name"]
-            graphql_p = projects_by_name.get(name)
-            if graphql_p:
-                for key in (
-                    "productTypes",
-                    "usedTags",
-                ):
-                    if key in graphql_p:
-                        project[key] = graphql_p[key]
+            graphql_project = projects_by_name.get(name)
+            self._merge_project_graphql_data(project, graphql_project)
+
             yield project
 
     def get_project(
@@ -332,6 +333,7 @@ class ProjectsAPI(BaseServerAPI):
             graphql_project = next(self._get_graphql_projects(
                 None,
                 None,
+                project_name=project_name,
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ), None)
@@ -341,13 +343,9 @@ class ProjectsAPI(BaseServerAPI):
         project = self.get_rest_project(project_name)
         if own_attributes:
             fill_own_attribs(project)
-        if graphql_project:
-            for key in (
-                "productTypes",
-                "usedTags",
-            ):
-                if key in graphql_project:
-                    project[key] = graphql_project[key]
+
+        self._merge_project_graphql_data(project, graphql_project)
+
         return project
 
     def create_project(
@@ -816,6 +814,25 @@ class ProjectsAPI(BaseServerAPI):
                     fill_own_attribs(project)
                 self._fill_project_entity_data(project)
                 yield project
+
+    def _merge_project_graphql_data(
+        self,
+        rest_project: dict[str, Any],
+        graphql_project: Optional[dict[str, Any]],
+    ) -> None:
+        if not graphql_project:
+            return
+
+        for key, value in graphql_project.items():
+            if (
+                key not in rest_project
+                or key in (
+                    "productBaseTypes",
+                    "productTypes",
+                    "usedTags",
+                )
+            ):
+                rest_project[key] = value
 
     def _get_project_roots_values(
         self,
