@@ -1419,7 +1419,7 @@ class ServerAPI(
                 requests.exceptions.Timeout,
                 requests.exceptions.ConnectionError,
             ):
-                if attempt == retries:
+                if attempt == retries - 1:
                     raise
                 progress.next_attempt()
 
@@ -1838,7 +1838,7 @@ class ServerAPI(
                 requests.exceptions.Timeout,
                 requests.exceptions.ConnectionError,
             ):
-                if attempt == retries:
+                if attempt == retries - 1:
                     raise
                 progress.next_attempt()
                 progress.reset_transferred()
