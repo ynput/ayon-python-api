@@ -1792,7 +1792,10 @@ class ServerAPI(
         url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_destination_url(url)
 
-        headers = kwargs.setdefault("headers", {})
+        headers = kwargs.get("headers")
+        if headers is None:
+            kwargs["headers"] = headers = {}
+
         headers_keys_by_low_key = {key.lower(): key for key in headers}
         if self._session is None:
             for key, value in self.get_headers().items():
