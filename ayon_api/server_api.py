@@ -1985,7 +1985,6 @@ class ServerAPI(
         content_type: Optional[str] = None,
         filename: Optional[str] = None,
         progress: Optional[TransferProgress] = None,
-        headers: Optional[dict[str, Any]] = None,
         **kwargs
     ) -> requests.Response:
         """Upload reviewable file to server.
@@ -2000,7 +1999,6 @@ class ServerAPI(
             filename (Optional[str]): User as original filename. Filename from
                 'filepath' is used when not filled.
             progress (Optional[TransferProgress]): Progress.
-            headers (Optional[dict[str, Any]]): Headers.
 
         Returns:
             requests.Response: Server response.
@@ -2029,7 +2027,6 @@ class ServerAPI(
             progress=progress,
             content_type=content_type,
             filename=filename,
-            headers=headers,
             request_type=RequestTypes.post,
             **kwargs
         )
