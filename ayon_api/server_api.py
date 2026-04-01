@@ -1838,7 +1838,7 @@ class ServerAPI(
                     **kwargs
                 )
                 # Auto-fix missing 'api/'
-                if response.status_code == 405 and not api_prepended:
+                if response.status_code in (404, 405) and not api_prepended:
                     api_prepended = True
                     if (
                         not endpoint.startswith(self._base_url)
