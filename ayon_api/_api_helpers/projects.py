@@ -810,6 +810,10 @@ class ProjectsAPI(BaseServerAPI):
             for project in parsed_data["projects"]:
                 if active is not None and active is not project["active"]:
                     continue
+
+                if library is not None and library is not project["library"]:
+                    continue
+
                 if own_attributes:
                     fill_own_attribs(project)
                 self._fill_project_entity_data(project)
