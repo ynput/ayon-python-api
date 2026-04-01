@@ -118,8 +118,6 @@ class EventsAPI(BaseServerAPI):
             ("newerThanFilter", newer_than),
             ("olderThanFilter", older_than),
             ("textFilter", text_filter),
-            ("firstFilter", first),
-            ("lastFilter", last),
         ):
             if filter_value is not None:
                 filters[filter_key] = filter_value
@@ -133,6 +131,14 @@ class EventsAPI(BaseServerAPI):
         query = events_graphql_query(set(fields), order, use_states)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
+
+        events_field = query.get_field_by_path("events")
+        if last is not None:
+            events_field.set_limit(last)
+            events_field.set_order(SortOrder.descending)
+        elif first is not None:
+            events_field.set_limit(first)
+            events_field.set_order(SortOrder.ascending)
 
         if limit:
             events_field = query.get_field_by_path("events")
