@@ -2425,8 +2425,11 @@ class ServerAPI(
             fields.remove("attrib")
             fields |= self.get_attributes_fields_for_type(entity_type)
 
-        if own_attributes and entity_type in {"project", "folder", "task"}:
-            fields.add("ownAttrib")
+        if own_attributes:
+            if entity_type == "project":
+                fields.add("allAttrib")
+            elif entity_type in {"folder", "task"}:
+                fields.add("ownAttrib")
 
         if entity_type != "project":
             return
