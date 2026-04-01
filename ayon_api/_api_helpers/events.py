@@ -40,6 +40,7 @@ class EventsAPI(BaseServerAPI):
         project_names: Optional[Iterable[str]] = None,
         statuses: Optional[Iterable[EventStatus]] = None,
         users: Optional[Iterable[str]] = None,
+        text_filter: Optional[str] = None,
         include_logs: Optional[bool] = None,
         has_children: Optional[bool] = None,
         newer_than: Optional[str] = None,
@@ -47,6 +48,8 @@ class EventsAPI(BaseServerAPI):
         fields: Optional[Iterable[str]] = None,
         limit: Optional[int] = None,
         order: Optional[SortOrder] = None,
+        first: Optional[int] = None,
+        last: Optional[int] = None,
         states: Optional[Iterable[str]] = None,
     ) -> Generator[dict[str, Any], None, None]:
         """Get events from server with filtering options.
@@ -62,6 +65,7 @@ class EventsAPI(BaseServerAPI):
             statuses (Optional[Iterable[EventStatus]]): Filtering by statuses.
             users (Optional[Iterable[str]]): Filtering by users
                 who created/triggered an event.
+            text_filter (Optional[str]): Filtering by text in event payload.
             include_logs (Optional[bool]): Query also log events.
             has_children (Optional[bool]): Event is with/without children
                 events. If 'None' then all events are returned, default.
@@ -75,6 +79,8 @@ class EventsAPI(BaseServerAPI):
             order (Optional[SortOrder]): Order events in ascending
                 or descending order. It is recommended to set 'limit'
                 when used descending.
+            first (Optional[int]): Get first n events.
+            last (Optional[int]): Get last n events.
             states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
                 Use 'statuses' instead.
 
@@ -111,6 +117,7 @@ class EventsAPI(BaseServerAPI):
             ("hasChildrenFilter", has_children),
             ("newerThanFilter", newer_than),
             ("olderThanFilter", older_than),
+            ("textFilter", text_filter),
         ):
             if filter_value is not None:
                 filters[filter_key] = filter_value
@@ -124,6 +131,14 @@ class EventsAPI(BaseServerAPI):
         query = events_graphql_query(set(fields), order, use_states)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
+
+        events_field = query.get_field_by_path("events")
+        if last is not None:
+            events_field.set_limit(last)
+            events_field.set_order(SortOrder.descending)
+        elif first is not None:
+            events_field.set_limit(first)
+            events_field.set_order(SortOrder.ascending)
 
         if limit:
             events_field = query.get_field_by_path("events")

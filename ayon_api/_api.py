@@ -3245,6 +3245,7 @@ def get_events(
     project_names: Optional[Iterable[str]] = None,
     statuses: Optional[Iterable[EventStatus]] = None,
     users: Optional[Iterable[str]] = None,
+    text_filter: Optional[str] = None,
     include_logs: Optional[bool] = None,
     has_children: Optional[bool] = None,
     newer_than: Optional[str] = None,
@@ -3252,6 +3253,8 @@ def get_events(
     fields: Optional[Iterable[str]] = None,
     limit: Optional[int] = None,
     order: Optional[SortOrder] = None,
+    first: Optional[int] = None,
+    last: Optional[int] = None,
     states: Optional[Iterable[str]] = None,
 ) -> Generator[dict[str, Any], None, None]:
     """Get events from server with filtering options.
@@ -3267,6 +3270,7 @@ def get_events(
         statuses (Optional[Iterable[EventStatus]]): Filtering by statuses.
         users (Optional[Iterable[str]]): Filtering by users
             who created/triggered an event.
+        text_filter (Optional[str]): Filtering by text in event payload.
         include_logs (Optional[bool]): Query also log events.
         has_children (Optional[bool]): Event is with/without children
             events. If 'None' then all events are returned, default.
@@ -3280,6 +3284,8 @@ def get_events(
         order (Optional[SortOrder]): Order events in ascending
             or descending order. It is recommended to set 'limit'
             when used descending.
+        first (Optional[int]): Get first n events.
+        last (Optional[int]): Get last n events.
         states (Optional[Iterable[str]]): DEPRECATED Filtering by states.
             Use 'statuses' instead.
 
@@ -3294,6 +3300,7 @@ def get_events(
         project_names=project_names,
         statuses=statuses,
         users=users,
+        text_filter=text_filter,
         include_logs=include_logs,
         has_children=has_children,
         newer_than=newer_than,
@@ -3301,6 +3308,8 @@ def get_events(
         fields=fields,
         limit=limit,
         order=order,
+        first=first,
+        last=last,
         states=states,
     )
 

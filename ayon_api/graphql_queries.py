@@ -593,6 +593,7 @@ def events_graphql_query(fields, order, use_states=False):
     has_children_var = query.add_variable("hasChildrenFilter", "Boolean!")
     newer_than_var = query.add_variable("newerThanFilter", "String!")
     older_than_var = query.add_variable("olderThanFilter", "String!")
+    text_filter_var = query.add_variable("textFilter", "String!")
 
     statuses_filter_name = "statuses"
     if use_states:
@@ -607,6 +608,7 @@ def events_graphql_query(fields, order, use_states=False):
     events_field.set_filter("hasChildren", has_children_var)
     events_field.set_filter("newerThan", newer_than_var)
     events_field.set_filter("olderThan", older_than_var)
+    events_field.set_filter("filter", text_filter_var)
 
     nested_fields = fields_to_dict(set(fields))
 
