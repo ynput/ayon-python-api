@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import platform
 import warnings
@@ -810,8 +811,24 @@ class ProjectsAPI(BaseServerAPI):
             for project in parsed_data["projects"]:
                 if active is not None and active is not project["active"]:
                     continue
-                if own_attributes:
-                    fill_own_attribs(project)
+
+                if library is not None and library is not project["library"]:
+                    continue
+
+                all_attrib = project.get("allAttrib")
+                if isinstance(all_attrib, str):
+                    all_attrib = json.loads(all_attrib)
+                    project["allAttrib"] = all_attrib
+
+                if own_attributes and all_attrib:
+                    own_attrib = {}
+                    if all_attrib:
+                        own_attrib = copy.deepcopy(all_attrib)
+                    attrib = project.get("attrib", {})
+                    for key in attrib.keys():
+                        own_attrib.setdefault(key, None)
+                    project["ownAttrib"] = own_attrib
+
                 self._fill_project_entity_data(project)
                 yield project
 
