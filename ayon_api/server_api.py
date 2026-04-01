@@ -1408,7 +1408,10 @@ class ServerAPI(
             try:
                 with get_func(url, **kwargs) as response:
                     # Auto-fix missing 'api/'
-                    if response.status_code == 405 and not api_prepended:
+                    if (
+                        response.status_code in (404, 405)
+                        and not api_prepended
+                    ):
                         api_prepended = True
                         if (
                             not endpoint.startswith(self._base_url)
@@ -1792,7 +1795,10 @@ class ServerAPI(
         url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_destination_url(url)
 
-        headers = kwargs.setdefault("headers", {})
+        headers = kwargs.get("headers")
+        if headers is None:
+            kwargs["headers"] = headers = {}
+
         headers_keys_by_low_key = {key.lower(): key for key in headers}
         if self._session is None:
             for key, value in self.get_headers().items():
@@ -1838,7 +1844,7 @@ class ServerAPI(
                     **kwargs
                 )
                 # Auto-fix missing 'api/'
-                if response.status_code == 405 and not api_prepended:
+                if response.status_code in (404, 405) and not api_prepended:
                     api_prepended = True
                     if (
                         not endpoint.startswith(self._base_url)
@@ -1982,7 +1988,6 @@ class ServerAPI(
         content_type: Optional[str] = None,
         filename: Optional[str] = None,
         progress: Optional[TransferProgress] = None,
-        headers: Optional[dict[str, Any]] = None,
         **kwargs
     ) -> requests.Response:
         """Upload reviewable file to server.
@@ -1997,7 +2002,6 @@ class ServerAPI(
             filename (Optional[str]): User as original filename. Filename from
                 'filepath' is used when not filled.
             progress (Optional[TransferProgress]): Progress.
-            headers (Optional[dict[str, Any]]): Headers.
 
         Returns:
             requests.Response: Server response.
@@ -2026,7 +2030,6 @@ class ServerAPI(
             progress=progress,
             content_type=content_type,
             filename=filename,
-            headers=headers,
             request_type=RequestTypes.post,
             **kwargs
         )

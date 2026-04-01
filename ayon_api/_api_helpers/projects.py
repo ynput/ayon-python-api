@@ -812,6 +812,9 @@ class ProjectsAPI(BaseServerAPI):
                 if active is not None and active is not project["active"]:
                     continue
 
+                if library is not None and library is not project["library"]:
+                    continue
+
                 all_attrib = project.get("allAttrib")
                 if isinstance(all_attrib, str):
                     all_attrib = json.loads(all_attrib)
