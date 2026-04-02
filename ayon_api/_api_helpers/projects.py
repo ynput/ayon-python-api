@@ -164,8 +164,10 @@ class ProjectsAPI(BaseServerAPI):
             return None
         project = response.data
         attrib = project["attrib"]
-        for attr_name in self.get_attributes_for_type("project"):
-            attrib.setdefault(attr_name, None)
+        for attr_name, attr_data in (
+            self.get_attributes_for_type("project").items()
+        ):
+            attrib.setdefault(attr_name, attr_data["default"])
         self._fill_project_entity_data(project)
         return project
 
@@ -809,6 +811,10 @@ class ProjectsAPI(BaseServerAPI):
         if project_name is not None:
             query.set_variable_value("projectName", project_name)
 
+        attributes = {}
+        if "allAttrib" in fields:
+            attributes = self.get_attributes_for_type("project")
+
         for parsed_data in query.continuous_query(self):
             for project in parsed_data["projects"]:
                 if active is not None and active is not project["active"]:
@@ -827,9 +833,7 @@ class ProjectsAPI(BaseServerAPI):
                     #   allAttrib would return all attribute values.
                     project["ownAttrib"] = list(attrib)
                     project["attrib"] = attrib
-                    for name, attr_data in (
-                        self.get_attributes_for_type("project").items()
-                    ):
+                    for name, attr_data in attributes.items():
                         # NOTE 'default' can be 'None'
                         attrib.setdefault(name, attr_data["default"])
 

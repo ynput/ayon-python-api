@@ -53,14 +53,14 @@ class ListsAPI(BaseServerAPI):
 
         o_fields = tuple(fields)
         fields = set()
-        requires_attrib = False
+        add_all_attrib = False
         for field in o_fields:
             if field == "attrib" or field.startswith("attrib."):
-                requires_attrib = True
+                add_all_attrib = True
             else:
                 fields.add(field)
 
-        if requires_attrib:
+        if add_all_attrib:
             fields.add("allAttrib")
 
         if "items" in fields:
@@ -73,7 +73,7 @@ class ListsAPI(BaseServerAPI):
             }
 
         available_attribs = {}
-        if requires_attrib:
+        if "allAttrib" in fields:
             available_attribs = self.get_attributes_for_type("list")
 
         if active is not None:
@@ -98,14 +98,12 @@ class ListsAPI(BaseServerAPI):
                 if isinstance(attributes, str):
                     entity_list["attributes"] = json.loads(attributes)
 
-                if requires_attrib:
-                    attrib = json.loads(entity_list["allAttrib"])
+                self._convert_entity_data(entity_list)
+
+                attrib = entity_list.get("attrib")
+                if attrib is not None:
                     for attrib_name, attrib_data in available_attribs.items():
                         attrib.setdefault(attrib_name, attrib_data["default"])
-
-                    entity_list["attrib"] = attrib
-
-                self._convert_entity_data(entity_list)
 
                 yield entity_list
 
