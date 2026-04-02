@@ -147,10 +147,18 @@ class AttributesAPI(BaseServerAPI):
     ) -> set[str]:
         """Prepare attribute fields for entity type.
 
+        DEPRECATED: Field 'attrib' is marked as deprecated and should not be
+            used for GraphQL queries.
+
         Returns:
             set[str]: Attributes fields for entity type.
 
         """
+        self.log.warning(
+            "Method 'get_attributes_fields_for_type' is deprecated and should"
+            " not be used for GraphQL queries. Use 'allAttrib' field instead"
+            " of 'attrib'."
+        )
         attributes = self.get_attributes_for_type(entity_type)
         return {
             f"attrib.{attr}"
