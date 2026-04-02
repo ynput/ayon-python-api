@@ -51,16 +51,17 @@ class ListsAPI(BaseServerAPI):
         if fields is None:
             fields = self.get_default_fields_for_type("entityList")
 
-        # List does not have 'attrib' field but has 'allAttrib' field
-        #   which is json string and contains only values that are set
         o_fields = tuple(fields)
         fields = set()
         requires_attrib = False
         for field in o_fields:
             if field == "attrib" or field.startswith("attrib."):
                 requires_attrib = True
-                field = "allAttrib"
-            fields.add(field)
+            else:
+                fields.add(field)
+
+        if requires_attrib:
+            fields.add("allAttrib")
 
         if "items" in fields:
             fields.discard("items")
@@ -71,7 +72,7 @@ class ListsAPI(BaseServerAPI):
                 "items.position",
             }
 
-        available_attribs = []
+        available_attribs = {}
         if requires_attrib:
             available_attribs = self.get_attributes_for_type("list")
 
@@ -98,13 +99,11 @@ class ListsAPI(BaseServerAPI):
                     entity_list["attributes"] = json.loads(attributes)
 
                 if requires_attrib:
-                    all_attrib = json.loads(
-                        entity_list.get("allAttrib") or "{}"
-                    )
-                    entity_list["attrib"] = {
-                        attrib_name: all_attrib.get(attrib_name)
-                        for attrib_name in available_attribs
-                    }
+                    attrib = json.loads(entity_list["allAttrib"])
+                    for attrib_name, attrib_data in available_attribs.items():
+                        attrib.setdefault(attrib_name, attrib_data["default"])
+
+                    entity_list["attrib"] = attrib
 
                 self._convert_entity_data(entity_list)
 
