@@ -663,7 +663,7 @@ class ProjectsAPI(BaseServerAPI):
         if fields is None:
             return set(), ProjectFetchType.REST
 
-        rest_list_fields = {
+        rest_fields = {
             "name",
             "code",
             "active",
@@ -671,10 +671,11 @@ class ProjectsAPI(BaseServerAPI):
             "updatedAt",
         }
         graphql_fields = set()
-        if len(fields - rest_list_fields) == 0:
+        if len(fields - rest_fields) == 0:
             return graphql_fields, ProjectFetchType.RESTList
 
         must_use_graphql = False
+        add_all_attrib = False
         for field in tuple(fields):
             # Product types are available only in GraphQl
             if field == "usedTags":
@@ -707,11 +708,9 @@ class ProjectsAPI(BaseServerAPI):
             elif field.startswith("bundle"):
                 graphql_fields.add(field)
 
-            elif field == "attrib":
-                fields.discard("attrib")
-                graphql_fields |= self.get_attributes_fields_for_type(
-                    "project"
-                )
+            elif field == "attrib" or field.startswith("attrib."):
+                fields.discard(field)
+                add_all_attrib = True
 
         # NOTE 'config' in GraphQl is NOT the same as from REST api.
         # - At the moment of this comment there is missing 'productBaseTypes'.
@@ -726,6 +725,8 @@ class ProjectsAPI(BaseServerAPI):
         remainders = fields - (inters | graphql_fields)
         if not remainders:
             graphql_fields |= inters
+            if add_all_attrib:
+                graphql_fields.add("allAttrib")
             return graphql_fields, ProjectFetchType.GraphQl
 
         if must_use_graphql:
@@ -820,14 +821,19 @@ class ProjectsAPI(BaseServerAPI):
                     all_attrib = json.loads(all_attrib)
                     project["allAttrib"] = all_attrib
 
-                if own_attributes and all_attrib:
-                    own_attrib = {}
-                    if all_attrib:
-                        own_attrib = copy.deepcopy(all_attrib)
-                    attrib = project.get("attrib", {})
-                    for key in attrib.keys():
-                        own_attrib.setdefault(key, None)
-                    project["ownAttrib"] = own_attrib
+                if all_attrib is not None:
+                    project["ownAttrib"] = list(all_attrib)
+
+                    attrib = copy.deepcopy(all_attrib)
+                    project["attrib"] = attrib
+                    for name, attr_data in (
+                        self.get_attributes_for_type("project").items()
+                    ):
+                        # NOTE 'default' can be 'None'
+                        attrib.setdefault(name, attr_data["default"])
+
+                if own_attributes:
+                    fill_own_attribs(project)
 
                 self._fill_project_entity_data(project)
                 yield project
