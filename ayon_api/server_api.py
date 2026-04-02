@@ -1010,14 +1010,7 @@ class ServerAPI(
             fields = self.get_default_fields_for_type("user")
         else:
             fields = set(fields)
-            add_all_attrib = False
-            for field in tuple(fields):
-                if field == "attrib" or field.startswith("attrib."):
-                    fields.discard(field)
-                    add_all_attrib = True
-
-            if add_all_attrib:
-                fields.add("allAttrib")
+            self._prepare_fields("user", fields)
 
         query = users_graphql_query(fields)
         for attr, filter_value in filters.items():
