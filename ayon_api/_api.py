@@ -55,7 +55,6 @@ if typing.TYPE_CHECKING:
         EnrollEventData,
         AttributeScope,
         AttributeSchemaDataDict,
-        AttributeSchemaDict,
         AttributesSchemaDict,
         AddonsInfoDict,
         InstallersInfoDict,
