@@ -2424,15 +2424,20 @@ class ServerAPI(
         if not fields:
             return
 
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= self.get_attributes_fields_for_type(entity_type)
+        add_all_attrib = False
+        for field in tuple(fields):
+            if field == "attrib" or field.startswith("attrib."):
+                fields.discard(field)
+                add_all_attrib = True
 
         if own_attributes:
             if entity_type == "project":
-                fields.add("allAttrib")
+                add_all_attrib = True
             elif entity_type in {"folder", "task"}:
                 fields.add("ownAttrib")
+
+        if add_all_attrib:
+            fields.add("allAttrib")
 
         if entity_type != "project":
             return
@@ -2499,11 +2504,18 @@ class ServerAPI(
         return filters
 
     def _convert_entity_data(self, entity: AnyEntityDict):
-        if not entity or "data" not in entity:
+        if not entity:
             return
 
-        entity_data = entity["data"] or {}
-        if isinstance(entity_data, str):
-            entity_data = json.loads(entity_data)
+        if "data" in entity:
+            entity_data = entity["data"] or {}
+            if isinstance(entity_data, str):
+                entity_data = json.loads(entity_data)
 
-        entity["data"] = entity_data
+            entity["data"] = entity_data
+
+        all_attrib = entity.get("allAttrib")
+        if isinstance(all_attrib, str):
+            # NOTE: This expects server returns all attributes available for
+            #   the entity type.
+            entity["attrib"] = json.loads(all_attrib)

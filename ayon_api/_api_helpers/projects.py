@@ -816,15 +816,15 @@ class ProjectsAPI(BaseServerAPI):
                 if library is not None and library is not project["library"]:
                     continue
 
+                attrib = None
                 all_attrib = project.get("allAttrib")
                 if isinstance(all_attrib, str):
-                    all_attrib = json.loads(all_attrib)
-                    project["allAttrib"] = all_attrib
+                    attrib = json.loads(all_attrib)
 
-                if all_attrib is not None:
-                    project["ownAttrib"] = list(all_attrib)
-
-                    attrib = copy.deepcopy(all_attrib)
+                if attrib is not None:
+                    # NOTE 'ownAttrib' logic might change in the future if
+                    #   allAttrib would return all attribute values.
+                    project["ownAttrib"] = list(attrib)
                     project["attrib"] = attrib
                     for name, attr_data in (
                         self.get_attributes_for_type("project").items()
