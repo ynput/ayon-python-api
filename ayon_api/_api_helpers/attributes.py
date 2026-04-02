@@ -9,7 +9,6 @@ from .base import BaseServerAPI
 if typing.TYPE_CHECKING:
     from ayon_api.typing import (
         AttributeSchemaDataDict,
-        AttributeSchemaDict,
         AttributesSchemaDict,
         AttributeScope,
     )
@@ -92,7 +91,7 @@ class AttributesAPI(BaseServerAPI):
 
     def get_attributes_for_type(
         self, entity_type: AttributeScope
-    ) -> dict[str, AttributeSchemaDict]:
+    ) -> dict[str, AttributeSchemaDataDict]:
         """Get attribute schemas available for an entity type.
 
         Example::

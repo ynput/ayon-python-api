@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
         ProjectDict,
         StreamType,
         AttributeScope,
+        AttributeSchemaDataDict,
     )
 
 _PLACEHOLDER = object()
@@ -134,7 +135,7 @@ class BaseServerAPI:
 
     def get_attributes_for_type(
         self, entity_type: AttributeScope
-    ) -> set[str]:
+    ) -> dict[str, AttributeSchemaDataDict]:
         raise NotImplementedError()
 
     def get_attributes_fields_for_type(
