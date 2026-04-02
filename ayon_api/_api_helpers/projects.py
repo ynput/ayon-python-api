@@ -712,6 +712,9 @@ class ProjectsAPI(BaseServerAPI):
                 fields.discard(field)
                 add_all_attrib = True
 
+        if add_all_attrib:
+            graphql_fields.add("allAttrib")
+
         # NOTE 'config' in GraphQl is NOT the same as from REST api.
         # - At the moment of this comment there is missing 'productBaseTypes'.
         inters = fields & {
@@ -725,8 +728,6 @@ class ProjectsAPI(BaseServerAPI):
         remainders = fields - (inters | graphql_fields)
         if not remainders:
             graphql_fields |= inters
-            if add_all_attrib:
-                graphql_fields.add("allAttrib")
             return graphql_fields, ProjectFetchType.GraphQl
 
         if must_use_graphql:
