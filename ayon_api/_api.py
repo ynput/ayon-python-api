@@ -55,7 +55,6 @@ if typing.TYPE_CHECKING:
         EnrollEventData,
         AttributeScope,
         AttributeSchemaDataDict,
-        AttributeSchemaDict,
         AttributesSchemaDict,
         AddonsInfoDict,
         InstallersInfoDict,
@@ -3582,8 +3581,28 @@ def get_attributes_schema(
 
 
 def reset_attributes_schema() -> None:
+    """Reset attributes schema cache.
+
+    DEPRECATED:
+        Use 'reset_attributes_cache' instead.
+
+    """
     con = get_server_api_connection()
     return con.reset_attributes_schema()
+
+
+def reset_attributes_cache() -> None:
+    con = get_server_api_connection()
+    return con.reset_attributes_cache()
+
+
+def set_attributes_cache_timeout(
+    timeout: int,
+) -> None:
+    con = get_server_api_connection()
+    return con.set_attributes_cache_timeout(
+        timeout=timeout,
+    )
 
 
 def set_attribute_config(
@@ -3622,7 +3641,7 @@ def remove_attribute_config(
 
 def get_attributes_for_type(
     entity_type: AttributeScope,
-) -> dict[str, AttributeSchemaDict]:
+) -> dict[str, AttributeSchemaDataDict]:
     """Get attribute schemas available for an entity type.
 
     Example::
@@ -3669,6 +3688,9 @@ def get_attributes_fields_for_type(
     entity_type: AttributeScope,
 ) -> set[str]:
     """Prepare attribute fields for entity type.
+
+    DEPRECATED: Field 'attrib' is marked as deprecated and should not be
+        used for GraphQL queries.
 
     Returns:
         set[str]: Attributes fields for entity type.

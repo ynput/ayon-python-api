@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import json
 import platform
 import warnings
@@ -164,8 +163,10 @@ class ProjectsAPI(BaseServerAPI):
             return None
         project = response.data
         attrib = project["attrib"]
-        for attr_name in self.get_attributes_for_type("project"):
-            attrib.setdefault(attr_name, None)
+        for attr_name, attr_data in (
+            self.get_attributes_for_type("project").items()
+        ):
+            attrib.setdefault(attr_name, attr_data["default"])
         self._fill_project_entity_data(project)
         return project
 
@@ -663,7 +664,7 @@ class ProjectsAPI(BaseServerAPI):
         if fields is None:
             return set(), ProjectFetchType.REST
 
-        rest_list_fields = {
+        rest_fields = {
             "name",
             "code",
             "active",
@@ -671,10 +672,11 @@ class ProjectsAPI(BaseServerAPI):
             "updatedAt",
         }
         graphql_fields = set()
-        if len(fields - rest_list_fields) == 0:
+        if len(fields - rest_fields) == 0:
             return graphql_fields, ProjectFetchType.RESTList
 
         must_use_graphql = False
+        add_all_attrib = False
         for field in tuple(fields):
             # Product types are available only in GraphQl
             if field == "usedTags":
@@ -707,11 +709,12 @@ class ProjectsAPI(BaseServerAPI):
             elif field.startswith("bundle"):
                 graphql_fields.add(field)
 
-            elif field == "attrib":
-                fields.discard("attrib")
-                graphql_fields |= self.get_attributes_fields_for_type(
-                    "project"
-                )
+            elif field == "attrib" or field.startswith("attrib."):
+                fields.discard(field)
+                add_all_attrib = True
+
+        if add_all_attrib:
+            graphql_fields.add("allAttrib")
 
         # NOTE 'config' in GraphQl is NOT the same as from REST api.
         # - At the moment of this comment there is missing 'productBaseTypes'.
@@ -807,6 +810,10 @@ class ProjectsAPI(BaseServerAPI):
         if project_name is not None:
             query.set_variable_value("projectName", project_name)
 
+        attributes = {}
+        if "allAttrib" in fields:
+            attributes = self.get_attributes_for_type("project")
+
         for parsed_data in query.continuous_query(self):
             for project in parsed_data["projects"]:
                 if active is not None and active is not project["active"]:
@@ -815,19 +822,22 @@ class ProjectsAPI(BaseServerAPI):
                 if library is not None and library is not project["library"]:
                     continue
 
+                attrib = None
                 all_attrib = project.get("allAttrib")
                 if isinstance(all_attrib, str):
-                    all_attrib = json.loads(all_attrib)
-                    project["allAttrib"] = all_attrib
+                    attrib = json.loads(all_attrib)
 
-                if own_attributes and all_attrib:
-                    own_attrib = {}
-                    if all_attrib:
-                        own_attrib = copy.deepcopy(all_attrib)
-                    attrib = project.get("attrib", {})
-                    for key in attrib.keys():
-                        own_attrib.setdefault(key, None)
-                    project["ownAttrib"] = own_attrib
+                if attrib is not None:
+                    # NOTE 'ownAttrib' logic might change in the future if
+                    #   allAttrib would return all attribute values.
+                    project["ownAttrib"] = list(attrib)
+                    project["attrib"] = attrib
+                    for name, attr_data in attributes.items():
+                        # NOTE 'default' can be 'None'
+                        attrib.setdefault(name, attr_data["default"])
+
+                if own_attributes:
+                    fill_own_attribs(project)
 
                 self._fill_project_entity_data(project)
                 yield project

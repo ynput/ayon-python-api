@@ -33,9 +33,6 @@ DEFAULT_USER_FIELDS = {
     "hasPassword",
     "updatedAt",
     "apiKeyPreview",
-    "attrib.avatarUrl",
-    "attrib.email",
-    "attrib.fullName",
 }
 
 # --- Project folder types ---
@@ -104,7 +101,6 @@ DEFAULT_PROJECT_FIELDS = {
     "linkTypes",
     "statuses",
     "tags",
-    "attrib",
 }
 
 # --- Folders ---

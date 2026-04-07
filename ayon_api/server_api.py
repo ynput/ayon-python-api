@@ -5,6 +5,7 @@ Provides access to server API.
 """
 from __future__ import annotations
 
+import copy
 import os
 import re
 import io
@@ -1007,29 +1008,37 @@ class ServerAPI(
 
         if not fields:
             fields = self.get_default_fields_for_type("user")
+        else:
+            fields = set(fields)
+            self._prepare_fields("user", fields)
 
-        query = users_graphql_query(set(fields))
+        query = users_graphql_query(fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
-        attributes = self.get_attributes_for_type("user")
+        attributes = {}
+        if "allAttrib" in fields:
+            attributes = self.get_attributes_for_type("user")
+
         for parsed_data in query.continuous_query(self):
             for user in parsed_data["users"]:
                 access_groups = user.get("accessGroups")
                 if isinstance(access_groups, str):
                     user["accessGroups"] = json.loads(access_groups)
-                all_attrib = user.get("allAttrib")
-                if isinstance(all_attrib, str):
-                    user["allAttrib"] = json.loads(all_attrib)
-                if "attrib" in user:
-                    user["ownAttrib"] = user["attrib"].copy()
-                    attrib = user["attrib"]
-                    for key, value in tuple(attrib.items()):
-                        if value is not None:
-                            continue
-                        attr_def = attributes.get(key)
-                        if attr_def is not None:
-                            attrib[key] = attr_def["default"]
+
+                attrib = user.get("allAttrib")
+                if isinstance(attrib, str):
+                    attrib = json.loads(attrib)
+
+                if attrib is not None:
+                    own_attrib = copy.deepcopy(attrib)
+                    user["ownAttrib"] = own_attrib
+                    for name, attr_data in attributes.items():
+                        attrib.setdefault(name, attr_data["default"])
+                        own_attrib.setdefault(name, None)
+
+                    user["attrib"] = attrib
+
                 yield user
 
     def get_user_by_name(
@@ -1089,10 +1098,9 @@ class ServerAPI(
             response.raise_for_status()
             user = response.data
 
-        # NOTE Server does return only filled attributes right now.
-        #   This would fill all missing attributes with 'None'.
-        # for attr_name in self.get_attributes_for_type("user"):
-        #     user["attrib"].setdefault(attr_name, None)
+        attributes = self.get_attributes_for_type("user")
+        for attr_name, attr_data in attributes.items():
+            user["attrib"].setdefault(attr_name, attr_data["default"])
 
         fill_own_attribs(user)
         return user
@@ -2124,6 +2132,9 @@ class ServerAPI(
         if entity_type == "activity":
             return set(DEFAULT_ACTIVITY_FIELDS)
 
+        if entity_type == "productType":
+            return set(DEFAULT_PRODUCT_TYPE_FIELDS)
+
         if entity_type == "project":
             entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
             maj_v, min_v, patch_v, _, _ = self.server_version_tuple
@@ -2154,9 +2165,6 @@ class ServerAPI(
             if not self.graphql_allows_traits_in_representations:
                 entity_type_defaults.discard("traits")
 
-        elif entity_type == "productType":
-            entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
-
         elif entity_type == "workfile":
             entity_type_defaults = set(DEFAULT_WORKFILE_INFO_FIELDS)
 
@@ -2165,15 +2173,13 @@ class ServerAPI(
 
         elif entity_type == "entityList":
             entity_type_defaults = set(DEFAULT_ENTITY_LIST_FIELDS)
-            # Attributes scope is 'list'
-            entity_type = "list"
 
         else:
             raise ValueError(f"Unknown entity type \"{entity_type}\"")
-        return (
-            entity_type_defaults
-            | self.get_attributes_fields_for_type(entity_type)
-        )
+
+        entity_type_defaults.add("allAttrib")
+
+        return entity_type_defaults
 
     def get_rest_entity_by_id(
         self,
@@ -2424,15 +2430,20 @@ class ServerAPI(
         if not fields:
             return
 
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= self.get_attributes_fields_for_type(entity_type)
+        add_all_attrib = False
+        for field in tuple(fields):
+            if field == "attrib" or field.startswith("attrib."):
+                fields.discard(field)
+                add_all_attrib = True
 
         if own_attributes:
             if entity_type == "project":
-                fields.add("allAttrib")
+                add_all_attrib = True
             elif entity_type in {"folder", "task"}:
                 fields.add("ownAttrib")
+
+        if add_all_attrib:
+            fields.add("allAttrib")
 
         if entity_type != "project":
             return
@@ -2499,11 +2510,18 @@ class ServerAPI(
         return filters
 
     def _convert_entity_data(self, entity: AnyEntityDict):
-        if not entity or "data" not in entity:
+        if not entity:
             return
 
-        entity_data = entity["data"] or {}
-        if isinstance(entity_data, str):
-            entity_data = json.loads(entity_data)
+        if "data" in entity:
+            entity_data = entity["data"] or {}
+            if isinstance(entity_data, str):
+                entity_data = json.loads(entity_data)
 
-        entity["data"] = entity_data
+            entity["data"] = entity_data
+
+        all_attrib = entity.get("allAttrib")
+        if isinstance(all_attrib, str):
+            # NOTE: This expects server returns all attributes available for
+            #   the entity type.
+            entity["attrib"] = json.loads(all_attrib)
