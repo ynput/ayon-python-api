@@ -342,9 +342,11 @@ class ListsAPI(BaseServerAPI):
         """
         if item_id is None:
             item_id = create_entity_id()
+
+        data = data or {}
         kwargs = {
             "id": item_id,
-            "entityId": list_id,
+            "entityId": data.pop("entityId"),
         }
         for key, value in (
             ("position", position),
