@@ -103,7 +103,8 @@ AttributeScope = Literal[
     "version",
     "representation",
     "workfile",
-    "user"
+    "user",
+    "list",
 ]
 
 AttributeType = Literal[
