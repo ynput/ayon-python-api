@@ -7710,6 +7710,7 @@ def set_entity_list_attribute_definitions(
 def create_entity_list_item(
     project_name: str,
     list_id: str,
+    entity_id: str,
     *,
     position: Optional[int] = None,
     label: Optional[str] = None,
@@ -7723,6 +7724,7 @@ def create_entity_list_item(
     Args:
         project_name (str): Project name where entity list lives.
         list_id (str): Entity list id where item will be added.
+        entity_id (str): Id of entity added to the list.
         position (Optional[int]): Position of item in entity list.
         label (Optional[str]): Label of item in entity list.
         attrib (Optional[dict[str, Any]]): Item attribute values.
@@ -7738,6 +7740,7 @@ def create_entity_list_item(
     return con.create_entity_list_item(
         project_name=project_name,
         list_id=list_id,
+        entity_id=entity_id,
         position=position,
         label=label,
         attrib=attrib,

@@ -316,6 +316,7 @@ class ListsAPI(BaseServerAPI):
         self,
         project_name: str,
         list_id: str,
+        entity_id: str,
         *,
         position: Optional[int] = None,
         label: Optional[str] = None,
@@ -329,6 +330,7 @@ class ListsAPI(BaseServerAPI):
         Args:
             project_name (str): Project name where entity list lives.
             list_id (str): Entity list id where item will be added.
+            entity_id (str): Id of entity added to the list.
             position (Optional[int]): Position of item in entity list.
             label (Optional[str]): Label of item in entity list.
             attrib (Optional[dict[str, Any]]): Item attribute values.
@@ -343,10 +345,9 @@ class ListsAPI(BaseServerAPI):
         if item_id is None:
             item_id = create_entity_id()
 
-        data = data or {}
         kwargs = {
             "id": item_id,
-            "entityId": data.pop("entityId"),
+            "entityId": entity_id,
         }
         for key, value in (
             ("position", position),
