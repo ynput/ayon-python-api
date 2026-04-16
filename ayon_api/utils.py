@@ -256,7 +256,7 @@ def fill_own_attribs(entity: AnyEntityDict) -> None:
             own_attrib[key] = copy.deepcopy(value)
 
 
-def _convert_list_filter_value(value: Any) -> Optional[list[Any]]:
+def _convert_filter_value(value: Any) -> Optional[list[Any]]:
     if value is None:
         return None
 
@@ -272,7 +272,7 @@ def prepare_list_filters(
     output: dict[str, Any], *args: tuple[str, Any], **kwargs: Any
 ) -> bool:
     for key, value in itertools.chain(args, kwargs.items()):
-        value = _convert_list_filter_value(value)
+        value = _convert_filter_value(value)
         if value is None:
             continue
         if not value:
