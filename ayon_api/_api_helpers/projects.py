@@ -498,6 +498,72 @@ class ProjectsAPI(BaseServerAPI):
                 f"Failed to delete project \"{project_name}\". {detail}"
             )
 
+    def get_raw_project_folders(self) -> dict[str, Any]:
+        """Get project folders (raw data)."""
+        response = self.get("projectFolders")
+        response.raise_for_status()
+        return response.data
+
+    def get_project_folders(self) -> list[dict[str, Any]]:
+        data = self.get_raw_project_folders()
+        return data["folders"]
+
+    def create_project_folder(
+        self,
+        label: str,
+        parent_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> str:
+        """Create project folder."""
+        kwargs = {}
+        if parent_id is not None:
+            kwargs["parentId"] = parent_id
+        if data:
+            kwargs["data"] = data
+
+        response = self.post("projectFolders", label=label, **kwargs)
+        response.raise_for_status()
+        return response.data["id"]
+
+    def update_project_folder(
+        self,
+        folder_id: str,
+        label: str | None = None,
+        parent_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> None:
+        body = {
+            key: value
+            for key, value in (
+                ("label", label),
+                ("parentId", parent_id),
+                ("data", data),
+            )
+            if value is not None
+        }
+        response = self.patch(f"projectFolders/{folder_id}", **body)
+        response.raise_for_status()
+
+    def set_project_folders_order(self, folder_ids: list[str]) -> None:
+        """Set project folders order."""
+        response = self.post("projectFolders/order", order=folder_ids)
+        response.raise_for_status()
+
+    def assign_projects_to_project_folder(
+        self, folder_id: str, project_names: list[str],
+    ) -> None:
+        """Assign project folder to project."""
+        response = self.post(
+            f"projectFolders/assign",
+            folderId=folder_id,
+            projectNames=project_names,
+        )
+        response.raise_for_status()
+
+    def delete_project_folder(self, folder_id: str):
+        """Delete project folder."""
+        response = self.delete(f"projectFolders/{folder_id}")
+
     def get_project_root_overrides(
         self, project_name: str
     ) -> dict[str, dict[str, str]]:
