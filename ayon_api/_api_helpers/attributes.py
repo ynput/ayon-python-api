@@ -139,7 +139,7 @@ class AttributesAPI(BaseServerAPI):
 
         self.reset_attributes_schema()
 
-    def remove_attribute_config(self, attribute_name: str) -> None:
+    def delete_attribute_config(self, attribute_name: str) -> None:
         """Remove attribute from server.
 
         This can't be un-done, please use carefully.
@@ -155,6 +155,17 @@ class AttributesAPI(BaseServerAPI):
         )
 
         self.reset_attributes_schema()
+
+    def remove_attribute_config(self, attribute_name: str) -> None:
+        """Remove attribute from server.
+
+        DEPRECATED: Use 'delete_attribute_config' instead.
+
+        Args:
+            attribute_name (str): Name of attribute to remove.
+
+        """
+        return self.delete_attribute_config(attribute_name)
 
     def get_attributes_for_type(
         self, entity_type: AttributeScope
