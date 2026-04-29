@@ -174,7 +174,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
-        skeleton: bool = False,
+        include_skeleton: bool = False,
     ) -> Generator[ProjectDict, None, None]:
         """Query available project entities.
 
@@ -185,13 +185,17 @@ class ProjectsAPI(BaseServerAPI):
                 are returned if 'None' is passed.
             library (Optional[bool]): Filter standard/library projects. Both
                 are returned if 'None' is passed.
-            skeleton (bool): Include skeleton projects.
+            include_skeleton (bool): Include skeleton projects.
 
         Returns:
             Generator[ProjectDict, None, None]: Available projects.
 
         """
-        for project_name in self.get_project_names(active, library, skeleton):
+        for project_name in self.get_project_names(
+            active=active,
+            library=library,
+            include_skeleton=include_skeleton,
+        ):
             project = self.get_rest_project(project_name)
             if project:
                 yield project
@@ -200,7 +204,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
-        skeleton: bool = False,
+        include_skeleton: bool = False,
     ) -> list[ProjectListDict]:
         """Receive available projects.
 
@@ -211,7 +215,7 @@ class ProjectsAPI(BaseServerAPI):
                 are returned if 'None' is passed.
             library (Optional[bool]): Filter standard/library projects. Both
                 are returned if 'None' is passed.
-            skeleton (bool): Include skeleton projects.
+            include_skeleton (bool): Include skeleton projects.
 
         Returns:
             list[ProjectListDict]: List of available projects.
@@ -227,7 +231,7 @@ class ProjectsAPI(BaseServerAPI):
             "active": active,
             "library": library,
         }
-        if skeleton:
+        if include_skeleton:
             query_data["skeleton"] = "true"
 
         query = prepare_query_string(query_data)
@@ -240,7 +244,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
-        skeleton: bool = False,
+        include_skeleton: bool = False,
     ) -> list[str]:
         """Receive available project names.
 
@@ -251,7 +255,7 @@ class ProjectsAPI(BaseServerAPI):
                 are returned if 'None' is passed.
             library (Optional[bool]): Filter standard/library projects. Both
                 are returned if 'None' is passed.
-            skeleton (bool): Include skeleton projects.
+            include_skeleton (bool): Include skeleton projects.
 
         Returns:
             list[str]: List of available project names.
@@ -260,7 +264,9 @@ class ProjectsAPI(BaseServerAPI):
         return [
             project["name"]
             for project in self.get_rest_projects_list(
-                active, library, skeleton
+                active=active,
+                library=library,
+                include_skeleton=include_skeleton,
             )
         ]
 
@@ -268,7 +274,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
-        skeleton: bool = False,
+        include_skeleton: bool = False,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
     ) -> Generator[ProjectDict, None, None]:
@@ -279,6 +285,7 @@ class ProjectsAPI(BaseServerAPI):
                 Filter is disabled when 'None' is passed.
             library (Optional[bool]): Filter library projects. Filter is
                 disabled when 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
             fields (Optional[Iterable[str]]): fields to be queried
                 for project.
             own_attributes (Optional[bool]): Attribute values that are
@@ -293,7 +300,11 @@ class ProjectsAPI(BaseServerAPI):
 
         graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         if fetch_type == ProjectFetchType.RESTList:
-            yield from self.get_rest_projects_list(active, library, skeleton)
+            yield from self.get_rest_projects_list(
+                active=active,
+                library=library,
+                include_skeleton=include_skeleton,
+            )
             return
 
         projects_by_name = {}
@@ -301,7 +312,7 @@ class ProjectsAPI(BaseServerAPI):
             projects = list(self._get_graphql_projects(
                 active,
                 library,
-                skeleton=skeleton,
+                include_skeleton=include_skeleton,
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ))
@@ -311,7 +322,9 @@ class ProjectsAPI(BaseServerAPI):
             projects_by_name = {p["name"]: p for p in projects}
 
         for project in self.get_rest_projects(
-            active=active, library=library, skeleton=skeleton
+            active=active,
+            library=library,
+            include_skeleton=include_skeleton,
         ):
             if own_attributes:
                 fill_own_attribs(project)
@@ -887,7 +900,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: bool | None,
         library: bool | None,
-        skeleton: bool,
+        include_skeleton: bool,
         fields: set[str],
         own_attributes: bool,
         project_name: Optional[str] = None
@@ -904,7 +917,7 @@ class ProjectsAPI(BaseServerAPI):
         if project_name is not None:
             query.set_variable_value("projectName", project_name)
 
-        if skeleton:
+        if include_skeleton:
             query.set_variable_value("skeleton", True)
 
         attributes = {}
