@@ -321,7 +321,8 @@ class ActivitiesAPI(BaseServerAPI):
             entity_type (str): Entity type of the entity.
 
         Returns:
-            list[dict[str, Any]]: List of suggested entities with their details.
+            list[dict[str, Any]]: List of suggested entities with
+                their details.
 
         """
         response = self.post(
