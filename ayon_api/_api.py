@@ -41,7 +41,7 @@ from .server_api import (
 )
 
 if typing.TYPE_CHECKING:
-    from typing import Union
+    from typing import Union, Literal
     from .typing import (
         ServerVersion,
         ActivityType,
@@ -963,7 +963,7 @@ def get_server_config_value(
 
 
 def download_server_config_file(
-    file_type: Literal[login_background, studio_logo],
+    file_type: Literal["login_background", "studio_logo"],
     filepath: str,
     *,
     chunk_size: Optional[int] = None,
@@ -993,7 +993,7 @@ def download_server_config_file(
 
 
 def download_server_config_file_to_stream(
-    file_type: Literal[login_background, studio_logo],
+    file_type: Literal["login_background", "studio_logo"],
     stream: StreamType,
     *,
     chunk_size: Optional[int] = None,
@@ -1023,7 +1023,7 @@ def download_server_config_file_to_stream(
 
 
 def upload_server_config_file(
-    file_type: Literal[login_background, studio_logo],
+    file_type: Literal["login_background", "studio_logo"],
     filepath: str,
     *,
     content_type: str | None = None,
@@ -1060,7 +1060,7 @@ def upload_server_config_file(
 
 
 def upload_server_config_file_from_stream(
-    file_type: Literal[login_background, studio_logo],
+    file_type: Literal["login_background", "studio_logo"],
     stream: StreamType,
     filename: str,
     *,
@@ -2608,7 +2608,7 @@ def delete_activity_reaction(
 def suggest_entity_mention(
     project_name: str,
     entity_id: str,
-    entity_type: Literal[folder, task, version],
+    entity_type: Literal["folder", "task", "version"],
 ) -> dict[str, dict[str, Any]]:
     """Suggest entities for mention in activity body.
 
@@ -2620,7 +2620,8 @@ def suggest_entity_mention(
         entity_type (str): Entity type of the entity.
 
     Returns:
-        list[dict[str, Any]]: List of suggested entities with their details.
+        list[dict[str, Any]]: List of suggested entities with
+            their details.
 
     """
     con = get_server_api_connection()
