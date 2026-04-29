@@ -603,6 +603,7 @@ class ProjectsAPI(BaseServerAPI):
     def delete_project_folder(self, folder_id: str):
         """Delete project folder."""
         response = self.delete(f"projectFolders/{folder_id}")
+        response.raise_for_status()
 
     def get_project_root_overrides(
         self, project_name: str
