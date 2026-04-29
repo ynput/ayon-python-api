@@ -16,7 +16,7 @@ import platform
 import uuid
 from contextlib import contextmanager
 import typing
-from typing import Optional, Iterable, Generator, Any, Union
+from typing import Optional, Iterable, Generator, Any, Union, Literal
 
 import requests
 
@@ -1360,6 +1360,176 @@ class ServerAPI(
 
     def delete(self, entrypoint: str, **kwargs):
         return self.raw_delete(entrypoint, params=kwargs)
+
+    def get_server_config(self):
+        response = self.get("config")
+        response.raise_for_status()
+        return response.data
+
+    def set_server_config(
+        self,
+        studio_name: str | None = None,
+        customization: dict[str, Any] | None = None,
+        authentication: dict[str, Any] | None = None,
+        project_options: dict[str, Any] | None = None,
+        changelog: dict[str, Any] | None = None,
+    ) -> None:
+        body = {
+            key: value
+            for key, value in (
+                ("studio_name", studio_name),
+                ("customization", customization),
+                ("authentication", authentication),
+                ("project_options", project_options),
+                ("changelog", changelog),
+            )
+            if value is not None
+        }
+        response = self.post("config", **body)
+        response.raise_for_status()
+
+    def get_server_config_overrides(self):
+        response = self.get("config/overrides")
+        response.raise_for_status()
+        return response.data
+
+    def get_server_config_value(self, key: str):
+        response = self.get(f"config/value/{key}")
+        response.raise_for_status()
+        return response.data
+
+    def download_server_config_file(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        filepath: str,
+        *,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> TransferProgress:
+        """Download server config file.
+
+        Validate if server has config file available first. Method crashes
+            if the file is not available.
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            filepath (str): Target filepath.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        """
+        return self.download_file(
+            f"api/config/files/{file_type}",
+            filepath,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def download_server_config_file_to_stream(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        stream: StreamType,
+        *,
+        chunk_size: Optional[int] = None,
+        progress: Optional[TransferProgress] = None,
+    ) -> TransferProgress:
+        """Download server config file to byte stream.
+
+        Validate if server has config file available first. Method crashes
+            if the file is not available.
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            stream (StreamType): Stream where downloaded content is stored.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        """
+        return self.download_file_to_stream(
+            f"api/config/files/{file_type}",
+            stream,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def upload_server_config_file(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        filepath: str,
+        *,
+        content_type: str | None = None,
+        filename: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> requests.Response:
+        """Upload server config file from byte stream.
+
+        TODO create filename using file_type and extension from content_type
+            if filename is not specified
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            filepath (str): Filepath used to store the file.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        Returns:
+            requests.Response: Response from upload.
+
+        """
+        if not filename:
+            filename = os.path.basename(filepath)
+        return self.upload_file(
+            f"api/config/files/{file_type}",
+            filepath,
+            filename=filename,
+            content_type=content_type,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def upload_server_config_file_from_stream(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        stream: StreamType,
+        filename: str,
+        *,
+        content_type: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> requests.Response:
+        """Upload server config file from byte stream.
+
+        TODO create filename using file_type and extension from content_type
+            if filename is not specified
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            stream (StreamType): Stream where downloaded content is stored.
+            filename (str): Filename used to store the file.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        Returns:
+            requests.Response: Response from upload.
+
+        """
+        return self.upload_file_from_stream(
+            f"api/config/files/{file_type}",
+            stream,
+            filename=filename,
+            content_type=content_type,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
 
     def _endpoint_to_url(
         self,

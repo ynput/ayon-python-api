@@ -174,6 +174,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
+        include_skeleton: bool = False,
     ) -> Generator[ProjectDict, None, None]:
         """Query available project entities.
 
@@ -184,12 +185,17 @@ class ProjectsAPI(BaseServerAPI):
                 are returned if 'None' is passed.
             library (Optional[bool]): Filter standard/library projects. Both
                 are returned if 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
 
         Returns:
             Generator[ProjectDict, None, None]: Available projects.
 
         """
-        for project_name in self.get_project_names(active, library):
+        for project_name in self.get_project_names(
+            active=active,
+            library=library,
+            include_skeleton=include_skeleton,
+        ):
             project = self.get_rest_project(project_name)
             if project:
                 yield project
@@ -198,6 +204,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
+        include_skeleton: bool = False,
     ) -> list[ProjectListDict]:
         """Receive available projects.
 
@@ -208,6 +215,7 @@ class ProjectsAPI(BaseServerAPI):
                 are returned if 'None' is passed.
             library (Optional[bool]): Filter standard/library projects. Both
                 are returned if 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
 
         Returns:
             list[ProjectListDict]: List of available projects.
@@ -219,10 +227,14 @@ class ProjectsAPI(BaseServerAPI):
         if library is not None:
             library = "true" if library else "false"
 
-        query = prepare_query_string({
+        query_data = {
             "active": active,
             "library": library,
-        })
+        }
+        if include_skeleton:
+            query_data["skeleton"] = "true"
+
+        query = prepare_query_string(query_data)
         response = self.get(f"projects{query}")
         response.raise_for_status()
         data = response.data
@@ -232,6 +244,7 @@ class ProjectsAPI(BaseServerAPI):
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
+        include_skeleton: bool = False,
     ) -> list[str]:
         """Receive available project names.
 
@@ -242,6 +255,7 @@ class ProjectsAPI(BaseServerAPI):
                 are returned if 'None' is passed.
             library (Optional[bool]): Filter standard/library projects. Both
                 are returned if 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
 
         Returns:
             list[str]: List of available project names.
@@ -249,13 +263,18 @@ class ProjectsAPI(BaseServerAPI):
         """
         return [
             project["name"]
-            for project in self.get_rest_projects_list(active, library)
+            for project in self.get_rest_projects_list(
+                active=active,
+                library=library,
+                include_skeleton=include_skeleton,
+            )
         ]
 
     def get_projects(
         self,
         active: Optional[bool] = True,
         library: Optional[bool] = None,
+        include_skeleton: bool = False,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False,
     ) -> Generator[ProjectDict, None, None]:
@@ -266,6 +285,7 @@ class ProjectsAPI(BaseServerAPI):
                 Filter is disabled when 'None' is passed.
             library (Optional[bool]): Filter library projects. Filter is
                 disabled when 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
             fields (Optional[Iterable[str]]): fields to be queried
                 for project.
             own_attributes (Optional[bool]): Attribute values that are
@@ -280,7 +300,11 @@ class ProjectsAPI(BaseServerAPI):
 
         graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         if fetch_type == ProjectFetchType.RESTList:
-            yield from self.get_rest_projects_list(active, library)
+            yield from self.get_rest_projects_list(
+                active=active,
+                library=library,
+                include_skeleton=include_skeleton,
+            )
             return
 
         projects_by_name = {}
@@ -288,6 +312,7 @@ class ProjectsAPI(BaseServerAPI):
             projects = list(self._get_graphql_projects(
                 active,
                 library,
+                include_skeleton=include_skeleton,
                 fields=graphql_fields,
                 own_attributes=own_attributes,
             ))
@@ -296,7 +321,11 @@ class ProjectsAPI(BaseServerAPI):
                 return
             projects_by_name = {p["name"]: p for p in projects}
 
-        for project in self.get_rest_projects(active=active, library=library):
+        for project in self.get_rest_projects(
+            active=active,
+            library=library,
+            include_skeleton=include_skeleton,
+        ):
             if own_attributes:
                 fill_own_attribs(project)
 
@@ -356,6 +385,8 @@ class ProjectsAPI(BaseServerAPI):
         project_code: str,
         library_project: bool = False,
         preset_name: Optional[str] = None,
+        data: dict[str, Any] | None = None,
+        skeleton: bool = False,
     ) -> ProjectDict:
         """Create project using AYON settings.
 
@@ -375,6 +406,8 @@ class ProjectsAPI(BaseServerAPI):
             library_project (Optional[bool]): Project is library project.
             preset_name (Optional[str]): Name of anatomy preset. Default is
                 used if not passed.
+            data (dict[str, Any]): Project data.
+            skeleton (bool): Project is skeleton project.
 
         Raises:
             ValueError: When project name already exists.
@@ -395,12 +428,19 @@ class ProjectsAPI(BaseServerAPI):
 
         preset = self.get_project_anatomy_preset(preset_name)
 
+        if data is None:
+            data = {}
+
+        if skeleton:
+            data["skeleton"] = True
+
         result = self.post(
             "projects",
             name=project_name,
             code=project_code,
             anatomy=preset,
-            library=library_project
+            library=library_project,
+            data=data,
         )
 
         if result.status != 201:
@@ -497,6 +537,73 @@ class ProjectsAPI(BaseServerAPI):
             raise ValueError(
                 f"Failed to delete project \"{project_name}\". {detail}"
             )
+
+    def get_raw_project_folders(self) -> dict[str, Any]:
+        """Get project folders (raw data)."""
+        response = self.get("projectFolders")
+        response.raise_for_status()
+        return response.data
+
+    def get_project_folders(self) -> list[dict[str, Any]]:
+        data = self.get_raw_project_folders()
+        return data["folders"]
+
+    def create_project_folder(
+        self,
+        label: str,
+        parent_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> str:
+        """Create project folder."""
+        kwargs = {}
+        if parent_id is not None:
+            kwargs["parentId"] = parent_id
+        if data:
+            kwargs["data"] = data
+
+        response = self.post("projectFolders", label=label, **kwargs)
+        response.raise_for_status()
+        return response.data["id"]
+
+    def update_project_folder(
+        self,
+        folder_id: str,
+        label: str | None = None,
+        parent_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> None:
+        body = {
+            key: value
+            for key, value in (
+                ("label", label),
+                ("parentId", parent_id),
+                ("data", data),
+            )
+            if value is not None
+        }
+        response = self.patch(f"projectFolders/{folder_id}", **body)
+        response.raise_for_status()
+
+    def set_project_folders_order(self, folder_ids: list[str]) -> None:
+        """Set project folders order."""
+        response = self.post("projectFolders/order", order=folder_ids)
+        response.raise_for_status()
+
+    def assign_projects_to_project_folder(
+        self, folder_id: str, project_names: list[str],
+    ) -> None:
+        """Assign project folder to project."""
+        response = self.post(
+            "projectFolders/assign",
+            folderId=folder_id,
+            projectNames=project_names,
+        )
+        response.raise_for_status()
+
+    def delete_project_folder(self, folder_id: str):
+        """Delete project folder."""
+        response = self.delete(f"projectFolders/{folder_id}")
+        response.raise_for_status()
 
     def get_project_root_overrides(
         self, project_name: str
@@ -792,8 +899,9 @@ class ProjectsAPI(BaseServerAPI):
 
     def _get_graphql_projects(
         self,
-        active: Optional[bool],
-        library: Optional[bool],
+        active: bool | None,
+        library: bool | None,
+        include_skeleton: bool,
         fields: set[str],
         own_attributes: bool,
         project_name: Optional[str] = None
@@ -809,6 +917,9 @@ class ProjectsAPI(BaseServerAPI):
         query = projects_graphql_query(fields)
         if project_name is not None:
             query.set_variable_value("projectName", project_name)
+
+        if include_skeleton:
+            query.set_variable_value("skeleton", True)
 
         attributes = {}
         if "allAttrib" in fields:
