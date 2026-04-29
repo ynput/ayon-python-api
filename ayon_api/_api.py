@@ -926,6 +926,177 @@ def delete(
     )
 
 
+def get_server_config():
+    con = get_server_api_connection()
+    return con.get_server_config()
+
+
+def set_server_config(
+    studio_name: str | None = None,
+    customization: dict[str, Any] | None = None,
+    authentication: dict[str, Any] | None = None,
+    project_options: dict[str, Any] | None = None,
+    changelog: dict[str, Any] | None = None,
+) -> None:
+    con = get_server_api_connection()
+    return con.set_server_config(
+        studio_name=studio_name,
+        customization=customization,
+        authentication=authentication,
+        project_options=project_options,
+        changelog=changelog,
+    )
+
+
+def get_server_config_overrides():
+    con = get_server_api_connection()
+    return con.get_server_config_overrides()
+
+
+def get_server_config_value(
+    key: str,
+):
+    con = get_server_api_connection()
+    return con.get_server_config_value(
+        key=key,
+    )
+
+
+def download_server_config_file(
+    file_type: Literal[login_background, studio_logo],
+    filepath: str,
+    *,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> TransferProgress:
+    """Download server config file.
+
+    Validate if server has config file available first. Method crashes
+        if the file is not available.
+
+    Args:
+        file_type (Literal["login_background", "studio_logo"]): File to
+            download.
+        filepath (str): Target filepath.
+        chunk_size (int | None): Size of chunks used for download.
+        progress (TransferProgress | None): Object to track download
+            progress.
+
+    """
+    con = get_server_api_connection()
+    return con.download_server_config_file(
+        file_type=file_type,
+        filepath=filepath,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
+def download_server_config_file_to_stream(
+    file_type: Literal[login_background, studio_logo],
+    stream: StreamType,
+    *,
+    chunk_size: Optional[int] = None,
+    progress: Optional[TransferProgress] = None,
+) -> TransferProgress:
+    """Download server config file to byte stream.
+
+    Validate if server has config file available first. Method crashes
+        if the file is not available.
+
+    Args:
+        file_type (Literal["login_background", "studio_logo"]): File to
+            download.
+        stream (StreamType): Stream where downloaded content is stored.
+        chunk_size (int | None): Size of chunks used for download.
+        progress (TransferProgress | None): Object to track download
+            progress.
+
+    """
+    con = get_server_api_connection()
+    return con.download_server_config_file_to_stream(
+        file_type=file_type,
+        stream=stream,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
+def upload_server_config_file(
+    file_type: Literal[login_background, studio_logo],
+    filepath: str,
+    *,
+    content_type: str | None = None,
+    filename: str | None = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
+) -> requests.Response:
+    """Upload server config file from byte stream.
+
+    TODO create filename using file_type and extension from content_type
+        if filename is not specified
+
+    Args:
+        file_type (Literal["login_background", "studio_logo"]): File to
+            download.
+        filepath (str): Filepath used to store the file.
+        chunk_size (int | None): Size of chunks used for download.
+        progress (TransferProgress | None): Object to track download
+            progress.
+
+    Returns:
+        requests.Response: Response from upload.
+
+    """
+    con = get_server_api_connection()
+    return con.upload_server_config_file(
+        file_type=file_type,
+        filepath=filepath,
+        content_type=content_type,
+        filename=filename,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
+def upload_server_config_file_from_stream(
+    file_type: Literal[login_background, studio_logo],
+    stream: StreamType,
+    filename: str,
+    *,
+    content_type: str | None = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
+) -> requests.Response:
+    """Upload server config file from byte stream.
+
+    TODO create filename using file_type and extension from content_type
+        if filename is not specified
+
+    Args:
+        file_type (Literal["login_background", "studio_logo"]): File to
+            download.
+        stream (StreamType): Stream where downloaded content is stored.
+        filename (str): Filename used to store the file.
+        chunk_size (int | None): Size of chunks used for download.
+        progress (TransferProgress | None): Object to track download
+            progress.
+
+    Returns:
+        requests.Response: Response from upload.
+
+    """
+    con = get_server_api_connection()
+    return con.upload_server_config_file_from_stream(
+        file_type=file_type,
+        stream=stream,
+        filename=filename,
+        content_type=content_type,
+        chunk_size=chunk_size,
+        progress=progress,
+    )
+
+
 def download_file_to_stream(
     endpoint: str,
     stream: StreamType,
@@ -2370,6 +2541,143 @@ def delete_activity(
     )
 
 
+def get_raw_activity_categories(
+    project_name: str,
+) -> dict[str, Any]:
+    """Get activity categories available on server (raw response).
+
+    Args:
+        project_name (str): Project name to get categories for.
+
+    Returns:
+        list[str]: Available activity categories.
+
+    """
+    con = get_server_api_connection()
+    return con.get_raw_activity_categories(
+        project_name=project_name,
+    )
+
+
+def get_activity_categories(
+    project_name: str,
+) -> list[str]:
+    """Get activity categories available on server.
+
+    Args:
+        project_name (str): Project name to get categories for.
+
+    Returns:
+        list[str]: Available activity categories.
+
+    """
+    con = get_server_api_connection()
+    return con.get_activity_categories(
+        project_name=project_name,
+    )
+
+
+def create_activity_reaction(
+    project_name: str,
+    activity_id: str,
+    reaction: str,
+) -> None:
+    """React to activity.
+    """
+    con = get_server_api_connection()
+    return con.create_activity_reaction(
+        project_name=project_name,
+        activity_id=activity_id,
+        reaction=reaction,
+    )
+
+
+def delete_activity_reaction(
+    project_name: str,
+    activity_id: str,
+    reaction: str,
+) -> None:
+    con = get_server_api_connection()
+    return con.delete_activity_reaction(
+        project_name=project_name,
+        activity_id=activity_id,
+        reaction=reaction,
+    )
+
+
+def suggest_entity_mention(
+    project_name: str,
+    entity_id: str,
+    entity_type: Literal[folder, task, version],
+) -> dict[str, dict[str, Any]]:
+    """Suggest entities for mention in activity body.
+
+    At this moment does not change data only returns suggestions.
+
+    Args:
+        project_name (str): Project name to search in.
+        entity_id (str): Entity id.
+        entity_type (str): Entity type of the entity.
+
+    Returns:
+        list[dict[str, Any]]: List of suggested entities with their details.
+
+    """
+    con = get_server_api_connection()
+    return con.suggest_entity_mention(
+        project_name=project_name,
+        entity_id=entity_id,
+        entity_type=entity_type,
+    )
+
+
+def get_raw_entity_watchers(
+    project_name: str,
+    entity_id: str,
+    entity_type: str,
+) -> dict[str, Any]:
+    """Get entity watchers (raw response).
+    """
+    con = get_server_api_connection()
+    return con.get_raw_entity_watchers(
+        project_name=project_name,
+        entity_id=entity_id,
+        entity_type=entity_type,
+    )
+
+
+def get_entity_watchers(
+    project_name: str,
+    entity_id: str,
+    entity_type: str,
+) -> list[str]:
+    """List watchers of an entity.
+    """
+    con = get_server_api_connection()
+    return con.get_entity_watchers(
+        project_name=project_name,
+        entity_id=entity_id,
+        entity_type=entity_type,
+    )
+
+
+def set_entity_watchers(
+    project_name: str,
+    entity_id: str,
+    entity_type: str,
+    watchers: list[str],
+):
+    """Change watchers of an entity.
+    """
+    con = get_server_api_connection()
+    return con.set_entity_watchers(
+        project_name=project_name,
+        entity_id=entity_id,
+        entity_type=entity_type,
+        watchers=watchers,
+    )
+
+
 def send_activities_batch_operations(
     project_name: str,
     operations: list[dict[str, Any]],
@@ -3622,12 +3930,29 @@ def set_attribute_config(
     )
 
 
-def remove_attribute_config(
+def delete_attribute_config(
     attribute_name: str,
 ) -> None:
     """Remove attribute from server.
 
     This can't be un-done, please use carefully.
+
+    Args:
+        attribute_name (str): Name of attribute to remove.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_attribute_config(
+        attribute_name=attribute_name,
+    )
+
+
+def remove_attribute_config(
+    attribute_name: str,
+) -> None:
+    """Remove attribute from server.
+
+    DEPRECATED: Use 'delete_attribute_config' instead.
 
     Args:
         attribute_name (str): Name of attribute to remove.
@@ -3803,6 +4128,7 @@ def get_rest_project(
 def get_rest_projects(
     active: Optional[bool] = True,
     library: Optional[bool] = None,
+    include_skeleton: bool = False,
 ) -> Generator[ProjectDict, None, None]:
     """Query available project entities.
 
@@ -3813,6 +4139,7 @@ def get_rest_projects(
             are returned if 'None' is passed.
         library (Optional[bool]): Filter standard/library projects. Both
             are returned if 'None' is passed.
+        include_skeleton (bool): Include skeleton projects.
 
     Returns:
         Generator[ProjectDict, None, None]: Available projects.
@@ -3822,12 +4149,14 @@ def get_rest_projects(
     return con.get_rest_projects(
         active=active,
         library=library,
+        include_skeleton=include_skeleton,
     )
 
 
 def get_rest_projects_list(
     active: Optional[bool] = True,
     library: Optional[bool] = None,
+    include_skeleton: bool = False,
 ) -> list[ProjectListDict]:
     """Receive available projects.
 
@@ -3838,6 +4167,7 @@ def get_rest_projects_list(
             are returned if 'None' is passed.
         library (Optional[bool]): Filter standard/library projects. Both
             are returned if 'None' is passed.
+        include_skeleton (bool): Include skeleton projects.
 
     Returns:
         list[ProjectListDict]: List of available projects.
@@ -3847,12 +4177,14 @@ def get_rest_projects_list(
     return con.get_rest_projects_list(
         active=active,
         library=library,
+        include_skeleton=include_skeleton,
     )
 
 
 def get_project_names(
     active: Optional[bool] = True,
     library: Optional[bool] = None,
+    include_skeleton: bool = False,
 ) -> list[str]:
     """Receive available project names.
 
@@ -3863,6 +4195,7 @@ def get_project_names(
             are returned if 'None' is passed.
         library (Optional[bool]): Filter standard/library projects. Both
             are returned if 'None' is passed.
+        include_skeleton (bool): Include skeleton projects.
 
     Returns:
         list[str]: List of available project names.
@@ -3872,12 +4205,14 @@ def get_project_names(
     return con.get_project_names(
         active=active,
         library=library,
+        include_skeleton=include_skeleton,
     )
 
 
 def get_projects(
     active: Optional[bool] = True,
     library: Optional[bool] = None,
+    include_skeleton: bool = False,
     fields: Optional[Iterable[str]] = None,
     own_attributes: bool = False,
 ) -> Generator[ProjectDict, None, None]:
@@ -3888,6 +4223,7 @@ def get_projects(
             Filter is disabled when 'None' is passed.
         library (Optional[bool]): Filter library projects. Filter is
             disabled when 'None' is passed.
+        include_skeleton (bool): Include skeleton projects.
         fields (Optional[Iterable[str]]): fields to be queried
             for project.
         own_attributes (Optional[bool]): Attribute values that are
@@ -3901,6 +4237,7 @@ def get_projects(
     return con.get_projects(
         active=active,
         library=library,
+        include_skeleton=include_skeleton,
         fields=fields,
         own_attributes=own_attributes,
     )
@@ -3938,6 +4275,8 @@ def create_project(
     project_code: str,
     library_project: bool = False,
     preset_name: Optional[str] = None,
+    data: dict[str, Any] | None = None,
+    skeleton: bool = False,
 ) -> ProjectDict:
     """Create project using AYON settings.
 
@@ -3957,6 +4296,8 @@ def create_project(
         library_project (Optional[bool]): Project is library project.
         preset_name (Optional[str]): Name of anatomy preset. Default is
             used if not passed.
+        data (dict[str, Any]): Project data.
+        skeleton (bool): Project is skeleton project.
 
     Raises:
         ValueError: When project name already exists.
@@ -3971,6 +4312,8 @@ def create_project(
         project_code=project_code,
         library_project=library_project,
         preset_name=preset_name,
+        data=data,
+        skeleton=skeleton,
     )
 
 
@@ -4046,6 +4389,83 @@ def delete_project(
     con = get_server_api_connection()
     return con.delete_project(
         project_name=project_name,
+    )
+
+
+def get_raw_project_folders() -> dict[str, Any]:
+    """Get project folders (raw data).
+    """
+    con = get_server_api_connection()
+    return con.get_raw_project_folders()
+
+
+def get_project_folders() -> list[dict[str, Any]]:
+    con = get_server_api_connection()
+    return con.get_project_folders()
+
+
+def create_project_folder(
+    label: str,
+    parent_id: str | None = None,
+    data: dict[str, Any] | None = None,
+) -> str:
+    """Create project folder.
+    """
+    con = get_server_api_connection()
+    return con.create_project_folder(
+        label=label,
+        parent_id=parent_id,
+        data=data,
+    )
+
+
+def update_project_folder(
+    folder_id: str,
+    label: str | None = None,
+    parent_id: str | None = None,
+    data: dict[str, Any] | None = None,
+) -> None:
+    con = get_server_api_connection()
+    return con.update_project_folder(
+        folder_id=folder_id,
+        label=label,
+        parent_id=parent_id,
+        data=data,
+    )
+
+
+def set_project_folders_order(
+    folder_ids: list[str],
+) -> None:
+    """Set project folders order.
+    """
+    con = get_server_api_connection()
+    return con.set_project_folders_order(
+        folder_ids=folder_ids,
+    )
+
+
+def assign_projects_to_project_folder(
+    folder_id: str,
+    project_names: list[str],
+) -> None:
+    """Assign project folder to project.
+    """
+    con = get_server_api_connection()
+    return con.assign_projects_to_project_folder(
+        folder_id=folder_id,
+        project_names=project_names,
+    )
+
+
+def delete_project_folder(
+    folder_id: str,
+):
+    """Delete project folder.
+    """
+    con = get_server_api_connection()
+    return con.delete_project_folder(
+        folder_id=folder_id,
     )
 
 
