@@ -594,7 +594,7 @@ class ProjectsAPI(BaseServerAPI):
     ) -> None:
         """Assign project folder to project."""
         response = self.post(
-            f"projectFolders/assign",
+            "projectFolders/assign",
             folderId=folder_id,
             projectNames=project_names,
         )
