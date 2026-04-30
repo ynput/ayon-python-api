@@ -570,11 +570,12 @@ def _try_connect_to_server(
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
         response = requests.get(
-            url,
+            f"{url}/api/info",
             timeout=timeout,
             verify=verify,
             cert=cert,
         )
+        _ = response.json()
         if response.history:
             return response.history[-1].headers["location"].rstrip("/")
         return url
@@ -770,8 +771,9 @@ def validate_url(
     ]
     if parsed_url is None:
         raise UrlError(
-            "Invalid url format. Url cannot be parsed as url \"{}\".".format(
-                modified_url
+            (
+                "Invalid url format. Url cannot be parsed"
+                f" as url \"{modified_url}\"."
             ),
             title="Invalid url format",
             hints=universal_hints
