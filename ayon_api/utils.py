@@ -777,11 +777,10 @@ def validate_url(
             hints=universal_hints
         )
 
-    # Try add 'https://' scheme if is missing
-    # - this will trigger UrlError if both will crash
-    if not parsed_url.scheme:
+    if parsed_url.path:
+        tmp_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         new_url = _try_connect_to_server(
-            "http://" + modified_url,
+            tmp_url,
             timeout=timeout,
             verify=verify,
             cert=cert,
