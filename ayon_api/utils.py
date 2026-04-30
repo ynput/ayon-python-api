@@ -798,14 +798,9 @@ def validate_url(
         return new_url
 
     hints = []
-    if "/" in parsed_url.path or not parsed_url.scheme:
-        new_path = parsed_url.path.split("/")[0]
-        if not parsed_url.scheme:
-            new_path = "https://" + new_path
-
-        hints.append(
-            "did you mean \"{}\"?".format(parsed_url.scheme + new_path)
-        )
+    if parsed_url.path:
+        new_path = f"{parsed_url.scheme}{parsed_url.netloc}"
+        hints.append(f"did you mean \"{new_path}\"?")
 
     raise UrlError(
         "Couldn't connect to server on \"{}\"".format(url),
