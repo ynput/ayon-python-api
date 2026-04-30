@@ -759,6 +759,11 @@ def validate_url(
 
     # Not sure if this is good idea?
     modified_url = stripperd_url.rstrip("/")
+
+    # Make sure url has http schema
+    if not modified_url.lower().startswith("http"):
+        modified_url = f"http://{modified_url}"
+
     parsed_url = _try_parse_url(modified_url)
     universal_hints = [
         "does the url work in browser?"
