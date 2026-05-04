@@ -779,10 +779,9 @@ def validate_url(
             hints=universal_hints
         )
 
+    pathless_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
     if parsed_url.path:
-        tmp_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         new_url = _try_connect_to_server(
-            tmp_url,
             timeout=timeout,
             verify=verify,
             cert=cert,
@@ -801,8 +800,7 @@ def validate_url(
 
     hints = []
     if parsed_url.path:
-        new_path = f"{parsed_url.scheme}{parsed_url.netloc}"
-        hints.append(f"did you mean \"{new_path}\"?")
+        hints.append(f"did you mean \"{pathless_url}\"?")
 
     raise UrlError(
         "Couldn't connect to server on \"{}\"".format(url),
