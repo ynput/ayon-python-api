@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 
 try:
@@ -21,13 +23,23 @@ class UrlError(Exception):
     UI if needed.
     """
 
-    def __init__(self, message, title, hints=None):
+
+    def __init__(
+        self,
+        message: str,
+        title: str,
+        hints: list[str] | None = None,
+    ) -> None:
         if hints is None:
             hints = []
 
         self.title = title
         self.hints = hints
-        super(UrlError, self).__init__(message)
+        super().__init__(message)
+
+
+class UrlNotReached(UrlError):
+    pass
 
 
 class ServerError(Exception):

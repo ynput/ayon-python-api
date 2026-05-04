@@ -27,6 +27,7 @@ from .constants import (
 )
 from .exceptions import (
     UrlError,
+    UrlNotReached,
     ServerError,
     UnauthorizedError,
     HTTPRequestError,
@@ -782,6 +783,7 @@ def validate_url(
     pathless_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
     if parsed_url.path:
         new_url = _try_connect_to_server(
+            pathless_url,
             timeout=timeout,
             verify=verify,
             cert=cert,
@@ -802,8 +804,8 @@ def validate_url(
     if parsed_url.path:
         hints.append(f"did you mean \"{pathless_url}\"?")
 
-    raise UrlError(
-        "Couldn't connect to server on \"{}\"".format(url),
+    raise UrlNotReached(
+        f"Couldn't connect to server on \"{url}\"",
         title="Couldn't connect to server",
         hints=hints + universal_hints
     )
