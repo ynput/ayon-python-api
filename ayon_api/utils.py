@@ -761,7 +761,7 @@ def validate_url(
     # Not sure if this is good idea?
     modified_url = stripperd_url.rstrip("/")
 
-    # Make sure url has http schema
+    # Make sure url has http scheme
     if not modified_url.lower().startswith("http"):
         modified_url = f"http://{modified_url}"
 
