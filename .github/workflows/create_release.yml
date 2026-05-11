@@ -16,6 +16,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     if: github.ref == 'refs/heads/develop'
     permissions:
       contents: write
@@ -109,5 +111,5 @@ jobs:
   publish:
     needs: release
     uses: ./.github/workflows/python-publish.yml
-    secrets:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    with:
+      ref: ${{ needs.release.outputs.version }}

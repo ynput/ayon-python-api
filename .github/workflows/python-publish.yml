@@ -9,12 +9,19 @@
 name: ⬆️ Upload PyPi Package
 
 on:
-  release:
-    types: [published]
-  workflow_call:
-    secrets:
-      PYPI_API_TOKEN:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (tag) to checkout for publishing'
         required: true
+        type: string
+
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref (tag) to checkout for publishing'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -28,6 +35,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.ref }}
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
