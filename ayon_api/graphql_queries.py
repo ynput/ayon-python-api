@@ -91,8 +91,10 @@ def project_graphql_query(fields):
 def projects_graphql_query(fields):
     query = GraphQlQuery("ProjectsQuery")
     project_name_var = query.add_variable("projectName", "String!")
+    skeleton_var = query.add_variable("skeleton", "Boolean!")
     projects_field = query.add_field_with_edges("projects")
     projects_field.set_filter("name", project_name_var)
+    projects_field.set_filter("includeSkeleton", skeleton_var)
 
     nested_fields = fields_to_dict(fields)
 

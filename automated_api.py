@@ -154,6 +154,7 @@ def _get_typehint(annotation, api_globals):
         str(annotation)
         .replace("NoneType", "None")
     )
+
     full_path_regex = re.compile(
         r"(?P<full>(?P<name>[a-zA-Z0-9_\.]+))"
     )
@@ -180,6 +181,17 @@ def _get_typehint(annotation, api_globals):
         else:
             name = name.split(".")[-1]
         typehint = typehint.replace(groups["full"], name)
+
+    if "Literal" in typehint:
+        for match in re.finditer(
+            r"(?P<fullcontent>Literal\[(?P<content>[^\]]*)\])", typehint
+        ):
+            full_content = match.group("fullcontent")
+            content = match.group("content")
+            items = [f'"{i.strip()}"' for i in content.split(",")]
+            new_content = ", ".join(items)
+            new_full_content = full_content.replace(content, new_content)
+            typehint = typehint.replace(full_content, new_full_content)
 
     try:
         # Test if typehint is valid for known '_api' content

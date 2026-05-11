@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import typing
-from typing import Optional, Iterable, Generator, Any
+from typing import Optional, Iterable, Generator, Any, Literal
 
 from ayon_api.utils import (
     SortOrder,
@@ -252,6 +252,117 @@ class ActivitiesAPI(BaseServerAPI):
         """
         response = self.delete(
             f"projects/{project_name}/activities/{activity_id}"
+        )
+        response.raise_for_status()
+
+    def get_raw_activity_categories(self, project_name: str) -> dict[str, Any]:
+        """Get activity categories available on server (raw response).
+
+        Args:
+            project_name (str): Project name to get categories for.
+
+        Returns:
+            list[str]: Available activity categories.
+
+        """
+        response = self.get(f"projects/{project_name}/activityCategories")
+        response.raise_for_status()
+        return response.data
+
+    def get_activity_categories(self, project_name: str) -> list[str]:
+        """Get activity categories available on server.
+
+        Args:
+            project_name (str): Project name to get categories for.
+
+        Returns:
+            list[str]: Available activity categories.
+
+        """
+
+        data = self.get_raw_activity_categories(project_name)
+        return data["categories"]
+
+    def create_activity_reaction(
+        self,
+        project_name: str,
+        activity_id: str,
+        reaction: str,
+    ) -> None:
+        """React to activity."""
+        response = self.post(
+            f"projects/{project_name}/activities/{activity_id}/reactions",
+            reaction=reaction,
+        )
+        response.raise_for_status()
+
+    def delete_activity_reaction(
+        self, project_name: str, activity_id: str, reaction: str
+    ) -> None:
+        response = self.delete(
+            f"projects/{project_name}/activities/{activity_id}"
+            f"/reactions/{reaction}"
+        )
+        response.raise_for_status()
+
+    def suggest_entity_mention(
+        self,
+        project_name: str,
+        entity_id: str,
+        entity_type: Literal["folder", "task", "version"],
+    ) -> dict[str, dict[str, Any]]:
+        """Suggest entities for mention in activity body.
+
+        At this moment does not change data only returns suggestions.
+
+        Args:
+            project_name (str): Project name to search in.
+            entity_id (str): Entity id.
+            entity_type (str): Entity type of the entity.
+
+        Returns:
+            list[dict[str, Any]]: List of suggested entities with
+                their details.
+
+        """
+        response = self.post(
+            f"projects/{project_name}/suggest",
+            entity_id=entity_id,
+            entity_type=entity_type,
+        )
+        response.raise_for_status()
+        return response.data
+
+    def get_raw_entity_watchers(
+        self, project_name: str, entity_id: str, entity_type: str
+    ) -> dict[str, Any]:
+        """Get entity watchers (raw response)."""
+        response = self.get(
+            f"projects/{project_name}/{entity_type}/{entity_id}/watchers"
+        )
+        response.raise_for_status()
+        return response.data
+
+    def get_entity_watchers(
+        self, project_name: str, entity_id: str, entity_type: str
+    ) -> list[str]:
+        """List watchers of an entity."""
+        data = self.get_raw_entity_watchers(
+            project_name, entity_id, entity_type
+        )
+        return data["watchers"]
+
+    def set_entity_watchers(
+        self,
+        project_name: str,
+        entity_id: str,
+        entity_type: str,
+        watchers: list[str],
+    ):
+        """Change watchers of an entity."""
+        response = self.post(
+            f"projects/{project_name}/{entity_type}/{entity_id}/watchers",
+            watchers=watchers,
         )
         response.raise_for_status()
 
