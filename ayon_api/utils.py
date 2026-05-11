@@ -751,8 +751,8 @@ def validate_url(
         UrlError: Error with short description and hints for user.
 
     """
-    stripperd_url = url.strip()
-    if not stripperd_url:
+    stripped_url = url.strip()
+    if not stripped_url:
         raise UrlError(
             "Invalid url format. Url is empty.",
             title="Invalid url format",
@@ -760,7 +760,7 @@ def validate_url(
         )
 
     # Not sure if this is good idea?
-    modified_url = stripperd_url.rstrip("/")
+    modified_url = stripped_url.rstrip("/")
 
     # Make sure url has http scheme
     if not modified_url.lower().startswith("http"):
