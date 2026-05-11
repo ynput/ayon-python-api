@@ -27,6 +27,7 @@ from .constants import (
 )
 from .exceptions import (
     UrlError,
+    UrlNotReached,
     ServerError,
     UnauthorizedError,
     HTTPRequestError,
@@ -570,11 +571,12 @@ def _try_connect_to_server(
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
         response = requests.get(
-            url,
+            f"{url}/api/info",
             timeout=timeout,
             verify=verify,
             cert=cert,
         )
+        _ = response.json()
         if response.history:
             return response.history[-1].headers["location"].rstrip("/")
         return url
@@ -749,8 +751,8 @@ def validate_url(
         UrlError: Error with short description and hints for user.
 
     """
-    stripperd_url = url.strip()
-    if not stripperd_url:
+    stripped_url = url.strip()
+    if not stripped_url:
         raise UrlError(
             "Invalid url format. Url is empty.",
             title="Invalid url format",
@@ -758,25 +760,30 @@ def validate_url(
         )
 
     # Not sure if this is good idea?
-    modified_url = stripperd_url.rstrip("/")
+    modified_url = stripped_url.rstrip("/")
+
+    # Make sure url has http scheme
+    if not modified_url.lower().startswith("http"):
+        modified_url = f"http://{modified_url}"
+
     parsed_url = _try_parse_url(modified_url)
     universal_hints = [
         "does the url work in browser?"
     ]
     if parsed_url is None:
         raise UrlError(
-            "Invalid url format. Url cannot be parsed as url \"{}\".".format(
-                modified_url
+            (
+                "Invalid url format. Url cannot be parsed"
+                f" as url \"{modified_url}\"."
             ),
             title="Invalid url format",
             hints=universal_hints
         )
 
-    # Try add 'https://' scheme if is missing
-    # - this will trigger UrlError if both will crash
-    if not parsed_url.scheme:
+    pathless_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    if parsed_url.path:
         new_url = _try_connect_to_server(
-            "http://" + modified_url,
+            pathless_url,
             timeout=timeout,
             verify=verify,
             cert=cert,
@@ -794,17 +801,11 @@ def validate_url(
         return new_url
 
     hints = []
-    if "/" in parsed_url.path or not parsed_url.scheme:
-        new_path = parsed_url.path.split("/")[0]
-        if not parsed_url.scheme:
-            new_path = "https://" + new_path
+    if parsed_url.path:
+        hints.append(f"did you mean \"{pathless_url}\"?")
 
-        hints.append(
-            "did you mean \"{}\"?".format(parsed_url.scheme + new_path)
-        )
-
-    raise UrlError(
-        "Couldn't connect to server on \"{}\"".format(url),
+    raise UrlNotReached(
+        f"Couldn't connect to server on \"{url}\"",
         title="Couldn't connect to server",
         hints=hints + universal_hints
     )
