@@ -1,9 +1,12 @@
+from types import SimpleNamespace
+
 import pytest
 
 from ayon_api.graphql import GraphQlQuery
 from ayon_api.graphql_queries import (
     project_graphql_query,
     folders_graphql_query,
+    versions_graphql_query,
 )
 
 from .conftest import project_name_fixture
@@ -94,6 +97,120 @@ def test_get_variables_values(keys, values, types):
 
     expected = make_expected_get_variables_values(keys, values)
     assert query.get_variables_values() == expected
+
+
+class DummyConnection:
+    def __init__(self, responses):
+        self._responses = list(responses)
+        self.calls = []
+
+    def query_graphql(self, query_str, variables):
+        self.calls.append((query_str, dict(variables)))
+        response = self._responses.pop(0)
+        return SimpleNamespace(errors=None, data={"data": response})
+
+
+def _version_link_edges(count, prefix):
+    return [
+        {"id": f"{prefix}-{idx}"}
+        for idx in range(count)
+    ]
+
+
+def test_nested_edge_pagination_queries_one_parent_at_a_time():
+    query = versions_graphql_query({"id", "links.id"})
+    query.set_variable_value("projectName", "test_project")
+
+    con = DummyConnection([
+        {
+            "project": {
+                "versions": {
+                    "edges": [{
+                        "cursor": "version-1",
+                        "node": {
+                            "id": "version-1",
+                            "links": {
+                                "edges": _version_link_edges(300, "link-a"),
+                                "pageInfo": {
+                                    "endCursor": "link-page-1",
+                                    "hasNextPage": True,
+                                }
+                            }
+                        }
+                    }],
+                    "pageInfo": {
+                        "endCursor": "versions-page-1",
+                        "hasNextPage": True,
+                    }
+                }
+            }
+        },
+        {
+            "project": {
+                "versions": {
+                    "edges": [{
+                        "cursor": "version-1",
+                        "node": {
+                            "id": "version-1",
+                            "links": {
+                                "edges": _version_link_edges(1, "link-b"),
+                                "pageInfo": {
+                                    "endCursor": "link-page-2",
+                                    "hasNextPage": False,
+                                }
+                            }
+                        }
+                    }],
+                    "pageInfo": {
+                        "endCursor": "versions-page-1",
+                        "hasNextPage": True,
+                    }
+                }
+            }
+        },
+        {
+            "project": {
+                "versions": {
+                    "edges": [{
+                        "cursor": "version-2",
+                        "node": {
+                            "id": "version-2",
+                            "links": {
+                                "edges": _version_link_edges(1, "link-c"),
+                                "pageInfo": {
+                                    "endCursor": "link-page-3",
+                                    "hasNextPage": False,
+                                }
+                            }
+                        }
+                    }],
+                    "pageInfo": {
+                        "endCursor": "versions-page-2",
+                        "hasNextPage": False,
+                    }
+                }
+            }
+        }
+    ])
+
+    output = query.query(con)
+
+    versions = output["project"]["versions"]
+    assert len(versions) == 2
+    assert versions[0]["id"] == "version-1"
+    assert len(versions[0]["links"]) == 301
+    assert versions[0]["links"][0]["id"] == "link-a-0"
+    assert versions[0]["links"][-1]["id"] == "link-b-0"
+    assert versions[1]["id"] == "version-2"
+    assert versions[1]["links"] == [{"id": "link-c-0"}]
+
+    first_query, second_query, third_query = [
+        query_str for query_str, _variables in con.calls
+    ]
+    assert "versions(first: 1)" in first_query
+    assert 'links(first: 300)' in first_query
+    assert 'links(first: 300, after: "link-page-1")' in second_query
+    assert 'versions(first: 1, after: "versions-page-1")' in third_query
 
 
 """
