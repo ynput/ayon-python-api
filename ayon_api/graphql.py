@@ -370,7 +370,7 @@ class GraphQlQuery:
             variables = self.get_variables_values()
             response = con.query_graphql(
                 query_str,
-                self.get_variables_values()
+                variables
             )
             if response.errors:
                 raise GraphQlQueryFailed(response.errors, query_str, variables)
