@@ -236,29 +236,21 @@ class TasksAPI(BaseServerAPI):
                 folder path.
 
         """
-        folder_paths = set(folder_paths)
-        if not project_name or not folder_paths:
-            return {}
-
-        graphql_filters = {
-            "projectName": project_name,
-            "folderPaths": list(folder_paths),
+        output = {
+            folder_path: []
+            for folder_path in folder_paths
         }
+        if not project_name or not output:
+            return output
 
-        if not prepare_list_filters(
-            graphql_filters,
-            ("taskNames", task_names),
-            ("taskTypes", task_types),
-            ("taskAssigneesAny", assignees),
-            ("taskAssigneesAll", assignees_all),
-            ("taskStatuses", statuses),
-            ("taskTags", tags),
-        ):
-            return {}
-
-        filters = self._prepare_advanced_filters(filters)
-        if filters:
-            graphql_filters["filter"] = filters
+        folder_path_by_id = {
+            folder["id"]: folder["path"]
+            for folder in self.get_folders(
+                project_name,
+                folder_paths=output.keys(),
+                fields={"id", "path"},
+            )
+        }
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -266,31 +258,25 @@ class TasksAPI(BaseServerAPI):
             fields = set(fields)
             self._prepare_fields("task", fields, own_attributes)
 
-        if active is not None:
-            fields.add("active")
+        fields.add("folderId")
 
-        self._prepare_link_fields(fields)
+        for task_entity in self.get_tasks(
+            project_name,
+            folder_ids=folder_path_by_id.keys(),
+            task_names=task_names,
+            task_types=task_types,
+            assignees=assignees,
+            assignees_all=assignees_all,
+            statuses=statuses,
+            tags=tags,
+            active=active,
+            filters=filters,
+            fields=fields,
+        ):
+            folder_id = task_entity["folderId"]
+            folder_path = folder_path_by_id[folder_id]
+            output[folder_path].append(task_entity)
 
-        query = tasks_by_folder_paths_graphql_query(fields)
-        for attr, filter_value in graphql_filters.items():
-            query.set_variable_value(attr, filter_value)
-
-        output = {
-            folder_path: []
-            for folder_path in folder_paths
-        }
-        for parsed_data in query.continuous_query(self):
-            for folder in parsed_data["project"]["folders"]:
-                folder_path = folder["path"]
-                for task in folder["tasks"]:
-                    if active is not None and active is not task["active"]:
-                        continue
-
-                    self._convert_entity_data(task)
-
-                    if own_attributes:
-                        fill_own_attribs(task)
-                    output[folder_path].append(task)
         return output
 
     def get_tasks_by_folder_path(
