@@ -963,7 +963,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             # Nested edge fields share a single cursor argument in the query.
             # Query one parent item at a time so child pagination can't be
             # overwritten by another parent from the same outer page.
-            limit_amount = min(limit_amount, 1)
+            limit_amount = 1
 
         filters[limit_key] = limit_amount
 
