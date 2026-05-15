@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 import typing
 from typing import Optional, Iterable, Any, Generator
 
-from .exceptions import GraphQlQueryFailed
+from .exceptions import GraphQlQueryError, GraphQlQueryFailed
 from .utils import SortOrder
 
 if typing.TYPE_CHECKING:
@@ -304,7 +304,7 @@ class GraphQlQuery:
             str: GraphQl string with variables and headers.
 
         Raises:
-            ValueError: Query has no fiels.
+            ValueError: Query has no fields.
 
         """
         if not self._children:
@@ -370,7 +370,7 @@ class GraphQlQuery:
             variables = self.get_variables_values()
             response = con.query_graphql(
                 query_str,
-                self.get_variables_values()
+                variables
             )
             if response.errors:
                 raise GraphQlQueryFailed(response.errors, query_str, variables)
@@ -396,6 +396,7 @@ class GraphQlQuery:
             while self.need_query:
                 query_str = self.calculate_query()
                 variables = self.get_variables_values()
+
                 response = con.query_graphql(query_str, variables)
                 if response.errors:
                     raise GraphQlQueryFailed(
@@ -902,8 +903,13 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
                 progress_data[cursor_key] = nodes_by_cursor
 
         page_info = value["pageInfo"]
-        new_cursor = page_info["endCursor"]
-        self._need_query = page_info["hasNextPage"]
+        if self._order == SortOrder.ascending:
+            new_cursor = page_info["endCursor"]
+            self._need_query = page_info["hasNextPage"]
+        else:
+            new_cursor = page_info["startCursor"]
+            self._need_query = page_info["hasPreviousPage"]
+
         edges = value["edges"]
         # Fake result parse
         if not edges:
@@ -931,15 +937,18 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             for child in self._children:
                 child.parse_result(edge["node"], edge_value, progress_data)
 
-        if not self._need_query:
-            return
-
         change_cursor = True
         for child in self._children_iter():
             if child.need_query:
                 change_cursor = False
 
-        if change_cursor:
+        if change_cursor and self._need_query:
+            if new_cursor == self._cursor:
+                raise GraphQlQueryError(
+                    "Cursor didn't change during pagination."
+                    " This can cause infinite loop."
+                )
+
             for child in self._children_iter():
                 child.reset_cursor()
             self._cursor = new_cursor
@@ -949,9 +958,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
 
     def get_filters(self) -> dict[str, Any]:
         filters = super().get_filters()
-        limit_key = "first"
-        if self._order == SortOrder.descending:
-            limit_key = "last"
+        limit_key = "first" if self._order == SortOrder.ascending else "last"
 
         limit_amount = 300
         if self._limit:
@@ -968,7 +975,10 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         filters[limit_key] = limit_amount
 
         if self._cursor:
-            filters["after"] = self._cursor
+            cursor_key = (
+                "after" if self._order == SortOrder.ascending else "before"
+            )
+            filters[cursor_key] = self._cursor
         return filters
 
     def calculate_query(self) -> str:
@@ -1006,8 +1016,16 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         # Add page information
         output.append(edges_offset + "pageInfo {")
         for page_key in (
-            "endCursor",
-            "hasNextPage",
+            (
+                "endCursor"
+                if self._order == SortOrder.ascending
+                else "startCursor"
+            ),
+            (
+                "hasNextPage"
+                if self._order == SortOrder.ascending
+                else "hasPreviousPage"
+            ),
         ):
             output.append(node_offset + page_key)
         output.append(edges_offset + "}")
