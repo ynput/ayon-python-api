@@ -111,5 +111,9 @@ jobs:
   publish:
     needs: release
     uses: ./.github/workflows/python-publish.yml
+    permissions:
+      contents: read
+      id-token: write
+    secrets: inherit
     with:
       ref: ${{ needs.release.outputs.version }}

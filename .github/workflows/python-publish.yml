@@ -22,9 +22,13 @@ on:
         description: 'Git ref (tag) to checkout for publishing'
         required: true
         type: string
+    secrets:
+      PYPI_API_TOKEN:
+        required: false
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   deploy:
