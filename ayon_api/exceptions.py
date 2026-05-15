@@ -78,7 +78,11 @@ class HTTPRequestError(RequestError):
     pass
 
 
-class GraphQlQueryFailed(Exception):
+class GraphQlQueryError(Exception):
+    pass
+
+
+class GraphQlQueryFailed(GraphQlQueryError):
     def __init__(self, errors, query, variables):
         if variables is None:
             variables = {}

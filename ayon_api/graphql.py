@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 import typing
 from typing import Optional, Iterable, Any, Generator
 
-from .exceptions import GraphQlQueryFailed
+from .exceptions import GraphQlQueryError, GraphQlQueryFailed
 from .utils import SortOrder
 
 if typing.TYPE_CHECKING:
@@ -947,6 +947,11 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         if change_cursor:
             for child in self._children_iter():
                 child.reset_cursor()
+            if new_cursor == self._cursor:
+                raise GraphQlQueryError(
+                    "Cursor didn't change during pagination."
+                    " This can cause infinite loop."
+                )
             self._cursor = new_cursor
 
     def _get_cursor_key(self) -> str:
