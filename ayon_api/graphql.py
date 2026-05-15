@@ -959,6 +959,12 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             if total > self._limit:
                 limit_amount = self._limit - self._fetched_counter
 
+        if self.child_has_edges:
+            # Nested edge fields share a single cursor argument in the query.
+            # Query one parent item at a time so child pagination can't be
+            # overwritten by another parent from the same outer page.
+            limit_amount = 1
+
         filters[limit_key] = limit_amount
 
         if self._cursor:
