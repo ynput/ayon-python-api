@@ -9,9 +9,7 @@ from ayon_api.utils import (
     create_entity_id,
     NOT_SET,
 )
-from ayon_api.graphql_queries import (
-    tasks_graphql_query,
-)
+from ayon_api.graphql_queries import tasks_graphql_query
 
 from .base import BaseServerAPI
 
