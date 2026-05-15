@@ -909,6 +909,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         else:
             new_cursor = page_info["startCursor"]
             self._need_query = page_info["hasPreviousPage"]
+
         edges = value["edges"]
         # Fake result parse
         if not edges:
@@ -936,22 +937,14 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             for child in self._children:
                 child.parse_result(edge["node"], edge_value, progress_data)
 
-        if not self._need_query:
-            return
-
         change_cursor = True
         for child in self._children_iter():
             if child.need_query:
                 change_cursor = False
 
-        if change_cursor:
+        if change_cursor and self._need_query:
             for child in self._children_iter():
                 child.reset_cursor()
-            if new_cursor == self._cursor:
-                raise GraphQlQueryError(
-                    "Cursor didn't change during pagination."
-                    " This can cause infinite loop."
-                )
             self._cursor = new_cursor
 
     def _get_cursor_key(self) -> str:
