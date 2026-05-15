@@ -1010,7 +1010,11 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         # Add page information
         output.append(edges_offset + "pageInfo {")
         for page_key in (
-            "endCursor",
+            (
+                "endCursor"
+                if self._order == SortOrder.ascending
+                else "startCursor"
+            ),
             (
                 "hasNextPage"
                 if self._order == SortOrder.ascending
