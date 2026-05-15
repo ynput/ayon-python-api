@@ -943,6 +943,12 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
                 change_cursor = False
 
         if change_cursor and self._need_query:
+            if new_cursor == self._cursor:
+                raise GraphQlQueryError(
+                    "Cursor didn't change during pagination."
+                    " This can cause infinite loop."
+                )
+
             for child in self._children_iter():
                 child.reset_cursor()
             self._cursor = new_cursor
