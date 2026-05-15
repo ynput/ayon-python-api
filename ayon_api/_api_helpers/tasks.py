@@ -11,7 +11,6 @@ from ayon_api.utils import (
 )
 from ayon_api.graphql_queries import (
     tasks_graphql_query,
-    tasks_by_folder_paths_graphql_query,
 )
 
 from .base import BaseServerAPI
