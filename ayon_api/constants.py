@@ -75,15 +75,14 @@ DEFAULT_PROJECT_LINK_TYPES_FIELDS = {
 # --- Product types ---
 DEFAULT_PRODUCT_TYPE_FIELDS = {
     "name",
-    "icon",
-    "color",
 }
 
 # --- Product base type ---
 DEFAULT_PRODUCT_BASE_TYPE_FIELDS = {
-    # Ignore 'icon' and 'color'
-    # - current server implementation always returns 'null'
+    # TODO add 'icon' and 'color' when server supports it
     "name",
+    # "icon",
+    # "color",
 }
 
 # --- Project ---
