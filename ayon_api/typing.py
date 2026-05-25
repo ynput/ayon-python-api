@@ -235,6 +235,7 @@ class BundleInfoDict(TypedDict):
 class BundlesInfoDict(TypedDict):
     bundles: list[BundleInfoDict]
     productionBundle: str
+    stagingBundle: str
     devBundles: list[str]
 
 
