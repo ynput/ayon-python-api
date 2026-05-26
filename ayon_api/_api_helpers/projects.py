@@ -50,6 +50,8 @@ class ProjectFetchType(Enum):
 
 
 class ProjectsAPI(BaseServerAPI):
+    _project_product_base_type_fields = None
+
     def get_project_anatomy_presets(self) -> list[AnatomyPresetDict]:
         """Anatomy presets available on server.
 
@@ -802,12 +804,8 @@ class ProjectsAPI(BaseServerAPI):
             elif field == "productBaseTypes":
                 must_use_graphql = True
                 fields.discard(field)
-                for f_name in DEFAULT_PRODUCT_BASE_TYPE_FIELDS:
+                for f_name in self._get_project_product_base_type_fields():
                     graphql_fields.add(f"{field}.{f_name}")
-
-                if self.get_server_version_tuple() > (1, 15, 3):
-                    graphql_fields.add("productBaseTypes.icon")
-                    graphql_fields.add("productBaseTypes.color")
 
             elif field.startswith("productBaseTypes"):
                 must_use_graphql = True
@@ -1021,3 +1019,17 @@ class ProjectsAPI(BaseServerAPI):
         )
         response.raise_for_status()
         return response.data
+
+    def _get_project_product_base_type_fields(self) -> set[str]:
+        if self._project_product_base_type_fields is not None:
+            return self._project_product_base_type_fields
+
+        graphql_schema = self.get_graphql_schema()
+
+        field_names = {"name"}
+        for type_def in graphql_schema["__schema"]["types"]:
+            if type_def["name"] == "ProductBaseType":
+                field_names = {field["name"] for field in type_def["fields"]}
+                break
+        self._project_product_base_type_fields = field_names
+        return field_names
