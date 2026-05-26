@@ -805,6 +805,10 @@ class ProjectsAPI(BaseServerAPI):
                 for f_name in DEFAULT_PRODUCT_BASE_TYPE_FIELDS:
                     graphql_fields.add(f"{field}.{f_name}")
 
+                if self.get_server_version_tuple() > (1, 15, 3):
+                    graphql_fields.add("productBaseTypes.icon")
+                    graphql_fields.add("productBaseTypes.color")
+
             elif field.startswith("productBaseTypes"):
                 must_use_graphql = True
                 graphql_fields.add(field)
