@@ -56,6 +56,15 @@ if typing.TYPE_CHECKING:
         scope: NotRequired[Optional[StatusEntityType]]
 
 
+class Assignees(set):
+    """Helper class for task assignees.
+
+    Assignees used to be a list and 'append' is being used a lot.
+    """
+    def append(self, item: str) -> None:
+        self.add(item)
+
+
 class _CustomNone:
     def __init__(self, name: Optional[str] = None) -> None:
         self._name = name or "CustomNone"
@@ -3430,9 +3439,9 @@ class TaskEntity(BaseEntity):
             entity_hub=entity_hub,
         )
         if assignees is None:
-            assignees = []
+            assignees = Assignees()
         else:
-            assignees = list(assignees)
+            assignees = Assignees(assignees)
 
         self._task_type = task_type
         self._assignees = assignees
@@ -3463,11 +3472,11 @@ class TaskEntity(BaseEntity):
 
     task_type = property(get_task_type, set_task_type)
 
-    def get_assignees(self) -> list[str]:
+    def get_assignees(self) -> Assignees[str]:
         """Task assignees.
 
         Returns:
-            list[str]: Task assignees.
+            Assignees[str]: Task assignees.
 
         """
         return self._assignees
@@ -3479,7 +3488,7 @@ class TaskEntity(BaseEntity):
             assignees (Iterable[str]): assignees.
 
         """
-        self._assignees = list(assignees)
+        self._assignees = Assignees(assignees)
 
     assignees = property(get_assignees, set_assignees)
 
@@ -3497,7 +3506,7 @@ class TaskEntity(BaseEntity):
             changes["taskType"] = self._task_type
 
         if self._orig_assignees != self._assignees:
-            changes["assignees"] = self._assignees
+            changes["assignees"] = list(self._assignees)
 
         return changes
 
@@ -3549,7 +3558,7 @@ class TaskEntity(BaseEntity):
             output["tags"] = self.tags
 
         if self.assignees:
-            output["assignees"] = self.assignees
+            output["assignees"] = list(self.assignees)
 
         if self._data is not UNKNOWN_VALUE:
             output["data"] = self._data.get_new_entity_value()
