@@ -9,7 +9,6 @@ from typing import Optional, Generator, Iterable, Any
 
 from ayon_api.constants import (
     PROJECT_NAME_REGEX,
-    DEFAULT_PRODUCT_BASE_TYPE_FIELDS,
     DEFAULT_PRODUCT_TYPE_FIELDS,
 )
 from ayon_api.utils import prepare_query_string, fill_own_attribs
@@ -804,6 +803,7 @@ class ProjectsAPI(BaseServerAPI):
             elif field == "productBaseTypes":
                 must_use_graphql = True
                 fields.discard(field)
+                # for f_name in DEFAULT_PRODUCT_BASE_TYPE_FIELDS:
                 for f_name in self._get_project_product_base_type_fields():
                     graphql_fields.add(f"{field}.{f_name}")
 
