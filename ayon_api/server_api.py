@@ -887,7 +887,7 @@ class ServerAPI(
             dict[str, Any]: Information from server.
 
         """
-        if self._session is None:
+        if self._token_info.is_valid is None:
             return self._get_server_info()
 
         response = self.get("info")
@@ -1464,7 +1464,8 @@ class ServerAPI(
         return f"{base_url}/{endpoint}"
 
     def _logout(self):
-        logout_from_server(self._base_url, self._token_info.token)
+        if self._token_info.is_valid:
+            logout_from_server(self._base_url, self._token_info.token)
 
     def _get_server_info(self) -> dict[str, Any]:
         """Get server info without a session."""
@@ -1477,17 +1478,16 @@ class ServerAPI(
         return response.json()
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
-        if self._token_info.token is None:
+        if (
+            self._token_info.token is None
+            or self._token_info.is_valid is False
+        ):
             return None
 
         if self._token_info.is_service is None:
+            self.validate_token()
             if self._token_info.is_valid is False:
                 return None
-
-            self.validate_token()
-
-        if self._token_info.is_valid is False:
-            return None
 
         response = self.get("users/me")
         if response.status == 200:
