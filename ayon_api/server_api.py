@@ -67,6 +67,7 @@ from .utils import (
     get_media_mime_type_for_stream,
     get_machine_name,
     fill_own_attribs,
+    is_token_valid,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -758,19 +759,27 @@ class ServerAPI(
             )
 
     def validate_token(self) -> bool:
+        if self._access_token is None:
+            self._token_is_valid = False
+            self.close_session()
+            return False
+
+        self._token_validation_started = True
         try:
-            self._token_validation_started = True
             # TODO add other possible validations
             # - existence of 'user' key in info
             # - validate that 'site_id' is in 'sites' in info
-            self.get_info()
-            self.get_user()
-            self._token_is_valid = True
-
-        except UnauthorizedError:
+            self._get_server_info()
+            self._token_is_valid = is_token_valid(
+                self.base_url,
+                self._access_token,
+                verify=self._ssl_verify,
+                cert=self._cert
+            )
+        except Exception:
             self._token_is_valid = False
             self.close_session()
-
+            self.log.error("Failed to validate token.", exc_info=True)
         finally:
             self._token_validation_started = False
         return self._token_is_valid
@@ -866,6 +875,9 @@ class ServerAPI(
             dict[str, Any]: Information from server.
 
         """
+        if self._session is None:
+            return self._get_server_info()
+
         response = self.get("info")
         response.raise_for_status()
         return response.data
@@ -1213,10 +1225,19 @@ class ServerAPI(
         logout_from_server(self._base_url, self._access_token)
 
     def _do_rest_request(self, function, url, **kwargs):
+        if (
+            self._session is not None
+            and self._token_is_valid is False
+        ):
+            raise UnauthorizedError(
+                "Authentication token was invalidated."
+            )
+
         kwargs.setdefault("timeout", self.timeout)
         max_retries = kwargs.get("max_retries", self.max_retries)
         if max_retries < 1:
             max_retries = 1
+
         if self._session is None:
             # Validate token if was not yet validated
             #    - ignore validation if we're in middle of
@@ -1226,11 +1247,6 @@ class ServerAPI(
                 and not self._token_validation_started
             ):
                 self.validate_token()
-
-            if self._token_is_valid is False:
-                raise UnauthorizedError(
-                    "Authentication token was invalidated."
-                )
 
             if "headers" not in kwargs:
                 kwargs["headers"] = self.get_headers()
@@ -1573,6 +1589,15 @@ class ServerAPI(
         base_url = self._rest_url if use_rest else self._base_url
         return f"{base_url}/{endpoint}"
 
+    def _get_server_info(self) -> dict[str, Any]:
+        """Get server info without a session."""
+        response = requests.get(
+            f"{self._rest_url}/info",
+            cert=self._cert,
+            verify=self._ssl_verify,
+        )
+        response.raise_for_status()
+        return response.json()
     def _download_file_to_stream(
         self,
         endpoint: str,
