@@ -187,9 +187,8 @@ class _AsUserStack:
         user_id = uuid.uuid4().hex
         self._user_ids.append(user_id)
         self._users_by_id[user_id] = username
-        try:
-            yield
-        finally:
+
+        def _cleanup():
             self._users_by_id.pop(user_id, None)
             if not self._user_ids:
                 return
@@ -207,6 +206,11 @@ class _AsUserStack:
             if self._user_ids:
                 new_last_user = self._users_by_id.get(self._user_ids[-1])
             self._last_user = new_last_user
+
+        try:
+            yield
+        finally:
+            _cleanup()
 
 
 class ServerAPI(
