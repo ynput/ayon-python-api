@@ -6,6 +6,7 @@ Provides access to server API.
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass
 import os
 import re
 import io
@@ -214,6 +215,13 @@ class _AsUserStack:
             _cleanup()
 
 
+@dataclass
+class TokenInfo:
+    token: str | None = None
+    is_valid: bool | None = None
+    is_service: bool | None = None
+
+
 class ServerAPI(
     InstallersAPI,
     DependencyPackagesAPI,
@@ -295,7 +303,7 @@ class ServerAPI(
         self._rest_url: str = f"{base_url}/api"
         self._graphql_url: str = f"{base_url}/graphql"
         self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
-        self._access_token: Optional[str] = token
+
         # Allow to have 'site_id' to 'None'
         if site_id is NOT_SET:
             site_id = get_default_site_id()
@@ -327,9 +335,8 @@ class ServerAPI(
         self._ssl_verify = ssl_verify
         self._cert = cert
 
-        self._access_token_is_service = None
-        self._token_is_valid = None
-        self._token_validation_started = False
+        self._token_info = TokenInfo(token=token)
+
         self._server_available = None
         self._server_version = None
         self._server_version_tuple = None
@@ -356,7 +363,7 @@ class ServerAPI(
         self._as_user_stack = _AsUserStack()
 
         # Create session
-        if self._access_token and create_session:
+        if self._token_info.token and create_session:
             self.validate_server_availability()
             self.create_session()
 
@@ -503,7 +510,7 @@ class ServerAPI(
             Optional[str]: Token string or None if not authorized yet.
 
         """
-        return self._access_token
+        return self.self._token_info.token
 
     def is_service_user(self) -> bool:
         """Check if connection is using service API key.
@@ -514,7 +521,7 @@ class ServerAPI(
         """
         if not self.has_valid_token:
             raise ValueError("User is not logged in.")
-        return bool(self._access_token_is_service)
+        return bool(self._token_info.is_service)
 
     def get_site_id(self) -> Optional[str]:
         """Site id used for connection.
@@ -683,7 +690,7 @@ class ServerAPI(
                 "Authentication of connection did not happen yet."
             )
 
-        if not self._access_token_is_service:
+        if not self._token_info.is_service:
             raise ValueError(
                 "Can't set service username. API key is not a service token."
             )
@@ -717,7 +724,7 @@ class ServerAPI(
                 "Authentication of connection did not happen yet."
             )
 
-        if not self._access_token_is_service:
+        if not self._token_info.is_service:
             if ignore_service_error:
                 yield None
                 return
@@ -745,12 +752,12 @@ class ServerAPI(
 
     @property
     def has_valid_token(self) -> bool:
-        if self._access_token is None:
+        if self._token_info.token is None:
             return False
 
-        if self._token_is_valid is None:
+        if self._token_info.is_valid is None:
             self.validate_token()
-        return self._token_is_valid
+        return self._token_info.is_valid
 
     def validate_server_availability(self):
         if not self.is_server_available:
@@ -759,44 +766,44 @@ class ServerAPI(
             )
 
     def validate_token(self) -> bool:
-        if self._access_token is None:
-            self._token_is_valid = False
+        if self._token_info.token is None:
+            self._token_info.is_valid = False
             self.close_session()
             return False
 
-        self._token_validation_started = True
         try:
             # TODO add other possible validations
             # - existence of 'user' key in info
             # - validate that 'site_id' is in 'sites' in info
             self._get_server_info()
+
             user_info = get_user_info_by_token(
                 self.base_url,
-                self._access_token,
+                self._token_info.token,
                 verify=self._ssl_verify,
                 cert=self._cert
             )
-            self._token_is_valid = user_info.is_valid
+            self._token_info.is_valid = user_info.is_valid
             is_service = None
             if user_info.is_valid:
                 is_service = user_info.is_service
-            self._access_token_is_service = is_service
+            self._token_info.is_service = is_service
+
         except Exception:
-            self._token_is_valid = False
+            self._token_info.is_valid = False
             self.close_session()
             self.log.error("Failed to validate token.", exc_info=True)
-        finally:
-            self._token_validation_started = False
-        return self._token_is_valid
+
+        return self._token_info.is_valid
 
     def set_token(self, token: Optional[str]):
         self.reset_token()
-        self._access_token = token
+        self._token_info.token = token
         self.validate_token()
 
     def reset_token(self):
-        self._access_token = None
-        self._token_is_valid = None
+        self._token_info.token = None
+        self._token_info.is_valid = None
         self.close_session()
 
     def create_session(
@@ -1128,14 +1135,14 @@ class ServerAPI(
         if self._sender is not None:
             headers["x-sender"] = self._sender
 
-        if self._access_token:
-            if self._access_token_is_service:
-                headers["X-Api-Key"] = self._access_token
+        if self._token_info.token:
+            if self._token_info.is_service:
+                headers["X-Api-Key"] = self._token_info.token
                 username = self._as_user_stack.username
                 if username:
                     headers["X-as-user"] = username
             else:
-                headers["Authorization"] = f"Bearer {self._access_token}"
+                headers["Authorization"] = f"Bearer {self._token_info.token}"
         return headers
 
     def login(
@@ -1146,7 +1153,7 @@ class ServerAPI(
         Args:
             username (str): Username.
             password (str): Password.
-            create_session (Optional[bool]): Create session after login.
+            create_session (bool): Create session after login.
                 Default: True.
 
         Raises:
@@ -1170,26 +1177,25 @@ class ServerAPI(
 
         self.validate_server_availability()
 
-        self._token_validation_started = True
+        response = self.post(
+            "auth/login",
+            name=username,
+            password=password,
+            handle_invalid_token=False,
+        )
+        if response.status_code != 200:
+            _detail = response.data.get("detail")
+            details = ""
+            if _detail:
+                details = f" {_detail}"
 
-        try:
-            response = self.post(
-                "auth/login",
-                name=username,
-                password=password
-            )
-            if response.status_code != 200:
-                _detail = response.data.get("detail")
-                details = ""
-                if _detail:
-                    details = f" {_detail}"
+            raise AuthenticationError(f"Login failed {details}")
 
-                raise AuthenticationError(f"Login failed {details}")
-
-        finally:
-            self._token_validation_started = False
-
-        self._access_token = response["token"]
+        self._token_info.token = response["token"]
+        # Should be valid if was just loged in
+        self._token_info.is_valid = True
+        # Service token can't be obtained by login, so it is not service token
+        self._token_info.is_service = False
 
         if not self.has_valid_token:
             raise AuthenticationError("Invalid credentials")
@@ -1198,7 +1204,7 @@ class ServerAPI(
             self.create_session()
 
     def logout(self, soft: bool = False):
-        if self._access_token:
+        if self._token_info.token:
             if not soft:
                 self._logout()
             self.reset_token()
@@ -1458,7 +1464,7 @@ class ServerAPI(
         return f"{base_url}/{endpoint}"
 
     def _logout(self):
-        logout_from_server(self._base_url, self._access_token)
+        logout_from_server(self._base_url, self._token_info.token)
 
     def _get_server_info(self) -> dict[str, Any]:
         """Get server info without a session."""
@@ -1471,46 +1477,57 @@ class ServerAPI(
         return response.json()
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
-        if self._access_token is None:
+        if self._token_info.token is None:
             return None
 
-        if self._access_token_is_service is not None:
-            response = self.get("users/me")
-            if response.status == 200:
-                return response.data
+        if self._token_info.is_service is None:
+            if self._token_info.is_valid is False:
+                return None
+
+            self.validate_token()
+
+        if self._token_info.is_valid is False:
             return None
 
-        self._access_token_is_service = False
         response = self.get("users/me")
         if response.status == 200:
             return response.data
-
-        self._access_token_is_service = True
-        response = self.get("users/me")
-        if response.status == 200:
-            return response.data
-
-        self._access_token_is_service = None
         return None
 
-    def _do_rest_request(self, function, url, **kwargs):
+    def _do_rest_request(
+        self,
+        function: Any,
+        url: str,
+        *,
+        handle_invalid_token: bool = True,
+        **kwargs
+    ):
         kwargs.setdefault("timeout", self.timeout)
         max_retries = kwargs.get("max_retries", self.max_retries)
         if max_retries < 1:
             max_retries = 1
 
-        if self._token_is_valid is False:
-            raise UnauthorizedError(
-                "Authentication token was invalidated."
+        if handle_invalid_token and self._token_info.is_valid is False:
+            # Return a fake error response if the token is known to be invalid.
+            # Added to prevent DDOS attack on server when many requests
+            #   with invalid token are send. It is better to return error
+            #   immediately without trying to send a request to server.
+            # NOTE maybe store last know response data and re-use it?
+            detail = "Access token is missing"
+            if self._token_info.is_service:
+                detail = "Invalid API key"
+            new_response = RestApiResponse(
+                None,
+                {"code": 401, "detail": detail}
             )
+            new_response.status = 401
+            return new_response
 
         if self._session is None:
             # Validate token if was not yet validated
-            #    - ignore validation if we're in middle of
-            #       validation
             if (
-                self._token_is_valid is None
-                and not self._token_validation_started
+                handle_invalid_token
+                and self._token_info.is_valid is None
             ):
                 self.validate_token()
 
@@ -1589,16 +1606,15 @@ class ServerAPI(
         if new_response is not None:
             return new_response
 
-        if (
-            response is not None
-            and self._token_is_valid
-            and response.status_code == 401
-        ):
-            self._token_is_valid = False
-            self.close_session()
-            self._trigger_on_invalidate_callbacks()
-
         new_response = RestApiResponse(response)
+        if (
+            handle_invalid_token
+            and new_response.status_code == 401
+            and self._token_info.is_valid
+        ):
+            self._token_info.is_valid = False
+            self.close_session()
+
         self.log.debug(f"Response {str(new_response)}")
         return new_response
 
