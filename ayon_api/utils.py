@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import os
 import re
 import datetime
@@ -16,6 +17,7 @@ import itertools
 from urllib.parse import urlparse, urlencode, ParseResult
 import typing
 from typing import Any, Iterable
+import warnings
 from enum import IntEnum
 
 import requests
@@ -67,6 +69,38 @@ RepresentationHierarchy = collections.namedtuple(
         "representation",
     )
 )
+
+@dataclass
+class _TimeoutWrapInfo:
+    func = None
+    args_pos = 2
+
+
+def _timeout_kwarg_deprecation(arg):
+    """Decorator to add timeout kwarg to function."""
+    # TODO remove this deprecation
+    wrap_info = _TimeoutWrapInfo()
+
+    def wrapper(*args, **kwargs):
+        if len(args) > wrap_info.args_pos:
+            warnings.warn(
+                "Timeout was passed as a positional argument please"
+                " use timeout=... keyword argument instead. This will stop"
+                " working in future versions on ayon-api.",
+                category=FutureWarning,
+                stacklevel=2,
+            )
+        return wrap_info.func(*args, **kwargs)
+
+    if not isinstance(arg, int):
+        wrap_info.func = arg
+        return functools.wraps(arg)(wrapper)
+
+    wrap_info.args_pos = arg
+    def main_wrapper(func):
+        wrap_info.func = func
+        return functools.wraps(func)(wrapper)
+    return main_wrapper
 
 
 class SortOrder(IntEnum):
@@ -588,6 +622,7 @@ def _try_connect_to_server(
     return None
 
 
+@_timeout_kwarg_deprecation(3)
 def login_to_server(
     url: str,
     username: str,
@@ -629,6 +664,7 @@ def login_to_server(
     return token
 
 
+@_timeout_kwarg_deprecation
 def logout_from_server(
     url: str,
     token: str,
@@ -734,6 +770,7 @@ def get_user_info_by_token(
     return output
 
 
+@_timeout_kwarg_deprecation
 def get_user_by_token(
     url: str,
     token: str,
@@ -766,6 +803,7 @@ def get_user_by_token(
     return None
 
 
+@_timeout_kwarg_deprecation
 def is_token_valid(
     url: str,
     token: str,
@@ -798,6 +836,7 @@ def is_token_valid(
     return user_info.is_valid
 
 
+@_timeout_kwarg_deprecation(1)
 def validate_url(
     url: str,
     timeout: int | None = None,
