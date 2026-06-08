@@ -67,7 +67,7 @@ from .utils import (
     get_media_mime_type_for_stream,
     get_machine_name,
     fill_own_attribs,
-    is_token_valid,
+    get_user_info_by_token,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -770,12 +770,17 @@ class ServerAPI(
             # - existence of 'user' key in info
             # - validate that 'site_id' is in 'sites' in info
             self._get_server_info()
-            self._token_is_valid = is_token_valid(
+            user_info = get_user_info_by_token(
                 self.base_url,
                 self._access_token,
                 verify=self._ssl_verify,
                 cert=self._cert
             )
+            self._token_is_valid = user_info.is_valid
+            is_service = None
+            if user_info.is_valid:
+                is_service = user_info.is_service
+            self._access_token_is_service = is_service
         except Exception:
             self._token_is_valid = False
             self.close_session()
@@ -787,7 +792,7 @@ class ServerAPI(
     def set_token(self, token: Optional[str]):
         self.reset_token()
         self._access_token = token
-        self.get_user()
+        self.validate_token()
 
     def reset_token(self):
         self._access_token = None

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import datetime
+from dataclasses import dataclass, field
 import copy
 import logging
 import json
@@ -655,19 +656,32 @@ def logout_from_server(
     )
 
 
-def get_user_by_token(
+@dataclass
+class UserInfo:
+    """User information."""
+    is_valid: bool = False
+    is_service: bool = False
+    content: bytes = b""
+    data: dict[str, Any] = field(default_factory=dict)
+
+
+def get_user_info_by_token(
     url: str,
     token: str,
     *,
     verify: str | bool | None = None,
     cert: str | None = None,
     timeout: float | None = None,
-) -> dict[str, Any] | None:
+) -> UserInfo:
     """Get user information by url and token.
 
     Args:
         url (str): Server url.
         token (str): User's token.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
 
@@ -675,6 +689,10 @@ def get_user_by_token(
         dict[str, Any] | None: User information if url and token are valid.
 
     """
+    output = UserInfo()
+    if not token:
+        return output
+
     if timeout is None:
         timeout = get_default_timeout()
 
@@ -687,9 +705,9 @@ def get_user_by_token(
     base_headers = {
         "Content-Type": "application/json",
     }
-    for header_value in (
-        {"Authorization": f"Bearer {token}"},
-        {"X-Api-Key": token},
+    for header_value, is_service in (
+        ({"Authorization": f"Bearer {token}"}, False),
+        ({"X-Api-Key": token}, True),
     ):
         headers = base_headers.copy()
         headers.update(header_value)
@@ -700,18 +718,61 @@ def get_user_by_token(
             verify=verify,
             cert=cert,
         )
-        if response.status_code == 200:
-            return response.json()
+        try:
+            data = response.json()
+        except Exception:
+            data = {}
+
+        output = UserInfo(
+            is_valid=response.status_code == 200,
+            is_service=is_service,
+            data=data,
+            content=response.content,
+        )
+        if output.is_valid:
+            break
+    return output
+
+
+def get_user_by_token(
+    url: str,
+    token: str,
+    timeout: float | None = None,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
+) -> dict[str, Any] | None:
+    """Get user information by url and token.
+
+    Args:
+        url (str): Server url.
+        token (str): User's token.
+        timeout (float | None): Timeout for request. Value from
+            'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
+
+    Returns:
+        dict[str, Any] | None: User information if url and token are valid.
+
+    """
+    user_info = get_user_info_by_token(
+        url, token, timeout=timeout, verify=verify, cert=cert,
+    )
+    if user_info.is_valid:
+        return user_info.data
     return None
 
 
 def is_token_valid(
     url: str,
     token: str,
+    timeout: float | None = None,
     *,
     verify: str | bool | None = None,
     cert: str | None = None,
-    timeout: float | None = None,
 ) -> bool:
     """Check if token is valid.
 
@@ -722,20 +783,19 @@ def is_token_valid(
         token (str): User's token.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         bool: True if token is valid.
 
     """
-    if get_user_by_token(
-        url,
-        token,
-        verify=verify,
-        cert=cert,
-        timeout=timeout
-    ):
-        return True
-    return False
+    user_info = get_user_info_by_token(
+        url, token, timeout=timeout, verify=verify, cert=cert
+    )
+    return user_info.is_valid
 
 
 def validate_url(
