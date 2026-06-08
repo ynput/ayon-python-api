@@ -765,6 +765,7 @@ class ServerAPI(
 
         except UnauthorizedError:
             self._token_is_valid = False
+            self.close_session()
 
         finally:
             self._token_validation_started = False
@@ -1222,6 +1223,11 @@ class ServerAPI(
             ):
                 self.validate_token()
 
+            if self._token_is_valid is False:
+                raise UnauthorizedError(
+                    "Authentication token was invalidated."
+                )
+
             if "headers" not in kwargs:
                 kwargs["headers"] = self.get_headers()
 
@@ -1296,6 +1302,14 @@ class ServerAPI(
 
         if new_response is not None:
             return new_response
+
+        if (
+            response is not None
+            and self._token_is_valid
+            and response.status_code == 401
+        ):
+            self._token_is_valid = False
+            self.close_session()
 
         new_response = RestApiResponse(response)
         self.log.debug(f"Response {str(new_response)}")
