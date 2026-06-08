@@ -658,6 +658,9 @@ def logout_from_server(
 def get_user_by_token(
     url: str,
     token: str,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
     timeout: float | None = None,
 ) -> dict[str, Any] | None:
     """Get user information by url and token.
@@ -675,6 +678,12 @@ def get_user_by_token(
     if timeout is None:
         timeout = get_default_timeout()
 
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
     base_headers = {
         "Content-Type": "application/json",
     }
@@ -688,6 +697,8 @@ def get_user_by_token(
             f"{url}/api/users/me",
             headers=headers,
             timeout=timeout,
+            verify=verify,
+            cert=cert,
         )
         if response.status_code == 200:
             return response.json()
@@ -697,6 +708,9 @@ def get_user_by_token(
 def is_token_valid(
     url: str,
     token: str,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
     timeout: float | None = None,
 ) -> bool:
     """Check if token is valid.
@@ -713,7 +727,13 @@ def is_token_valid(
         bool: True if token is valid.
 
     """
-    if get_user_by_token(url, token, timeout=timeout):
+    if get_user_by_token(
+        url,
+        token,
+        verify=verify,
+        cert=cert,
+        timeout=timeout
+    ):
         return True
     return False
 
