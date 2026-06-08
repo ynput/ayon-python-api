@@ -951,29 +951,6 @@ class ServerAPI(
             )
         return self._links_graphql_support_data
 
-    def _get_user_info(self) -> Optional[dict[str, Any]]:
-        if self._access_token is None:
-            return None
-
-        if self._access_token_is_service is not None:
-            response = self.get("users/me")
-            if response.status == 200:
-                return response.data
-            return None
-
-        self._access_token_is_service = False
-        response = self.get("users/me")
-        if response.status == 200:
-            return response.data
-
-        self._access_token_is_service = True
-        response = self.get("users/me")
-        if response.status == 200:
-            return response.data
-
-        self._access_token_is_service = None
-        return None
-
     def get_users(
         self,
         project_name: Optional[str] = None,
@@ -1220,120 +1197,6 @@ class ServerAPI(
             if not soft:
                 self._logout()
             self.reset_token()
-
-    def _logout(self):
-        logout_from_server(self._base_url, self._access_token)
-
-    def _do_rest_request(self, function, url, **kwargs):
-        if (
-            self._session is not None
-            and self._token_is_valid is False
-        ):
-            raise UnauthorizedError(
-                "Authentication token was invalidated."
-            )
-
-        kwargs.setdefault("timeout", self.timeout)
-        max_retries = kwargs.get("max_retries", self.max_retries)
-        if max_retries < 1:
-            max_retries = 1
-
-        if self._session is None:
-            # Validate token if was not yet validated
-            #    - ignore validation if we're in middle of
-            #       validation
-            if (
-                self._token_is_valid is None
-                and not self._token_validation_started
-            ):
-                self.validate_token()
-
-            if "headers" not in kwargs:
-                kwargs["headers"] = self.get_headers()
-
-            if isinstance(function, RequestType):
-                function = self._base_functions_mapping[function]
-
-        elif isinstance(function, RequestType):
-            function = self._session_functions_mapping[function]
-
-        response = None
-        new_response = None
-        for retry_idx in reversed(range(max_retries)):
-            try:
-                response = function(url, **kwargs)
-
-                # Usually these mean, try later.
-                # 502: returned by the proxy: nginx
-                # 503: returned by the server: if no capacity
-                if response.status_code in {502, 503}:
-                    new_response = RestApiResponse(response)
-                    self.log.warning(
-                        "Server returned %s status code."
-                        " Retrying with longer delay...",
-                        response.status_code
-                    )
-                    if retry_idx != 0:
-                        time.sleep(2)
-                    continue
-                break
-
-            except ConnectionRefusedError:
-                if retry_idx == 0:
-                    self.log.warning(
-                        "Connection error happened.", exc_info=True
-                    )
-
-                # Server may be restarting
-                new_response = RestApiResponse(
-                    None,
-                    {
-                        "detail": (
-                            "Unable to connect the server. Connection refused"
-                        )
-                    }
-                )
-
-            except requests.exceptions.Timeout:
-                # Connection timed out
-                new_response = RestApiResponse(
-                    None,
-                    {"detail": "Connection timed out."}
-                )
-
-            except requests.exceptions.ConnectionError:
-                # Log warning only on last attempt
-                if retry_idx == 0:
-                    self.log.warning(
-                        "Connection error happened.", exc_info=True
-                    )
-
-                new_response = RestApiResponse(
-                    None,
-                    {
-                        "detail": (
-                            "Unable to connect the server. Connection error"
-                        )
-                    }
-                )
-
-            if retry_idx != 0:
-                time.sleep(0.1)
-
-        if new_response is not None:
-            return new_response
-
-        if (
-            response is not None
-            and self._token_is_valid
-            and response.status_code == 401
-        ):
-            self._token_is_valid = False
-            self.close_session()
-
-        new_response = RestApiResponse(response)
-        self.log.debug(f"Response {str(new_response)}")
-        return new_response
 
     def raw_post(self, entrypoint: str, **kwargs):
         url = self._endpoint_to_url(entrypoint)
@@ -1589,6 +1452,9 @@ class ServerAPI(
         base_url = self._rest_url if use_rest else self._base_url
         return f"{base_url}/{endpoint}"
 
+    def _logout(self):
+        logout_from_server(self._base_url, self._access_token)
+
     def _get_server_info(self) -> dict[str, Any]:
         """Get server info without a session."""
         response = requests.get(
@@ -1598,6 +1464,139 @@ class ServerAPI(
         )
         response.raise_for_status()
         return response.json()
+
+    def _get_user_info(self) -> Optional[dict[str, Any]]:
+        if self._access_token is None:
+            return None
+
+        if self._access_token_is_service is not None:
+            response = self.get("users/me")
+            if response.status == 200:
+                return response.data
+            return None
+
+        self._access_token_is_service = False
+        response = self.get("users/me")
+        if response.status == 200:
+            return response.data
+
+        self._access_token_is_service = True
+        response = self.get("users/me")
+        if response.status == 200:
+            return response.data
+
+        self._access_token_is_service = None
+        return None
+
+    def _do_rest_request(self, function, url, **kwargs):
+        kwargs.setdefault("timeout", self.timeout)
+        max_retries = kwargs.get("max_retries", self.max_retries)
+        if max_retries < 1:
+            max_retries = 1
+
+        if self._token_is_valid is False:
+            raise UnauthorizedError(
+                "Authentication token was invalidated."
+            )
+
+        if self._session is None:
+            # Validate token if was not yet validated
+            #    - ignore validation if we're in middle of
+            #       validation
+            if (
+                self._token_is_valid is None
+                and not self._token_validation_started
+            ):
+                self.validate_token()
+
+            if "headers" not in kwargs:
+                kwargs["headers"] = self.get_headers()
+
+            if isinstance(function, RequestType):
+                function = self._base_functions_mapping[function]
+
+        elif isinstance(function, RequestType):
+            function = self._session_functions_mapping[function]
+
+        response = None
+        new_response = None
+        for retry_idx in reversed(range(max_retries)):
+            try:
+                response = function(url, **kwargs)
+
+                # Usually these mean, try later.
+                # 502: returned by the proxy: nginx
+                # 503: returned by the server: if no capacity
+                if response.status_code in {502, 503}:
+                    new_response = RestApiResponse(response)
+                    self.log.warning(
+                        "Server returned %s status code."
+                        " Retrying with longer delay...",
+                        response.status_code
+                    )
+                    if retry_idx != 0:
+                        time.sleep(2)
+                    continue
+                break
+
+            except ConnectionRefusedError:
+                if retry_idx == 0:
+                    self.log.warning(
+                        "Connection error happened.", exc_info=True
+                    )
+
+                # Server may be restarting
+                new_response = RestApiResponse(
+                    None,
+                    {
+                        "detail": (
+                            "Unable to connect the server. Connection refused"
+                        )
+                    }
+                )
+
+            except requests.exceptions.Timeout:
+                # Connection timed out
+                new_response = RestApiResponse(
+                    None,
+                    {"detail": "Connection timed out."}
+                )
+
+            except requests.exceptions.ConnectionError:
+                # Log warning only on last attempt
+                if retry_idx == 0:
+                    self.log.warning(
+                        "Connection error happened.", exc_info=True
+                    )
+
+                new_response = RestApiResponse(
+                    None,
+                    {
+                        "detail": (
+                            "Unable to connect the server. Connection error"
+                        )
+                    }
+                )
+
+            if retry_idx != 0:
+                time.sleep(0.1)
+
+        if new_response is not None:
+            return new_response
+
+        if (
+            response is not None
+            and self._token_is_valid
+            and response.status_code == 401
+        ):
+            self._token_is_valid = False
+            self.close_session()
+            self._trigger_on_invalidate_callbacks()
+
+        new_response = RestApiResponse(response)
+        self.log.debug(f"Response {str(new_response)}")
+        return new_response
+
     def _download_file_to_stream(
         self,
         endpoint: str,
