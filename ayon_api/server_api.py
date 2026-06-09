@@ -796,6 +796,7 @@ class ServerAPI(
 
         except Exception:
             self._token_info.is_valid = False
+            self._token_info.is_service = None
             self._token_info.unauthorized_response = None
             self.close_session()
             self.log.error("Failed to validate token.", exc_info=True)
@@ -811,6 +812,7 @@ class ServerAPI(
         self._token_info.token = None
         self._token_info.is_service = None
         self._token_info.is_valid = None
+        self._token_info.unauthorized_response = None
         self.close_session()
 
     def create_session(
