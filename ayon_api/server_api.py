@@ -1144,7 +1144,7 @@ class ServerAPI(
         if self._sender is not None:
             headers["x-sender"] = self._sender
 
-        if self._token_info.token:
+        if self._token_info.token and self._token_info.is_valid is not False:
             if self._token_info.is_service:
                 headers["X-Api-Key"] = self._token_info.token
                 username = self._as_user_stack.username
