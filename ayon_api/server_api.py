@@ -1183,10 +1183,12 @@ class ServerAPI(
 
         self.validate_server_availability()
 
-        response = self.post(
+        response = self.raw_post(
             "auth/login",
-            name=username,
-            password=password,
+            json=dict(
+                name=username,
+                password=password,
+            ),
             handle_invalid_token=False,
         )
         if response.status_code != 200:
