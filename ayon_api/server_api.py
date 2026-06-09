@@ -746,7 +746,8 @@ class ServerAPI(
             response = requests.get(
                 self._base_url,
                 cert=self._cert,
-                verify=self._ssl_verify
+                verify=self._ssl_verify,
+                timeout=self.timeout,
             )
             self._server_available = response.status_code == 200
         return self._server_available
