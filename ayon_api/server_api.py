@@ -1523,7 +1523,7 @@ class ServerAPI(
 
             new_response = RestApiResponse(
                 None,
-                {"code": 401, "detail": detail}
+                {"code": 401, "detail": "AYON api error: Invalid API key"}
             )
             new_response.status = 401
             return new_response
@@ -1569,7 +1569,8 @@ class ServerAPI(
             except ConnectionRefusedError:
                 if retry_idx == 0:
                     self.log.warning(
-                        "Connection error happened.", exc_info=True
+                        "AYON api error: Connection error happened.",
+                        exc_info=True,
                     )
 
                 # Server may be restarting
@@ -1577,7 +1578,8 @@ class ServerAPI(
                     None,
                     {
                         "detail": (
-                            "Unable to connect the server. Connection refused"
+                            "AYON api error: Unable to connect the server."
+                            " Connection refused"
                         )
                     }
                 )
@@ -1586,21 +1588,23 @@ class ServerAPI(
                 # Connection timed out
                 new_response = RestApiResponse(
                     None,
-                    {"detail": "Connection timed out."}
+                    {"detail": "AYON api error: Connection timed out."}
                 )
 
             except requests.exceptions.ConnectionError:
                 # Log warning only on last attempt
                 if retry_idx == 0:
                     self.log.warning(
-                        "Connection error happened.", exc_info=True
+                        "AYON api error: Connection error happened.",
+                        exc_info=True
                     )
 
                 new_response = RestApiResponse(
                     None,
                     {
                         "detail": (
-                            "Unable to connect the server. Connection error"
+                            "AYON api error: Unable to connect the server."
+                            " Connection error."
                         )
                     }
                 )
