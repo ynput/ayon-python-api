@@ -781,7 +781,8 @@ class ServerAPI(
                 self.base_url,
                 self._token_info.token,
                 verify=self._ssl_verify,
-                cert=self._cert
+                cert=self._cert,
+                timeout=self.timeout,
             )
             self._token_info.is_valid = user_info.is_valid
             is_service = None
@@ -1473,6 +1474,7 @@ class ServerAPI(
             f"{self._rest_url}/info",
             cert=self._cert,
             verify=self._ssl_verify,
+            timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
