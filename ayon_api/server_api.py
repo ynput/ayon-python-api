@@ -1193,7 +1193,7 @@ class ServerAPI(
             raise AuthenticationError(f"Login failed {details}")
 
         self._token_info.token = response["token"]
-        # Should be valid if was just loged in
+        # Should be valid if was just logged in
         self._token_info.is_valid = True
         # Service token can't be obtained by login, so it is not service token
         self._token_info.is_service = False
