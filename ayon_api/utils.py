@@ -207,11 +207,11 @@ class RestApiResponse:
     def raise_for_status(self, message=None):
         if self._response is None:
             if self._data and self._data.get("detail"):
+                if self.status_code == 401:
+                    raise UnauthorizedError(self._data["detail"])
                 raise ServerError(self._data["detail"])
             raise ValueError("Response is not available.")
 
-        if self.status_code == 401:
-            raise UnauthorizedError("Missing or invalid authentication token")
         try:
             self._response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
@@ -232,6 +232,8 @@ class RestApiResponse:
             detail = self.data.get("detail")
             if detail:
                 message = f"{message} ({detail})"
+            if self.status_code == 401:
+                raise UnauthorizedError(message, exc.response)
             raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
