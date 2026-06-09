@@ -808,6 +808,7 @@ class ServerAPI(
 
     def reset_token(self):
         self._token_info.token = None
+        self._token_info.is_service = None
         self._token_info.is_valid = None
         self.close_session()
 
