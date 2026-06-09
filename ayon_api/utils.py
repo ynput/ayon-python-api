@@ -4,7 +4,7 @@ import functools
 import os
 import re
 import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import copy
 import logging
 import json
