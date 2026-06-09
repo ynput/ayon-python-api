@@ -723,7 +723,7 @@ def get_user_info_by_token(
             'get_default_timeout' is used if not specified.
 
     Returns:
-        dict[str, Any] | None: User information if url and token are valid.
+        UserInfo: User information if url and token are valid.
 
     """
     output = UserInfo()
