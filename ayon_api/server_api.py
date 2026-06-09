@@ -511,7 +511,7 @@ class ServerAPI(
             Optional[str]: Token string or None if not authorized yet.
 
         """
-        return self.self._token_info.token
+        return self._token_info.token
 
     def is_service_user(self) -> bool:
         """Check if connection is using service API key.
