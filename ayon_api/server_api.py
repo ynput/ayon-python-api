@@ -220,6 +220,7 @@ class TokenInfo:
     token: str | None = None
     is_valid: bool | None = None
     is_service: bool | None = None
+    unauthorized_response: requests.Response | None = None
 
 
 class ServerAPI(
@@ -768,6 +769,7 @@ class ServerAPI(
     def validate_token(self) -> bool:
         if self._token_info.token is None:
             self._token_info.is_valid = False
+            self._token_info.unauthorized_response = None
             self.close_session()
             return False
 
@@ -785,6 +787,7 @@ class ServerAPI(
                 timeout=self.timeout,
             )
             self._token_info.is_valid = user_info.is_valid
+            self._token_info.unauthorized_response = user_info.response
             is_service = None
             if user_info.is_valid:
                 is_service = user_info.is_service
@@ -792,6 +795,7 @@ class ServerAPI(
 
         except Exception:
             self._token_info.is_valid = False
+            self._token_info.unauthorized_response = None
             self.close_session()
             self.log.error("Failed to validate token.", exc_info=True)
 
@@ -1514,10 +1518,9 @@ class ServerAPI(
             # Added to prevent DDOS attack on server when many requests
             #   with invalid token are send. It is better to return error
             #   immediately without trying to send a request to server.
-            # NOTE maybe store last know response data and re-use it?
-            detail = "Access token is missing"
-            if self._token_info.is_service:
-                detail = "Invalid API key"
+            if self._token_info.unauthorized_response is not None:
+                return RestApiResponse(self._token_info.unauthorized_response)
+
             new_response = RestApiResponse(
                 None,
                 {"code": 401, "detail": detail}
@@ -1615,6 +1618,7 @@ class ServerAPI(
             and self._token_info.is_valid
         ):
             self._token_info.is_valid = False
+            self._token_info.unauthorized_response = response
             self.close_session()
 
         self.log.debug(f"Response {str(new_response)}")

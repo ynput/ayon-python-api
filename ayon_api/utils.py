@@ -697,8 +697,7 @@ class UserInfo:
     """User information."""
     is_valid: bool = False
     is_service: bool = False
-    content: bytes = b""
-    data: dict[str, Any] = field(default_factory=dict)
+    response: requests.Response | None = None
 
 
 def get_user_info_by_token(
@@ -754,16 +753,11 @@ def get_user_info_by_token(
             verify=verify,
             cert=cert,
         )
-        try:
-            data = response.json()
-        except Exception:
-            data = {}
 
         output = UserInfo(
             is_valid=response.status_code == 200,
             is_service=is_service,
-            data=data,
-            content=response.content,
+            response=response,
         )
         if output.is_valid:
             break
