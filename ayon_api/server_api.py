@@ -896,10 +896,15 @@ class ServerAPI(
             dict[str, Any]: Information from server.
 
         """
-        if self._token_info.is_valid is None:
-            return self._get_server_info()
+        handle_invalid_token = (
+            self._token_info.token
+            and self._token_info.is_valid
+        )
 
-        response = self.get("info")
+        response = self.raw_get(
+            "info",
+            handle_invalid_token=handle_invalid_token,
+        )
         response.raise_for_status()
         return response.data
 
@@ -1480,14 +1485,12 @@ class ServerAPI(
 
     def _get_server_info(self) -> dict[str, Any]:
         """Get server info without a session."""
-        response = requests.get(
-            f"{self._rest_url}/info",
-            cert=self._cert,
-            verify=self._ssl_verify,
-            timeout=self.timeout,
+        response = self.raw_get(
+            "info",
+            handle_invalid_token=False,
         )
         response.raise_for_status()
-        return response.json()
+        return response.data
 
     def _get_user_info(self) -> Optional[dict[str, Any]]:
         if (
