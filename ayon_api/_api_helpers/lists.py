@@ -228,7 +228,7 @@ class ListsAPI(BaseServerAPI):
         attrib: Optional[list[dict[str, Any]]] = None,
         data: Optional[list[dict[str, Any]]] = None,
         tags: Optional[list[str]] = None,
-        entity_list_folder_id: str | None | NOT_SET = NOT_SET,
+        entity_list_folder_id: str | None | type[NOT_SET] = NOT_SET,
         owner: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> None:
@@ -243,7 +243,7 @@ class ListsAPI(BaseServerAPI):
                 entity list.
             data (Optional[dict[str, Any]]): Custom data of entity list.
             tags (Optional[list[str]]): Entity list tags.
-            entity_list_folder_id (dict[str, Any] | None | NOT_SET): New
+            entity_list_folder_id (dict[str, Any] | None | type[NOT_SET]): New
                 entity list folder id. Use 'None' to move entity list to root.
                 Use 'NOT_SET' to keep current folder.
             owner (Optional[str]): New owner of the list.
@@ -582,7 +582,7 @@ class ListsAPI(BaseServerAPI):
         entity_list_folder_id: str,
         *,
         label: str | None = None,
-        parent_id: str | None| NOT_SET = NOT_SET,
+        parent_id: str | None| type[NOT_SET] = NOT_SET,
         color: str | None = None,
         icon: str | None = None,
         scope: list[str] | None = None,
@@ -595,8 +595,8 @@ class ListsAPI(BaseServerAPI):
             project_name (str): Project name.
             entity_list_folder_id (str): Folder id that will be updated.
             label (str | None): New label of entity list folder.
-            parent_id (str | None | NOT_SET): New parent id of entity list
-                folder. If None, the folder will be moved to root.
+            parent_id (str | None | type[NOT_SET]): New parent id of entity
+                list folder. If None, the folder will be moved to root.
             color (str | None): New color of entity list folder.
             icon (str | None): New icon of entity list folder.
             scope (list[str] | None): New scope of entity list folder.
