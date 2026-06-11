@@ -199,6 +199,9 @@ def _get_typehint(annotation, api_globals):
         return typehint
     except NameError:
         print("Unknown typehint:", typehint)
+    except Exception:
+        print("Error while processing typehint:", typehint)
+        raise
 
     _typehint = typehint
     _typehing_parents = []
