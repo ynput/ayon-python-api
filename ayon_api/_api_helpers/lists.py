@@ -655,7 +655,7 @@ class ListsAPI(BaseServerAPI):
         self, project_name: str, order: list[str]
     ) -> None:
         """Change order of entity list folders.
-        
+
         Args:
             project_name (str): Project name.
             order (list[str]): List of folder ids in desired order.
