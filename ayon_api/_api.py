@@ -130,10 +130,10 @@ class GlobalServerAPI(ServerAPI):
         login is skipped.
 
         """
-        previous_token = self._access_token
+        previous_token = self._token_info.token
         super().login(username, password)
-        if self.has_valid_token and previous_token != self._access_token:
-            os.environ[SERVER_API_ENV_KEY] = self._access_token
+        if self.has_valid_token and previous_token != self._token_info.token:
+            os.environ[SERVER_API_ENV_KEY] = self._token_info.token
 
     @staticmethod
     def get_url():

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import functools
 import os
 import re
 import datetime
+from dataclasses import dataclass
 import copy
 import logging
 import json
@@ -15,6 +17,7 @@ import itertools
 from urllib.parse import urlparse, urlencode, ParseResult
 import typing
 from typing import Any, Iterable
+import warnings
 from enum import IntEnum
 
 import requests
@@ -66,6 +69,38 @@ RepresentationHierarchy = collections.namedtuple(
         "representation",
     )
 )
+
+@dataclass
+class _TimeoutWrapInfo:
+    func = None
+    args_pos = 2
+
+
+def _timeout_kwarg_deprecation(arg):
+    """Decorator to add timeout kwarg to function."""
+    # TODO remove this deprecation
+    wrap_info = _TimeoutWrapInfo()
+
+    def wrapper(*args, **kwargs):
+        if len(args) > wrap_info.args_pos:
+            warnings.warn(
+                "Timeout was passed as a positional argument please"
+                " use timeout=... keyword argument instead. This will stop"
+                " working in future versions on ayon-api.",
+                category=FutureWarning,
+                stacklevel=2,
+            )
+        return wrap_info.func(*args, **kwargs)
+
+    if not isinstance(arg, int):
+        wrap_info.func = arg
+        return functools.wraps(arg)(wrapper)
+
+    wrap_info.args_pos = arg
+    def main_wrapper(func):
+        wrap_info.func = func
+        return functools.wraps(func)(wrapper)
+    return main_wrapper
 
 
 class SortOrder(IntEnum):
@@ -172,11 +207,11 @@ class RestApiResponse:
     def raise_for_status(self, message=None):
         if self._response is None:
             if self._data and self._data.get("detail"):
+                if self.status_code == 401:
+                    raise UnauthorizedError(self._data["detail"])
                 raise ServerError(self._data["detail"])
             raise ValueError("Response is not available.")
 
-        if self.status_code == 401:
-            raise UnauthorizedError("Missing or invalid authentication token")
         try:
             self._response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
@@ -197,6 +232,8 @@ class RestApiResponse:
             detail = self.data.get("detail")
             if detail:
                 message = f"{message} ({detail})"
+            if self.status_code == 401:
+                raise UnauthorizedError(message, exc.response)
             raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
@@ -587,6 +624,7 @@ def _try_connect_to_server(
     return None
 
 
+@_timeout_kwarg_deprecation(3)
 def login_to_server(
     url: str,
     username: str,
@@ -628,6 +666,7 @@ def login_to_server(
     return token
 
 
+@_timeout_kwarg_deprecation
 def logout_from_server(
     url: str,
     token: str,
@@ -655,10 +694,86 @@ def logout_from_server(
     )
 
 
+@dataclass
+class UserInfo:
+    """User information."""
+    is_valid: bool = False
+    is_service: bool = False
+    response: requests.Response | None = None
+
+
+def get_user_info_by_token(
+    url: str,
+    token: str,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
+    timeout: float | None = None,
+) -> UserInfo:
+    """Get user information by url and token.
+
+    Args:
+        url (str): Server url.
+        token (str): User's token.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
+        timeout (float | None): Timeout for request. Value from
+            'get_default_timeout' is used if not specified.
+
+    Returns:
+        UserInfo: User information if url and token are valid.
+
+    """
+    output = UserInfo()
+    if not token:
+        return output
+
+    if timeout is None:
+        timeout = get_default_timeout()
+
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
+    base_headers = {
+        "Content-Type": "application/json",
+    }
+    for header_value, is_service in (
+        ({"Authorization": f"Bearer {token}"}, False),
+        ({"X-Api-Key": token}, True),
+    ):
+        headers = base_headers.copy()
+        headers.update(header_value)
+        response = requests.get(
+            f"{url}/api/users/me",
+            headers=headers,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+        )
+
+        output = UserInfo(
+            is_valid=response.status_code == 200,
+            is_service=is_service,
+            response=response,
+        )
+        if output.is_valid:
+            break
+    return output
+
+
+@_timeout_kwarg_deprecation
 def get_user_by_token(
     url: str,
     token: str,
     timeout: float | None = None,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> dict[str, Any] | None:
     """Get user information by url and token.
 
@@ -667,37 +782,31 @@ def get_user_by_token(
         token (str): User's token.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         dict[str, Any] | None: User information if url and token are valid.
 
     """
-    if timeout is None:
-        timeout = get_default_timeout()
-
-    base_headers = {
-        "Content-Type": "application/json",
-    }
-    for header_value in (
-        {"Authorization": f"Bearer {token}"},
-        {"X-Api-Key": token},
-    ):
-        headers = base_headers.copy()
-        headers.update(header_value)
-        response = requests.get(
-            f"{url}/api/users/me",
-            headers=headers,
-            timeout=timeout,
-        )
-        if response.status_code == 200:
-            return response.json()
+    user_info = get_user_info_by_token(
+        url, token, timeout=timeout, verify=verify, cert=cert,
+    )
+    if user_info.is_valid:
+        return user_info.data
     return None
 
 
+@_timeout_kwarg_deprecation
 def is_token_valid(
     url: str,
     token: str,
     timeout: float | None = None,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> bool:
     """Check if token is valid.
 
@@ -708,16 +817,22 @@ def is_token_valid(
         token (str): User's token.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         bool: True if token is valid.
 
     """
-    if get_user_by_token(url, token, timeout=timeout):
-        return True
-    return False
+    user_info = get_user_info_by_token(
+        url, token, timeout=timeout, verify=verify, cert=cert
+    )
+    return user_info.is_valid
 
 
+@_timeout_kwarg_deprecation(1)
 def validate_url(
     url: str,
     timeout: int | None = None,
