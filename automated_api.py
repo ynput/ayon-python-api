@@ -197,40 +197,9 @@ def _get_typehint(annotation, api_globals):
         # Test if typehint is valid for known '_api' content
         exec(f"_: {typehint} = None", api_globals)
         return typehint
-    except NameError:
-        print("Unknown typehint:", typehint)
-
-    _typehint = typehint
-    _typehing_parents = []
-    while True:
-        # Too hard to manage typehints with commas
-        if "[" not in _typehint:
-            break
-
-        parts = _typehint.split("[")
-        parent = parts.pop(0)
-
-        try:
-            # Test if typehint is valid for known '_api' content
-            exec(f"_: {parent} = None", api_globals)
-        except NameError:
-            _typehint = parent
-            break
-
-        _typehint = "[".join(parts)[:-1]
-        if "," in _typehint:
-            _typing = parent
-            break
-
-        _typehing_parents.append(parent)
-
-    if _typehing_parents:
-        typehint = _typehint
-        for parent in reversed(_typehing_parents):
-            typehint = f"{parent}[{typehint}]"
-        return typehint
-
-    return typehint
+    except Exception:
+        print("Error while processing typehint:", typehint)
+        raise
 
 
 def _get_param_typehint(param, api_globals):
@@ -452,9 +421,17 @@ def main():
     formatting_init_content = prepare_init_without_api(init_filepath)
 
     # Read content of first part of `_api.py` to get global variables
-    # - disable type checking so imports done only during typechecking are
-    #   not executed
+    # - first with disabled type checking so other files from ayon_api are
+    #   loded without any issues
     typing.TYPE_CHECKING = False
+    api_globals = {"__name__": "ayon_api._api"}
+    exec(parts[0], api_globals)
+
+    # - second with enabled type checking to get all available types in the
+    #   file
+    # NOTE The file contains 'from __future__ import annotations' so any
+    #   typehints can be used, but we should validate if are available.
+    typing.TYPE_CHECKING = True
     api_globals = {"__name__": "ayon_api._api"}
     exec(parts[0], api_globals)
 

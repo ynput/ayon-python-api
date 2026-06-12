@@ -15,11 +15,7 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from typing import TypedDict
-    from ayon_api.typing import LinkDirection
-
-    class CreateLinkData(TypedDict):
-        id: str
+    from ayon_api.typing import LinkDirection, CreateLinkData
 
 
 class LinksAPI(BaseServerAPI):
