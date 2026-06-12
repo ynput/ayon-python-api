@@ -51,6 +51,7 @@ if typing.TYPE_CHECKING:
         EntityListScope,
         BackgroundOperationTask,
         LinkDirection,
+        CreateLinkData,
         EventFilter,
         EventStatus,
         EnrollEventData,
@@ -86,7 +87,6 @@ if typing.TYPE_CHECKING:
         EntityListAttributeDefinitionDict,
         AdvancedFilterDict,
     )
-    from ._api_helpers.links import CreateLinkData
 
 
 class GlobalServerAPI(ServerAPI):

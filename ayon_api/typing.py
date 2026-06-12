@@ -128,6 +128,10 @@ AttributeType = Literal[
 LinkDirection = Literal["in", "out"]
 
 
+class CreateLinkData(TypedDict):
+    id: str
+
+
 class AttributeEnumItemDict(TypedDict):
     value: Union[str, int, float, bool]
     label: str
