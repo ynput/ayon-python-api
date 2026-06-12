@@ -774,32 +774,26 @@ class ServerAPI(
             self.close_session()
             return False
 
-        try:
-            # TODO add other possible validations
-            # - existence of 'user' key in info
-            # - validate that 'site_id' is in 'sites' in info
-            self._get_server_info()
+        # TODO add other possible validations
+        # - existence of 'user' key in info
+        # - validate that 'site_id' is in 'sites' in info
 
-            user_info = get_user_info_by_token(
-                self.base_url,
-                self._token_info.token,
-                verify=self._ssl_verify,
-                cert=self._cert,
-                timeout=self.timeout,
-            )
-            self._token_info.is_valid = user_info.is_valid
-            self._token_info.unauthorized_response = user_info.response
-            is_service = None
-            if user_info.is_valid:
-                is_service = user_info.is_service
-            self._token_info.is_service = is_service
+        # Check server url
+        self._get_server_info()
 
-        except Exception:
-            self._token_info.is_valid = False
-            self._token_info.is_service = None
-            self._token_info.unauthorized_response = None
-            self.close_session()
-            self.log.error("Failed to validate token.", exc_info=True)
+        user_info = get_user_info_by_token(
+            self.base_url,
+            self._token_info.token,
+            verify=self._ssl_verify,
+            cert=self._cert,
+            timeout=self.timeout,
+        )
+        self._token_info.is_valid = user_info.is_valid
+        self._token_info.unauthorized_response = user_info.response
+        is_service = None
+        if user_info.is_valid:
+            is_service = user_info.is_service
+        self._token_info.is_service = is_service
 
         return self._token_info.is_valid
 
