@@ -243,8 +243,8 @@ class ListsAPI(BaseServerAPI):
                 entity list.
             data (Optional[dict[str, Any]]): Custom data of entity list.
             tags (Optional[list[str]]): Entity list tags.
-            entity_list_folder_id (str | None | type[NOT_SET]): New
-                entity list folder id. Use 'None' to move entity list to root.
+            entity_list_folder_id (str | None | type[NOT_SET]): New entity
+                list folder id. Use ``None`` to move entity list to root.
                 Use 'NOT_SET' to keep current folder.
             owner (Optional[str]): New owner of the list.
             active (Optional[bool]): Change active state of entity list.

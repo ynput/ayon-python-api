@@ -8053,8 +8053,8 @@ def update_entity_list(
             entity list.
         data (Optional[dict[str, Any]]): Custom data of entity list.
         tags (Optional[list[str]]): Entity list tags.
-        entity_list_folder_id (str | None | type[NOT_SET]): New
-            entity list folder id. Use 'None' to move entity list to root.
+        entity_list_folder_id (str | None | type[NOT_SET]): New entity
+            list folder id. Use ``None`` to move entity list to root.
             Use 'NOT_SET' to keep current folder.
         owner (Optional[str]): New owner of the list.
         active (Optional[bool]): Change active state of entity list.
@@ -8331,7 +8331,7 @@ def create_entity_list_folder(
     parent_id: str | None = None,
     color: str | None = None,
     icon: str | None = None,
-    scope: list[EntityListScope] | Non] = None,
+    scope: list[EntityListScope] | None = None,
     data: dict[str, Any] | None = None,
     access: dict[str, Any] | None = None,
     entity_list_folder_id: str | None = None,
@@ -8379,7 +8379,7 @@ def update_entity_list_folder(
     parent_id: str | None | type[NOT_SET] = NOT_SET,
     color: str | None = None,
     icon: str | None = None,
-    scope: list[EntityListScope] | Non] = None,
+    scope: list[EntityListScope] | None = None,
     data: dict[str, Any] | None = None,
     access: dict[str, Any] | None = None,
 ) -> None:
