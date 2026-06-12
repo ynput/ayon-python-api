@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
         EntityListEntityType,
         EntityListAttributeDefinitionDict,
         EntityListItemMode,
+        EntityListScope,
     )
 
 
@@ -180,8 +181,7 @@ class ListsAPI(BaseServerAPI):
             data (Optional[dict[str, Any]]): Custom data of entity list.
             tags (Optional[list[str]]): Entity list tags.
             template (Optional[dict[str, Any]]): Dynamic list template.
-            entity_list_folder_id (Optional[dict[str, Any]]): Entity list
-                folder id.
+            entity_list_folder_id (Optional[str]): Entity list folder id.
             owner (Optional[str]): New owner of the list.
             active (Optional[bool]): Change active state of entity list.
             items (Optional[list[dict[str, Any]]]): Initial items in
@@ -243,7 +243,7 @@ class ListsAPI(BaseServerAPI):
                 entity list.
             data (Optional[dict[str, Any]]): Custom data of entity list.
             tags (Optional[list[str]]): Entity list tags.
-            entity_list_folder_id (dict[str, Any] | None | type[NOT_SET]): New
+            entity_list_folder_id (str | None | type[NOT_SET]): New
                 entity list folder id. Use 'None' to move entity list to root.
                 Use 'NOT_SET' to keep current folder.
             owner (Optional[str]): New owner of the list.
@@ -486,8 +486,13 @@ class ListsAPI(BaseServerAPI):
         response.raise_for_status()
         return response.data
 
-    def get_entity_list_folders_raw(self, project_name: str) -> dict:
+    def get_entity_list_folders_raw(
+        self, project_name: str
+    ) -> dict[str, Any]:
         """Get entity list folders.
+
+        Args:
+            project_name (str): Project name.
 
         Returns:
             dict[str, Any]: Raw output of entity list folders output. At this
@@ -519,9 +524,9 @@ class ListsAPI(BaseServerAPI):
         parent_id: str | None = None,
         color: str | None = None,
         icon: str | None = None,
-        scope: list[str] | None = None,
-        data: dict | None = None,
-        access: dict | None = None,
+        scope: list[EntityListScope] | None = None,
+        data: dict[str, Any] | None = None,
+        access: dict[str, Any] | None = None,
         entity_list_folder_id: str | None = None,
     ) -> str:
         """Create entity list folder.
@@ -533,9 +538,11 @@ class ListsAPI(BaseServerAPI):
                 be created in root.
             color (str | None): Folder color.
             icon (str | None): Folder icon.
-            scope (list[str] | None): Folder scope.
-            data (dict | None): Custom data of entity list folder.
-            access (dict | None): Access control for entity list folder.
+            scope (list[EntityListScope] | None): Folder scope. Empty list can
+                be used to scope folder for all views.
+            data (dict[str, Any] | None): Custom data of entity list folder.
+            access (dict[str, Any] | None): Access control for
+                entity list folder.
             entity_list_folder_id (str | None): Id of folder that will be
                 created. If None, a new id will be generated.
 
@@ -582,12 +589,12 @@ class ListsAPI(BaseServerAPI):
         entity_list_folder_id: str,
         *,
         label: str | None = None,
-        parent_id: str | None| type[NOT_SET] = NOT_SET,
+        parent_id: str | None | type[NOT_SET] = NOT_SET,
         color: str | None = None,
         icon: str | None = None,
-        scope: list[str] | None = None,
-        data: dict | None = None,
-        access: dict | None = None,
+        scope: list[EntityListScope] | None = None,
+        data: dict[str, Any] | None = None,
+        access: dict[str, Any] | None = None,
     ) -> None:
         """Update entity list folder.
 
@@ -599,9 +606,11 @@ class ListsAPI(BaseServerAPI):
                 list folder. If None, the folder will be moved to root.
             color (str | None): New color of entity list folder.
             icon (str | None): New icon of entity list folder.
-            scope (list[str] | None): New scope of entity list folder.
-            data (dict | None): Custom data of entity list folder.
-            access (dict | None): Access control for entity list folder.
+            scope (list[EntityListScope] | None): New scope of entity list
+                folder. Empty list can be used to scope folder for all views.
+            data (dict[str, Any] | None): Custom data of entity list folder.
+            access (dict[str, Any] | None): Access control for
+                entity list folder.
 
         """
         if data is None:
