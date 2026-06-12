@@ -4,16 +4,18 @@ import json
 import typing
 from typing import Optional, Iterable, Any, Generator
 
-from ayon_api.utils import create_entity_id
+from ayon_api.utils import NOT_SET, create_entity_id
 from ayon_api.graphql_queries import entity_lists_graphql_query
 
 from .base import BaseServerAPI
+
 
 if typing.TYPE_CHECKING:
     from ayon_api.typing import (
         EntityListEntityType,
         EntityListAttributeDefinitionDict,
         EntityListItemMode,
+        EntityListScope,
     )
 
 
@@ -159,6 +161,7 @@ class ListsAPI(BaseServerAPI):
         data: Optional[list[dict[str, Any]]] = None,
         tags: Optional[list[str]] = None,
         template: Optional[dict[str, Any]] = None,
+        entity_list_folder_id: Optional[str] = None,
         owner: Optional[str] = None,
         active: Optional[bool] = None,
         items: Optional[list[dict[str, Any]]] = None,
@@ -178,6 +181,7 @@ class ListsAPI(BaseServerAPI):
             data (Optional[dict[str, Any]]): Custom data of entity list.
             tags (Optional[list[str]]): Entity list tags.
             template (Optional[dict[str, Any]]): Dynamic list template.
+            entity_list_folder_id (Optional[str]): Entity list folder id.
             owner (Optional[str]): New owner of the list.
             active (Optional[bool]): Change active state of entity list.
             items (Optional[list[dict[str, Any]]]): Initial items in
@@ -199,6 +203,7 @@ class ListsAPI(BaseServerAPI):
             ("template", template),
             ("tags", tags),
             ("owner", owner),
+            ("entityListFolderId", entity_list_folder_id),
             ("data", data),
             ("active", active),
             ("items", items),
@@ -223,6 +228,7 @@ class ListsAPI(BaseServerAPI):
         attrib: Optional[list[dict[str, Any]]] = None,
         data: Optional[list[dict[str, Any]]] = None,
         tags: Optional[list[str]] = None,
+        entity_list_folder_id: str | None | type[NOT_SET] = NOT_SET,
         owner: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> None:
@@ -237,6 +243,9 @@ class ListsAPI(BaseServerAPI):
                 entity list.
             data (Optional[dict[str, Any]]): Custom data of entity list.
             tags (Optional[list[str]]): Entity list tags.
+            entity_list_folder_id (str | None | type[NOT_SET]): New entity
+                list folder id. Use ``None`` to move entity list to root.
+                Use 'NOT_SET' to keep current folder.
             owner (Optional[str]): New owner of the list.
             active (Optional[bool]): Change active state of entity list.
 
@@ -254,6 +263,9 @@ class ListsAPI(BaseServerAPI):
             )
             if value is not None
         }
+        if entity_list_folder_id is not NOT_SET:
+            kwargs["entityListFolderId"] = entity_list_folder_id
+
         response = self.patch(
             f"projects/{project_name}/lists/{list_id}",
             **kwargs
@@ -452,5 +464,214 @@ class ListsAPI(BaseServerAPI):
         """
         response = self.delete(
             f"projects/{project_name}/lists/{list_id}/items/{item_id}",
+        )
+        response.raise_for_status()
+
+    def get_entity_list_entities(
+        self, project_name: str, entity_list_id: str
+    ) -> dict[str, Any]:
+        """Get entity list items using REST API.
+
+        Args:
+            project_name (str): Project name.
+            entity_list_id (str): Entity list id.
+
+        Returns:
+            dict[str, Any]: Information about entities on the list.
+
+        """
+        response = self.get(
+            f"projects/{project_name}/lists/{entity_list_id}/entities"
+        )
+        response.raise_for_status()
+        return response.data
+
+    def get_entity_list_folders_raw(
+        self, project_name: str
+    ) -> dict[str, Any]:
+        """Get entity list folders.
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            dict[str, Any]: Raw output of entity list folders output. At this
+                moment contains only "folders" key with list of folders,
+                but it can be extended in the future.
+
+        """
+        response = self.get(f"projects/{project_name}/entityListFolders")
+        response.raise_for_status()
+        return response.data
+
+    def get_entity_list_folders(
+        self, project_name: str
+    ) -> list[dict[str, Any]]:
+        """Get entity list folders.
+
+        Returns:
+            list[dict[str, Any]]: List of entity list folders.
+
+        """
+        data = self.get_entity_list_folders_raw(project_name)
+        return data["folders"]
+
+    def create_entity_list_folder(
+        self,
+        project_name: str,
+        label: str,
+        *,
+        parent_id: str | None = None,
+        color: str | None = None,
+        icon: str | None = None,
+        scope: list[EntityListScope] | None = None,
+        data: dict[str, Any] | None = None,
+        access: dict[str, Any] | None = None,
+        entity_list_folder_id: str | None = None,
+    ) -> str:
+        """Create entity list folder.
+
+        Args:
+            project_name (str): Project name.
+            label (str): Folder label.
+            parent_id (str | None): Parent folder id. If None, the folder will
+                be created in root.
+            color (str | None): Folder color.
+            icon (str | None): Folder icon.
+            scope (list[EntityListScope] | None): Folder scope. Empty list can
+                be used to scope folder for all views.
+            data (dict[str, Any] | None): Custom data of entity list folder.
+            access (dict[str, Any] | None): Access control for
+                entity list folder.
+            entity_list_folder_id (str | None): Id of folder that will be
+                created. If None, a new id will be generated.
+
+        Returns:
+            str: Created entity list folder id.
+
+        """
+        if data is None:
+            data = {}
+
+        for key, value in (
+            ("color", color),
+            ("icon", icon),
+            ("scope", scope),
+        ):
+            if value:
+                data[key] = value
+
+        if not entity_list_folder_id:
+            entity_list_folder_id = create_entity_id()
+        body = {
+            "id": entity_list_folder_id,
+            "label": label,
+        }
+        if parent_id:
+            body["parentId"] = parent_id
+
+        if data:
+            body["data"] = data
+
+        if access:
+            body["access"] = access
+
+        response = self.post(
+            f"projects/{project_name}/entityListFolders",
+            **body
+        )
+        response.raise_for_status()
+        return entity_list_folder_id
+
+    def update_entity_list_folder(
+        self,
+        project_name: str,
+        entity_list_folder_id: str,
+        *,
+        label: str | None = None,
+        parent_id: str | None | type[NOT_SET] = NOT_SET,
+        color: str | None = None,
+        icon: str | None = None,
+        scope: list[EntityListScope] | None = None,
+        data: dict[str, Any] | None = None,
+        access: dict[str, Any] | None = None,
+    ) -> None:
+        """Update entity list folder.
+
+        Args:
+            project_name (str): Project name.
+            entity_list_folder_id (str): Folder id that will be updated.
+            label (str | None): New label of entity list folder.
+            parent_id (str | None | type[NOT_SET]): New parent id of entity
+                list folder. If None, the folder will be moved to root.
+            color (str | None): New color of entity list folder.
+            icon (str | None): New icon of entity list folder.
+            scope (list[EntityListScope] | None): New scope of entity list
+                folder. Empty list can be used to scope folder for all views.
+            data (dict[str, Any] | None): Custom data of entity list folder.
+            access (dict[str, Any] | None): Access control for
+                entity list folder.
+
+        """
+        if data is None:
+            data = {}
+
+        for key, value in (
+            ("color", color),
+            ("icon", icon),
+        ):
+            if value:
+                data[key] = value
+
+        if scope is not None:
+            data["scope"] = scope
+
+        body = {}
+        if data:
+            body["data"] = data
+        if label:
+            body["label"] = label
+        if access is not None:
+            body["access"] = access
+        if parent_id is not NOT_SET:
+            body["parentId"] = parent_id
+
+        if not body:
+            return
+
+        response = self.patch(
+            (
+                f"projects/{project_name}/"
+                f"entityListFolders/{entity_list_folder_id}"
+            ),
+            **body
+        )
+        response.raise_for_status()
+
+    def delete_entity_list_folder(
+        self,
+        project_name: str,
+        entity_list_folder_id: str,
+    ) -> None:
+        """Delete entity list folder."""
+        response = self.delete(
+            f"projects/{project_name}/"
+            f"entityListFolders/{entity_list_folder_id}"
+        )
+        response.raise_for_status()
+
+    def set_entity_list_folders_order(
+        self, project_name: str, order: list[str]
+    ) -> None:
+        """Change order of entity list folders.
+
+        Args:
+            project_name (str): Project name.
+            order (list[str]): List of folder ids in desired order.
+
+        """
+        response = self.post(
+            f"projects/{project_name}/entityListFolders/order",
+            order=order,
         )
         response.raise_for_status()

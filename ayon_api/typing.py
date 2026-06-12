@@ -47,6 +47,11 @@ EntityListItemMode = Literal[
     "delete",
 ]
 
+EntityListScope = Literal[
+    "generic",
+    "review-session",
+]
+
 EventFilterValueType = Union[
     None,
     str, int, float,
@@ -121,6 +126,10 @@ AttributeType = Literal[
 ]
 
 LinkDirection = Literal["in", "out"]
+
+
+class CreateLinkData(TypedDict):
+    id: str
 
 
 class AttributeEnumItemDict(TypedDict):
