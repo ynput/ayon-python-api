@@ -407,7 +407,7 @@ class ListsAPI(BaseServerAPI):
         list_id: str,
         item_id: str,
         *,
-        new_list_id: Optional[str],
+        new_list_id: Optional[str] = None,
         position: Optional[int] = None,
         label: Optional[str] = None,
         attrib: Optional[dict[str, Any]] = None,
