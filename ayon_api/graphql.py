@@ -4,7 +4,7 @@ import copy
 import numbers
 from abc import ABC, abstractmethod
 import typing
-from typing import Optional, Iterable, Any, Generator
+from typing import Iterable, Any, Generator
 
 from .exceptions import GraphQlQueryError, GraphQlQueryFailed
 from .utils import SortOrder
@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 FIELD_VALUE = object()
 
 
-def fields_to_dict(fields: Optional[Iterable[str]]) -> dict:
+def fields_to_dict(fields: Iterable[str] | None) -> dict:
     output = {}
     if not fields:
         return output
@@ -85,7 +85,7 @@ class GraphQlQuery:
     """
     offset = 2
 
-    def __init__(self, name: str, order: Optional[int] = None) -> None:
+    def __init__(self, name: str, order: int | None = None) -> None:
         self._name = name
         self._variables = {}
         self._children = []
@@ -140,7 +140,7 @@ class GraphQlQuery:
         return self._has_multiple_edge_fields
 
     def add_variable(
-        self, key: str, value_type: str, value: Optional[Any] = None
+        self, key: str, value_type: str, value: Any | None = None
     ) -> QueryVariable:
         """Add variable to query.
 
@@ -185,7 +185,7 @@ class GraphQlQuery:
         return self._variables[key]["variable"]
 
     def get_variable_value(
-        self, key: str, default: Optional[Any] = None
+        self, key: str, default: Any | None = None
     ) -> Any:
         """Get Current value of variable.
 
@@ -281,7 +281,7 @@ class GraphQlQuery:
 
     def get_field_by_keys(
         self, keys: Iterable[str]
-    ) -> Optional[BaseGraphQlQueryField]:
+    ) -> BaseGraphQlQueryField | None:
         keys = list(keys)
         if not keys:
             return None
@@ -294,7 +294,7 @@ class GraphQlQuery:
 
     def get_field_by_path(
         self, path: str
-    ) -> Optional[BaseGraphQlQueryField]:
+    ) -> BaseGraphQlQueryField | None:
         return self.get_field_by_keys(path.split("/"))
 
     def calculate_query(self) -> str:
@@ -469,7 +469,7 @@ class BaseGraphQlQueryField(ABC):
 
     def get_field_by_keys(
         self, keys: Iterable[str]
-    ) -> Optional[BaseGraphQlQueryField]:
+    ) -> BaseGraphQlQueryField | None:
         keys = list(keys)
         if not keys:
             return self
@@ -480,7 +480,7 @@ class BaseGraphQlQueryField(ABC):
                 return child.get_field_by_keys(keys)
         return None
 
-    def set_limit(self, limit: Optional[int]) -> None:
+    def set_limit(self, limit: int | None) -> None:
         self._limit = limit
 
     def set_order(self, order: SortOrder) -> None:
@@ -504,7 +504,7 @@ class BaseGraphQlQueryField(ABC):
         self,
         key: str,
         value_type: str,
-        value: Optional[Any] = None,
+        value: Any | None = None,
     ) -> QueryVariable:
         """Add variable to query.
 
@@ -563,7 +563,7 @@ class BaseGraphQlQueryField(ABC):
         for child in self._children:
             yield child
 
-    def sum_edge_fields(self, max_limit: Optional[int] = None) -> int:
+    def sum_edge_fields(self, max_limit: int | None = None) -> int:
         """Check how many edge fields query has.
 
         In case there are multiple edge fields or are nested the query can't
@@ -637,7 +637,7 @@ class BaseGraphQlQueryField(ABC):
             child.reset_cursor()
 
     def get_variable_value(
-        self, key: str, default: Optional[Any] = None
+        self, key: str, default: Any | None = None
     ) -> Any:
         return self._query_item.get_variable_value(key, default)
 
@@ -678,7 +678,7 @@ class BaseGraphQlQueryField(ABC):
         self.add_obj_field(item)
         return item
 
-    def _filter_value_to_str(self, value: Any) -> Optional[str]:
+    def _filter_value_to_str(self, value: Any) -> str | None:
         if isinstance(value, QueryVariable):
             if self.get_variable_value(value.variable_name) is None:
                 return None
