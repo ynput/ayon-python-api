@@ -11,10 +11,11 @@ automatically, and changing them manually can cause issues.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import os
 import socket
 import typing
-from typing import Optional, Iterable, Generator, Any
+from typing import Optional, Iterable, Generator, Any, ContextManager
 
 import requests
 
@@ -409,6 +410,32 @@ def get_default_settings_variant():
         return _get_default_settings_variant()
     con = get_server_api_connection()
     return con.get_default_settings_variant()
+
+
+@contextmanager
+def as_username(
+    username: str | None,
+    ignore_service_error: bool = False,
+) -> ContextManager[None]:
+    """Service API will temporarily work as other user.
+
+    This method can be used only if service API key is logged in.
+
+    Args:
+        username (str | None): Username to work as when service.
+        ignore_service_error (bool): Ignore error when service
+            API key is not used.
+
+    Raises:
+        ValueError: When connection is not yet authenticated or api key
+            is not service token.
+
+    """
+    con = get_server_api_connection()
+    with con.as_username(
+        username, ignore_service_error=ignore_service_error
+    ):
+        yield
 
 
 # ------------------------------------------------
