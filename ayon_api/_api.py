@@ -441,21 +441,21 @@ def as_username(
 # ------------------------------------------------
 #     This content is generated automatically.
 # ------------------------------------------------
-def get_base_url():
+def get_base_url() -> str:
     con = get_server_api_connection()
     return con.get_base_url()
 
 
-def get_rest_url():
+def get_rest_url() -> str:
     con = get_server_api_connection()
     return con.get_rest_url()
 
 
-def get_ssl_verify():
+def get_ssl_verify() -> bool | str | None:
     """Enable ssl verification.
 
     Returns:
-        bool: Current state of ssl verification.
+        bool | str | None: Current state of ssl verification.
 
     """
     con = get_server_api_connection()
@@ -463,12 +463,12 @@ def get_ssl_verify():
 
 
 def set_ssl_verify(
-    ssl_verify,
-):
+    ssl_verify: bool | str | None,
+) -> None:
     """Change ssl verification state.
 
     Args:
-        ssl_verify (Union[bool, str, None]): Enabled/disable
+        ssl_verify (bool | str | None): Enabled/disable
             ssl verification, can be a path to file.
 
     """
@@ -478,11 +478,11 @@ def set_ssl_verify(
     )
 
 
-def get_cert():
+def get_cert() -> str | None:
     """Current cert file used for connection to server.
 
     Returns:
-        Union[str, None]: Path to cert file.
+        str | None: Path to cert file.
 
     """
     con = get_server_api_connection()
@@ -490,12 +490,12 @@ def get_cert():
 
 
 def set_cert(
-    cert,
-):
+    cert: str | None,
+) -> None:
     """Change cert file used for connection to server.
 
     Args:
-        cert (Union[str, None]): Path to cert file.
+        cert (str | None): Path to cert file.
 
     """
     con = get_server_api_connection()
@@ -516,12 +516,12 @@ def get_timeout() -> float:
 
 
 def set_timeout(
-    timeout: Optional[float],
-):
+    timeout: int | float | None,
+) -> None:
     """Change timeout value for requests.
 
     Args:
-        timeout (Optional[float]): Timeout value in seconds.
+        timeout (float | None): Timeout value in seconds.
 
     """
     con = get_server_api_connection()
@@ -542,12 +542,12 @@ def get_max_retries() -> int:
 
 
 def set_max_retries(
-    max_retries: Optional[int],
-):
+    max_retries: int | None,
+) -> None:
     """Change max retries value for requests.
 
     Args:
-        max_retries (Optional[int]): Max retries value.
+        max_retries (int | None): Max retries value.
 
     """
     con = get_server_api_connection()
@@ -567,14 +567,14 @@ def is_service_user() -> bool:
     return con.is_service_user()
 
 
-def get_site_id() -> Optional[str]:
+def get_site_id() -> str | None:
     """Site id used for connection.
 
     Site id tells server from which machine/site is connection created and
     is used for default site overrides when settings are received.
 
     Returns:
-        Optional[str]: Site id value or None if not filled.
+        str | None: Site id value or None if not filled.
 
     """
     con = get_server_api_connection()
@@ -582,15 +582,15 @@ def get_site_id() -> Optional[str]:
 
 
 def set_site_id(
-    site_id: Optional[str],
-):
+    site_id: str | None,
+) -> None:
     """Change site id of connection.
 
     Behave as specific site for server. It affects default behavior of
     settings getter methods.
 
     Args:
-        site_id (Optional[str]): Site id value, or 'None' to unset.
+        site_id (str | None): Site id value, or 'None' to unset.
 
     """
     con = get_server_api_connection()
@@ -599,7 +599,7 @@ def set_site_id(
     )
 
 
-def get_client_version() -> Optional[str]:
+def get_client_version() -> str | None:
     """Version of client used to connect to server.
 
     Client version is AYON client build desktop application.
@@ -613,14 +613,14 @@ def get_client_version() -> Optional[str]:
 
 
 def set_client_version(
-    client_version: Optional[str],
-):
+    client_version: str | None,
+) -> None:
     """Set version of client used to connect to server.
 
     Client version is AYON client build desktop application.
 
     Args:
-        client_version (Optional[str]): Client version string.
+        client_version (str | None): Client version string.
 
     """
     con = get_server_api_connection()
@@ -631,7 +631,7 @@ def set_client_version(
 
 def set_default_settings_variant(
     variant: str,
-):
+) -> None:
     """Change default variant for addon settings.
 
     Note:
@@ -649,11 +649,11 @@ def set_default_settings_variant(
     )
 
 
-def get_sender() -> str:
+def get_sender() -> str | None:
     """Sender used to send requests.
 
     Returns:
-        Union[str, None]: Sender name or None.
+        str | None: Sender name or None.
 
     """
     con = get_server_api_connection()
@@ -661,12 +661,12 @@ def get_sender() -> str:
 
 
 def set_sender(
-    sender: Optional[str],
-):
+    sender: str | None,
+) -> None:
     """Change sender used for requests.
 
     Args:
-        sender (Optional[str]): Sender name or None.
+        sender (str | None): Sender name or None.
 
     """
     con = get_server_api_connection()
@@ -675,13 +675,13 @@ def set_sender(
     )
 
 
-def get_sender_type() -> Optional[str]:
+def get_sender_type() -> str | None:
     """Sender type used to send requests.
 
     Sender type is supported since AYON server 1.5.5 .
 
     Returns:
-        Optional[str]: Sender type or None.
+        str | None: Sender type or None.
 
     """
     con = get_server_api_connection()
@@ -689,12 +689,12 @@ def get_sender_type() -> Optional[str]:
 
 
 def set_sender_type(
-    sender_type: Optional[str],
-):
+    sender_type: str | None,
+) -> None:
     """Change sender type used for requests.
 
     Args:
-        sender_type (Optional[str]): Sender type or None.
+        sender_type (str | None): Sender type or None.
 
     """
     con = get_server_api_connection()
@@ -764,10 +764,10 @@ def links_graphql_support_data() -> bool:
 
 
 def get_users(
-    project_name: Optional[str] = None,
-    usernames: Optional[Iterable[str]] = None,
-    emails: Optional[Iterable[str]] = None,
-    fields: Optional[Iterable[str]] = None,
+    project_name: str | None = None,
+    usernames: Iterable[str] | None = None,
+    emails: Iterable[str] | None = None,
+    fields: Iterable[str] | None = None,
 ) -> Generator[dict[str, Any], None, None]:
     """Get Users.
 
@@ -775,14 +775,14 @@ def get_users(
         it is required to pass in 'project_name' filter.
 
     Args:
-        project_name (Optional[str]): Project name.
-        usernames (Optional[Iterable[str]]): Filter by usernames.
-        emails (Optional[Iterable[str]]): Filter by emails.
-        fields (Optional[Iterable[str]]): Fields to be queried
+        project_name (str | None): Project name.
+        usernames (Iterable[str] | None): Filter by usernames.
+        emails (Iterable[str] | None): Filter by emails.
+        fields (Iterable[str] | None): Fields to be queried
             for users.
 
     Returns:
-        Generator[dict[str, Any]]: Queried users.
+        Generator[dict[str, Any], None, None]: Queried users.
 
     """
     con = get_server_api_connection()
@@ -796,9 +796,9 @@ def get_users(
 
 def get_user_by_name(
     username: str,
-    project_name: Optional[str] = None,
-    fields: Optional[Iterable[str]] = None,
-) -> Optional[dict[str, Any]]:
+    project_name: str | None = None,
+    fields: Iterable[str] | None = None,
+) -> dict[str, Any] | None:
     """Get user by name using GraphQl.
 
     Only administrators and managers can fetch all users. For other users
@@ -806,13 +806,11 @@ def get_user_by_name(
 
     Args:
         username (str): Username.
-        project_name (Optional[str]): Define scope of project.
-        fields (Optional[Iterable[str]]): Fields to be queried
-            for users.
+        project_name (str | None): Define scope of project.
+        fields (Iterable[str] | None): Fields to be queried for users.
 
     Returns:
-        Union[dict[str, Any], None]: User info or None if user is not
-            found.
+        dict[str, Any] | None: User info or None if user is not found.
 
     """
     con = get_server_api_connection()
@@ -824,17 +822,17 @@ def get_user_by_name(
 
 
 def get_user(
-    username: Optional[str] = None,
-) -> Optional[dict[str, Any]]:
+    username: str | None = None,
+) -> dict[str, Any] | None:
     """Get user info using REST endpoint.
 
     User contains only explicitly set attributes in 'attrib'.
 
     Args:
-        username (Optional[str]): Username.
+        username (str | None): Username.
 
     Returns:
-        Optional[dict[str, Any]]: User info or None if user is not
+        dict[str, Any] | None: User info or None if user is not
             found.
 
     """
@@ -847,7 +845,7 @@ def get_user(
 def raw_post(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.raw_post(
         entrypoint=entrypoint,
@@ -858,7 +856,7 @@ def raw_post(
 def raw_put(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.raw_put(
         entrypoint=entrypoint,
@@ -869,7 +867,7 @@ def raw_put(
 def raw_patch(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.raw_patch(
         entrypoint=entrypoint,
@@ -880,7 +878,7 @@ def raw_patch(
 def raw_get(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.raw_get(
         entrypoint=entrypoint,
@@ -891,7 +889,7 @@ def raw_get(
 def raw_delete(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.raw_delete(
         entrypoint=entrypoint,
@@ -902,7 +900,7 @@ def raw_delete(
 def post(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.post(
         entrypoint=entrypoint,
@@ -913,7 +911,7 @@ def post(
 def put(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.put(
         entrypoint=entrypoint,
@@ -924,7 +922,7 @@ def put(
 def patch(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.patch(
         entrypoint=entrypoint,
@@ -935,7 +933,7 @@ def patch(
 def get(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.get(
         entrypoint=entrypoint,
@@ -946,7 +944,7 @@ def get(
 def delete(
     entrypoint: str,
     **kwargs,
-):
+) -> RestApiResponse:
     con = get_server_api_connection()
     return con.delete(
         entrypoint=entrypoint,
@@ -954,7 +952,7 @@ def delete(
     )
 
 
-def get_server_config():
+def get_server_config() -> dict[str, Any]:
     con = get_server_api_connection()
     return con.get_server_config()
 
@@ -976,14 +974,14 @@ def set_server_config(
     )
 
 
-def get_server_config_overrides():
+def get_server_config_overrides() -> dict[str, Any]:
     con = get_server_api_connection()
     return con.get_server_config_overrides()
 
 
 def get_server_config_value(
     key: str,
-):
+) -> Any:
     con = get_server_api_connection()
     return con.get_server_config_value(
         key=key,
@@ -994,8 +992,8 @@ def download_server_config_file(
     file_type: Literal["login_background", "studio_logo"],
     filepath: str,
     *,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
 ) -> TransferProgress:
     """Download server config file.
 
@@ -1024,8 +1022,8 @@ def download_server_config_file_to_stream(
     file_type: Literal["login_background", "studio_logo"],
     stream: StreamType,
     *,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
 ) -> TransferProgress:
     """Download server config file to byte stream.
 
@@ -1128,8 +1126,8 @@ def upload_server_config_file_from_stream(
 def download_file_to_stream(
     endpoint: str,
     stream: StreamType,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
 ) -> TransferProgress:
     """Download file from AYON server to IOStream.
 
@@ -1147,9 +1145,9 @@ def download_file_to_stream(
         endpoint (str): Endpoint or URL to file that should be downloaded.
         stream (StreamType): Stream where output will
             be stored.
-        chunk_size (Optional[int]): Size of chunks that are received
+        chunk_size (int | None): Size of chunks that are received
             in single loop.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track download progress.
 
     """
@@ -1165,8 +1163,8 @@ def download_file_to_stream(
 def download_file(
     endpoint: str,
     filepath: str,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
 ) -> TransferProgress:
     """Download file from AYON server.
 
@@ -1183,9 +1181,9 @@ def download_file(
     Args:
         endpoint (str): Endpoint or URL to file that should be downloaded.
         filepath (str): Path where file will be downloaded.
-        chunk_size (Optional[int]): Size of chunks that are received
+        chunk_size (int | None): Size of chunks that are received
             in single loop.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track download progress.
 
     """
@@ -1296,8 +1294,8 @@ def download_project_file(
     file_id: str,
     filepath: str,
     *,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
 ) -> TransferProgress:
     """Download project file to filepath.
 
@@ -1309,9 +1307,9 @@ def download_project_file(
         project_name (str): Project name.
         file_id (str): File id.
         filepath (str): Path where file will be downloaded.
-        chunk_size (Optional[int]): Size of chunks that are received
+        chunk_size (int | None): Size of chunks that are received
             in single loop.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track download progress.
 
     Returns:
@@ -1333,8 +1331,8 @@ def download_project_file_to_stream(
     file_id: str,
     stream: StreamType,
     *,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
 ) -> TransferProgress:
     """Download project file to a stream.
 
@@ -1346,9 +1344,9 @@ def download_project_file_to_stream(
         project_name (str): Project name.
         file_id (str): File id.
         stream (StreamType): Stream where output will be stored.
-        chunk_size (Optional[int]): Size of chunks that are received
+        chunk_size (int | None): Size of chunks that are received
             in single loop.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track download progress.
 
     Returns:
@@ -1381,11 +1379,11 @@ def delete_project_file(
 def upload_file_from_stream(
     endpoint: str,
     stream: StreamType,
-    progress: Optional[TransferProgress] = None,
-    request_type: Optional[RequestType] = None,
+    progress: TransferProgress | None = None,
+    request_type: RequestType | None = None,
     *,
-    content_type: Optional[str] = None,
-    filename: Optional[str] = None,
+    content_type: str | None = None,
+    filename: str | None = None,
     **kwargs,
 ) -> requests.Response:
     """Upload file to server from bytes.
@@ -1397,12 +1395,12 @@ def upload_file_from_stream(
     Args:
         endpoint (str): Endpoint or url where file will be uploaded.
         stream (StreamType): File content stream.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track upload progress.
-        request_type (Optional[RequestType]): Type of request that will
+        request_type (RequestType | None): Type of request that will
             be used to upload file.
-        content_type (Optional[str]): MIME type of the file.
-        filename (Optional[str]): Filename of file on server.
+        content_type (str | None): MIME type of the file.
+        filename (str | None): Filename of file on server.
         **kwargs (Any): Additional arguments that will be passed
             to request function.
 
@@ -1425,11 +1423,11 @@ def upload_file_from_stream(
 def upload_file(
     endpoint: str,
     filepath: str,
-    progress: Optional[TransferProgress] = None,
-    request_type: Optional[RequestType] = None,
+    progress: TransferProgress | None = None,
+    request_type: RequestType | None = None,
     *,
-    content_type: Optional[str] = None,
-    filename: Optional[str] = None,
+    content_type: str | None = None,
+    filename: str | None = None,
     **kwargs,
 ) -> requests.Response:
     """Upload file to server.
@@ -1441,12 +1439,12 @@ def upload_file(
     Args:
         endpoint (str): Endpoint or url where file will be uploaded.
         filepath (str): Source filepath.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track upload progress.
-        request_type (Optional[RequestType]): Type of request that will
+        request_type (RequestType | None): Type of request that will
             be used to upload file.
-        content_type (Optional[str]): MIME type of the file.
-        filename (Optional[str]): Filename of file on server.
+        content_type (str | None): MIME type of the file.
+        filename (str | None): Filename of file on server.
         **kwargs (Any): Additional arguments that will be passed
             to request function.
 
@@ -1470,10 +1468,10 @@ def upload_reviewable(
     project_name: str,
     version_id: str,
     filepath: str,
-    label: Optional[str] = None,
-    content_type: Optional[str] = None,
-    filename: Optional[str] = None,
-    progress: Optional[TransferProgress] = None,
+    label: str | None = None,
+    content_type: str | None = None,
+    filename: str | None = None,
+    progress: TransferProgress | None = None,
     **kwargs,
 ) -> requests.Response:
     """Upload reviewable file to server.
@@ -1482,12 +1480,12 @@ def upload_reviewable(
         project_name (str): Project name.
         version_id (str): Version id.
         filepath (str): Reviewable file path to upload.
-        label (Optional[str]): Reviewable label. Filled automatically
+        label (str | None): Reviewable label. Filled automatically
             server side with filename.
-        content_type (Optional[str]): MIME type of the file.
-        filename (Optional[str]): User as original filename. Filename from
+        content_type (str | None): MIME type of the file.
+        filename (str | None): User as original filename. Filename from
             'filepath' is used when not filled.
-        progress (Optional[TransferProgress]): Progress.
+        progress (TransferProgress | None): Progress.
 
     Returns:
         requests.Response: Server response.
@@ -1506,7 +1504,7 @@ def upload_reviewable(
     )
 
 
-def trigger_server_restart():
+def trigger_server_restart() -> None:
     """Trigger server restart.
 
     Restart may be required when a change of specific value happened on
@@ -1519,13 +1517,13 @@ def trigger_server_restart():
 
 def query_graphql(
     query: str,
-    variables: Optional[dict[str, Any]] = None,
+    variables: dict[str, Any] | None = None,
 ) -> GraphQlResponse:
     """Execute GraphQl query.
 
     Args:
         query (str): GraphQl query string.
-        variables (Optional[dict[str, Any]): Variables that can be
+        variables (dict[str, Any] | None): Variables that can be
             used in query.
 
     Returns:
@@ -1544,7 +1542,7 @@ def get_graphql_schema() -> dict[str, Any]:
     return con.get_graphql_schema()
 
 
-def get_server_schema() -> Optional[dict[str, Any]]:
+def get_server_schema() -> dict[str, Any] | None:
     """Get server schema with info, url paths, components etc.
 
     Todos:
@@ -1598,7 +1596,7 @@ def get_rest_entity_by_id(
     project_name: str,
     entity_type: str,
     entity_id: str,
-) -> Optional[AnyEntityDict]:
+) -> AnyEntityDict | None:
     """Get entity using REST on a project by its id.
 
     Args:
@@ -1608,7 +1606,7 @@ def get_rest_entity_by_id(
         entity_id (str): Id of entity.
 
     Returns:
-        Optional[AnyEntityDict]: Received entity data.
+        AnyEntityDict | None: Received entity data.
 
     """
     con = get_server_api_connection()
@@ -1635,9 +1633,9 @@ def send_batch_operations(
         project_name (str): On which project should be operations
             processed.
         operations (list[dict[str, Any]]): Operations to be processed.
-        can_fail (Optional[bool]): Server will try to process all
+        can_fail (bool): Server will try to process all
             operations even if one of them fails.
-        raise_on_fail (Optional[bool]): Raise exception if an operation
+        raise_on_fail (bool): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'.
 
@@ -1686,10 +1684,10 @@ def send_background_batch_operations(
         project_name (str): On which project should be operations
             processed.
         operations (list[dict[str, Any]]): Operations to be processed.
-        can_fail (Optional[bool]): Server will try to process all
+        can_fail (bool): Server will try to process all
             operations even if one of them fails.
         wait (bool): Wait for operations to end.
-        raise_on_fail (Optional[bool]): Raise exception if an operation
+        raise_on_fail (bool): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'. Used when 'wait' is enabled.
 
