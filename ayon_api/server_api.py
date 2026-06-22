@@ -1806,12 +1806,12 @@ class ServerAPI(
         project_name: str,
         filepath: str,
         *,
-        content_type: Optional[str] = None,
-        filename: Optional[str] = None,
-        file_id: Optional[str] = None,
-        activity_id: Optional[str] = None,
-        chunk_size: Optional[int] = None,
-        progress: Optional[TransferProgress] = None,
+        content_type: str | None = None,
+        filename: str | None = None,
+        file_id: str | None = None,
+        activity_id: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
     ) -> requests.Response:
         """Upload project file from a filepath.
 
@@ -1822,14 +1822,14 @@ class ServerAPI(
         Args:
             project_name (str): Project name.
             filepath (str): Path where file will be downloaded.
-            content_type (Optional[str]): MIME type of file.
-            filename (Optional[str]): Server filename, filename from filepath
+            content_type (str | None): MIME type of file.
+            filename (str | None): Server filename, filename from filepath
                 is used if not passed.
-            file_id (Optional[str]): File id.
-            activity_id (Optional[str]): To which activity is file related.
-            chunk_size (Optional[int]): Size of chunks that are received
+            file_id (str | None): File id.
+            activity_id (str | None): To which activity is file related.
+            chunk_size (int | None): Size of chunks that are received
                 in single loop.
-            progress (Optional[TransferProgress]): Object that gives ability
+            progress (TransferProgress | None): Object that gives ability
                 to track download progress.
 
         Returns:
@@ -1844,17 +1844,21 @@ class ServerAPI(
             if not content_type:
                 content_type = "application/octet-stream"
 
-        query = prepare_query_string({
-            "x_file_id": file_id,
-            "x_activity_id": activity_id,
-        })
+        headers = {}
+        if file_id:
+            headers["x-file-id"] = file_id
+
+        if activity_id:
+            headers["x-activity-id"] = activity_id
+
         return self.upload_file(
-            f"api/projects/{project_name}/files{query}",
+            f"api/projects/{project_name}/files",
             filepath,
             content_type=content_type,
             filename=filename,
             chunk_size=chunk_size,
             progress=progress,
+            headers=headers,
             request_type=RequestTypes.post,
         )
 
@@ -1864,11 +1868,11 @@ class ServerAPI(
         stream: StreamType,
         filename: str,
         *,
-        content_type: Optional[str] = None,
-        file_id: Optional[str] = None,
-        activity_id: Optional[str] = None,
-        chunk_size: Optional[int] = None,
-        progress: Optional[TransferProgress] = None,
+        content_type: str | None = None,
+        file_id: str | None = None,
+        activity_id: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
     ) -> requests.Response:
         """Upload project file from a filepath.
 
@@ -1880,12 +1884,12 @@ class ServerAPI(
             project_name (str): Project name.
             stream (StreamType): Stream used as source for upload.
             filename (str): Name of file on server.
-            content_type (Optional[str]): MIME type of file.
-            file_id (Optional[str]): File id.
-            activity_id (Optional[str]): To which activity is file related.
-            chunk_size (Optional[int]): Size of chunks that are received
+            content_type (str | None): MIME type of file.
+            file_id (str | None): File id.
+            activity_id (str | None): To which activity is file related.
+            chunk_size (int | None): Size of chunks that are received
                 in single loop.
-            progress (Optional[TransferProgress]): Object that gives ability
+            progress (TransferProgress | None): Object that gives ability
                 to track download progress.
 
         Returns:
@@ -1898,17 +1902,21 @@ class ServerAPI(
             if not content_type:
                 content_type = "application/octet-stream"
 
-        query = prepare_query_string({
-            "x_file_id": file_id,
-            "x_activity_id": activity_id,
-        })
+        headers = {}
+        if file_id:
+            headers["x-file-id"] = file_id
+
+        if activity_id:
+            headers["x-activity-id"] = activity_id
+
         return self.upload_file_from_stream(
-            f"api/projects/{project_name}/files{query}",
+            f"api/projects/{project_name}/files",
             stream,
             content_type=content_type,
             filename=filename,
             chunk_size=chunk_size,
             progress=progress,
+            headers=headers,
             request_type=RequestTypes.post,
         )
 
