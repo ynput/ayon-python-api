@@ -1202,12 +1202,12 @@ def upload_project_file(
     project_name: str,
     filepath: str,
     *,
-    content_type: Optional[str] = None,
-    filename: Optional[str] = None,
-    file_id: Optional[str] = None,
-    activity_id: Optional[str] = None,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    content_type: str | None = None,
+    filename: str | None = None,
+    file_id: str | None = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
+    **kwargs,
 ) -> requests.Response:
     """Upload project file from a filepath.
 
@@ -1218,14 +1218,13 @@ def upload_project_file(
     Args:
         project_name (str): Project name.
         filepath (str): Path where file will be downloaded.
-        content_type (Optional[str]): MIME type of file.
-        filename (Optional[str]): Server filename, filename from filepath
+        content_type (str | None): MIME type of file.
+        filename (str | None): Server filename, filename from filepath
             is used if not passed.
-        file_id (Optional[str]): File id.
-        activity_id (Optional[str]): To which activity is file related.
-        chunk_size (Optional[int]): Size of chunks that are received
+        file_id (str | None): File id.
+        chunk_size (int | None): Size of chunks that are received
             in single loop.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track download progress.
 
     Returns:
@@ -1239,9 +1238,9 @@ def upload_project_file(
         content_type=content_type,
         filename=filename,
         file_id=file_id,
-        activity_id=activity_id,
         chunk_size=chunk_size,
         progress=progress,
+        **kwargs,
     )
 
 
@@ -1250,11 +1249,11 @@ def upload_project_file_from_stream(
     stream: StreamType,
     filename: str,
     *,
-    content_type: Optional[str] = None,
-    file_id: Optional[str] = None,
-    activity_id: Optional[str] = None,
-    chunk_size: Optional[int] = None,
-    progress: Optional[TransferProgress] = None,
+    content_type: str | None = None,
+    file_id: str | None = None,
+    chunk_size: int | None = None,
+    progress: TransferProgress | None = None,
+    **kwargs,
 ) -> requests.Response:
     """Upload project file from a filepath.
 
@@ -1266,12 +1265,11 @@ def upload_project_file_from_stream(
         project_name (str): Project name.
         stream (StreamType): Stream used as source for upload.
         filename (str): Name of file on server.
-        content_type (Optional[str]): MIME type of file.
-        file_id (Optional[str]): File id.
-        activity_id (Optional[str]): To which activity is file related.
-        chunk_size (Optional[int]): Size of chunks that are received
+        content_type (str | None): MIME type of file.
+        file_id (str | None): File id.
+        chunk_size (int | None): Size of chunks that are received
             in single loop.
-        progress (Optional[TransferProgress]): Object that gives ability
+        progress (TransferProgress | None): Object that gives ability
             to track download progress.
 
     Returns:
@@ -1285,9 +1283,9 @@ def upload_project_file_from_stream(
         filename=filename,
         content_type=content_type,
         file_id=file_id,
-        activity_id=activity_id,
         chunk_size=chunk_size,
         progress=progress,
+        **kwargs,
     )
 
 
