@@ -1205,9 +1205,9 @@ def upload_project_file(
     content_type: str | None = None,
     filename: str | None = None,
     file_id: str | None = None,
+    activity_id: str | None = None,
     chunk_size: int | None = None,
     progress: TransferProgress | None = None,
-    **kwargs,
 ) -> requests.Response:
     """Upload project file from a filepath.
 
@@ -1222,6 +1222,7 @@ def upload_project_file(
         filename (str | None): Server filename, filename from filepath
             is used if not passed.
         file_id (str | None): File id.
+        activity_id (str | None): To which activity is file related.
         chunk_size (int | None): Size of chunks that are received
             in single loop.
         progress (TransferProgress | None): Object that gives ability
@@ -1238,9 +1239,9 @@ def upload_project_file(
         content_type=content_type,
         filename=filename,
         file_id=file_id,
+        activity_id=activity_id,
         chunk_size=chunk_size,
         progress=progress,
-        **kwargs,
     )
 
 
@@ -1251,9 +1252,9 @@ def upload_project_file_from_stream(
     *,
     content_type: str | None = None,
     file_id: str | None = None,
+    activity_id: str | None = None,
     chunk_size: int | None = None,
     progress: TransferProgress | None = None,
-    **kwargs,
 ) -> requests.Response:
     """Upload project file from a filepath.
 
@@ -1267,6 +1268,7 @@ def upload_project_file_from_stream(
         filename (str): Name of file on server.
         content_type (str | None): MIME type of file.
         file_id (str | None): File id.
+        activity_id (str | None): To which activity is file related.
         chunk_size (int | None): Size of chunks that are received
             in single loop.
         progress (TransferProgress | None): Object that gives ability
@@ -1283,9 +1285,9 @@ def upload_project_file_from_stream(
         filename=filename,
         content_type=content_type,
         file_id=file_id,
+        activity_id=activity_id,
         chunk_size=chunk_size,
         progress=progress,
-        **kwargs,
     )
 
 

@@ -1809,10 +1809,9 @@ class ServerAPI(
         content_type: str | None = None,
         filename: str | None = None,
         file_id: str | None = None,
+        activity_id: str | None = None,
         chunk_size: int | None = None,
         progress: TransferProgress | None = None,
-        # TODO remove when 'activity_id' is handled
-        **kwargs
     ) -> requests.Response:
         """Upload project file from a filepath.
 
@@ -1827,6 +1826,7 @@ class ServerAPI(
             filename (str | None): Server filename, filename from filepath
                 is used if not passed.
             file_id (str | None): File id.
+            activity_id (str | None): To which activity is file related.
             chunk_size (int | None): Size of chunks that are received
                 in single loop.
             progress (TransferProgress | None): Object that gives ability
@@ -1844,15 +1844,12 @@ class ServerAPI(
             if not content_type:
                 content_type = "application/octet-stream"
 
-        if "activity_id" in kwargs:
-            self.log.warning(
-                "DEV WARNING: Uploading file does not support to specify"
-                " 'activity_id'."
-            )
-
         headers = {}
         if file_id:
             headers["x-file-id"] = file_id
+
+        if activity_id:
+            headers["x-activity-id"] = activity_id
 
         return self.upload_file(
             f"api/projects/{project_name}/files",
@@ -1873,10 +1870,9 @@ class ServerAPI(
         *,
         content_type: str | None = None,
         file_id: str | None = None,
+        activity_id: str | None = None,
         chunk_size: int | None = None,
         progress: TransferProgress | None = None,
-        # TODO remove when 'activity_id' handling is removed
-        **kwargs
     ) -> requests.Response:
         """Upload project file from a filepath.
 
@@ -1890,6 +1886,7 @@ class ServerAPI(
             filename (str): Name of file on server.
             content_type (str | None): MIME type of file.
             file_id (str | None): File id.
+            activity_id (str | None): To which activity is file related.
             chunk_size (int | None): Size of chunks that are received
                 in single loop.
             progress (TransferProgress | None): Object that gives ability
@@ -1905,15 +1902,12 @@ class ServerAPI(
             if not content_type:
                 content_type = "application/octet-stream"
 
-        if "activity_id" in kwargs:
-            self.log.warning(
-                "DEV WARNING: Uploading file does not support to specify"
-                " 'activity_id'."
-            )
-
         headers = {}
         if file_id:
             headers["x-file-id"] = file_id
+
+        if activity_id:
+            headers["x-activity-id"] = activity_id
 
         return self.upload_file_from_stream(
             f"api/projects/{project_name}/files",
