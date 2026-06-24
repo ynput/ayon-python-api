@@ -269,7 +269,10 @@ def sig_params_to_str(sig, param_names, api_globals, indent=0):
         func_params.append("/")
 
     for param_name, param in pos_or_kw:
-        body_params.append(f"{param_name}={param_name}")
+        body_par = param_name
+        if not var_positional:
+            body_par = f"{param_name}={param_name}"
+        body_params.append(body_par)
         func_params.append(_kw_default_to_str(param_name, param, api_globals))
 
     if var_positional:

@@ -2982,8 +2982,8 @@ def get_addon_endpoint(
     """
     con = get_server_api_connection()
     return con.get_addon_endpoint(
-        addon_name=addon_name,
-        addon_version=addon_version,
+        addon_name,
+        addon_version,
         *subpaths,
     )
 
@@ -3032,8 +3032,8 @@ def get_addon_url(
     """
     con = get_server_api_connection()
     return con.get_addon_url(
-        addon_name=addon_name,
-        addon_version=addon_version,
+        addon_name,
+        addon_version,
         *subpaths,
         use_rest=use_rest,
     )
