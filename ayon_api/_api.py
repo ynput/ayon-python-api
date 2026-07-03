@@ -53,6 +53,7 @@ if typing.TYPE_CHECKING:
         BackgroundOperationTask,
         LinkDirection,
         CreateLinkData,
+        CreateLinkResponseData,
         EventFilter,
         EventStatus,
         EnrollEventData,
@@ -7504,7 +7505,7 @@ def create_link(
     output_type: str,
     link_name: Optional[str] = None,
     data: Optional[dict[str, Any]] = None,
-) -> CreateLinkData:
+) -> CreateLinkResponseData:
     """Create link between 2 entities.
 
     Link has a type which must already exists on a project.
@@ -7527,7 +7528,7 @@ def create_link(
             with the link.
 
     Returns:
-        CreateLinkData: Information about link.
+        CreateLinkResponseData: Information about link.
 
     Raises:
         HTTPRequestError: Server error happened.
@@ -7543,6 +7544,38 @@ def create_link(
         output_type=output_type,
         link_name=link_name,
         data=data,
+    )
+
+
+def create_links(
+    project_name: str,
+    links: list[dict[str, Any]],
+) -> None:
+    """Create multiple links in a single request.
+
+    Example of link data::
+        [
+            {
+                "input": "59a212c0d2e211eda0e20242ac120001",
+                "output": "59a212c0d2e211eda0e20242ac120002",
+                "linkType": "reference|folder|folder",
+                "name": "my_link",
+                "data": {"key": "value"}
+            }
+        ]
+
+    Args:
+        project_name (str): Project where links are created.
+        links (list[dict[str, Any]]): List of link data.
+
+    Raises:
+        ValueError: Link data is invalid.
+
+    """
+    con = get_server_api_connection()
+    return con.create_links(
+        project_name=project_name,
+        links=links,
     )
 
 
