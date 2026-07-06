@@ -7549,7 +7549,7 @@ def create_link(
 
 def create_links(
     project_name: str,
-    links: list[dict[str, Any]],
+    links: list[CreateLinkData],
 ) -> None:
     """Create multiple links in a single request.
 
@@ -7566,7 +7566,7 @@ def create_links(
 
     Args:
         project_name (str): Project where links are created.
-        links (list[dict[str, Any]]): List of link data.
+        links (list[CreateLinkData]): List of link data.
 
     Raises:
         ValueError: Link data is invalid.
