@@ -127,8 +127,16 @@ AttributeType = Literal[
 LinkDirection = Literal["in", "out"]
 
 
-class CreateLinkData(TypedDict):
+class CreateLinkResponseData(TypedDict):
     id: str
+
+
+class CreateLinkData(TypedDict):
+    input: str
+    output: str
+    linkType: str
+    data: NotRequired[dict[str, Any] | None]
+    name: NotRequired[str | None]
 
 
 class AttributeEnumItemDict(TypedDict):
