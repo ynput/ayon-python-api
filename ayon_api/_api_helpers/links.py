@@ -692,11 +692,17 @@ class LinksAPI(BaseServerAPI):
             mk = ", ".join(f"'{key}'" for key in sorted(missing_keys))
             raise ValueError(f"Missing required keys in link data: {mk}")
 
-        link_type_parts = link_data["linkType"].split("|")
+        link_type = link_data["linkType"]
+        if not isinstance(link_type, str):
+            raise ValueError(
+                f"Invalid linkType type: {type(link_type)}. Expected 'str'"
+            )
+
+        link_type_parts = link_type.split("|")
         if len(link_type_parts) != 3:
             raise ValueError(
-                f"Invalid linkType format: {link_data['linkType']}. "
-                "Expected format: 'link_type|input_type|output_type'"
+                f"Invalid linkType format: {link_type}. Expected format:"
+                " 'link_type|input_type|output_type'"
             )
 
     def _prepare_link_filters(
