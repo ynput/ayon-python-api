@@ -15,7 +15,11 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import LinkDirection, CreateLinkData
+    from ayon_api.typing import (
+        LinkDirection,
+        CreateLinkData,
+        CreateLinkResponseData,
+    )
 
 
 class LinksAPI(BaseServerAPI):
