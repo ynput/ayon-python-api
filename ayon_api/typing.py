@@ -135,8 +135,8 @@ class CreateLinkData(TypedDict):
     input: str
     output: str
     linkType: str
-    data: dict[str, Any] | None = None
-    name: str | None = None
+    data: NotRequired[dict[str, Any] | None]
+    name: NotRequired[str | None]
 
 
 class AttributeEnumItemDict(TypedDict):
