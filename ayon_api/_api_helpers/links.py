@@ -689,8 +689,8 @@ class LinksAPI(BaseServerAPI):
         required_keys = {"input", "output", "linkType"}
         missing_keys = required_keys - link_data.keys()
         if missing_keys:
-            mk = ", ".join((f"'{key}'" for key in missing_keys))
-            raise ValueError(f"Missing required keys in link data {mk}")
+            mk = ", ".join(f"'{key}'" for key in sorted(missing_keys))
+            raise ValueError(f"Missing required keys in link data: {mk}")
 
         link_type_parts = link_data["linkType"].split("|")
         if len(link_type_parts) != 3:
