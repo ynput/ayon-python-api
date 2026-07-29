@@ -189,7 +189,7 @@ class DependencyPackagesAPI(BaseServerAPI):
         route = self._get_dependency_package_route(src_filename)
         package_filepath = os.path.join(dst_directory, dst_filename)
         self.download_file(
-            route,
+            f"api/{route}",
             package_filepath,
             chunk_size=chunk_size,
             progress=progress
@@ -225,7 +225,7 @@ class DependencyPackagesAPI(BaseServerAPI):
             )
 
         route = self._get_dependency_package_route(dst_filename)
-        self.upload_file(route, src_filepath, progress=progress)
+        self.upload_file(f"api/{route}", src_filepath, progress=progress)
 
     def _get_dependency_package_route(
         self, filename: Optional[str] = None

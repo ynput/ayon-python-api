@@ -9,15 +9,12 @@ from ayon_api.utils import (
     create_entity_id,
     NOT_SET,
 )
-from ayon_api.graphql_queries import (
-    tasks_graphql_query,
-    tasks_by_folder_paths_graphql_query,
-)
+from ayon_api.graphql_queries import tasks_graphql_query
 
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import TaskDict
+    from ayon_api.typing import TaskDict, AdvancedFilterDict
 
 
 class TasksAPI(BaseServerAPI):
@@ -38,6 +35,7 @@ class TasksAPI(BaseServerAPI):
         statuses: Optional[Iterable[str]] = None,
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
     ) -> Generator[TaskDict, None, None]:
@@ -62,6 +60,7 @@ class TasksAPI(BaseServerAPI):
                 filtering.
             active (Optional[bool]): Filter active/inactive tasks.
                 Both are returned if is set to None.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -75,11 +74,11 @@ class TasksAPI(BaseServerAPI):
         if not project_name:
             return
 
-        filters = {
+        graphql_filters = {
             "projectName": project_name
         }
         if not prepare_list_filters(
-            filters,
+            graphql_filters,
             ("taskIds", task_ids),
             ("taskNames", task_names),
             ("taskTypes", task_types),
@@ -91,6 +90,10 @@ class TasksAPI(BaseServerAPI):
         ):
             return
 
+        filters = self._prepare_advanced_filters(filters)
+        if filters:
+            graphql_filters["filter"] = filters
+
         if not fields:
             fields = self.get_default_fields_for_type("task")
         else:
@@ -100,8 +103,10 @@ class TasksAPI(BaseServerAPI):
         if active is not None:
             fields.add("active")
 
+        self._prepare_link_fields(fields)
+
         query = tasks_graphql_query(fields)
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         for parsed_data in query.continuous_query(self):
@@ -193,6 +198,7 @@ class TasksAPI(BaseServerAPI):
         statuses: Optional[Iterable[str]] = None,
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes: bool = False
     ) -> dict[str, list[TaskDict]]:
@@ -215,6 +221,7 @@ class TasksAPI(BaseServerAPI):
                 filtering.
             active (Optional[bool]): Filter active/inactive tasks.
                 Both are returned if is set to None.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -226,24 +233,21 @@ class TasksAPI(BaseServerAPI):
                 folder path.
 
         """
-        folder_paths = set(folder_paths)
-        if not project_name or not folder_paths:
-            return {}
-
-        filters = {
-            "projectName": project_name,
-            "folderPaths": list(folder_paths),
+        output = {
+            folder_path: []
+            for folder_path in folder_paths
         }
-        if not prepare_list_filters(
-            filters,
-            ("taskNames", task_names),
-            ("taskTypes", task_types),
-            ("taskAssigneesAny", assignees),
-            ("taskAssigneesAll", assignees_all),
-            ("taskStatuses", statuses),
-            ("taskTags", tags),
-        ):
-            return {}
+        if not project_name or not output:
+            return output
+
+        folder_path_by_id = {
+            folder["id"]: folder["path"]
+            for folder in self.get_folders(
+                project_name,
+                folder_paths=output.keys(),
+                fields={"id", "path"},
+            )
+        }
 
         if not fields:
             fields = self.get_default_fields_for_type("task")
@@ -251,29 +255,25 @@ class TasksAPI(BaseServerAPI):
             fields = set(fields)
             self._prepare_fields("task", fields, own_attributes)
 
-        if active is not None:
-            fields.add("active")
+        fields.add("folderId")
 
-        query = tasks_by_folder_paths_graphql_query(fields)
-        for attr, filter_value in filters.items():
-            query.set_variable_value(attr, filter_value)
+        for task_entity in self.get_tasks(
+            project_name,
+            folder_ids=folder_path_by_id.keys(),
+            task_names=task_names,
+            task_types=task_types,
+            assignees=assignees,
+            assignees_all=assignees_all,
+            statuses=statuses,
+            tags=tags,
+            active=active,
+            filters=filters,
+            fields=fields,
+        ):
+            folder_id = task_entity["folderId"]
+            folder_path = folder_path_by_id[folder_id]
+            output[folder_path].append(task_entity)
 
-        output = {
-            folder_path: []
-            for folder_path in folder_paths
-        }
-        for parsed_data in query.continuous_query(self):
-            for folder in parsed_data["project"]["folders"]:
-                folder_path = folder["path"]
-                for task in folder["tasks"]:
-                    if active is not None and active is not task["active"]:
-                        continue
-
-                    self._convert_entity_data(task)
-
-                    if own_attributes:
-                        fill_own_attribs(task)
-                    output[folder_path].append(task)
         return output
 
     def get_tasks_by_folder_path(

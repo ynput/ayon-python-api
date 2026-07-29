@@ -143,7 +143,7 @@ class InstallersAPI(BaseServerAPI):
 
         """
         return self.download_file(
-            f"desktop/installers/{filename}",
+            f"api/desktop/installers/{filename}",
             dst_filepath,
             chunk_size=chunk_size,
             progress=progress
@@ -168,7 +168,7 @@ class InstallersAPI(BaseServerAPI):
 
         """
         return self.upload_file(
-            f"desktop/installers/{dst_filename}",
+            f"api/desktop/installers/{dst_filename}",
             src_filepath,
             progress=progress
         )

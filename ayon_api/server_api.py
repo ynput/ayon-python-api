@@ -5,6 +5,8 @@ Provides access to server API.
 """
 from __future__ import annotations
 
+import copy
+from dataclasses import dataclass
 import os
 import re
 import io
@@ -15,7 +17,9 @@ import platform
 import uuid
 from contextlib import contextmanager
 import typing
-from typing import Optional, Iterable, Generator, Any, Union
+from typing import (
+    Iterable, Generator, Any, Literal, ContextManager
+)
 
 import requests
 
@@ -38,6 +42,7 @@ from .constants import (
     DEFAULT_ACTIVITY_FIELDS,
     DEFAULT_USER_FIELDS,
     DEFAULT_ENTITY_LIST_FIELDS,
+    DEFAULT_LINK_FIELDS,
 )
 from .graphql import INTROSPECTION_QUERY
 from .graphql_queries import users_graphql_query
@@ -62,8 +67,10 @@ from .utils import (
     get_default_site_id,
     NOT_SET,
     get_media_mime_type,
+    get_media_mime_type_for_stream,
     get_machine_name,
     fill_own_attribs,
+    get_user_info_by_token,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -163,30 +170,29 @@ class _AsUserStack:
         self._default_user = None
 
     @property
-    def username(self) -> Optional[str]:
+    def username(self) -> str | None:
         # Use '_user_ids' for boolean check to have ability "unset"
         #   default user
         if self._user_ids:
             return self._last_user
         return self._default_user
 
-    def get_default_username(self) -> Optional[str]:
+    def get_default_username(self) -> str | None:
         return self._default_user
 
-    def set_default_username(self, username: Optional[str] = None) -> None:
+    def set_default_username(self, username: str | None = None) -> None:
         self._default_user = username
 
     default_username = property(get_default_username, set_default_username)
 
     @contextmanager
-    def as_user(self, username: Optional[str]) -> Generator[None, None, None]:
+    def as_user(self, username: str | None) -> ContextManager[None]:
         self._last_user = username
         user_id = uuid.uuid4().hex
         self._user_ids.append(user_id)
         self._users_by_id[user_id] = username
-        try:
-            yield
-        finally:
+
+        def _cleanup():
             self._users_by_id.pop(user_id, None)
             if not self._user_ids:
                 return
@@ -204,6 +210,19 @@ class _AsUserStack:
             if self._user_ids:
                 new_last_user = self._users_by_id.get(self._user_ids[-1])
             self._last_user = new_last_user
+
+        try:
+            yield
+        finally:
+            _cleanup()
+
+
+@dataclass
+class TokenInfo:
+    token: str | None = None
+    is_valid: bool | None = None
+    is_service: bool | None = None
+    unauthorized_response: requests.Response | None = None
 
 
 class ServerAPI(
@@ -234,28 +253,28 @@ class ServerAPI(
 
     Args:
         base_url (str): Example: http://localhost:5000
-        token (Optional[str]): Access token (api key) to server.
-        site_id (Optional[str]): Unique name of site. Should be the same when
+        token (str | None): Access token (api key) to server.
+        site_id (str | None): Unique name of site. Should be the same when
             connection is created from the same machine under same user.
-        client_version (Optional[str]): Version of client application (used in
+        client_version (str | None): Version of client application (used in
             desktop client application).
-        default_settings_variant (Optional[Literal["production", "staging"]]):
+        default_settings_variant (Literal["production", "staging"] | None):
             Settings variant used by default if a method for settings won't
             get any (by default is 'production').
-        sender_type (Optional[str]): Sender type of requests. Used in server
+        sender_type (str | None): Sender type of requests. Used in server
             logs and propagated into events.
-        sender (Optional[str]): Sender of requests, more specific than
+        sender (str | None): Sender of requests, more specific than
             sender type (e.g. machine name). Used in server logs and
             propagated into events.
-        ssl_verify (Optional[Union[bool, str]]): Verify SSL certificate
+        ssl_verify (bool | str | None): Verify SSL certificate
             Looks for env variable value ``AYON_CA_FILE`` by default. If not
             available then 'True' is used.
-        cert (Optional[str]): Path to certificate file. Looks for env
+        cert (str | None): Path to certificate file. Looks for env
             variable value ``AYON_CERT_FILE`` by default.
-        create_session (Optional[bool]): Create session for connection if
+        create_session (bool): Create session for connection if
             token is available. Default is True.
-        timeout (Optional[float]): Timeout for requests.
-        max_retries (Optional[int]): Number of retries for requests.
+        timeout (float | None): Timeout for requests.
+        max_retries (int | None): Number of retries for requests.
 
     """
     _default_max_retries = 3
@@ -267,18 +286,18 @@ class ServerAPI(
     def __init__(
         self,
         base_url: str,
-        token: Optional[str] = None,
-        site_id: Optional[str] = NOT_SET,
-        client_version: Optional[str] = None,
-        default_settings_variant: Optional[str] = None,
-        sender_type: Optional[str] = None,
-        sender: Optional[str] = None,
-        ssl_verify: Optional[Union[bool, str]] = None,
-        cert: Optional[str] = None,
+        token: str | None = None,
+        site_id: str | None = NOT_SET,
+        client_version: str | None = None,
+        default_settings_variant: str | None = None,
+        sender_type: str | None = None,
+        sender: str | None = None,
+        ssl_verify: bool | str | None = None,
+        cert: str | None = None,
         create_session: bool = True,
-        timeout: Optional[float] = None,
-        max_retries: Optional[int] = None,
-    ):
+        timeout: float | None = None,
+        max_retries: int | None = None,
+    ) -> None:
         if not base_url:
             raise ValueError(f"Invalid server URL {str(base_url)}")
 
@@ -287,18 +306,18 @@ class ServerAPI(
         self._rest_url: str = f"{base_url}/api"
         self._graphql_url: str = f"{base_url}/graphql"
         self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
-        self._access_token: Optional[str] = token
+
         # Allow to have 'site_id' to 'None'
         if site_id is NOT_SET:
             site_id = get_default_site_id()
-        self._site_id: Optional[str] = site_id
-        self._client_version: Optional[str] = client_version
+        self._site_id: str | None = site_id
+        self._client_version: str | None = client_version
         self._default_settings_variant: str = (
             default_settings_variant
             or get_default_settings_variant()
         )
-        self._sender: Optional[str] = sender
-        self._sender_type: Optional[str] = sender_type
+        self._sender: str | None = sender
+        self._sender_type: str | None = sender_type
 
         self._timeout: float = 0.0
         self._max_retries: int = 0
@@ -319,14 +338,15 @@ class ServerAPI(
         self._ssl_verify = ssl_verify
         self._cert = cert
 
-        self._access_token_is_service = None
-        self._token_is_valid = None
-        self._token_validation_started = False
+        self._token_info: TokenInfo = TokenInfo(token=token)
+
         self._server_available = None
         self._server_version = None
         self._server_version_tuple = None
 
-        self._graphql_allows_traits_in_representations: Optional[bool] = None
+        self._graphql_allows_traits_in_representations: bool | None = None
+        self._product_base_type_supported: bool | None = None
+        self._links_graphql_support_data: bool | None = None
 
         self._session = None
 
@@ -343,10 +363,10 @@ class ServerAPI(
         self._attributes_schema = None
         self._entity_type_attributes_cache = {}
 
-        self._as_user_stack = _AsUserStack()
+        self._as_user_stack: _AsUserStack = _AsUserStack()
 
         # Create session
-        if self._access_token and create_session:
+        if self._token_info.token and create_session:
             self.validate_server_availability()
             self.create_session()
 
@@ -354,29 +374,31 @@ class ServerAPI(
     def log(self) -> logging.Logger:
         return self._log
 
-    def get_base_url(self):
+    def get_base_url(self) -> str:
         return self._base_url
 
-    def get_rest_url(self):
+    def get_rest_url(self) -> str:
         return self._rest_url
 
     base_url = property(get_base_url)
     rest_url = property(get_rest_url)
 
-    def get_ssl_verify(self):
+    def get_ssl_verify(self) -> bool | str | None:
         """Enable ssl verification.
 
         Returns:
-            bool: Current state of ssl verification.
+            bool | str | None: Current state of ssl verification.
 
         """
         return self._ssl_verify
 
-    def set_ssl_verify(self, ssl_verify):
+    def set_ssl_verify(
+        self, ssl_verify: bool | str | None
+    ) -> None:
         """Change ssl verification state.
 
         Args:
-            ssl_verify (Union[bool, str, None]): Enabled/disable
+            ssl_verify (bool | str | None): Enabled/disable
                 ssl verification, can be a path to file.
 
         """
@@ -386,20 +408,20 @@ class ServerAPI(
         if self._session is not None:
             self._session.verify = ssl_verify
 
-    def get_cert(self):
+    def get_cert(self) -> str | None:
         """Current cert file used for connection to server.
 
         Returns:
-            Union[str, None]: Path to cert file.
+            str | None: Path to cert file.
 
         """
         return self._cert
 
-    def set_cert(self, cert):
+    def set_cert(self, cert: str | None) -> None:
         """Change cert file used for connection to server.
 
         Args:
-            cert (Union[str, None]): Path to cert file.
+            cert (str | None): Path to cert file.
 
         """
         if cert == self._cert:
@@ -412,7 +434,7 @@ class ServerAPI(
     cert = property(get_cert, set_cert)
 
     @classmethod
-    def get_default_timeout(cls):
+    def get_default_timeout(cls) -> float:
         """Default value for requests timeout.
 
         Utils function 'get_default_timeout' is used by default.
@@ -424,7 +446,7 @@ class ServerAPI(
         return get_default_timeout()
 
     @classmethod
-    def get_default_max_retries(cls):
+    def get_default_max_retries(cls) -> int:
         """Default value for requests max retries.
 
         First looks for environment variable SERVER_RETRIES_ENV_KEY, which
@@ -451,11 +473,11 @@ class ServerAPI(
         """
         return self._timeout
 
-    def set_timeout(self, timeout: Optional[float]):
+    def set_timeout(self, timeout: int | float | None) -> None:
         """Change timeout value for requests.
 
         Args:
-            timeout (Optional[float]): Timeout value in seconds.
+            timeout (float | None): Timeout value in seconds.
 
         """
         if timeout is None:
@@ -471,11 +493,11 @@ class ServerAPI(
         """
         return self._max_retries
 
-    def set_max_retries(self, max_retries: Optional[int]):
+    def set_max_retries(self, max_retries: int | None) -> None:
         """Change max retries value for requests.
 
         Args:
-            max_retries (Optional[int]): Max retries value.
+            max_retries (int | None): Max retries value.
 
         """
         if max_retries is None:
@@ -486,14 +508,14 @@ class ServerAPI(
     max_retries = property(get_max_retries, set_max_retries)
 
     @property
-    def access_token(self) -> Optional[str]:
+    def access_token(self) -> str | None:
         """Access token used for authorization to server.
 
         Returns:
-            Optional[str]: Token string or None if not authorized yet.
+            str | None: Token string or None if not authorized yet.
 
         """
-        return self._access_token
+        return self._token_info.token
 
     def is_service_user(self) -> bool:
         """Check if connection is using service API key.
@@ -504,28 +526,28 @@ class ServerAPI(
         """
         if not self.has_valid_token:
             raise ValueError("User is not logged in.")
-        return bool(self._access_token_is_service)
+        return bool(self._token_info.is_service)
 
-    def get_site_id(self) -> Optional[str]:
+    def get_site_id(self) -> str | None:
         """Site id used for connection.
 
         Site id tells server from which machine/site is connection created and
         is used for default site overrides when settings are received.
 
         Returns:
-            Optional[str]: Site id value or None if not filled.
+            str | None: Site id value or None if not filled.
 
         """
         return self._site_id
 
-    def set_site_id(self, site_id: Optional[str]):
+    def set_site_id(self, site_id: str | None) -> None:
         """Change site id of connection.
 
         Behave as specific site for server. It affects default behavior of
         settings getter methods.
 
         Args:
-            site_id (Optional[str]): Site id value, or 'None' to unset.
+            site_id (str | None): Site id value, or 'None' to unset.
 
         """
         if self._site_id == site_id:
@@ -536,7 +558,7 @@ class ServerAPI(
 
     site_id = property(get_site_id, set_site_id)
 
-    def get_client_version(self) -> Optional[str]:
+    def get_client_version(self) -> str | None:
         """Version of client used to connect to server.
 
         Client version is AYON client build desktop application.
@@ -547,13 +569,13 @@ class ServerAPI(
         """
         return self._client_version
 
-    def set_client_version(self, client_version: Optional[str]):
+    def set_client_version(self, client_version: str | None) -> None:
         """Set version of client used to connect to server.
 
         Client version is AYON client build desktop application.
 
         Args:
-            client_version (Optional[str]): Client version string.
+            client_version (str | None): Client version string.
 
         """
         if self._client_version == client_version:
@@ -564,16 +586,16 @@ class ServerAPI(
 
     client_version = property(get_client_version, set_client_version)
 
-    def get_default_settings_variant(self) -> str:
+    def get_default_settings_variant(self) -> str | None:
         """Default variant used for settings.
 
         Returns:
-            Union[str, None]: name of variant or None.
+            str | None: name of variant or None.
 
         """
         return self._default_settings_variant
 
-    def set_default_settings_variant(self, variant: str):
+    def set_default_settings_variant(self, variant: str) -> None:
         """Change default variant for addon settings.
 
         Note:
@@ -592,20 +614,20 @@ class ServerAPI(
         set_default_settings_variant
     )
 
-    def get_sender(self) -> str:
+    def get_sender(self) -> str | None:
         """Sender used to send requests.
 
         Returns:
-            Union[str, None]: Sender name or None.
+            str | None: Sender name or None.
 
         """
         return self._sender
 
-    def set_sender(self, sender: Optional[str]):
+    def set_sender(self, sender: str | None) -> None:
         """Change sender used for requests.
 
         Args:
-            sender (Optional[str]): Sender name or None.
+            sender (str | None): Sender name or None.
 
         """
         if sender == self._sender:
@@ -615,22 +637,22 @@ class ServerAPI(
 
     sender = property(get_sender, set_sender)
 
-    def get_sender_type(self) -> Optional[str]:
+    def get_sender_type(self) -> str | None:
         """Sender type used to send requests.
 
         Sender type is supported since AYON server 1.5.5 .
 
         Returns:
-            Optional[str]: Sender type or None.
+            str | None: Sender type or None.
 
         """
         return self._sender_type
 
-    def set_sender_type(self, sender_type: Optional[str]):
+    def set_sender_type(self, sender_type: str | None) -> None:
         """Change sender type used for requests.
 
         Args:
-            sender_type (Optional[str]): Sender type or None.
+            sender_type (str | None): Sender type or None.
 
         """
         if sender_type == self._sender_type:
@@ -640,16 +662,18 @@ class ServerAPI(
 
     sender_type = property(get_sender_type, set_sender_type)
 
-    def get_default_service_username(self) -> Optional[str]:
+    def get_default_service_username(self) -> str | None:
         """Default username used for callbacks when used with service API key.
 
         Returns:
-            Union[str, None]: Username if any was filled.
+            str | None: Username if any was filled.
 
         """
         return self._as_user_stack.get_default_username()
 
-    def set_default_service_username(self, username: Optional[str] = None):
+    def set_default_service_username(
+        self, username: str | None = None
+    ) -> None:
         """Service API will work as other user.
 
         Service API keys can work as other user. It can be temporary using
@@ -657,7 +681,7 @@ class ServerAPI(
         'as_user' context manager is not entered.
 
         Args:
-            username (Optional[str]): Username to work as when service.
+            username (str | None): Username to work as when service.
 
         Raises:
             ValueError: When connection is not yet authenticated or api key
@@ -673,7 +697,7 @@ class ServerAPI(
                 "Authentication of connection did not happen yet."
             )
 
-        if not self._access_token_is_service:
+        if not self._token_info.is_service:
             raise ValueError(
                 "Can't set service username. API key is not a service token."
             )
@@ -685,16 +709,16 @@ class ServerAPI(
     @contextmanager
     def as_username(
         self,
-        username: Optional[str],
+        username: str | None,
         ignore_service_error: bool = False,
-    ):
+    ) -> ContextManager[None]:
         """Service API will temporarily work as other user.
 
         This method can be used only if service API key is logged in.
 
         Args:
-            username (Optional[str]): Username to work as when service.
-            ignore_service_error (Optional[bool]): Ignore error when service
+            username (str | None): Username to work as when service.
+            ignore_service_error (bool): Ignore error when service
                 API key is not used.
 
         Raises:
@@ -707,18 +731,18 @@ class ServerAPI(
                 "Authentication of connection did not happen yet."
             )
 
-        if not self._access_token_is_service:
+        if not self._token_info.is_service:
             if ignore_service_error:
-                yield None
+                yield
                 return
             raise ValueError(
                 "Can't set service username. API key is not a service token."
             )
 
         try:
-            with self._as_user_stack.as_user(username) as o:
+            with self._as_user_stack.as_user(username):
                 self._update_session_headers()
-                yield o
+                yield
         finally:
             self._update_session_headers()
 
@@ -728,56 +752,72 @@ class ServerAPI(
             response = requests.get(
                 self._base_url,
                 cert=self._cert,
-                verify=self._ssl_verify
+                verify=self._ssl_verify,
+                timeout=self.timeout,
             )
             self._server_available = response.status_code == 200
         return self._server_available
 
     @property
     def has_valid_token(self) -> bool:
-        if self._access_token is None:
+        if self._token_info.token is None:
             return False
 
-        if self._token_is_valid is None:
+        if self._token_info.is_valid is None:
             self.validate_token()
-        return self._token_is_valid
+        return self._token_info.is_valid
 
-    def validate_server_availability(self):
+    def validate_server_availability(self) -> None:
         if not self.is_server_available:
             raise ServerNotReached(
                 f"Server \"{self._base_url}\" can't be reached"
             )
 
     def validate_token(self) -> bool:
-        try:
-            self._token_validation_started = True
-            # TODO add other possible validations
-            # - existence of 'user' key in info
-            # - validate that 'site_id' is in 'sites' in info
-            self.get_info()
-            self.get_user()
-            self._token_is_valid = True
+        if self._token_info.token is None:
+            self._token_info.is_valid = False
+            self._token_info.unauthorized_response = None
+            self.close_session()
+            return False
 
-        except UnauthorizedError:
-            self._token_is_valid = False
+        # TODO add other possible validations
+        # - existence of 'user' key in info
+        # - validate that 'site_id' is in 'sites' in info
 
-        finally:
-            self._token_validation_started = False
-        return self._token_is_valid
+        # Check server url
+        self._get_server_info()
 
-    def set_token(self, token: Optional[str]):
+        user_info = get_user_info_by_token(
+            self.base_url,
+            self._token_info.token,
+            verify=self._ssl_verify,
+            cert=self._cert,
+            timeout=self.timeout,
+        )
+        self._token_info.is_valid = user_info.is_valid
+        self._token_info.unauthorized_response = user_info.response
+        is_service = None
+        if user_info.is_valid:
+            is_service = user_info.is_service
+        self._token_info.is_service = is_service
+
+        return self._token_info.is_valid
+
+    def set_token(self, token: str | None) -> None:
         self.reset_token()
-        self._access_token = token
-        self.get_user()
+        self._token_info.token = token
+        self.validate_token()
 
-    def reset_token(self):
-        self._access_token = None
-        self._token_is_valid = None
+    def reset_token(self) -> None:
+        self._token_info.token = None
+        self._token_info.is_service = None
+        self._token_info.is_valid = None
+        self._token_info.unauthorized_response = None
         self.close_session()
 
     def create_session(
         self, ignore_existing: bool = True, force: bool = False
-    ):
+    ) -> None:
         """Create a connection session.
 
         Session helps to keep connection with server without
@@ -816,7 +856,7 @@ class ServerAPI(
         }
         self._session = session
 
-    def close_session(self):
+    def close_session(self) -> None:
         if self._session is None:
             return
 
@@ -825,7 +865,7 @@ class ServerAPI(
         self._session_functions_mapping = {}
         session.close()
 
-    def _update_session_headers(self):
+    def _update_session_headers(self) -> None:
         if self._session is None:
             return
 
@@ -856,7 +896,15 @@ class ServerAPI(
             dict[str, Any]: Information from server.
 
         """
-        response = self.get("info")
+        handle_invalid_token = (
+            self._token_info.token
+            and self._token_info.is_valid
+        )
+
+        response = self.raw_get(
+            "info",
+            handle_invalid_token=handle_invalid_token,
+        )
         response.raise_for_status()
         return response.data
 
@@ -911,35 +959,30 @@ class ServerAPI(
             )
         return self._graphql_allows_traits_in_representations
 
-    def _get_user_info(self) -> Optional[dict[str, Any]]:
-        if self._access_token is None:
-            return None
+    def is_product_base_type_supported(self) -> bool:
+        """Product base types are available on server."""
+        if self._product_base_type_supported is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            self._product_base_type_supported = (
+                    (major, minor, patch) >= (1, 13, 0)
+            )
+        return self._product_base_type_supported
 
-        if self._access_token_is_service is not None:
-            response = self.get("users/me")
-            if response.status == 200:
-                return response.data
-            return None
-
-        self._access_token_is_service = False
-        response = self.get("users/me")
-        if response.status == 200:
-            return response.data
-
-        self._access_token_is_service = True
-        response = self.get("users/me")
-        if response.status == 200:
-            return response.data
-
-        self._access_token_is_service = None
-        return None
+    def links_graphql_support_data(self) -> bool:
+        """Links data can be received by GraphQl."""
+        if self._links_graphql_support_data is None:
+            major, minor, patch, _, _ = self.server_version_tuple
+            self._links_graphql_support_data = (
+                (major, minor, patch) >= (1, 14, 2)
+            )
+        return self._links_graphql_support_data
 
     def get_users(
         self,
-        project_name: Optional[str] = None,
-        usernames: Optional[Iterable[str]] = None,
-        emails: Optional[Iterable[str]] = None,
-        fields: Optional[Iterable[str]] = None,
+        project_name: str | None = None,
+        usernames: Iterable[str] | None = None,
+        emails: Iterable[str] | None = None,
+        fields: Iterable[str] | None = None,
     ) -> Generator[dict[str, Any], None, None]:
         """Get Users.
 
@@ -947,14 +990,14 @@ class ServerAPI(
             it is required to pass in 'project_name' filter.
 
         Args:
-            project_name (Optional[str]): Project name.
-            usernames (Optional[Iterable[str]]): Filter by usernames.
-            emails (Optional[Iterable[str]]): Filter by emails.
-            fields (Optional[Iterable[str]]): Fields to be queried
+            project_name (str | None): Project name.
+            usernames (Iterable[str] | None): Filter by usernames.
+            emails (Iterable[str] | None): Filter by emails.
+            fields (Iterable[str] | None): Fields to be queried
                 for users.
 
         Returns:
-            Generator[dict[str, Any]]: Queried users.
+            Generator[dict[str, Any], None, None]: Queried users.
 
         """
         filters = {}
@@ -985,37 +1028,45 @@ class ServerAPI(
 
         if not fields:
             fields = self.get_default_fields_for_type("user")
+        else:
+            fields = set(fields)
+            self._prepare_fields("user", fields)
 
-        query = users_graphql_query(set(fields))
+        query = users_graphql_query(fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
 
-        attributes = self.get_attributes_for_type("user")
+        attributes = {}
+        if "allAttrib" in fields:
+            attributes = self.get_attributes_for_type("user")
+
         for parsed_data in query.continuous_query(self):
             for user in parsed_data["users"]:
                 access_groups = user.get("accessGroups")
                 if isinstance(access_groups, str):
                     user["accessGroups"] = json.loads(access_groups)
-                all_attrib = user.get("allAttrib")
-                if isinstance(all_attrib, str):
-                    user["allAttrib"] = json.loads(all_attrib)
-                if "attrib" in user:
-                    user["ownAttrib"] = user["attrib"].copy()
-                    attrib = user["attrib"]
-                    for key, value in tuple(attrib.items()):
-                        if value is not None:
-                            continue
-                        attr_def = attributes.get(key)
-                        if attr_def is not None:
-                            attrib[key] = attr_def["default"]
+
+                attrib = user.get("allAttrib")
+                if isinstance(attrib, str):
+                    attrib = json.loads(attrib)
+
+                if attrib is not None:
+                    own_attrib = copy.deepcopy(attrib)
+                    user["ownAttrib"] = own_attrib
+                    for name, attr_data in attributes.items():
+                        attrib.setdefault(name, attr_data["default"])
+                        own_attrib.setdefault(name, None)
+
+                    user["attrib"] = attrib
+
                 yield user
 
     def get_user_by_name(
         self,
         username: str,
-        project_name: Optional[str] = None,
-        fields: Optional[Iterable[str]] = None,
-    ) -> Optional[dict[str, Any]]:
+        project_name: str | None = None,
+        fields: Iterable[str] | None = None,
+    ) -> dict[str, Any] | None:
         """Get user by name using GraphQl.
 
         Only administrators and managers can fetch all users. For other users
@@ -1023,13 +1074,11 @@ class ServerAPI(
 
         Args:
             username (str): Username.
-            project_name (Optional[str]): Define scope of project.
-            fields (Optional[Iterable[str]]): Fields to be queried
-                for users.
+            project_name (str | None): Define scope of project.
+            fields (Iterable[str] | None): Fields to be queried for users.
 
         Returns:
-            Union[dict[str, Any], None]: User info or None if user is not
-                found.
+            dict[str, Any] | None: User info or None if user is not found.
 
         """
         if not username:
@@ -1044,17 +1093,17 @@ class ServerAPI(
         return None
 
     def get_user(
-        self, username: Optional[str] = None
-    ) -> Optional[dict[str, Any]]:
+        self, username: str | None = None
+    ) -> dict[str, Any] | None:
         """Get user info using REST endpoint.
 
         User contains only explicitly set attributes in 'attrib'.
 
         Args:
-            username (Optional[str]): Username.
+            username (str | None): Username.
 
         Returns:
-            Optional[dict[str, Any]]: User info or None if user is not
+            dict[str, Any] | None: User info or None if user is not
                 found.
 
         """
@@ -1067,16 +1116,15 @@ class ServerAPI(
             response.raise_for_status()
             user = response.data
 
-        # NOTE Server does return only filled attributes right now.
-        #   This would fill all missing attributes with 'None'.
-        # for attr_name in self.get_attributes_for_type("user"):
-        #     user["attrib"].setdefault(attr_name, None)
+        attributes = self.get_attributes_for_type("user")
+        for attr_name, attr_data in attributes.items():
+            user["attrib"].setdefault(attr_name, attr_data["default"])
 
         fill_own_attribs(user)
         return user
 
     def get_headers(
-        self, content_type: Optional[str] = None
+        self, content_type: str | None = None
     ) -> dict[str, str]:
         if content_type is None:
             content_type = "application/json"
@@ -1099,25 +1147,28 @@ class ServerAPI(
         if self._sender is not None:
             headers["x-sender"] = self._sender
 
-        if self._access_token:
-            if self._access_token_is_service:
-                headers["X-Api-Key"] = self._access_token
+        if self._token_info.token and self._token_info.is_valid is not False:
+            if self._token_info.is_service:
+                headers["X-Api-Key"] = self._token_info.token
                 username = self._as_user_stack.username
                 if username:
                     headers["X-as-user"] = username
             else:
-                headers["Authorization"] = f"Bearer {self._access_token}"
+                headers["Authorization"] = f"Bearer {self._token_info.token}"
         return headers
 
     def login(
-        self, username: str, password: str, create_session: bool = True
-    ):
+        self,
+        username: str,
+        password: str,
+        create_session: bool = True,
+    ) -> None:
         """Login to server.
 
         Args:
             username (str): Username.
             password (str): Password.
-            create_session (Optional[bool]): Create session after login.
+            create_session (bool): Create session after login.
                 Default: True.
 
         Raises:
@@ -1141,26 +1192,27 @@ class ServerAPI(
 
         self.validate_server_availability()
 
-        self._token_validation_started = True
-
-        try:
-            response = self.post(
-                "auth/login",
+        response = self.raw_post(
+            "auth/login",
+            json=dict(
                 name=username,
-                password=password
-            )
-            if response.status_code != 200:
-                _detail = response.data.get("detail")
-                details = ""
-                if _detail:
-                    details = f" {_detail}"
+                password=password,
+            ),
+            handle_invalid_token=False,
+        )
+        if response.status_code != 200:
+            _detail = response.data.get("detail")
+            details = ""
+            if _detail:
+                details = f" {_detail}"
 
-                raise AuthenticationError(f"Login failed {details}")
+            raise AuthenticationError(f"Login failed {details}")
 
-        finally:
-            self._token_validation_started = False
-
-        self._access_token = response["token"]
+        self._token_info.token = response["token"]
+        # Should be valid if was just logged in
+        self._token_info.is_valid = True
+        # Service token can't be obtained by login, so it is not service token
+        self._token_info.is_service = False
 
         if not self.has_valid_token:
             raise AuthenticationError("Invalid credentials")
@@ -1168,27 +1220,329 @@ class ServerAPI(
         if create_session:
             self.create_session()
 
-    def logout(self, soft: bool = False):
-        if self._access_token:
+    def logout(self, soft: bool = False) -> None:
+        if self._token_info.token:
             if not soft:
                 self._logout()
             self.reset_token()
 
-    def _logout(self):
-        logout_from_server(self._base_url, self._access_token)
+    def raw_post(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug(f"Executing [POST] {url}")
+        return self._do_rest_request(
+            RequestTypes.post,
+            url,
+            **kwargs
+        )
 
-    def _do_rest_request(self, function, url, **kwargs):
+    def raw_put(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug(f"Executing [PUT] {url}")
+        return self._do_rest_request(
+            RequestTypes.put,
+            url,
+            **kwargs
+        )
+
+    def raw_patch(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug(f"Executing [PATCH] {url}")
+        return self._do_rest_request(
+            RequestTypes.patch,
+            url,
+            **kwargs
+        )
+
+    def raw_get(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug(f"Executing [GET] {url}")
+        return self._do_rest_request(
+            RequestTypes.get,
+            url,
+            **kwargs
+        )
+
+    def raw_delete(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        url = self._endpoint_to_url(entrypoint)
+        self.log.debug(f"Executing [DELETE] {url}")
+        return self._do_rest_request(
+            RequestTypes.delete,
+            url,
+            **kwargs
+        )
+
+    def post(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        return self.raw_post(entrypoint, json=kwargs)
+
+    def put(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        return self.raw_put(entrypoint, json=kwargs)
+
+    def patch(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        return self.raw_patch(entrypoint, json=kwargs)
+
+    def get(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        return self.raw_get(entrypoint, params=kwargs)
+
+    def delete(self, entrypoint: str, **kwargs) -> RestApiResponse:
+        return self.raw_delete(entrypoint, params=kwargs)
+
+    def get_server_config(self) -> dict[str, Any]:
+        response = self.get("config")
+        response.raise_for_status()
+        return response.data
+
+    def set_server_config(
+        self,
+        studio_name: str | None = None,
+        customization: dict[str, Any] | None = None,
+        authentication: dict[str, Any] | None = None,
+        project_options: dict[str, Any] | None = None,
+        changelog: dict[str, Any] | None = None,
+    ) -> None:
+        body = {
+            key: value
+            for key, value in (
+                ("studio_name", studio_name),
+                ("customization", customization),
+                ("authentication", authentication),
+                ("project_options", project_options),
+                ("changelog", changelog),
+            )
+            if value is not None
+        }
+        response = self.post("config", **body)
+        response.raise_for_status()
+
+    def get_server_config_overrides(self) -> dict[str, Any]:
+        response = self.get("config/overrides")
+        response.raise_for_status()
+        return response.data
+
+    def get_server_config_value(self, key: str) -> Any:
+        response = self.get(f"config/value/{key}")
+        response.raise_for_status()
+        return response.data
+
+    def download_server_config_file(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        filepath: str,
+        *,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> TransferProgress:
+        """Download server config file.
+
+        Validate if server has config file available first. Method crashes
+            if the file is not available.
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            filepath (str): Target filepath.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        """
+        return self.download_file(
+            f"api/config/files/{file_type}",
+            filepath,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def download_server_config_file_to_stream(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        stream: StreamType,
+        *,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> TransferProgress:
+        """Download server config file to byte stream.
+
+        Validate if server has config file available first. Method crashes
+            if the file is not available.
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            stream (StreamType): Stream where downloaded content is stored.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        """
+        return self.download_file_to_stream(
+            f"api/config/files/{file_type}",
+            stream,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def upload_server_config_file(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        filepath: str,
+        *,
+        content_type: str | None = None,
+        filename: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> requests.Response:
+        """Upload server config file from byte stream.
+
+        TODO create filename using file_type and extension from content_type
+            if filename is not specified
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            filepath (str): Filepath used to store the file.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        Returns:
+            requests.Response: Response from upload.
+
+        """
+        if not filename:
+            filename = os.path.basename(filepath)
+        return self.upload_file(
+            f"api/config/files/{file_type}",
+            filepath,
+            filename=filename,
+            content_type=content_type,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def upload_server_config_file_from_stream(
+        self,
+        file_type: Literal["login_background", "studio_logo"],
+        stream: StreamType,
+        filename: str,
+        *,
+        content_type: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> requests.Response:
+        """Upload server config file from byte stream.
+
+        TODO create filename using file_type and extension from content_type
+            if filename is not specified
+
+        Args:
+            file_type (Literal["login_background", "studio_logo"]): File to
+                download.
+            stream (StreamType): Stream where downloaded content is stored.
+            filename (str): Filename used to store the file.
+            chunk_size (int | None): Size of chunks used for download.
+            progress (TransferProgress | None): Object to track download
+                progress.
+
+        Returns:
+            requests.Response: Response from upload.
+
+        """
+        return self.upload_file_from_stream(
+            f"api/config/files/{file_type}",
+            stream,
+            filename=filename,
+            content_type=content_type,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def _endpoint_to_url(
+        self,
+        endpoint: str,
+        use_rest: bool = True,
+    ) -> str:
+        """Cleanup endpoint and return full url to AYON server.
+
+        If endpoint already starts with server url only slashes are removed.
+
+        Args:
+            endpoint (str): Endpoint to be cleaned.
+            use_rest (bool): Use only base server url if set to
+                False, otherwise REST endpoint is used.
+
+        Returns:
+            str: Full url to AYON server.
+
+        """
+        endpoint = endpoint.lstrip("/").rstrip("/")
+        if endpoint.startswith(self._base_url):
+            return endpoint
+        base_url = self._rest_url if use_rest else self._base_url
+        return f"{base_url}/{endpoint}"
+
+    def _logout(self) -> None:
+        if self._token_info.is_valid:
+            logout_from_server(self._base_url, self._token_info.token)
+
+    def _get_server_info(self) -> dict[str, Any]:
+        """Get server info without a session."""
+        response = self.raw_get(
+            "info",
+            handle_invalid_token=False,
+        )
+        response.raise_for_status()
+        return response.data
+
+    def _get_user_info(self) -> dict[str, Any] | None:
+        if (
+            self._token_info.token is None
+            or self._token_info.is_valid is False
+        ):
+            return None
+
+        if self._token_info.is_service is None:
+            self.validate_token()
+            if self._token_info.is_valid is False:
+                return None
+
+        response = self.get("users/me")
+        if response.status == 200:
+            return response.data
+        return None
+
+    def _do_rest_request(
+        self,
+        function: Any,
+        url: str,
+        *,
+        handle_invalid_token: bool = True,
+        **kwargs
+    ) -> RestApiResponse:
         kwargs.setdefault("timeout", self.timeout)
         max_retries = kwargs.get("max_retries", self.max_retries)
         if max_retries < 1:
             max_retries = 1
+
+        if handle_invalid_token and self._token_info.is_valid is False:
+            # Return a fake error response if the token is known to be invalid.
+            # Added to prevent DDOS attack on server when many requests
+            #   with invalid token are send. It is better to return error
+            #   immediately without trying to send a request to server.
+            if self._token_info.unauthorized_response is not None:
+                return RestApiResponse(self._token_info.unauthorized_response)
+
+            new_response = RestApiResponse(
+                None,
+                {"code": 401, "detail": "AYON api error: Invalid API key"}
+            )
+            new_response.status = 401
+            return new_response
+
         if self._session is None:
             # Validate token if was not yet validated
-            #    - ignore validation if we're in middle of
-            #       validation
             if (
-                self._token_is_valid is None
-                and not self._token_validation_started
+                handle_invalid_token
+                and self._token_info.is_valid is None
             ):
                 self.validate_token()
 
@@ -1206,12 +1560,27 @@ class ServerAPI(
         for retry_idx in reversed(range(max_retries)):
             try:
                 response = function(url, **kwargs)
+
+                # Usually these mean, try later.
+                # 502: returned by the proxy: nginx
+                # 503: returned by the server: if no capacity
+                if response.status_code in {502, 503}:
+                    new_response = RestApiResponse(response)
+                    self.log.warning(
+                        "Server returned %s status code."
+                        " Retrying with longer delay...",
+                        response.status_code
+                    )
+                    if retry_idx != 0:
+                        time.sleep(2)
+                    continue
                 break
 
             except ConnectionRefusedError:
                 if retry_idx == 0:
                     self.log.warning(
-                        "Connection error happened.", exc_info=True
+                        "AYON api error: Connection error happened.",
+                        exc_info=True,
                     )
 
                 # Server may be restarting
@@ -1219,7 +1588,8 @@ class ServerAPI(
                     None,
                     {
                         "detail": (
-                            "Unable to connect the server. Connection refused"
+                            "AYON api error: Unable to connect the server."
+                            " Connection refused"
                         )
                     }
                 )
@@ -1228,141 +1598,122 @@ class ServerAPI(
                 # Connection timed out
                 new_response = RestApiResponse(
                     None,
-                    {"detail": "Connection timed out."}
+                    {"detail": "AYON api error: Connection timed out."}
                 )
 
             except requests.exceptions.ConnectionError:
                 # Log warning only on last attempt
                 if retry_idx == 0:
                     self.log.warning(
-                        "Connection error happened.", exc_info=True
+                        "AYON api error: Connection error happened.",
+                        exc_info=True
                     )
 
                 new_response = RestApiResponse(
                     None,
                     {
                         "detail": (
-                            "Unable to connect the server. Connection error"
+                            "AYON api error: Unable to connect the server."
+                            " Connection error."
                         )
                     }
                 )
 
-            time.sleep(0.1)
+            if retry_idx != 0:
+                time.sleep(0.1)
 
         if new_response is not None:
             return new_response
 
         new_response = RestApiResponse(response)
+        if (
+            handle_invalid_token
+            and new_response.status_code == 401
+            and self._token_info.is_valid
+        ):
+            self._token_info.is_valid = False
+            self._token_info.unauthorized_response = response
+            self.close_session()
+
         self.log.debug(f"Response {str(new_response)}")
         return new_response
 
-    def raw_post(self, entrypoint: str, **kwargs):
-        url = self._endpoint_to_url(entrypoint)
-        self.log.debug(f"Executing [POST] {url}")
-        return self._do_rest_request(
-            RequestTypes.post,
-            url,
-            **kwargs
-        )
-
-    def raw_put(self, entrypoint: str, **kwargs):
-        url = self._endpoint_to_url(entrypoint)
-        self.log.debug(f"Executing [PUT] {url}")
-        return self._do_rest_request(
-            RequestTypes.put,
-            url,
-            **kwargs
-        )
-
-    def raw_patch(self, entrypoint: str, **kwargs):
-        url = self._endpoint_to_url(entrypoint)
-        self.log.debug(f"Executing [PATCH] {url}")
-        return self._do_rest_request(
-            RequestTypes.patch,
-            url,
-            **kwargs
-        )
-
-    def raw_get(self, entrypoint: str, **kwargs):
-        url = self._endpoint_to_url(entrypoint)
-        self.log.debug(f"Executing [GET] {url}")
-        return self._do_rest_request(
-            RequestTypes.get,
-            url,
-            **kwargs
-        )
-
-    def raw_delete(self, entrypoint: str, **kwargs):
-        url = self._endpoint_to_url(entrypoint)
-        self.log.debug(f"Executing [DELETE] {url}")
-        return self._do_rest_request(
-            RequestTypes.delete,
-            url,
-            **kwargs
-        )
-
-    def post(self, entrypoint: str, **kwargs):
-        return self.raw_post(entrypoint, json=kwargs)
-
-    def put(self, entrypoint: str, **kwargs):
-        return self.raw_put(entrypoint, json=kwargs)
-
-    def patch(self, entrypoint: str, **kwargs):
-        return self.raw_patch(entrypoint, json=kwargs)
-
-    def get(self, entrypoint: str, **kwargs):
-        return self.raw_get(entrypoint, params=kwargs)
-
-    def delete(self, entrypoint: str, **kwargs):
-        return self.raw_delete(entrypoint, params=kwargs)
-
-    def _endpoint_to_url(
+    def _download_file_to_stream(
         self,
         endpoint: str,
-        use_rest: Optional[bool] = True
-    ) -> str:
-        """Cleanup endpoint and return full url to AYON server.
-
-        If endpoint already starts with server url only slashes are removed.
-
-        Args:
-            endpoint (str): Endpoint to be cleaned.
-            use_rest (Optional[bool]): Use only base server url if set to
-                False, otherwise REST endpoint is used.
-
-        Returns:
-            str: Full url to AYON server.
-
-        """
-        endpoint = endpoint.lstrip("/").rstrip("/")
-        if endpoint.startswith(self._base_url):
-            return endpoint
-        base_url = self._rest_url if use_rest else self._graphql_url
-        return f"{base_url}/{endpoint}"
-
-    def _download_file_to_stream(
-        self, url: str, stream, chunk_size, progress
-    ):
-        kwargs = {"stream": True}
+        stream: StreamType,
+        chunk_size: int,
+        progress: TransferProgress,
+    ) -> None:
+        headers = self.get_headers()
+        kwargs = {
+            "stream": True,
+            "headers": headers,
+        }
         if self._session is None:
-            kwargs["headers"] = self.get_headers()
             get_func = self._base_functions_mapping[RequestTypes.get]
         else:
             get_func = self._session_functions_mapping[RequestTypes.get]
 
-        with get_func(url, **kwargs) as response:
-            response.raise_for_status()
-            progress.set_content_size(response.headers["Content-length"])
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                stream.write(chunk)
-                progress.add_transferred_chunk(len(chunk))
+        url = self._endpoint_to_url(endpoint, use_rest=False)
+        progress.set_source_url(url)
+
+        retries = self.get_default_max_retries()
+        api_prepended = False
+        for attempt in range(retries):
+            # Continue in download
+            offset = progress.get_transferred_size()
+            if offset > 0:
+                headers["Range"] = f"bytes={offset}-"
+
+            try:
+                with get_func(url, **kwargs) as response:
+                    # Auto-fix missing 'api/'
+                    if (
+                        response.status_code in (404, 405)
+                        and not api_prepended
+                    ):
+                        api_prepended = True
+                        if (
+                            not endpoint.startswith(self._base_url)
+                            and not endpoint.startswith("api/")
+                        ):
+                            url = self._endpoint_to_url(
+                                endpoint, use_rest=True
+                            )
+                            progress.set_destination_url(url)
+                            continue
+                    response.raise_for_status()
+                    if progress.get_content_size() is None:
+                        progress.set_content_size(
+                            response.headers["Content-length"]
+                        )
+
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        stream.write(chunk)
+                        progress.add_transferred_chunk(len(chunk))
+                break
+
+            except (
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+            ):
+                if attempt == retries - 1:
+                    raise
+                progress.next_attempt()
+
+        if api_prepended:
+            self.log.warning(
+                f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
+                " Please fix the endpoint passed to the function."
+            )
 
     def download_file_to_stream(
         self,
         endpoint: str,
         stream: StreamType,
-        chunk_size: Optional[int] = None,
-        progress: Optional[TransferProgress] = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
     ) -> TransferProgress:
         """Download file from AYON server to IOStream.
 
@@ -1380,26 +1731,23 @@ class ServerAPI(
             endpoint (str): Endpoint or URL to file that should be downloaded.
             stream (StreamType): Stream where output will
                 be stored.
-            chunk_size (Optional[int]): Size of chunks that are received
+            chunk_size (int | None): Size of chunks that are received
                 in single loop.
-            progress (Optional[TransferProgress]): Object that gives ability
+            progress (TransferProgress | None): Object that gives ability
                 to track download progress.
 
         """
         if not chunk_size:
             chunk_size = self.default_download_chunk_size
 
-        url = self._endpoint_to_url(endpoint)
-
         if progress is None:
             progress = TransferProgress()
 
-        progress.set_source_url(url)
         progress.set_started()
 
         try:
             self._download_file_to_stream(
-                url, stream, chunk_size, progress
+                endpoint, stream, chunk_size, progress
             )
 
         except Exception as exc:
@@ -1414,8 +1762,8 @@ class ServerAPI(
         self,
         endpoint: str,
         filepath: str,
-        chunk_size: Optional[int] = None,
-        progress: Optional[TransferProgress] = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
     ) -> TransferProgress:
         """Download file from AYON server.
 
@@ -1432,9 +1780,9 @@ class ServerAPI(
         Args:
             endpoint (str): Endpoint or URL to file that should be downloaded.
             filepath (str): Path where file will be downloaded.
-            chunk_size (Optional[int]): Size of chunks that are received
+            chunk_size (int | None): Size of chunks that are received
                 in single loop.
-            progress (Optional[TransferProgress]): Object that gives ability
+            progress (TransferProgress | None): Object that gives ability
                 to track download progress.
 
         """
@@ -1460,6 +1808,200 @@ class ServerAPI(
 
         return progress
 
+    def upload_project_file(
+        self,
+        project_name: str,
+        filepath: str,
+        *,
+        content_type: str | None = None,
+        filename: str | None = None,
+        file_id: str | None = None,
+        activity_id: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> requests.Response:
+        """Upload project file from a filepath.
+
+        Project files are usually binary files, such as images, videos,
+            or other media files that can be accessed via api endpoint
+            '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+        Args:
+            project_name (str): Project name.
+            filepath (str): Path where file will be downloaded.
+            content_type (str | None): MIME type of file.
+            filename (str | None): Server filename, filename from filepath
+                is used if not passed.
+            file_id (str | None): File id.
+            activity_id (str | None): To which activity is file related.
+            chunk_size (int | None): Size of chunks that are received
+                in single loop.
+            progress (TransferProgress | None): Object that gives ability
+                to track download progress.
+
+        Returns:
+            requests.Response: Requests response.
+
+        """
+        if not filename:
+            filename = os.path.basename(filepath)
+
+        if not content_type:
+            content_type = get_media_mime_type(filepath)
+            if not content_type:
+                content_type = "application/octet-stream"
+
+        headers = {}
+        if file_id:
+            headers["x-file-id"] = file_id
+
+        if activity_id:
+            headers["x-activity-id"] = activity_id
+
+        return self.upload_file(
+            f"api/projects/{project_name}/files",
+            filepath,
+            content_type=content_type,
+            filename=filename,
+            chunk_size=chunk_size,
+            progress=progress,
+            headers=headers,
+            request_type=RequestTypes.post,
+        )
+
+    def upload_project_file_from_stream(
+        self,
+        project_name: str,
+        stream: StreamType,
+        filename: str,
+        *,
+        content_type: str | None = None,
+        file_id: str | None = None,
+        activity_id: str | None = None,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> requests.Response:
+        """Upload project file from a filepath.
+
+        Project files are usually binary files, such as images, videos,
+            or other media files that can be accessed via api endpoint
+            '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+        Args:
+            project_name (str): Project name.
+            stream (StreamType): Stream used as source for upload.
+            filename (str): Name of file on server.
+            content_type (str | None): MIME type of file.
+            file_id (str | None): File id.
+            activity_id (str | None): To which activity is file related.
+            chunk_size (int | None): Size of chunks that are received
+                in single loop.
+            progress (TransferProgress | None): Object that gives ability
+                to track download progress.
+
+        Returns:
+            requests.Response: Requests response.
+
+        """
+        if not content_type:
+            stream.seek(0)
+            content_type = get_media_mime_type_for_stream(stream)
+            if not content_type:
+                content_type = "application/octet-stream"
+
+        headers = {}
+        if file_id:
+            headers["x-file-id"] = file_id
+
+        if activity_id:
+            headers["x-activity-id"] = activity_id
+
+        return self.upload_file_from_stream(
+            f"api/projects/{project_name}/files",
+            stream,
+            content_type=content_type,
+            filename=filename,
+            chunk_size=chunk_size,
+            progress=progress,
+            headers=headers,
+            request_type=RequestTypes.post,
+        )
+
+    def download_project_file(
+        self,
+        project_name: str,
+        file_id: str,
+        filepath: str,
+        *,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> TransferProgress:
+        """Download project file to filepath.
+
+        Project files are usually binary files, such as images, videos,
+            or other media files that can be accessed via api endpoint
+            '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+        Args:
+            project_name (str): Project name.
+            file_id (str): File id.
+            filepath (str): Path where file will be downloaded.
+            chunk_size (int | None): Size of chunks that are received
+                in single loop.
+            progress (TransferProgress | None): Object that gives ability
+                to track download progress.
+
+        Returns:
+            TransferProgress: Progress object.
+
+        """
+        return self.download_file(
+            f"api/projects/{project_name}/files/{file_id}",
+            filepath,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def download_project_file_to_stream(
+        self,
+        project_name: str,
+        file_id: str,
+        stream: StreamType,
+        *,
+        chunk_size: int | None = None,
+        progress: TransferProgress | None = None,
+    ) -> TransferProgress:
+        """Download project file to a stream.
+
+        Project files are usually binary files, such as images, videos,
+            or other media files that can be accessed via api endpoint
+            '{server url}/api/projects/{project_name}/files/{file_id}'.
+
+        Args:
+            project_name (str): Project name.
+            file_id (str): File id.
+            stream (StreamType): Stream where output will be stored.
+            chunk_size (int | None): Size of chunks that are received
+                in single loop.
+            progress (TransferProgress | None): Object that gives ability
+                to track download progress.
+
+        Returns:
+            TransferProgress: Progress object.
+
+        """
+        return self.download_file_to_stream(
+            f"api/projects/{project_name}/files/{file_id}",
+            stream,
+            chunk_size=chunk_size,
+            progress=progress,
+        )
+
+    def delete_project_file(self, project_name: str, file_id: str) -> None:
+        """Delete project file."""
+        response = self.delete(f"projects/{project_name}/files/{file_id}")
+        response.raise_for_status()
+
     @staticmethod
     def _upload_chunks_iter(
         file_stream: StreamType,
@@ -1477,13 +2019,7 @@ class ServerAPI(
             bytes: Chunk of file.
 
         """
-        # Get size of file
-        file_stream.seek(0, io.SEEK_END)
-        size = file_stream.tell()
         file_stream.seek(0)
-        # Set content size to progress object
-        progress.set_content_size(size)
-
         while True:
             chunk = file_stream.read(chunk_size)
             if not chunk:
@@ -1493,23 +2029,26 @@ class ServerAPI(
 
     def _upload_file(
         self,
-        url: str,
+        endpoint: str,
         stream: StreamType,
         progress: TransferProgress,
-        request_type: Optional[RequestType] = None,
-        chunk_size: Optional[int] = None,
+        request_type: RequestType | None = None,
+        chunk_size: int | None = None,
+        *,
+        content_type: str | None = None,
+        filename: str | None = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
 
         Args:
-            url (str): Url where file will be uploaded.
+            endpoint (str): Endpoint used to upload.
             stream (StreamType): File stream.
             progress (TransferProgress): Object that gives ability to track
                 progress.
-            request_type (Optional[RequestType]): Type of request that will
+            request_type (RequestType | None): Type of request that will
                 be used. Default is PUT.
-            chunk_size (Optional[int]): Size of chunks that are uploaded
+            chunk_size (int | None): Size of chunks that are uploaded
                 at once.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
@@ -1521,11 +2060,21 @@ class ServerAPI(
         if request_type is None:
             request_type = RequestTypes.put
 
+        endpoint = endpoint.lstrip("/")
+        url = self._endpoint_to_url(endpoint, use_rest=False)
+        progress.set_destination_url(url)
+
+        headers = kwargs.get("headers")
+        if headers is None:
+            kwargs["headers"] = headers = {}
+
+        headers_keys_by_low_key = {key.lower(): key for key in headers}
         if self._session is None:
-            headers = kwargs.setdefault("headers", {})
             for key, value in self.get_headers().items():
-                if key not in headers:
+                orig_key = headers_keys_by_low_key.get(key)
+                if not orig_key:
                     headers[key] = value
+
             post_func = self._base_functions_mapping[request_type]
         else:
             post_func = self._session_functions_mapping[request_type]
@@ -1533,21 +2082,74 @@ class ServerAPI(
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
 
-        response = post_func(
-            url,
-            data=self._upload_chunks_iter(stream, progress, chunk_size),
-            **kwargs
-        )
+        for key, value in (
+            ("x-file-name", filename),
+            ("Content-Type", content_type),
+        ):
+            if not value:
+                continue
+            orig_key = headers_keys_by_low_key.get(key.lower())
+            if orig_key:
+                headers.pop(orig_key)
+            headers[key] = value
+
+        retries = self.get_default_max_retries()
+        response = None
+
+        # Get size of file
+        stream.seek(0, io.SEEK_END)
+        size = stream.tell()
+        # Set content size to progress object
+        progress.set_content_size(size)
+
+        api_prepended = False
+        for attempt in range(retries):
+            try:
+                response = post_func(
+                    url,
+                    data=self._upload_chunks_iter(
+                        stream, progress, chunk_size
+                    ),
+                    **kwargs
+                )
+                # Auto-fix missing 'api/'
+                if response.status_code in (404, 405) and not api_prepended:
+                    api_prepended = True
+                    if (
+                        not endpoint.startswith(self._base_url)
+                        and not endpoint.startswith("api/")
+                    ):
+                        url = self._endpoint_to_url(endpoint, use_rest=True)
+                        progress.set_destination_url(url)
+                        continue
+                break
+
+            except (
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+            ):
+                if attempt == retries - 1:
+                    raise
+                progress.next_attempt()
+                progress.reset_transferred()
 
         response.raise_for_status()
+        if api_prepended:
+            self.log.warning(
+                f"Auto-fixed endpoint '{endpoint}' -> 'api/{endpoint}'."
+                " Please fix the endpoint passed to the function."
+            )
         return response
 
     def upload_file_from_stream(
         self,
         endpoint: str,
         stream: StreamType,
-        progress: Optional[TransferProgress] = None,
-        request_type: Optional[RequestType] = None,
+        progress: TransferProgress | None = None,
+        request_type: RequestType | None = None,
+        *,
+        content_type: str | None = None,
+        filename: str | None = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server from bytes.
@@ -1559,10 +2161,12 @@ class ServerAPI(
         Args:
             endpoint (str): Endpoint or url where file will be uploaded.
             stream (StreamType): File content stream.
-            progress (Optional[TransferProgress]): Object that gives ability
+            progress (TransferProgress | None): Object that gives ability
                 to track upload progress.
-            request_type (Optional[RequestType]): Type of request that will
+            request_type (RequestType | None): Type of request that will
                 be used to upload file.
+            content_type (str | None): MIME type of the file.
+            filename (str | None): Filename of file on server.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1570,19 +2174,22 @@ class ServerAPI(
             requests.Response: Response object
 
         """
-        url = self._endpoint_to_url(endpoint)
-
         # Create dummy object so the function does not have to check
         #   'progress' variable everywhere
         if progress is None:
             progress = TransferProgress()
 
-        progress.set_destination_url(url)
         progress.set_started()
 
         try:
             return self._upload_file(
-                url, stream, progress, request_type, **kwargs
+                endpoint,
+                stream,
+                progress,
+                request_type,
+                content_type=content_type,
+                filename=filename,
+                **kwargs
             )
 
         except Exception as exc:
@@ -1596,8 +2203,11 @@ class ServerAPI(
         self,
         endpoint: str,
         filepath: str,
-        progress: Optional[TransferProgress] = None,
-        request_type: Optional[RequestType] = None,
+        progress: TransferProgress | None = None,
+        request_type: RequestType | None = None,
+        *,
+        content_type: str | None = None,
+        filename: str | None = None,
         **kwargs
     ) -> requests.Response:
         """Upload file to server.
@@ -1609,10 +2219,12 @@ class ServerAPI(
         Args:
             endpoint (str): Endpoint or url where file will be uploaded.
             filepath (str): Source filepath.
-            progress (Optional[TransferProgress]): Object that gives ability
+            progress (TransferProgress | None): Object that gives ability
                 to track upload progress.
-            request_type (Optional[RequestType]): Type of request that will
+            request_type (RequestType | None): Type of request that will
                 be used to upload file.
+            content_type (str | None): MIME type of the file.
+            filename (str | None): Filename of file on server.
             **kwargs (Any): Additional arguments that will be passed
                 to request function.
 
@@ -1627,7 +2239,13 @@ class ServerAPI(
 
         with open(filepath, "rb") as stream:
             return self.upload_file_from_stream(
-                endpoint, stream, progress, request_type, **kwargs
+                endpoint,
+                stream,
+                progress,
+                request_type,
+                content_type=content_type,
+                filename=filename,
+                **kwargs
             )
 
     def upload_reviewable(
@@ -1635,11 +2253,10 @@ class ServerAPI(
         project_name: str,
         version_id: str,
         filepath: str,
-        label: Optional[str] = None,
-        content_type: Optional[str] = None,
-        filename: Optional[str] = None,
-        progress: Optional[TransferProgress] = None,
-        headers: Optional[dict[str, Any]] = None,
+        label: str | None = None,
+        content_type: str | None = None,
+        filename: str | None = None,
+        progress: TransferProgress | None = None,
         **kwargs
     ) -> requests.Response:
         """Upload reviewable file to server.
@@ -1648,13 +2265,12 @@ class ServerAPI(
             project_name (str): Project name.
             version_id (str): Version id.
             filepath (str): Reviewable file path to upload.
-            label (Optional[str]): Reviewable label. Filled automatically
+            label (str | None): Reviewable label. Filled automatically
                 server side with filename.
-            content_type (Optional[str]): MIME type of the file.
-            filename (Optional[str]): User as original filename. Filename from
+            content_type (str | None): MIME type of the file.
+            filename (str | None): User as original filename. Filename from
                 'filepath' is used when not filled.
-            progress (Optional[TransferProgress]): Progress.
-            headers (Optional[dict[str, Any]]): Headers.
+            progress (TransferProgress | None): Progress.
 
         Returns:
             requests.Response: Server response.
@@ -1668,40 +2284,26 @@ class ServerAPI(
                 f"Could not determine MIME type of file '{filepath}'"
             )
 
-        if headers is None:
-            headers = self.get_headers(content_type)
-        else:
-            # Make sure content-type is filled with file content type
-            content_type_key = next(
-                (
-                    key
-                    for key in headers
-                    if key.lower() == "content-type"
-                ),
-                "Content-Type"
-            )
-            headers[content_type_key] = content_type
-
         # Fill original filename if not explicitly defined
         if not filename:
             filename = os.path.basename(filepath)
-        headers["x-file-name"] = filename
 
         query = prepare_query_string({"label": label or None})
         endpoint = (
-            f"/projects/{project_name}"
+            f"api/projects/{project_name}"
             f"/versions/{version_id}/reviewables{query}"
         )
         return self.upload_file(
             endpoint,
             filepath,
             progress=progress,
-            headers=headers,
+            content_type=content_type,
+            filename=filename,
             request_type=RequestTypes.post,
             **kwargs
         )
 
-    def trigger_server_restart(self):
+    def trigger_server_restart(self) -> None:
         """Trigger server restart.
 
         Restart may be required when a change of specific value happened on
@@ -1716,13 +2318,13 @@ class ServerAPI(
     def query_graphql(
         self,
         query: str,
-        variables: Optional[dict[str, Any]] = None,
+        variables: dict[str, Any] | None = None,
     ) -> GraphQlResponse:
         """Execute GraphQl query.
 
         Args:
             query (str): GraphQl query string.
-            variables (Optional[dict[str, Any]): Variables that can be
+            variables (dict[str, Any] | None): Variables that can be
                 used in query.
 
         Returns:
@@ -1741,7 +2343,7 @@ class ServerAPI(
     def get_graphql_schema(self) -> dict[str, Any]:
         return self.query_graphql(INTROSPECTION_QUERY).data["data"]
 
-    def get_server_schema(self) -> Optional[dict[str, Any]]:
+    def get_server_schema(self) -> dict[str, Any] | None:
         """Get server schema with info, url paths, components etc.
 
         Todos:
@@ -1791,6 +2393,9 @@ class ServerAPI(
         if entity_type == "activity":
             return set(DEFAULT_ACTIVITY_FIELDS)
 
+        if entity_type == "productType":
+            return set(DEFAULT_PRODUCT_TYPE_FIELDS)
+
         if entity_type == "project":
             entity_type_defaults = set(DEFAULT_PROJECT_FIELDS)
             maj_v, min_v, patch_v, _, _ = self.server_version_tuple
@@ -1805,6 +2410,9 @@ class ServerAPI(
 
         elif entity_type == "product":
             entity_type_defaults = set(DEFAULT_PRODUCT_FIELDS)
+            maj_v, min_v, patch_v, _, _ = self.server_version_tuple
+            if self.is_product_base_type_supported():
+                entity_type_defaults.add("productBaseType")
 
         elif entity_type == "version":
             entity_type_defaults = set(DEFAULT_VERSION_FIELDS)
@@ -1818,9 +2426,6 @@ class ServerAPI(
             if not self.graphql_allows_traits_in_representations:
                 entity_type_defaults.discard("traits")
 
-        elif entity_type == "productType":
-            entity_type_defaults = set(DEFAULT_PRODUCT_TYPE_FIELDS)
-
         elif entity_type == "workfile":
             entity_type_defaults = set(DEFAULT_WORKFILE_INFO_FIELDS)
 
@@ -1832,17 +2437,17 @@ class ServerAPI(
 
         else:
             raise ValueError(f"Unknown entity type \"{entity_type}\"")
-        return (
-            entity_type_defaults
-            | self.get_attributes_fields_for_type(entity_type)
-        )
+
+        entity_type_defaults.add("allAttrib")
+
+        return entity_type_defaults
 
     def get_rest_entity_by_id(
         self,
         project_name: str,
         entity_type: str,
         entity_id: str,
-    ) -> Optional[AnyEntityDict]:
+    ) -> AnyEntityDict | None:
         """Get entity using REST on a project by its id.
 
         Args:
@@ -1852,7 +2457,7 @@ class ServerAPI(
             entity_id (str): Id of entity.
 
         Returns:
-            Optional[AnyEntityDict]: Received entity data.
+            AnyEntityDict | None: Received entity data.
 
         """
         if not all((project_name, entity_type, entity_id)):
@@ -1883,9 +2488,9 @@ class ServerAPI(
             project_name (str): On which project should be operations
                 processed.
             operations (list[dict[str, Any]]): Operations to be processed.
-            can_fail (Optional[bool]): Server will try to process all
+            can_fail (bool): Server will try to process all
                 operations even if one of them fails.
-            raise_on_fail (Optional[bool]): Raise exception if an operation
+            raise_on_fail (bool): Raise exception if an operation
                 fails. You can handle failed operations on your own
                 when set to 'False'.
 
@@ -1933,10 +2538,10 @@ class ServerAPI(
             project_name (str): On which project should be operations
                 processed.
             operations (list[dict[str, Any]]): Operations to be processed.
-            can_fail (Optional[bool]): Server will try to process all
+            can_fail (bool): Server will try to process all
                 operations even if one of them fails.
             wait (bool): Wait for operations to end.
-            raise_on_fail (Optional[bool]): Raise exception if an operation
+            raise_on_fail (bool): Raise exception if an operation
                 fails. You can handle failed operations on your own
                 when set to 'False'. Used when 'wait' is enabled.
 
@@ -2081,17 +2686,28 @@ class ServerAPI(
             )
 
     def _prepare_fields(
-        self, entity_type: str, fields: set[str], own_attributes: bool = False
+        self,
+        entity_type: str,
+        fields: set[str],
+        own_attributes: bool = False,
     ):
         if not fields:
             return
 
-        if "attrib" in fields:
-            fields.remove("attrib")
-            fields |= self.get_attributes_fields_for_type(entity_type)
+        add_all_attrib = False
+        for field in tuple(fields):
+            if field == "attrib" or field.startswith("attrib."):
+                fields.discard(field)
+                add_all_attrib = True
 
-        if own_attributes and entity_type in {"project", "folder", "task"}:
-            fields.add("ownAttrib")
+        if own_attributes:
+            if entity_type == "project":
+                add_all_attrib = True
+            elif entity_type in {"folder", "task"}:
+                fields.add("ownAttrib")
+
+        if add_all_attrib:
+            fields.add("allAttrib")
 
         if entity_type != "project":
             return
@@ -2136,12 +2752,40 @@ class ServerAPI(
                 )
             }
 
-    def _convert_entity_data(self, entity: AnyEntityDict):
-        if not entity or "data" not in entity:
+    def _prepare_link_fields(self, fields: set[str]) -> None:
+        if "links" not in fields:
             return
 
-        entity_data = entity["data"] or {}
-        if isinstance(entity_data, str):
-            entity_data = json.loads(entity_data)
+        fields.discard("links")
+        for field in DEFAULT_LINK_FIELDS:
+            fields.add(f"links.{field}")
 
-        entity["data"] = entity_data
+        if self.links_graphql_support_data():
+            fields.add("links.data")
+
+    def _prepare_advanced_filters(
+        self, filters: str | dict[str, Any] | None
+    ) -> str | None:
+        if not filters:
+            return None
+
+        if isinstance(filters, dict):
+            return json.dumps(filters)
+        return filters
+
+    def _convert_entity_data(self, entity: AnyEntityDict) -> None:
+        if not entity:
+            return
+
+        if "data" in entity:
+            entity_data = entity["data"] or {}
+            if isinstance(entity_data, str):
+                entity_data = json.loads(entity_data)
+
+            entity["data"] = entity_data
+
+        all_attrib = entity.get("allAttrib")
+        if isinstance(all_attrib, str):
+            # NOTE: This expects server returns all attributes available for
+            #   the entity type.
+            entity["attrib"] = json.loads(all_attrib)

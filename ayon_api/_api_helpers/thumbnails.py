@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import warnings
+import typing
 from typing import Optional
 
 from ayon_api.utils import (
+    get_media_mime_type_for_stream,
     get_media_mime_type,
     ThumbnailContent,
     RequestTypes,
@@ -12,6 +14,9 @@ from ayon_api.utils import (
 )
 
 from .base import BaseServerAPI
+
+if typing.TYPE_CHECKING:
+    from .typing import StreamType
 
 
 class ThumbnailsAPI(BaseServerAPI):
@@ -251,8 +256,47 @@ class ThumbnailsAPI(BaseServerAPI):
 
         mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
-            f"projects/{project_name}/thumbnails",
+            f"api/projects/{project_name}/thumbnails",
             src_filepath,
+            request_type=RequestTypes.post,
+            headers={"Content-Type": mime_type},
+        )
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def create_thumbnail_with_stream(
+        self,
+        project_name: str,
+        stream: StreamType,
+        thumbnail_id: Optional[str] = None,
+    ) -> str:
+        """Create new thumbnail on server from byte stream.
+
+        Args:
+            project_name (str): Project where the thumbnail will be created
+                and can be used.
+            stream (StreamType): Thumbnail content stream.
+            thumbnail_id (Optional[str]): Prepared if of thumbnail.
+
+        Returns:
+            str: Created thumbnail id.
+
+        Raises:
+            ValueError: When a thumbnail source cannot be processed.
+
+        """
+        if thumbnail_id:
+            self.update_thumbnail_from_stream(
+                project_name,
+                thumbnail_id,
+                stream
+            )
+            return thumbnail_id
+
+        mime_type = get_media_mime_type_for_stream(stream)
+        response = self.upload_file_from_stream(
+            f"api/projects/{project_name}/thumbnails",
+            stream,
             request_type=RequestTypes.post,
             headers={"Content-Type": mime_type},
         )
@@ -281,8 +325,34 @@ class ThumbnailsAPI(BaseServerAPI):
 
         mime_type = get_media_mime_type(src_filepath)
         response = self.upload_file(
-            f"projects/{project_name}/thumbnails/{thumbnail_id}",
+            f"api/projects/{project_name}/thumbnails/{thumbnail_id}",
             src_filepath,
+            request_type=RequestTypes.put,
+            headers={"Content-Type": mime_type},
+        )
+        response.raise_for_status()
+
+    def update_thumbnail_from_stream(
+        self,
+        project_name: str,
+        thumbnail_id: str,
+        stream: StreamType,
+    ) -> None:
+        """Change thumbnail content by id.
+
+        Update can be also used to create new thumbnail.
+
+        Args:
+            project_name (str): Project where the thumbnail will be created
+                and can be used.
+            thumbnail_id (str): Thumbnail id to update.
+            stream (StreamType): Thumbnail content stream.
+
+        """
+        mime_type = get_media_mime_type_for_stream(stream)
+        response = self.upload_file_from_stream(
+            f"api/projects/{project_name}/thumbnails/{thumbnail_id}",
+            stream,
             request_type=RequestTypes.put,
             headers={"Content-Type": mime_type},
         )

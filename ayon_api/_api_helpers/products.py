@@ -5,6 +5,7 @@ import warnings
 import typing
 from typing import Optional, Iterable, Generator, Any
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import (
     prepare_list_filters,
     create_entity_id,
@@ -17,7 +18,11 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI, _PLACEHOLDER
 
 if typing.TYPE_CHECKING:
-    from ayon_api.typing import ProductDict, ProductTypeDict
+    from ayon_api.typing import (
+        ProductDict,
+        ProductTypeDict,
+        AdvancedFilterDict,
+    )
 
 
 class ProductsAPI(BaseServerAPI):
@@ -32,15 +37,17 @@ class ProductsAPI(BaseServerAPI):
         self,
         project_name: str,
         product_ids: Optional[Iterable[str]] = None,
-        product_names: Optional[Iterable[str]]=None,
-        folder_ids: Optional[Iterable[str]]=None,
-        product_types: Optional[Iterable[str]]=None,
+        product_names: Optional[Iterable[str]] = None,
+        folder_ids: Optional[Iterable[str]] = None,
+        product_types: Optional[Iterable[str]] = None,
+        product_base_types: Optional[Iterable[str]] = None,
         product_name_regex: Optional[str] = None,
         product_path_regex: Optional[str] = None,
         names_by_folder_ids: Optional[dict[str, Iterable[str]]] = None,
         statuses: Optional[Iterable[str]] = None,
         tags: Optional[Iterable[str]] = None,
         active: Optional[bool] = True,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
         own_attributes=_PLACEHOLDER
     ) -> Generator[ProductDict, None, None]:
@@ -59,6 +66,8 @@ class ProductsAPI(BaseServerAPI):
                 Use 'None' if folder is direct child of project.
             product_types (Optional[Iterable[str]]): Product types used for
                 filtering.
+            product_base_types (Optional[Iterable[str]]): Product base types
+                used for filtering.
             product_name_regex (Optional[str]): Filter products by name regex.
             product_path_regex (Optional[str]): Filter products by path regex.
                 Path starts with folder path and ends with product name.
@@ -70,6 +79,7 @@ class ProductsAPI(BaseServerAPI):
                 for filtering.
             active (Optional[bool]): Filter active/inactive products.
                 Both are returned if is set to None.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
@@ -82,6 +92,11 @@ class ProductsAPI(BaseServerAPI):
         """
         if not project_name:
             return
+
+        if product_base_types and not self.is_product_base_type_supported():
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
 
         # Prepare these filters before 'name_by_filter_ids' filter
         filter_product_names = None
@@ -136,20 +151,21 @@ class ProductsAPI(BaseServerAPI):
             fields.add("folderId")
 
         # Prepare filters for query
-        filters = {
+        graphql_filters = {
             "projectName": project_name
         }
 
         if filter_folder_ids:
-            filters["folderIds"] = list(filter_folder_ids)
+            graphql_filters["folderIds"] = list(filter_folder_ids)
 
         if filter_product_names:
-            filters["productNames"] = list(filter_product_names)
+            graphql_filters["productNames"] = list(filter_product_names)
 
         if not prepare_list_filters(
-            filters,
+            graphql_filters,
             ("productIds", product_ids),
             ("productTypes", product_types),
+            ("productBaseTypes", product_base_types),
             ("productStatuses", statuses),
             ("productTags", tags),
         ):
@@ -158,12 +174,15 @@ class ProductsAPI(BaseServerAPI):
         for filter_key, filter_value in (
             ("productNameRegex", product_name_regex),
             ("productPathRegex", product_path_regex),
+            ("filter", self._prepare_advanced_filters(filters)),
         ):
             if filter_value:
-                filters[filter_key] = filter_value
+                graphql_filters[filter_key] = filter_value
+
+        self._prepare_link_fields(fields)
 
         query = products_graphql_query(fields)
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         parsed_data = query.query(self)
@@ -378,6 +397,7 @@ class ProductsAPI(BaseServerAPI):
         tags: Optional[Iterable[str]] =None,
         status: Optional[str] = None,
         active: Optional[bool] = None,
+        product_base_type: Optional[str] = None,
         product_id: Optional[str] = None,
     ) -> str:
         """Create new product.
@@ -392,6 +412,7 @@ class ProductsAPI(BaseServerAPI):
             tags (Optional[Iterable[str]]): Product tags.
             status (Optional[str]): Product status.
             active (Optional[bool]): Product active state.
+            product_base_type (Optional[str]): Product base type.
             product_id (Optional[str]): Product id. If not passed new id is
                 generated.
 
@@ -399,6 +420,14 @@ class ProductsAPI(BaseServerAPI):
             str: Product id.
 
         """
+        if (
+            product_base_type is not None
+            and not self.is_product_base_type_supported()
+        ):
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
+
         if not product_id:
             product_id = create_entity_id()
         create_data = {
@@ -408,6 +437,7 @@ class ProductsAPI(BaseServerAPI):
             "folderId": folder_id,
         }
         for key, value in (
+            ("productBaseType", product_base_type),
             ("attrib", attrib),
             ("data", data),
             ("tags", tags),
@@ -431,6 +461,7 @@ class ProductsAPI(BaseServerAPI):
         name: Optional[str] = None,
         folder_id: Optional[str] = None,
         product_type: Optional[str] = None,
+        product_base_type: Optional[str] = None,
         attrib: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = None,
         tags: Optional[Iterable[str]] = None,
@@ -450,6 +481,7 @@ class ProductsAPI(BaseServerAPI):
             name (Optional[str]): New product name.
             folder_id (Optional[str]): New product id.
             product_type (Optional[str]): New product type.
+            product_base_type (Optional[str]): New product base type.
             attrib (Optional[dict[str, Any]]): New product attributes.
             data (Optional[dict[str, Any]]): New product data.
             tags (Optional[Iterable[str]]): New product tags.
@@ -457,10 +489,19 @@ class ProductsAPI(BaseServerAPI):
             active (Optional[bool]): New product active state.
 
         """
+        if (
+            product_base_type is not None
+            and not self.is_product_base_type_supported()
+        ):
+            raise UnsupportedServerVersion(
+                "Product base type is not supported for your server version."
+            )
+
         update_data = {}
         for key, value in (
             ("name", name),
             ("productType", product_type),
+            ("productBaseType", product_base_type),
             ("folderId", folder_id),
             ("attrib", attrib),
             ("data", data),

@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import functools
 import os
 import re
 import datetime
+from dataclasses import dataclass
 import copy
+import logging
+import json
 import uuid
 import string
 import platform
 import traceback
 import collections
 import itertools
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse, urlencode, ParseResult
 import typing
-from typing import Optional, Any, Iterable, Union
+from typing import Any, Iterable
+import warnings
 from enum import IntEnum
 
 import requests
@@ -25,6 +30,7 @@ from .constants import (
 )
 from .exceptions import (
     UrlError,
+    UrlNotReached,
     ServerError,
     UnauthorizedError,
     HTTPRequestError,
@@ -64,6 +70,38 @@ RepresentationHierarchy = collections.namedtuple(
     )
 )
 
+@dataclass
+class _TimeoutWrapInfo:
+    func = None
+    args_pos = 2
+
+
+def _timeout_kwarg_deprecation(arg):
+    """Decorator to add timeout kwarg to function."""
+    # TODO remove this deprecation
+    wrap_info = _TimeoutWrapInfo()
+
+    def wrapper(*args, **kwargs):
+        if len(args) > wrap_info.args_pos:
+            warnings.warn(
+                "Timeout was passed as a positional argument please"
+                " use timeout=... keyword argument instead. This will stop"
+                " working in future versions on ayon-api.",
+                category=FutureWarning,
+                stacklevel=2,
+            )
+        return wrap_info.func(*args, **kwargs)
+
+    if not isinstance(arg, int):
+        wrap_info.func = arg
+        return functools.wraps(arg)(wrapper)
+
+    wrap_info.args_pos = arg
+    def main_wrapper(func):
+        wrap_info.func = func
+        return functools.wraps(func)(wrapper)
+    return main_wrapper
+
 
 class SortOrder(IntEnum):
     """Sort order for GraphQl requests."""
@@ -101,8 +139,9 @@ def _get_description(response):
     return HTTPStatus(response.status).description
 
 
-class RestApiResponse(object):
+class RestApiResponse:
     """API Response."""
+    log = logging.getLogger("RestApiResponse")
 
     def __init__(self, response, data=None):
         if response is None:
@@ -134,7 +173,7 @@ class RestApiResponse(object):
         if self._data is None:
             try:
                 self._data = self.orig_response.json()
-            except RequestsJSONDecodeError:
+            except (AttributeError, RequestsJSONDecodeError):
                 self._data = {}
         return self._data
 
@@ -145,7 +184,7 @@ class RestApiResponse(object):
         return self._response.content
 
     @property
-    def content_type(self) -> Optional[str]:
+    def content_type(self) -> str | None:
         return self.headers.get("Content-Type")
 
     @property
@@ -168,16 +207,33 @@ class RestApiResponse(object):
     def raise_for_status(self, message=None):
         if self._response is None:
             if self._data and self._data.get("detail"):
+                if self.status_code == 401:
+                    raise UnauthorizedError(self._data["detail"])
                 raise ServerError(self._data["detail"])
             raise ValueError("Response is not available.")
 
-        if self.status_code == 401:
-            raise UnauthorizedError("Missing or invalid authentication token")
         try:
             self._response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
             if message is None:
                 message = str(exc)
+
+            submsg = ""
+            if self.data:
+                submsg = json.dumps(self.data, indent=4)
+
+            self.log.warning(
+                "HTTP request error: %s%s%s",
+                message,
+                "\n" if submsg else "",
+                submsg,
+            )
+
+            detail = self.data.get("detail")
+            if detail:
+                message = f"{message} ({detail})"
+            if self.status_code == 401:
+                raise UnauthorizedError(message, exc.response)
             raise HTTPRequestError(message, exc.response)
 
     def __enter__(self, *args, **kwargs):
@@ -238,7 +294,7 @@ def fill_own_attribs(entity: AnyEntityDict) -> None:
             own_attrib[key] = copy.deepcopy(value)
 
 
-def _convert_list_filter_value(value: Any) -> Optional[list[Any]]:
+def _convert_filter_value(value: Any) -> list[Any] | None:
     if value is None:
         return None
 
@@ -254,7 +310,7 @@ def prepare_list_filters(
     output: dict[str, Any], *args: tuple[str, Any], **kwargs: Any
 ) -> bool:
     for key, value in itertools.chain(args, kwargs.items()):
-        value = _convert_list_filter_value(value)
+        value = _convert_filter_value(value)
         if value is None:
             continue
         if not value:
@@ -300,11 +356,11 @@ def get_machine_name() -> str:
     return unidecode.unidecode(platform.node())
 
 
-def get_default_site_id() -> Optional[str]:
+def get_default_site_id() -> str | None:
     """Site id used for server connection.
 
     Returns:
-        Optional[str]: Site id from environment variable or None.
+        str | None: Site id from environment variable or None.
 
     """
     return os.environ.get(SITE_ID_ENV_KEY)
@@ -315,25 +371,25 @@ class ThumbnailContent:
 
     Args:
         project_name (str): Project name.
-        thumbnail_id (Optional[str]): Thumbnail id.
-        content (Optional[bytes]): Thumbnail content.
-        content_type (Optional[str]): Content type e.g. 'image/png'.
+        thumbnail_id (str | None): Thumbnail id.
+        content (bytes | None): Thumbnail content.
+        content_type (str | None): Content type e.g. 'image/png'.
 
     """
     def __init__(
         self,
         project_name: str,
-        thumbnail_id: Optional[str],
-        content: Optional[bytes],
-        content_type: Optional[str],
+        thumbnail_id: str | None,
+        content: bytes | None,
+        content_type: str | None,
     ):
         self.project_name: str = project_name
-        self.thumbnail_id: Optional[str] = thumbnail_id
-        self.content_type: Optional[str] = content_type
+        self.thumbnail_id: str | None = thumbnail_id
+        self.content_type: str | None = content_type
         self.content: bytes = content or b""
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Wrapper for thumbnail id."""
         return self.thumbnail_id
 
@@ -376,14 +432,14 @@ def prepare_query_string(
 
     if not key_values:
         return ""
-    return "?{}".format(urlencode(key_values))
+    return f"?{urlencode(key_values)}"
 
 
 def create_entity_id() -> str:
     return uuid.uuid1().hex
 
 
-def convert_entity_id(entity_id) -> Optional[str]:
+def convert_entity_id(entity_id) -> str | None:
     if not entity_id:
         return None
 
@@ -398,7 +454,7 @@ def convert_entity_id(entity_id) -> Optional[str]:
     return None
 
 
-def convert_or_create_entity_id(entity_id: Optional[str] = None) -> str:
+def convert_or_create_entity_id(entity_id: str | None = None) -> str:
     output = convert_entity_id(entity_id)
     if output is None:
         output = create_entity_id()
@@ -410,7 +466,7 @@ def entity_data_json_default(value: Any) -> Any:
         return int(value.timestamp())
 
     raise TypeError(
-        "Object of type {} is not JSON serializable".format(str(type(value)))
+        f"Object of type {type(value)} is not JSON serializable"
     )
 
 
@@ -422,7 +478,7 @@ def slugify_string(
     min_length: int = 1,
     lower: bool = False,
     make_set: bool = False,
-) -> Union[str, set[str]]:
+) -> str | set[str]:
     """Slugify a text string.
 
     This function removes transliterates input string to ASCII, removes
@@ -442,8 +498,7 @@ def slugify_string(
         min_length (int): Minimal length of an element (word).
 
     Returns:
-        Union[str, set[str]]: Based on 'make_set' value returns slugified
-            string.
+        str | set[str]: Based on 'make_set' value returns slugified string.
 
     """
     tmp_string = unidecode.unidecode(input_string)
@@ -468,14 +523,14 @@ def slugify_string(
 
 
 def failed_json_default(value: Any) -> str:
-    return "< Failed value {} > {}".format(type(value), str(value))
+    return f"< Failed value {type(value)} > {value}"
 
 
 def prepare_attribute_changes(
     old_entity: AnyEntityDict,
     new_entity: AnyEntityDict,
     replace: int = False,
-):
+) -> dict[str, Any]:
     attrib_changes = {}
     new_attrib = new_entity.get("attrib")
     old_attrib = old_entity.get("attrib")
@@ -526,7 +581,7 @@ def prepare_entity_changes(
     return changes
 
 
-def _try_parse_url(url: str) -> Optional[str]:
+def _try_parse_url(url: str) -> ParseResult | None:
     try:
         return urlparse(url)
     except BaseException:
@@ -535,10 +590,10 @@ def _try_parse_url(url: str) -> Optional[str]:
 
 def _try_connect_to_server(
     url: str,
-    timeout: Optional[float],
-    verify: Optional[Union[str, bool]],
-    cert: Optional[str],
-) -> Optional[str]:
+    timeout: float | None,
+    verify: str | bool | None,
+    cert: str | None,
+) -> str | None:
     if timeout is None:
         timeout = get_default_timeout()
 
@@ -552,11 +607,12 @@ def _try_connect_to_server(
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
         response = requests.get(
-            url,
+            f"{url}/api/info",
             timeout=timeout,
             verify=verify,
             cert=cert,
         )
+        _ = response.json()
         if response.history:
             return response.history[-1].headers["location"].rstrip("/")
         return url
@@ -568,23 +624,24 @@ def _try_connect_to_server(
     return None
 
 
+@_timeout_kwarg_deprecation(3)
 def login_to_server(
     url: str,
     username: str,
     password: str,
-    timeout: Optional[float] = None,
-) -> Optional[str]:
+    timeout: float | None = None,
+) -> str | None:
     """Use login to the server to receive token.
 
     Args:
         url (str): Server url.
         username (str): User's username.
         password (str): User's password.
-        timeout (Optional[float]): Timeout for request. Value from
+        timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
 
     Returns:
-        Optional[str]: User's token if login was successfull.
+        str | None: User's token if login was successfull.
             Otherwise 'None'.
 
     """
@@ -592,7 +649,7 @@ def login_to_server(
         timeout = get_default_timeout()
     headers = {"Content-Type": "application/json"}
     response = requests.post(
-        "{}/api/auth/login".format(url),
+        f"{url}/api/auth/login",
         headers=headers,
         json={
             "name": username,
@@ -609,13 +666,18 @@ def login_to_server(
     return token
 
 
-def logout_from_server(url: str, token: str, timeout: Optional[float] = None):
+@_timeout_kwarg_deprecation
+def logout_from_server(
+    url: str,
+    token: str,
+    timeout: float | None = None,
+) -> None:
     """Logout from server and throw token away.
 
     Args:
         url (str): Url from which should be logged out.
         token (str): Token which should be used to log out.
-        timeout (Optional[float]): Timeout for request. Value from
+        timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
 
     """
@@ -623,58 +685,128 @@ def logout_from_server(url: str, token: str, timeout: Optional[float] = None):
         timeout = get_default_timeout()
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer {}".format(token)
+        "Authorization": f"Bearer {token}",
     }
     requests.post(
-        url + "/api/auth/logout",
+        f"{url}/api/auth/logout",
         headers=headers,
         timeout=timeout,
     )
 
 
-def get_user_by_token(
+@dataclass
+class UserInfo:
+    """User information."""
+    is_valid: bool = False
+    is_service: bool = False
+    response: requests.Response | None = None
+
+
+def get_user_info_by_token(
     url: str,
     token: str,
-    timeout: Optional[float] = None,
-) -> Optional[dict[str, Any]]:
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
+    timeout: float | None = None,
+) -> UserInfo:
     """Get user information by url and token.
 
     Args:
         url (str): Server url.
         token (str): User's token.
-        timeout (Optional[float]): Timeout for request. Value from
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
+        timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
 
     Returns:
-        Optional[dict[str, Any]]: User information if url and token are valid.
+        UserInfo: User information if url and token are valid.
 
     """
+    output = UserInfo()
+    if not token:
+        return output
+
     if timeout is None:
         timeout = get_default_timeout()
+
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
 
     base_headers = {
         "Content-Type": "application/json",
     }
-    for header_value in (
-        {"Authorization": "Bearer {}".format(token)},
-        {"X-Api-Key": token},
+    for header_value, is_service in (
+        ({"Authorization": f"Bearer {token}"}, False),
+        ({"X-Api-Key": token}, True),
     ):
         headers = base_headers.copy()
         headers.update(header_value)
         response = requests.get(
-            "{}/api/users/me".format(url),
+            f"{url}/api/users/me",
             headers=headers,
             timeout=timeout,
+            verify=verify,
+            cert=cert,
         )
-        if response.status_code == 200:
-            return response.json()
+
+        output = UserInfo(
+            is_valid=response.status_code == 200,
+            is_service=is_service,
+            response=response,
+        )
+        if output.is_valid:
+            break
+    return output
+
+
+@_timeout_kwarg_deprecation
+def get_user_by_token(
+    url: str,
+    token: str,
+    timeout: float | None = None,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
+) -> dict[str, Any] | None:
+    """Get user information by url and token.
+
+    Args:
+        url (str): Server url.
+        token (str): User's token.
+        timeout (float | None): Timeout for request. Value from
+            'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
+
+    Returns:
+        dict[str, Any] | None: User information if url and token are valid.
+
+    """
+    user_info = get_user_info_by_token(
+        url, token, timeout=timeout, verify=verify, cert=cert,
+    )
+    if user_info.is_valid:
+        return user_info.data
     return None
 
 
+@_timeout_kwarg_deprecation
 def is_token_valid(
     url: str,
     token: str,
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
+    *,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> bool:
     """Check if token is valid.
 
@@ -683,23 +815,29 @@ def is_token_valid(
     Args:
         url (str): Server url.
         token (str): User's token.
-        timeout (Optional[float]): Timeout for request. Value from
+        timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         bool: True if token is valid.
 
     """
-    if get_user_by_token(url, token, timeout=timeout):
-        return True
-    return False
+    user_info = get_user_info_by_token(
+        url, token, timeout=timeout, verify=verify, cert=cert
+    )
+    return user_info.is_valid
 
 
+@_timeout_kwarg_deprecation(1)
 def validate_url(
     url: str,
-    timeout: Optional[int] = None,
-    verify: Optional[Union[str, bool]] = None,
-    cert: Optional[str] = None,
+    timeout: int | None = None,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> str:
     """Validate url if is valid and server is available.
 
@@ -722,7 +860,7 @@ def validate_url(
 
     Args:
         url (str): Server url.
-        timeout (Optional[int]): Timeout in seconds for connection to server.
+        timeout (int | None): Timeout in seconds for connection to server.
 
     Returns:
         Url which was used to connect to server.
@@ -731,8 +869,8 @@ def validate_url(
         UrlError: Error with short description and hints for user.
 
     """
-    stripperd_url = url.strip()
-    if not stripperd_url:
+    stripped_url = url.strip()
+    if not stripped_url:
         raise UrlError(
             "Invalid url format. Url is empty.",
             title="Invalid url format",
@@ -740,25 +878,30 @@ def validate_url(
         )
 
     # Not sure if this is good idea?
-    modified_url = stripperd_url.rstrip("/")
+    modified_url = stripped_url.rstrip("/")
+
+    # Make sure url has http scheme
+    if not modified_url.lower().startswith("http"):
+        modified_url = f"http://{modified_url}"
+
     parsed_url = _try_parse_url(modified_url)
     universal_hints = [
         "does the url work in browser?"
     ]
     if parsed_url is None:
         raise UrlError(
-            "Invalid url format. Url cannot be parsed as url \"{}\".".format(
-                modified_url
+            (
+                "Invalid url format. Url cannot be parsed"
+                f" as url \"{modified_url}\"."
             ),
             title="Invalid url format",
             hints=universal_hints
         )
 
-    # Try add 'https://' scheme if is missing
-    # - this will trigger UrlError if both will crash
-    if not parsed_url.scheme:
+    pathless_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    if parsed_url.path:
         new_url = _try_connect_to_server(
-            "http://" + modified_url,
+            pathless_url,
             timeout=timeout,
             verify=verify,
             cert=cert,
@@ -776,17 +919,11 @@ def validate_url(
         return new_url
 
     hints = []
-    if "/" in parsed_url.path or not parsed_url.scheme:
-        new_path = parsed_url.path.split("/")[0]
-        if not parsed_url.scheme:
-            new_path = "https://" + new_path
+    if parsed_url.path:
+        hints.append(f"did you mean \"{pathless_url}\"?")
 
-        hints.append(
-            "did you mean \"{}\"?".format(parsed_url.scheme + new_path)
-        )
-
-    raise UrlError(
-        "Couldn't connect to server on \"{}\"".format(url),
+    raise UrlNotReached(
+        f"Couldn't connect to server on \"{url}\"",
         title="Couldn't connect to server",
         hints=hints + universal_hints
     )
@@ -796,28 +933,29 @@ class TransferProgress:
     """Object to store progress of download/upload from/to server."""
 
     def __init__(self):
+        self._attempt: int = 0
         self._started: bool = False
         self._transfer_done: bool = False
         self._transferred: int = 0
-        self._content_size: Optional[int] = None
+        self._content_size: int | None = None
 
         self._failed: bool = False
-        self._fail_reason: Optional[str] = None
+        self._fail_reason: str | None = None
 
         self._source_url: str = "N/A"
         self._destination_url: str = "N/A"
 
-    def get_content_size(self):
+    def get_content_size(self) -> int | None:
         """Content size in bytes.
 
         Returns:
-            Union[int, None]: Content size in bytes or None
+            int | None: Content size in bytes or None
                 if is unknown.
 
         """
         return self._content_size
 
-    def set_content_size(self, content_size: int):
+    def set_content_size(self, content_size: int) -> None:
         """Set content size in bytes.
 
         Args:
@@ -840,7 +978,7 @@ class TransferProgress:
         """
         return self._started
 
-    def set_started(self):
+    def set_started(self) -> None:
         """Mark that transfer started.
 
         Raises:
@@ -850,6 +988,17 @@ class TransferProgress:
         if self._started:
             raise ValueError("Progress already started")
         self._started = True
+        self._attempt = 1
+
+    def get_attempt(self) -> int:
+        """Find out which attempt of progress it is."""
+        return self._attempt
+
+    def next_attempt(self) -> None:
+        """Start new attempt of progress."""
+        if not self._started:
+            raise ValueError("Progress did not start yet")
+        self._attempt += 1
 
     def get_transfer_done(self) -> bool:
         """Transfer finished.
@@ -860,7 +1009,7 @@ class TransferProgress:
         """
         return self._transfer_done
 
-    def set_transfer_done(self):
+    def set_transfer_done(self) -> None:
         """Mark progress as transfer finished.
 
         Raises:
@@ -883,17 +1032,17 @@ class TransferProgress:
         """
         return self._failed
 
-    def get_fail_reason(self) -> Optional[str]:
+    def get_fail_reason(self) -> str | None:
         """Get reason why transfer failed.
 
         Returns:
-            Optional[str]: Reason why transfer
+            str | None: Reason why transfer
                 failed or None.
 
         """
         return self._fail_reason
 
-    def set_failed(self, reason: str):
+    def set_failed(self, reason: str) -> None:
         """Mark progress as failed.
 
         Args:
@@ -912,7 +1061,7 @@ class TransferProgress:
         """
         return self._transferred
 
-    def set_transferred_size(self, transferred: int):
+    def set_transferred_size(self, transferred: int) -> None:
         """Set already transferred size in bytes.
 
         Args:
@@ -921,7 +1070,11 @@ class TransferProgress:
         """
         self._transferred = transferred
 
-    def add_transferred_chunk(self, chunk_size: int):
+    def reset_transferred(self) -> None:
+        """Reset transferred size to initial value."""
+        self._transferred = 0
+
+    def add_transferred_chunk(self, chunk_size: int) -> None:
         """Add transferred chunk size in bytes.
 
         Args:
@@ -944,7 +1097,7 @@ class TransferProgress:
         """
         return self._source_url
 
-    def set_source_url(self, url: str):
+    def set_source_url(self, url: str) -> None:
         """Set source url from where transfer happens.
 
         Args:
@@ -966,7 +1119,7 @@ class TransferProgress:
         """
         return self._destination_url
 
-    def set_destination_url(self, url: str):
+    def set_destination_url(self, url: str) -> None:
         """Set destination url where transfer happens.
 
         Args:
@@ -992,11 +1145,11 @@ class TransferProgress:
         return True
 
     @property
-    def transfer_progress(self) -> Optional[float]:
+    def transfer_progress(self) -> float | None:
         """Get transfer progress in percents.
 
         Returns:
-            Optional[float]: Transfer progress in percents or 'None'
+            float | None: Transfer progress in percents or 'None'
                 if content size is unknown.
 
         """
@@ -1015,12 +1168,12 @@ class TransferProgress:
 
 
 def create_dependency_package_basename(
-    platform_name: Optional[str] = None
+    platform_name: str | None = None
 ) -> str:
     """Create basename for dependency package file.
 
     Args:
-        platform_name (Optional[str]): Name of platform for which the
+        platform_name (str | None): Name of platform for which the
             bundle is targeted. Default value is current platform.
 
     Returns:
@@ -1032,11 +1185,11 @@ def create_dependency_package_basename(
 
     now_date = datetime.datetime.now()
     time_stamp = now_date.strftime("%y%m%d%H%M")
-    return "ayon_{}_{}".format(time_stamp, platform_name)
+    return f"ayon_{time_stamp}_{platform_name}"
 
 
 
-def _get_media_mime_type_from_ftyp(content: bytes) -> Optional[str]:
+def _get_media_mime_type_from_ftyp(content: bytes) -> str | None:
     if content[8:10] == b"qt" or content[8:12] == b"MSNV":
         return "video/quicktime"
 
@@ -1076,7 +1229,7 @@ def _get_media_mime_type_from_ftyp(content: bytes) -> Optional[str]:
     return None
 
 
-def _get_media_mime_type_for_content_base(content: bytes) -> Optional[str]:
+def _get_media_mime_type_for_content_base(content: bytes) -> str | None:
     """Determine Mime-Type of a file.
 
     Use header of the file to determine mime type (needs 12 bytes).
@@ -1084,12 +1237,12 @@ def _get_media_mime_type_for_content_base(content: bytes) -> Optional[str]:
     content_len = len(content)
     # Pre-validation (largest definition check)
     # - hopefully there cannot be media defined in less than 12 bytes
-    if content_len < 12:
+    if content_len < 4:
         return None
 
-    # FTYP
-    if content[4:8] == b"ftyp":
-        return _get_media_mime_type_from_ftyp(content)
+    # PDF
+    if content[0:4] == b"%PDF":
+        return "application/pdf"
 
     # BMP
     if content[0:2] == b"BM":
@@ -1128,43 +1281,60 @@ def _get_media_mime_type_for_content_base(content: bytes) -> Optional[str]:
     #   with this header
     if content[0:4] == b"\x00\x00\x01\x00":
         return "image/x-icon"
+
+    if content_len < 8:
+        return None
+
+    # FTYP
+    if content[4:8] == b"ftyp":
+        return _get_media_mime_type_from_ftyp(content)
+
     return None
 
 
-def _get_svg_mime_type(content: bytes) -> Optional[str]:
+def _get_svg_mime_type(content: bytes) -> str | None:
     # SVG
     if b'xmlns="http://www.w3.org/2000/svg"' in content:
         return "image/svg+xml"
     return None
 
 
-def get_media_mime_type_for_content(content: bytes) -> Optional[str]:
+def _get_json_mime_type(content: bytes) -> str | None:
+    # json
+    try:
+        json.loads(content.decode("utf-8"))
+        return "application/json"
+    except (UnicodeDecodeError, ValueError):
+        pass
+    return None
+
+
+def get_media_mime_type_for_content(content: bytes) -> str | None:
     mime_type = _get_media_mime_type_for_content_base(content)
     if mime_type is not None:
         return mime_type
-    return _get_svg_mime_type(content)
+    return _get_svg_mime_type(content) or _get_json_mime_type(content)
 
 
-def get_media_mime_type_for_stream(stream: StreamType) -> Optional[str]:
+def get_media_mime_type_for_stream(stream: StreamType) -> str | None:
     # Read only 12 bytes to determine mime type
     content = stream.read(12)
-    if len(content) < 12:
-        return None
     mime_type = _get_media_mime_type_for_content_base(content)
-    if mime_type is None:
-        content += stream.read()
-        mime_type = _get_svg_mime_type(content)
-    return mime_type
+    if mime_type is not None:
+        return mime_type
+
+    content += stream.read()
+    return _get_svg_mime_type(content) or _get_json_mime_type(content)
 
 
-def get_media_mime_type(filepath: str) -> Optional[str]:
+def get_media_mime_type(filepath: str) -> str | None:
     """Determine Mime-Type of a file.
 
     Args:
         filepath (str): Path to file.
 
     Returns:
-        Optional[str]: Mime type or None if is unknown mime type.
+        str | None: Mime type or None if is unknown mime type.
 
     """
     if not filepath or not os.path.exists(filepath):

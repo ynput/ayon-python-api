@@ -398,7 +398,7 @@ class BundlesAddonsAPI(BaseServerAPI):
 
         """
         response = self.upload_file(
-            "addons/install",
+            "api/addons/install",
             src_filepath,
             progress=progress,
             request_type=RequestTypes.post,
@@ -448,9 +448,11 @@ class BundlesAddonsAPI(BaseServerAPI):
             "private",
             filename
         )
-        url = f"{self.get_base_url()}/{endpoint}"
         self.download_file(
-            url, dst_filepath, chunk_size=chunk_size, progress=progress
+            endpoint,
+            dst_filepath,
+            chunk_size=chunk_size,
+            progress=progress,
         )
         return dst_filepath
 
@@ -669,6 +671,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         self,
         bundle_name: Optional[str] = None,
         project_name: Optional[str] = None,
+        project_bundle_name: Optional[str] = None,
         variant: Optional[str] = None,
         site_id: Optional[str] = None,
         use_site: bool = True,
@@ -712,6 +715,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         query = prepare_query_string({
             "project_name": project_name or None,
             "bundle_name": bundle_name or None,
+            "project_bundle_name": project_bundle_name or None,
             "variant": variant or self.get_default_settings_variant() or None,
             "site_id": site_id,
         })
@@ -722,6 +726,7 @@ class BundlesAddonsAPI(BaseServerAPI):
     def get_addons_studio_settings(
         self,
         bundle_name: Optional[str] = None,
+        project_bundle_name: Optional[str] = None,
         variant: Optional[str] = None,
         site_id: Optional[str] = None,
         use_site: bool = True,
@@ -737,6 +742,8 @@ class BundlesAddonsAPI(BaseServerAPI):
         Args:
             bundle_name (Optional[str]): Name of bundle for which should be
                 settings received.
+            project_bundle_name (Optional[str]): Project bundle name for
+                which should be settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
             site_id (Optional[str]): Site id for which want to receive
@@ -753,6 +760,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         """
         output = self.get_bundle_settings(
             bundle_name=bundle_name,
+            project_bundle_name=project_bundle_name,
             variant=variant,
             site_id=site_id,
             use_site=use_site
@@ -768,6 +776,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         self,
         project_name: str,
         bundle_name: Optional[str] = None,
+        project_bundle_name: Optional[str] = None,
         variant: Optional[str] = None,
         site_id: Optional[str] = None,
         use_site: bool = True,
@@ -799,6 +808,8 @@ class BundlesAddonsAPI(BaseServerAPI):
                 received.
             bundle_name (Optional[str]): Name of bundle for which should be
                 settings received.
+            project_bundle_name (Optional[str]): Project bundle name for which
+                should be settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
                 settings variant. Used 'default_settings_variant' by default.
             site_id (Optional[str]): Site id for which want to receive
@@ -820,6 +831,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         output = self.get_bundle_settings(
             project_name=project_name,
             bundle_name=bundle_name,
+            project_bundle_name=project_bundle_name,
             variant=variant,
             site_id=site_id,
             use_site=use_site
@@ -834,6 +846,7 @@ class BundlesAddonsAPI(BaseServerAPI):
     def get_addons_settings(
         self,
         bundle_name: Optional[str] = None,
+        project_bundle_name: Optional[str] = None,
         project_name: Optional[str] = None,
         variant: Optional[str] = None,
         site_id: Optional[str] = None,
@@ -853,6 +866,8 @@ class BundlesAddonsAPI(BaseServerAPI):
         Args:
             bundle_name (Optional[str]): Name of bundle for which should be
                 settings received.
+            project_bundle_name (Optional[str]): Name of project bundle
+                for which should be settings received.
             project_name (Optional[str]): Name of project for which should be
                 settings received.
             variant (Optional[Literal['production', 'staging']]): Name of
@@ -869,6 +884,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         if project_name is None:
             return self.get_addons_studio_settings(
                 bundle_name=bundle_name,
+                project_bundle_name=project_bundle_name,
                 variant=variant,
                 site_id=site_id,
                 use_site=use_site,
@@ -878,6 +894,7 @@ class BundlesAddonsAPI(BaseServerAPI):
         return self.get_addons_project_settings(
             project_name=project_name,
             bundle_name=bundle_name,
+            project_bundle_name=project_bundle_name,
             variant=variant,
             site_id=site_id,
             use_site=use_site,

@@ -154,6 +154,7 @@ def _get_typehint(annotation, api_globals):
         str(annotation)
         .replace("NoneType", "None")
     )
+
     full_path_regex = re.compile(
         r"(?P<full>(?P<name>[a-zA-Z0-9_\.]+))"
     )
@@ -181,44 +182,24 @@ def _get_typehint(annotation, api_globals):
             name = name.split(".")[-1]
         typehint = typehint.replace(groups["full"], name)
 
+    if "Literal" in typehint:
+        for match in re.finditer(
+            r"(?P<fullcontent>Literal\[(?P<content>[^\]]*)\])", typehint
+        ):
+            full_content = match.group("fullcontent")
+            content = match.group("content")
+            items = [f'"{i.strip()}"' for i in content.split(",")]
+            new_content = ", ".join(items)
+            new_full_content = full_content.replace(content, new_content)
+            typehint = typehint.replace(full_content, new_full_content)
+
     try:
         # Test if typehint is valid for known '_api' content
         exec(f"_: {typehint} = None", api_globals)
         return typehint
-    except NameError:
-        print("Unknown typehint:", typehint)
-
-    _typehint = typehint
-    _typehing_parents = []
-    while True:
-        # Too hard to manage typehints with commas
-        if "[" not in _typehint:
-            break
-
-        parts = _typehint.split("[")
-        parent = parts.pop(0)
-
-        try:
-            # Test if typehint is valid for known '_api' content
-            exec(f"_: {parent} = None", api_globals)
-        except NameError:
-            _typehint = parent
-            break
-
-        _typehint = "[".join(parts)[:-1]
-        if "," in _typehint:
-            _typing = parent
-            break
-
-        _typehing_parents.append(parent)
-
-    if _typehing_parents:
-        typehint = _typehint
-        for parent in reversed(_typehing_parents):
-            typehint = f"{parent}[{typehint}]"
-        return typehint
-
-    return typehint
+    except Exception:
+        print("Error while processing typehint:", typehint)
+        raise
 
 
 def _get_param_typehint(param, api_globals):
@@ -288,7 +269,10 @@ def sig_params_to_str(sig, param_names, api_globals, indent=0):
         func_params.append("/")
 
     for param_name, param in pos_or_kw:
-        body_params.append(f"{param_name}={param_name}")
+        body_par = param_name
+        if not var_positional:
+            body_par = f"{param_name}={param_name}"
+        body_params.append(body_par)
         func_params.append(_kw_default_to_str(param_name, param, api_globals))
 
     if var_positional:
@@ -440,9 +424,17 @@ def main():
     formatting_init_content = prepare_init_without_api(init_filepath)
 
     # Read content of first part of `_api.py` to get global variables
-    # - disable type checking so imports done only during typechecking are
-    #   not executed
+    # - first with disabled type checking so other files from ayon_api are
+    #   loded without any issues
     typing.TYPE_CHECKING = False
+    api_globals = {"__name__": "ayon_api._api"}
+    exec(parts[0], api_globals)
+
+    # - second with enabled type checking to get all available types in the
+    #   file
+    # NOTE The file contains 'from __future__ import annotations' so any
+    #   typehints can be used, but we should validate if are available.
+    typing.TYPE_CHECKING = True
     api_globals = {"__name__": "ayon_api._api"}
     exec(parts[0], api_globals)
 

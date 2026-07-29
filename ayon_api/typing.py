@@ -6,7 +6,6 @@ from typing import (
     Any,
     TypedDict,
     Union,
-    Optional,
     BinaryIO,
     NotRequired,
 )
@@ -47,6 +46,11 @@ EntityListItemMode = Literal[
     "delete",
 ]
 
+EntityListScope = Literal[
+    "generic",
+    "review-session",
+]
+
 EventFilterValueType = Union[
     None,
     str, int, float,
@@ -59,9 +63,9 @@ IconType = Literal["material-symbols", "url"]
 
 class IconDefType(TypedDict):
     type: IconType
-    name: Optional[str]
-    color: Optional[str]
-    icon: Optional[str]
+    name: str | None
+    color: str | None
+    icon: str | None
 
 
 class EventFilterCondition(TypedDict):
@@ -92,7 +96,7 @@ class EventFilter(TypedDict):
 class BackgroundOperationTask(TypedDict):
     id: str
     status: Literal["pending", "in_progress", "completed"]
-    result: Optional[dict[str, Any]]
+    result: dict[str, Any] | None
 
 
 AttributeScope = Literal[
@@ -103,7 +107,8 @@ AttributeScope = Literal[
     "version",
     "representation",
     "workfile",
-    "user"
+    "user",
+    "list",
 ]
 
 AttributeType = Literal[
@@ -122,30 +127,42 @@ AttributeType = Literal[
 LinkDirection = Literal["in", "out"]
 
 
+class CreateLinkResponseData(TypedDict):
+    id: str
+
+
+class CreateLinkData(TypedDict):
+    input: str
+    output: str
+    linkType: str
+    data: NotRequired[dict[str, Any] | None]
+    name: NotRequired[str | None]
+
+
 class AttributeEnumItemDict(TypedDict):
-    value: Union[str, int, float, bool]
+    value: str | int | float | bool
     label: str
-    icon: Union[str, None]
-    color: Union[str, None]
+    icon: str | None
+    color: str | None
 
 
 class AttributeSchemaDataDict(TypedDict):
     type: AttributeType
     inherit: bool
     title: str
-    description: Optional[str]
-    example: Optional[Any]
-    default: Optional[Any]
-    gt: Union[int, float, None]
-    lt: Union[int, float, None]
-    ge: Union[int, float, None]
-    le: Union[int, float, None]
-    minLength: Optional[int]
-    maxLength: Optional[int]
-    minItems: Optional[int]
-    maxItems: Optional[int]
-    regex: Optional[str]
-    enum: Optional[list[AttributeEnumItemDict]]
+    description: str | None
+    example: Any | None
+    default: Any | None
+    gt: int | float | None
+    lt: int | float | None
+    ge: int | float | None
+    le: int | float | None
+    minLength: int | None
+    maxLength: int | None
+    minItems: int | None
+    maxItems: int | None
+    regex: str | None
+    enum: list[AttributeEnumItemDict] | None
 
 
 class AttributeSchemaDict(TypedDict):
@@ -228,12 +245,13 @@ class BundleInfoDict(TypedDict):
     isStaging: bool
     isArchived: bool
     isDev: bool
-    activeUser: Optional[str]
+    activeUser: str | None
 
 
 class BundlesInfoDict(TypedDict):
     bundles: list[BundleInfoDict]
     productionBundle: str
+    stagingBundle: str
     devBundles: list[str]
 
 
@@ -328,6 +346,14 @@ class SecretDict(TypedDict):
     value: str
 
 
+class ProjectListDict(TypedDict):
+    name: str
+    code: str
+    active: bool
+    createdAt: str
+    updatedAt: str
+
+
 ProjectDict = dict[str, Any]
 FolderDict = dict[str, Any]
 TaskDict = dict[str, Any]
@@ -354,10 +380,25 @@ class NewFolderDict(TypedDict):
     id: str
     name: str
     folderType: str
-    parentId: Optional[str]
+    parentId: str | None
     data: dict[str, Any]
     attrib: dict[str, Any]
-    thumbnailId: Optional[str]
+    thumbnailId: str | None
+    status: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+class NewTaskDict(TypedDict):
+    id: str
+    name: str
+    task_type: str
+    folder_id: str
+    label: NotRequired[str]
+    assignees: NotRequired[list[str]]
+    attrib: NotRequired[dict[str, Any]]
+    data: NotRequired[dict[str, Any]]
+    thumbnailId: NotRequired[str]
+    active: NotRequired[bool]
     status: NotRequired[str]
     tags: NotRequired[list[str]]
 
@@ -427,11 +468,11 @@ class EnrollEventData(TypedDict):
 
 class FlatFolderDict(TypedDict):
     id: str
-    parentId: Optional[str]
+    parentId: str | None
     path: str
     parents: list[str]
     name: str
-    label: Optional[str]
+    label: str | None
     folderType: str
     hasTasks: bool
     hasChildren: bool
@@ -451,7 +492,7 @@ class ProjectHierarchyItemDict(TypedDict):
     hasTasks: bool
     taskNames: list[str]
     parents: list[str]
-    parentId: Optional[str]
+    parentId: str | None
     children: list["ProjectHierarchyItemDict"]
 
 
@@ -461,8 +502,8 @@ class ProjectHierarchyDict(TypedDict):
 
 class ProductTypeDict(TypedDict):
     name: str
-    color: Optional[str]
-    icon: Optional[str]
+    color: str | None
+    icon: str | None
 
 
 ActionEntityTypes = Literal[
@@ -480,10 +521,10 @@ ActionEntityTypes = Literal[
 class ActionManifestDict(TypedDict):
     identifier: str
     label: str
-    groupLabel: Optional[str]
+    groupLabel: str | None
     category: str
     order: int
-    icon: Optional[IconDefType]
+    icon: IconDefType | None
     adminOnly: bool
     managerOnly: bool
     configFields: list[dict[str, Any]]
@@ -549,8 +590,8 @@ ActionPayload = Union[
 class ActionTriggerResponse(TypedDict):
     type: ActionResponseType
     success: bool
-    message: Optional[str]
-    payload: Optional[ActionPayload]
+    message: str | None
+    payload: ActionPayload | None
 
 
 class ActionTakeResponse(TypedDict):
@@ -573,9 +614,29 @@ class ActionConfigResponse(TypedDict):
     value: dict[str, Any]
 
 
-StreamType = Union[io.BytesIO, BinaryIO]
+StreamType = io.BytesIO | BinaryIO
 
 
 class EntityListAttributeDefinitionDict(TypedDict):
     name: str
     data: dict[str, Any]
+
+
+AdvancedFilterOperator = Literal["and", "or"]
+AdvancedFilterConditionOperator = Literal[
+    "eq", "lt", "gt", "lte", "gte", "ne",
+    "isnull", "notnull",
+    "in", "notin", "contains", "excludes",
+    "any", "like"
+]
+
+
+class AdvancedFilterConditionDict(TypedDict):
+    key: str
+    value: Any
+    operator: AdvancedFilterConditionOperator
+
+
+class AdvancedFilterDict(TypedDict):
+    conditions: list[AdvancedFilterConditionDict | "AdvancedFilterDict"]
+    operator: AdvancedFilterOperator

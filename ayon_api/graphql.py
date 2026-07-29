@@ -4,9 +4,9 @@ import copy
 import numbers
 from abc import ABC, abstractmethod
 import typing
-from typing import Optional, Iterable, Any, Generator
+from typing import Iterable, Any, Generator
 
-from .exceptions import GraphQlQueryFailed
+from .exceptions import GraphQlQueryError, GraphQlQueryFailed
 from .utils import SortOrder
 
 if typing.TYPE_CHECKING:
@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 FIELD_VALUE = object()
 
 
-def fields_to_dict(fields: Optional[Iterable[str]]) -> dict:
+def fields_to_dict(fields: Iterable[str] | None) -> dict:
     output = {}
     if not fields:
         return output
@@ -85,7 +85,7 @@ class GraphQlQuery:
     """
     offset = 2
 
-    def __init__(self, name: str, order: Optional[int] = None) -> None:
+    def __init__(self, name: str, order: int | None = None) -> None:
         self._name = name
         self._variables = {}
         self._children = []
@@ -140,7 +140,7 @@ class GraphQlQuery:
         return self._has_multiple_edge_fields
 
     def add_variable(
-        self, key: str, value_type: str, value: Optional[Any] = None
+        self, key: str, value_type: str, value: Any | None = None
     ) -> QueryVariable:
         """Add variable to query.
 
@@ -185,7 +185,7 @@ class GraphQlQuery:
         return self._variables[key]["variable"]
 
     def get_variable_value(
-        self, key: str, default: Optional[Any] = None
+        self, key: str, default: Any | None = None
     ) -> Any:
         """Get Current value of variable.
 
@@ -281,7 +281,7 @@ class GraphQlQuery:
 
     def get_field_by_keys(
         self, keys: Iterable[str]
-    ) -> Optional[BaseGraphQlQueryField]:
+    ) -> BaseGraphQlQueryField | None:
         keys = list(keys)
         if not keys:
             return None
@@ -294,7 +294,7 @@ class GraphQlQuery:
 
     def get_field_by_path(
         self, path: str
-    ) -> Optional[BaseGraphQlQueryField]:
+    ) -> BaseGraphQlQueryField | None:
         return self.get_field_by_keys(path.split("/"))
 
     def calculate_query(self) -> str:
@@ -304,7 +304,7 @@ class GraphQlQuery:
             str: GraphQl string with variables and headers.
 
         Raises:
-            ValueError: Query has no fiels.
+            ValueError: Query has no fields.
 
         """
         if not self._children:
@@ -370,7 +370,7 @@ class GraphQlQuery:
             variables = self.get_variables_values()
             response = con.query_graphql(
                 query_str,
-                self.get_variables_values()
+                variables
             )
             if response.errors:
                 raise GraphQlQueryFailed(response.errors, query_str, variables)
@@ -396,6 +396,7 @@ class GraphQlQuery:
             while self.need_query:
                 query_str = self.calculate_query()
                 variables = self.get_variables_values()
+
                 response = con.query_graphql(query_str, variables)
                 if response.errors:
                     raise GraphQlQueryFailed(
@@ -468,7 +469,7 @@ class BaseGraphQlQueryField(ABC):
 
     def get_field_by_keys(
         self, keys: Iterable[str]
-    ) -> Optional[BaseGraphQlQueryField]:
+    ) -> BaseGraphQlQueryField | None:
         keys = list(keys)
         if not keys:
             return self
@@ -479,7 +480,7 @@ class BaseGraphQlQueryField(ABC):
                 return child.get_field_by_keys(keys)
         return None
 
-    def set_limit(self, limit: Optional[int]) -> None:
+    def set_limit(self, limit: int | None) -> None:
         self._limit = limit
 
     def set_order(self, order: SortOrder) -> None:
@@ -503,7 +504,7 @@ class BaseGraphQlQueryField(ABC):
         self,
         key: str,
         value_type: str,
-        value: Optional[Any] = None,
+        value: Any | None = None,
     ) -> QueryVariable:
         """Add variable to query.
 
@@ -562,7 +563,7 @@ class BaseGraphQlQueryField(ABC):
         for child in self._children:
             yield child
 
-    def sum_edge_fields(self, max_limit: Optional[int] = None) -> int:
+    def sum_edge_fields(self, max_limit: int | None = None) -> int:
         """Check how many edge fields query has.
 
         In case there are multiple edge fields or are nested the query can't
@@ -636,7 +637,7 @@ class BaseGraphQlQueryField(ABC):
             child.reset_cursor()
 
     def get_variable_value(
-        self, key: str, default: Optional[Any] = None
+        self, key: str, default: Any | None = None
     ) -> Any:
         return self._query_item.get_variable_value(key, default)
 
@@ -677,7 +678,7 @@ class BaseGraphQlQueryField(ABC):
         self.add_obj_field(item)
         return item
 
-    def _filter_value_to_str(self, value: Any) -> Optional[str]:
+    def _filter_value_to_str(self, value: Any) -> str | None:
         if isinstance(value, QueryVariable):
             if self.get_variable_value(value.variable_name) is None:
                 return None
@@ -902,8 +903,13 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
                 progress_data[cursor_key] = nodes_by_cursor
 
         page_info = value["pageInfo"]
-        new_cursor = page_info["endCursor"]
-        self._need_query = page_info["hasNextPage"]
+        if self._order == SortOrder.ascending:
+            new_cursor = page_info["endCursor"]
+            self._need_query = page_info["hasNextPage"]
+        else:
+            new_cursor = page_info["startCursor"]
+            self._need_query = page_info["hasPreviousPage"]
+
         edges = value["edges"]
         # Fake result parse
         if not edges:
@@ -931,15 +937,18 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             for child in self._children:
                 child.parse_result(edge["node"], edge_value, progress_data)
 
-        if not self._need_query:
-            return
-
         change_cursor = True
         for child in self._children_iter():
             if child.need_query:
                 change_cursor = False
 
-        if change_cursor:
+        if change_cursor and self._need_query:
+            if new_cursor == self._cursor:
+                raise GraphQlQueryError(
+                    "Cursor didn't change during pagination."
+                    " This can cause infinite loop."
+                )
+
             for child in self._children_iter():
                 child.reset_cursor()
             self._cursor = new_cursor
@@ -949,9 +958,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
 
     def get_filters(self) -> dict[str, Any]:
         filters = super().get_filters()
-        limit_key = "first"
-        if self._order == SortOrder.descending:
-            limit_key = "last"
+        limit_key = "first" if self._order == SortOrder.ascending else "last"
 
         limit_amount = 300
         if self._limit:
@@ -959,10 +966,19 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             if total > self._limit:
                 limit_amount = self._limit - self._fetched_counter
 
+        if self.child_has_edges:
+            # Nested edge fields share a single cursor argument in the query.
+            # Query one parent item at a time so child pagination can't be
+            # overwritten by another parent from the same outer page.
+            limit_amount = 1
+
         filters[limit_key] = limit_amount
 
         if self._cursor:
-            filters["after"] = self._cursor
+            cursor_key = (
+                "after" if self._order == SortOrder.ascending else "before"
+            )
+            filters[cursor_key] = self._cursor
         return filters
 
     def calculate_query(self) -> str:
@@ -1000,8 +1016,16 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         # Add page information
         output.append(edges_offset + "pageInfo {")
         for page_key in (
-            "endCursor",
-            "hasNextPage",
+            (
+                "endCursor"
+                if self._order == SortOrder.ascending
+                else "startCursor"
+            ),
+            (
+                "hasNextPage"
+                if self._order == SortOrder.ascending
+                else "hasPreviousPage"
+            ),
         ):
             output.append(node_offset + page_key)
         output.append(edges_offset + "}")

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing
-from typing import Optional, Any, Iterable
+from typing import Optional, Any, Iterable, Union
 
 import requests
 
@@ -13,6 +13,9 @@ if typing.TYPE_CHECKING:
         AnyEntityDict,
         ServerVersion,
         ProjectDict,
+        StreamType,
+        AttributeScope,
+        AttributeSchemaDataDict,
     )
 
 _PLACEHOLDER = object()
@@ -21,6 +24,12 @@ _PLACEHOLDER = object()
 class BaseServerAPI:
     @property
     def log(self) -> logging.Logger:
+        raise NotImplementedError()
+
+    def is_product_base_type_supported(self) -> bool:
+        raise NotImplementedError()
+
+    def links_graphql_support_data(self) -> bool:
         raise NotImplementedError()
 
     def get_server_version(self) -> str:
@@ -84,6 +93,16 @@ class BaseServerAPI:
     ) -> requests.Response:
         raise NotImplementedError()
 
+    def upload_file_from_stream(
+        self,
+        endpoint: str,
+        stream: StreamType,
+        progress: Optional[TransferProgress] = None,
+        request_type: Optional[RequestType] = None,
+        **kwargs
+    ) -> requests.Response:
+        raise NotImplementedError()
+
     def download_file(
         self,
         endpoint: str,
@@ -114,12 +133,30 @@ class BaseServerAPI:
     ) -> Optional[dict[str, Any]]:
         raise NotImplementedError()
 
+    def get_attributes_for_type(
+        self, entity_type: AttributeScope
+    ) -> dict[str, AttributeSchemaDataDict]:
+        raise NotImplementedError()
+
+    def get_attributes_fields_for_type(
+        self, entity_type: AttributeScope
+    ) -> set[str]:
+        raise NotImplementedError()
+
     def _prepare_fields(
         self,
         entity_type: str,
         fields: set[str],
         own_attributes: bool = False,
     ):
+        raise NotImplementedError()
+
+    def _prepare_link_fields(self, fields: set[str]) -> None:
+        raise NotImplementedError()
+
+    def _prepare_advanced_filters(
+        self, filters: Union[str, dict[str, Any], None]
+    ) -> Optional[str]:
         raise NotImplementedError()
 
     def _convert_entity_data(self, entity: AnyEntityDict):

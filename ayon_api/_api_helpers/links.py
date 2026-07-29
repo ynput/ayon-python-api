@@ -15,11 +15,11 @@ from ayon_api.graphql_queries import (
 from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
-    from typing import TypedDict
-    from ayon_api.typing import LinkDirection
-
-    class CreateLinkData(TypedDict):
-        id: str
+    from ayon_api.typing import (
+        LinkDirection,
+        CreateLinkData,
+        CreateLinkResponseData,
+    )
 
 
 class LinksAPI(BaseServerAPI):
@@ -203,7 +203,8 @@ class LinksAPI(BaseServerAPI):
         output_id: str,
         output_type: str,
         link_name: Optional[str] = None,
-    ) -> CreateLinkData:
+        data: Optional[dict[str, Any]] = None,
+    ) -> CreateLinkResponseData:
         """Create link between 2 entities.
 
         Link has a type which must already exists on a project.
@@ -222,10 +223,11 @@ class LinksAPI(BaseServerAPI):
             output_id (str): Output entity id.
             output_type (str): Entity type of output entity.
             link_name (Optional[str]): Name of link.
-                Available from server version '1.0.0-rc.6'.
+            data (Optional[dict[str, Any]]): Additional data to be stored
+                with the link.
 
         Returns:
-            CreateLinkData: Information about link.
+            CreateLinkResponseData: Information about link.
 
         Raises:
             HTTPRequestError: Server error happened.
@@ -242,11 +244,67 @@ class LinksAPI(BaseServerAPI):
         if link_name:
             kwargs["name"] = link_name
 
+        if data:
+            kwargs["data"] = data
+
         response = self.post(
             f"projects/{project_name}/links", **kwargs
         )
         response.raise_for_status()
         return response.data
+
+    def create_links(
+        self,
+        project_name: str,
+        links: list[CreateLinkData],
+    ) -> None:
+        """Create multiple links in a single request.
+
+        Example of link data::
+            [
+                {
+                    "input": "59a212c0d2e211eda0e20242ac120001",
+                    "output": "59a212c0d2e211eda0e20242ac120002",
+                    "linkType": "reference|folder|folder",
+                    "name": "my_link",
+                    "data": {"key": "value"}
+                }
+            ]
+
+        Args:
+            project_name (str): Project where links are created.
+            links (list[CreateLinkData]): List of link data.
+
+        Raises:
+            ValueError: Link data is invalid.
+
+        """
+        if not links:
+            return
+
+        for link in links:
+            self._validate_link_data(link)
+
+        if self.get_server_version_tuple() < (1, 15, 8):
+            for link in links:
+                link_type, in_type, out_type = link["linkType"].split("|")
+                self.create_link(
+                    project_name,
+                    link_type,
+                    link["input"],
+                    in_type,
+                    link["output"],
+                    out_type,
+                    link_name=link.get("name") or None,
+                    data=link.get("data") or None,
+                )
+            return
+
+        response = self.post(
+            f"projects/{project_name}/links/bulk",
+            links=links
+        )
+        response.raise_for_status()
 
     def delete_link(self, project_name: str, link_id: str) -> None:
         """Remove link by id.
@@ -357,6 +415,7 @@ class LinksAPI(BaseServerAPI):
             return output
 
         link_fields = {"id", "links"}
+        self._prepare_link_fields(link_fields)
         query = query_func(link_fields)
         for attr, filter_value in filters.items():
             query.set_variable_value(attr, filter_value)
@@ -616,6 +675,35 @@ class LinksAPI(BaseServerAPI):
         return self.get_representations_links(
             project_name, [representation_id], link_types, link_direction
         )[representation_id]
+
+    def _validate_link_data(self, link_data: dict[str, Any]) -> None:
+        """Validate link data before sending to server.
+
+        Args:
+            link_data (dict[str, Any]): Link data to validate.
+
+        Raises:
+            ValueError: Link data is invalid.
+
+        """
+        required_keys = {"input", "output", "linkType"}
+        missing_keys = required_keys - link_data.keys()
+        if missing_keys:
+            mk = ", ".join(f"'{key}'" for key in sorted(missing_keys))
+            raise ValueError(f"Missing required keys in link data: {mk}")
+
+        link_type = link_data["linkType"]
+        if not isinstance(link_type, str):
+            raise ValueError(
+                f"Invalid linkType type: {type(link_type)}. Expected 'str'"
+            )
+
+        link_type_parts = link_type.split("|")
+        if len(link_type_parts) != 3:
+            raise ValueError(
+                f"Invalid linkType format: {link_type}. Expected format:"
+                " 'link_type|input_type|output_type'"
+            )
 
     def _prepare_link_filters(
         self,

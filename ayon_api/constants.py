@@ -33,9 +33,6 @@ DEFAULT_USER_FIELDS = {
     "hasPassword",
     "updatedAt",
     "apiKeyPreview",
-    "attrib.avatarUrl",
-    "attrib.email",
-    "attrib.fullName",
 }
 
 # --- Project folder types ---
@@ -78,8 +75,14 @@ DEFAULT_PROJECT_LINK_TYPES_FIELDS = {
 # --- Product types ---
 DEFAULT_PRODUCT_TYPE_FIELDS = {
     "name",
-    "icon",
-    "color",
+}
+
+# --- Product base type ---
+DEFAULT_PRODUCT_BASE_TYPE_FIELDS = {
+    # TODO add 'icon' and 'color' when server supports it
+    "name",
+    # "icon",
+    # "color",
 }
 
 # --- Project ---
@@ -97,7 +100,6 @@ DEFAULT_PROJECT_FIELDS = {
     "linkTypes",
     "statuses",
     "tags",
-    "attrib",
 }
 
 # --- Folders ---
@@ -240,6 +242,7 @@ DEFAULT_ACTIVITY_FIELDS = {
 DEFAULT_ENTITY_LIST_FIELDS = {
     "id",
     "count",
+    "allAttrib",
     "attributes",
     "active",
     "createdBy",
@@ -252,8 +255,4 @@ DEFAULT_ENTITY_LIST_FIELDS = {
     "tags",
     "updatedAt",
     "updatedBy",
-    "items.id",
-    "items.entityId",
-    "items.entityType",
-    "items.position",
 }
