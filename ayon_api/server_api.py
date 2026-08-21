@@ -11,6 +11,7 @@ import os
 import re
 import io
 import json
+import ssl
 import time
 import logging
 import platform
@@ -22,6 +23,7 @@ from typing import (
 )
 
 import requests
+import websocket
 
 from .constants import (
     SERVER_RETRIES_ENV_KEY,
@@ -94,6 +96,8 @@ from ._api_helpers import (
 )
 
 if typing.TYPE_CHECKING:
+    from websocket import WebSocket
+
     from .typing import (
         ServerVersion,
         AnyEntityDict,
@@ -380,8 +384,67 @@ class ServerAPI(
     def get_rest_url(self) -> str:
         return self._rest_url
 
+    def get_websocket_url(
+        self, endpoint: str = "ws"
+    ) -> str:
+        """Prepare websocket url from endpoint and optional params."""
+        endpoint = (endpoint or "").strip()
+
+        if self._base_url.startswith("https"):
+            base_url = f"wss{self._base_url[5:]}"
+        elif self._base_url.startswith("http"):
+            base_url = f"ws{self._base_url[4:]}"
+        else:
+            raise ValueError(f"Invalid scheme in base URL: {self._base_url}")
+
+        base_url = base_url.rstrip("/")
+        endpoint = endpoint.lstrip("/")
+        return f"{base_url}/{endpoint}"
+
     base_url = property(get_base_url)
     rest_url = property(get_rest_url)
+
+    def create_websocket(
+        self,
+        endpoint: str = "ws",
+        timeout: float | None = None,
+        headers: dict[str, Any] | None = None,
+        sslopt: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> WebSocket:
+        """Create websocket connection to AYON server."""
+        ws_url = self.get_websocket_url(endpoint)
+        ws_headers = self.get_headers()
+        ws_headers.pop("Content-Type", None)
+        if headers:
+            ws_headers.update(headers)
+
+        ws_kwargs = copy.deepcopy(kwargs)
+        if timeout is None:
+            timeout = self.timeout
+        if timeout:
+            ws_kwargs["timeout"] = timeout
+
+        if ws_headers:
+            ws_kwargs["header"] = [
+                f"{key}: {value}"
+                for key, value in ws_headers.items()
+                if value is not None
+            ]
+
+        prepared_sslopt = copy.deepcopy(sslopt) if sslopt else {}
+        if self._ssl_verify is False:
+            prepared_sslopt.setdefault("cert_reqs", ssl.CERT_NONE)
+        elif isinstance(self._ssl_verify, str):
+            prepared_sslopt.setdefault("ca_certs", self._ssl_verify)
+
+        if self._cert:
+            prepared_sslopt.setdefault("certfile", self._cert)
+
+        if ws_url.startswith("wss://") and prepared_sslopt:
+            ws_kwargs["sslopt"] = prepared_sslopt
+
+        return websocket.create_connection(ws_url, **ws_kwargs)
 
     def get_ssl_verify(self) -> bool | str | None:
         """Enable ssl verification.

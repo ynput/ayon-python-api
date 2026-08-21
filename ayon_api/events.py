@@ -1,31 +1,66 @@
 from __future__ import annotations
 
+import atexit
 from dataclasses import dataclass
 import inspect
+import json
 import logging
 import os
 import re
+import threading
+import typing
 from typing import Any, Callable
 import weakref
+
+from ._api import get_server_api_connection
+
+if typing.TYPE_CHECKING:
+    from websocket import WebSocket
+
+    from .server_api import ServerAPI
 
 
 @dataclass
 class Event:
     topic: str
+    data: dict[str, Any]
+    id: str | None = None
+    sender: str | None = None
+    event_hash: str | None = None
+    project_name: str | None = None
+    dependencies: list[str] | None = None
+    description: str | None = None
+    summary: str | None = None
+    payload: dict[str, Any] | None = None
+    status: str | None = None
+    store: bool | None = None
 
+    def __getitem__(self, key) -> Any:
+        return self.data[key]
 
-@dataclass
-class ServerEvent(Event):
-    sender: str | None
-    event_hash: str | None
-    project_name: str | None
-    username: str | None
-    dependencies: list[str] | None
-    description: str | None
-    summary: str | None
-    payload: dict[str, Any] | None
-    finished: bool = True
-    store: bool = True
+    def get(self, key, default=None) -> Any:
+        return self.data.get(key, default)
+
+    @classmethod
+    def from_ws_message(cls, data: dict[str, Any]) -> Event | None:
+        topic = data.get("topic")
+        if topic is None:
+            return None
+
+        return cls(
+            topic=topic,
+            data=data,
+            id=data.get("id"),
+            sender=data.get("sender"),
+            event_hash=data.get("eventHash"),
+            project_name=data.get("project"),
+            dependencies=data.get("dependsOn"),
+            description=data.get("description"),
+            summary=data.get("summary"),
+            payload=data.get("payload"),
+            status=data.get("status"),
+            store=data.get("store"),
+        )
 
 
 def is_func_signature_supported(func, *args, **kwargs):
@@ -195,12 +230,12 @@ class EventCallback:
     may contain '*' that will be handled as "any characters".
 
     # Examples:
-    - "workfile.save"   Callback will be triggered if the event topic is
-                        exactly "workfile.save" .
-    - "workfile.*"      Callback will be triggered an event topic starts with
-                        "workfile." so "workfile.save" and "workfile.open"
-                        will trigger the callback.
-    - "*"               Callback will listen to all events.
+    - "entity.folder.attr_changed" - Callback will be triggered if the event
+        topic is exactly "entity.folder.attr_changed".
+    - "entity.*" - Callback will be triggered an event topic starts with
+        "entity." so "entity.folder.created" and "entity.version.created"
+        will trigger the callback.
+    - "*" Callback will listen to all events.
 
     Callback can be function or method. In both cases it should expect one
     or none arguments. When 1 argument is expected then the processed 'Event'
@@ -218,19 +253,24 @@ class EventCallback:
     Args:
         topic (str): Topic which will be listened.
         func (Callable): Callback to a topic.
-        order (Union[int, None]): Order of callback. Lower number means higher
+        order (int | None): Order of callback. Lower number means higher
             priority.
 
     Raises:
         TypeError: When passed function is not a callable object.
     """
+    default_order: int = 100
 
-    def __init__(self, topic: str, func: Callable, order: int) -> None:
+    def __init__(
+        self, topic: str, func: Callable, order: int | None = None
+    ) -> None:
         if not callable(func):
             raise TypeError(
                 f"Registered callback is not callable. \"{func}\""
             )
 
+        if order is None:
+            order = self.default_order
         self._validate_order(order)
 
         self._log = None
@@ -289,6 +329,10 @@ class EventCallback:
         if self._log is None:
             self._log = logging.getLogger(self.__class__.__name__)
         return self._log
+
+    @property
+    def topic(self) -> str:
+        return self._topic
 
     @property
     def is_ref_valid(self) -> bool:
@@ -438,7 +482,13 @@ class EventCallback:
             self._partial_func = None
 
 
-class EventSystem:
+@dataclass
+class _LoopState:
+    running: bool = False
+    stop_event: threading.Event = threading.Event()
+
+
+class EventHub:
     """Encapsulate event handling into an object.
 
     System wraps registered callbacks and triggered events into single object,
@@ -450,10 +500,18 @@ class EventSystem:
     'add_callback'.
     """
 
-    default_order: int = 100
+    def __init__(self, connection: ServerAPI | None = None) -> None:
+        if connection is None:
+            connection = get_server_api_connection()
 
-    def __init__(self) -> None:
+        self._connection: ServerAPI = connection
+        self._ws_connection: WebSocket | None = None
+        self._loop_state: _LoopState = _LoopState()
+        self._loop_thread: threading.Thread | None = None
+        self._registered_topics: set[str] = set()
         self._registered_callbacks: list[EventCallback] = []
+        self._internal_callbacks: list[EventCallback] = []
+        atexit.register(self.stop)
 
     def add_callback(
         self,
@@ -475,12 +533,20 @@ class EventSystem:
                 stop listening.
 
         """
-        if order is None:
-            order = self.default_order
-
         callback = EventCallback(topic, callback, order)
-        self._registered_callbacks.append(callback)
+        self.add_callbacks([callback])
         return callback
+
+    def add_callbacks(self, callbacks: list[EventCallback]) -> None:
+        """Register callback in event system.
+
+        Args:
+            callbacks (list[EventCallback]): List of EventCallback
+                objects to register.
+
+        """
+        self._registered_callbacks.extend(callbacks)
+        self._update_topics()
 
     def emit_event(self, event: Event) -> None:
         """Emit event object.
@@ -495,6 +561,124 @@ class EventSystem:
         """Clear all registered callbacks."""
         self._registered_callbacks = []
 
+    def stop(self) -> None:
+        if self._loop_thread is None:
+            return
+
+        if self._ws_connection is not None:
+            self._ws_connection.close()
+        self._loop_state.stop_event.set()
+        self._loop_thread.join()
+
+    def _update_topics(self) -> None:
+        """Subscribe to topics in server based on registered callbacks.
+
+        Server does not allow wildcards in the topic but does validate
+            start of the topic so 'entity.folder.*' is not allowed
+            but 'entity.folder.' does work.
+
+        In case the wildcard is used at the start of the topic we have to
+            subscribe to all topics.
+
+        """
+        topics = set()
+        for callback in self._registered_callbacks:
+            topic = callback.topic
+            if topic == "*":
+                topics.add(topic)
+                continue
+            parts = topic.split("*", maxsplit=1)
+            if len(parts) == 1:
+                topics.add(topic)
+                continue
+
+            part = parts[0]
+            if part:
+                topics.add(part)
+            else:
+                topics.add("*")
+
+        if topics == self._registered_topics:
+            return
+
+        self._registered_topics = topics
+
+        ws_connection = self._get_ws_connection()
+        subscribe_payload = {
+            "topic": "auth",
+            "token": self._connection.get_token(),
+            "subscribe": list(self._registered_topics),
+        }
+        ws_connection.send(json.dumps(subscribe_payload))
+
+    def _get_ws_connection(self) -> WebSocket:
+        if self._ws_connection is None:
+            return self._create_ws_connection()
+        # TODO validate if is still alive and re-create if needed
+        if not self._ws_connection.connected:
+            return self._create_ws_connection()
+        return self._ws_connection
+
+    def _create_ws_connection(self) -> WebSocket:
+        self.stop()
+        self._loop_state.stop_event = threading.Event()
+
+        ws_connection = self._connection.create_websocket()
+        self._ws_connection = ws_connection
+
+        callbacks = [
+            EventCallback(
+                "server.started", self._on_server_started,
+            ),
+            EventCallback(
+                "server.restart_requested", self._on_server_restart,
+            ),
+        ]
+        old_c, self._internal_callbacks = self._internal_callbacks, callbacks
+        for callback in old_c:
+            callback.deregister()
+
+        self.add_callbacks(callbacks)
+
+        loop_thread = threading.Thread(target=self._thread_loop)
+        self._loop_thread = loop_thread
+        loop_thread.start()
+
+        return ws_connection
+
+    def _thread_loop(self) -> None:
+        self._loop_state.running = True
+        try:
+            con = self._get_ws_connection()
+            while con.connected:
+                if self._loop_state.stop_event.is_set():
+                    break
+
+                message = con.recv()
+                if not message:
+                    continue
+
+                event_data = json.loads(message)
+                event = Event.from_ws_message(event_data)
+                if event is not None:
+                    self.emit_event(event)
+
+        finally:
+            self._loop_state.running = True
+            self._loop_state.stop_event.set()
+
+    def _on_server_started(self, event: Event) -> None:
+        """Handle server started event.
+
+        Args:
+            event (Event): Event object with topic and data.
+
+        """
+        print("HeHe?")
+
+    def _on_server_restart(self, event: Event) -> None:
+        print("Server is restarting")
+
     def _process_event(self, event: Event) -> None:
         """Process event topic and trigger callbacks.
 
@@ -505,7 +689,12 @@ class EventSystem:
         callbacks = tuple(sorted(
             self._registered_callbacks, key=lambda x: x.order
         ))
+        any_removed = False
         for callback in callbacks:
             callback.process_event(event)
             if not callback.is_ref_valid:
+                any_removed = True
                 self._registered_callbacks.remove(callback)
+
+        if any_removed:
+            self._update_topics()
