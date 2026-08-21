@@ -741,12 +741,21 @@ class OperationsSession(object):
     Args:
         con (Optional[ServerAPI]): Connection to server. Global connection
             is used if not passed.
+        wait_for_events (bool): Wait for events to be processed on server.
+            Default value of the argument. Can be changed when 'commit'
+            is called.
 
     """
-    def __init__(self, con: Optional[ServerAPI] = None) -> None:
+    def __init__(
+        self,
+        con: Optional[ServerAPI] = None,
+        *,
+        wait_for_events: bool = False,
+    ) -> None:
         if con is None:
             con = get_server_api_connection()
         self._con = con
+        self._wait_for_events = wait_for_events
         self._project_cache = {}
         self._operations = []
         self._nested_operations = collections.defaultdict(list)
@@ -817,7 +826,7 @@ class OperationsSession(object):
             for operation in self._operations
         ]
 
-    def commit(self) -> None:
+    def commit(self, *, wait_for_events: bool | None = None) -> None:
         """Commit session operations."""
         operations, self._operations = self._operations, []
         if not operations:
@@ -827,6 +836,9 @@ class OperationsSession(object):
         for operation in operations:
             operations_by_project[operation.project_name].append(operation)
 
+        if wait_for_events is None:
+            wait_for_events = self._wait_for_events
+
         for project_name, operations in operations_by_project.items():
             operations_body = []
             for operation in operations:
@@ -835,7 +847,11 @@ class OperationsSession(object):
                     operations_body.append(body)
 
             self._con.send_background_batch_operations(
-                project_name, operations_body, wait=True, can_fail=False
+                project_name,
+                operations_body,
+                can_fail=False,
+                wait_for_events=wait_for_events,
+                wait=True,
             )
 
     def create_entity(
