@@ -7550,7 +7550,7 @@ def create_link(
 def create_links(
     project_name: str,
     links: list[CreateLinkData],
-) -> None:
+) -> list[dict[str, Any]]:
     """Create multiple links in a single request.
 
     Example of link data::
