@@ -257,7 +257,7 @@ class LinksAPI(BaseServerAPI):
         self,
         project_name: str,
         links: list[CreateLinkData],
-    ) -> None:
+    ) -> list[dict[str, Any]]:
         """Create multiple links in a single request.
 
         Example of link data::
@@ -280,15 +280,16 @@ class LinksAPI(BaseServerAPI):
 
         """
         if not links:
-            return
+            return []
 
         for link in links:
             self._validate_link_data(link)
 
         if self.get_server_version_tuple() < (1, 15, 8):
+            created_links = []
             for link in links:
                 link_type, in_type, out_type = link["linkType"].split("|")
-                self.create_link(
+                data = self.create_link(
                     project_name,
                     link_type,
                     link["input"],
@@ -298,13 +299,20 @@ class LinksAPI(BaseServerAPI):
                     link_name=link.get("name") or None,
                     data=link.get("data") or None,
                 )
-            return
+                created_links.append({
+                    "id": data["id"],
+                    "input": link["input"],
+                    "output": link["output"],
+                    "linkType": link["linkType"]
+                })
+            return created_links
 
         response = self.post(
             f"projects/{project_name}/links/bulk",
             links=links
         )
         response.raise_for_status()
+        return response.data["created"]
 
     def delete_link(self, project_name: str, link_id: str) -> None:
         """Remove link by id.
