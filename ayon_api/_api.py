@@ -54,6 +54,7 @@ if typing.TYPE_CHECKING:
         LinkDirection,
         CreateLinkData,
         CreateLinkResponseData,
+        CreateLinksResponseItem,
         EventFilter,
         EventStatus,
         EnrollEventData,
@@ -7550,7 +7551,7 @@ def create_link(
 def create_links(
     project_name: str,
     links: list[CreateLinkData],
-) -> list[dict[str, Any]]:
+) -> list[CreateLinksResponseItem]:
     """Create multiple links in a single request.
 
     Example of link data::
@@ -7567,6 +7568,9 @@ def create_links(
     Args:
         project_name (str): Project where links are created.
         links (list[CreateLinkData]): List of link data.
+
+    Returns:
+        list[CreateLinksResponseItem]: Information about created links.
 
     Raises:
         ValueError: Link data is invalid.
