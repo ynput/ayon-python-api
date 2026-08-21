@@ -370,8 +370,10 @@ class ActivitiesAPI(BaseServerAPI):
         self,
         project_name: str,
         operations: list[dict[str, Any]],
+        *,
         can_fail: bool = False,
-        raise_on_fail: bool = True
+        wait_for_events: bool = False,
+        raise_on_fail: bool = True,
     ) -> list[dict[str, Any]]:
         """Post multiple CRUD activities operations to server.
 
@@ -385,6 +387,7 @@ class ActivitiesAPI(BaseServerAPI):
             operations (list[dict[str, Any]]): Operations to be processed.
             can_fail (Optional[bool]): Server will try to process all
                 operations even if one of them fails.
+            wait_for_events (bool): Wait for events to be processed on server.
             raise_on_fail (Optional[bool]): Raise exception if an operation
                 fails. You can handle failed operations on your own
                 when set to 'False'.
@@ -401,6 +404,7 @@ class ActivitiesAPI(BaseServerAPI):
         return self._send_batch_operations(
             f"projects/{project_name}/operations/activities",
             operations,
-            can_fail,
-            raise_on_fail,
+            can_fail=can_fail,
+            wait_for_events=wait_for_events,
+            raise_on_fail=raise_on_fail,
         )

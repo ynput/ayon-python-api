@@ -131,6 +131,13 @@ class CreateLinkResponseData(TypedDict):
     id: str
 
 
+class CreateLinksResponseItem(TypedDict):
+    id: str
+    input: str
+    output: str
+    linkType: str
+
+
 class CreateLinkData(TypedDict):
     input: str
     output: str
