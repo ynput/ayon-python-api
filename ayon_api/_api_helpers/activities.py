@@ -387,8 +387,7 @@ class ActivitiesAPI(BaseServerAPI):
             operations (list[dict[str, Any]]): Operations to be processed.
             can_fail (Optional[bool]): Server will try to process all
                 operations even if one of them fails.
-            wait_for_events (bool): The operations are marked as done before
-                related events are triggered on server.
+            wait_for_events (bool): Wait for events to be processed on server.
             raise_on_fail (Optional[bool]): Raise exception if an operation
                 fails. You can handle failed operations on your own
                 when set to 'False'.

@@ -1638,8 +1638,7 @@ def send_batch_operations(
         operations (list[dict[str, Any]]): Operations to be processed.
         can_fail (bool): Server will try to process all
             operations even if one of them fails.
-        wait_for_events (bool): The operations are marked as done before
-            related events are triggered on server.
+        wait_for_events (bool): Wait for events to be processed on server.
         raise_on_fail (bool): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'.
@@ -1693,8 +1692,7 @@ def send_background_batch_operations(
         operations (list[dict[str, Any]]): Operations to be processed.
         can_fail (bool): Server will try to process all
             operations even if one of them fails.
-        wait_for_events (bool): The operations are marked as done before
-            related events are triggered on server.
+        wait_for_events (bool): Wait for events to be processed on server.
         raise_on_fail (bool): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'. Used when 'wait' is enabled.
@@ -2735,8 +2733,7 @@ def send_activities_batch_operations(
         operations (list[dict[str, Any]]): Operations to be processed.
         can_fail (Optional[bool]): Server will try to process all
             operations even if one of them fails.
-        wait_for_events (bool): The operations are marked as done before
-            related events are triggered on server.
+        wait_for_events (bool): Wait for events to be processed on server.
         raise_on_fail (Optional[bool]): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'.
