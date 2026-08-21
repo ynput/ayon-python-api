@@ -1621,7 +1621,9 @@ def get_rest_entity_by_id(
 def send_batch_operations(
     project_name: str,
     operations: list[dict[str, Any]],
+    *,
     can_fail: bool = False,
+    wait_for_events: bool = False,
     raise_on_fail: bool = True,
 ) -> list[dict[str, Any]]:
     """Post multiple CRUD operations to server.
@@ -1636,6 +1638,7 @@ def send_batch_operations(
         operations (list[dict[str, Any]]): Operations to be processed.
         can_fail (bool): Server will try to process all
             operations even if one of them fails.
+        wait_for_events (bool): Wait for events to be processed on server.
         raise_on_fail (bool): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'.
@@ -1654,6 +1657,7 @@ def send_batch_operations(
         project_name=project_name,
         operations=operations,
         can_fail=can_fail,
+        wait_for_events=wait_for_events,
         raise_on_fail=raise_on_fail,
     )
 
@@ -1663,8 +1667,9 @@ def send_background_batch_operations(
     operations: list[dict[str, Any]],
     *,
     can_fail: bool = False,
-    wait: bool = False,
+    wait_for_events: bool = False,
     raise_on_fail: bool = True,
+    wait: bool = False,
 ) -> BackgroundOperationTask:
     """Post multiple CRUD operations to server.
 
@@ -1687,10 +1692,11 @@ def send_background_batch_operations(
         operations (list[dict[str, Any]]): Operations to be processed.
         can_fail (bool): Server will try to process all
             operations even if one of them fails.
-        wait (bool): Wait for operations to end.
+        wait_for_events (bool): Wait for events to be processed on server.
         raise_on_fail (bool): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'. Used when 'wait' is enabled.
+        wait (bool): Wait for operations to end.
 
     Raises:
         ValueError: Operations can't be converted to json string.
@@ -1706,8 +1712,9 @@ def send_background_batch_operations(
         project_name=project_name,
         operations=operations,
         can_fail=can_fail,
-        wait=wait,
+        wait_for_events=wait_for_events,
         raise_on_fail=raise_on_fail,
+        wait=wait,
     )
 
 
@@ -2709,7 +2716,9 @@ def set_entity_watchers(
 def send_activities_batch_operations(
     project_name: str,
     operations: list[dict[str, Any]],
+    *,
     can_fail: bool = False,
+    wait_for_events: bool = False,
     raise_on_fail: bool = True,
 ) -> list[dict[str, Any]]:
     """Post multiple CRUD activities operations to server.
@@ -2724,6 +2733,7 @@ def send_activities_batch_operations(
         operations (list[dict[str, Any]]): Operations to be processed.
         can_fail (Optional[bool]): Server will try to process all
             operations even if one of them fails.
+        wait_for_events (bool): Wait for events to be processed on server.
         raise_on_fail (Optional[bool]): Raise exception if an operation
             fails. You can handle failed operations on your own
             when set to 'False'.
@@ -2742,6 +2752,7 @@ def send_activities_batch_operations(
         project_name=project_name,
         operations=operations,
         can_fail=can_fail,
+        wait_for_events=wait_for_events,
         raise_on_fail=raise_on_fail,
     )
 
