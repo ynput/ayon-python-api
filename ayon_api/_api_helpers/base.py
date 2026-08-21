@@ -167,6 +167,7 @@ class BaseServerAPI:
         uri: str,
         operations: list[dict[str, Any]],
         can_fail: bool,
+        wait_for_events: bool,
         raise_on_fail: bool
     ) -> list[dict[str, Any]]:
         raise NotImplementedError()
