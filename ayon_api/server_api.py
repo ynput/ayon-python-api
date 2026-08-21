@@ -2475,7 +2475,9 @@ class ServerAPI(
         self,
         project_name: str,
         operations: list[dict[str, Any]],
+        *,
         can_fail: bool = False,
+        wait_for_events: bool = False,
         raise_on_fail: bool = True,
     ) -> list[dict[str, Any]]:
         """Post multiple CRUD operations to server.
@@ -2490,6 +2492,8 @@ class ServerAPI(
             operations (list[dict[str, Any]]): Operations to be processed.
             can_fail (bool): Server will try to process all
                 operations even if one of them fails.
+            wait_for_events (bool): The operations are marked as done before
+                related events are triggered on server.
             raise_on_fail (bool): Raise exception if an operation
                 fails. You can handle failed operations on your own
                 when set to 'False'.
@@ -2506,8 +2510,9 @@ class ServerAPI(
         return self._send_batch_operations(
             f"projects/{project_name}/operations",
             operations,
-            can_fail,
-            raise_on_fail,
+            can_fail=can_fail,
+            wait_for_events=wait_for_events,
+            raise_on_fail=raise_on_fail,
         )
 
     def send_background_batch_operations(
@@ -2516,8 +2521,9 @@ class ServerAPI(
         operations: list[dict[str, Any]],
         *,
         can_fail: bool = False,
-        wait: bool = False,
+        wait_for_events: bool = False,
         raise_on_fail: bool = True,
+        wait: bool = False,
     ) -> BackgroundOperationTask:
         """Post multiple CRUD operations to server.
 
@@ -2540,10 +2546,12 @@ class ServerAPI(
             operations (list[dict[str, Any]]): Operations to be processed.
             can_fail (bool): Server will try to process all
                 operations even if one of them fails.
-            wait (bool): Wait for operations to end.
+            wait_for_events (bool): The operations are marked as done before
+                related events are triggered on server.
             raise_on_fail (bool): Raise exception if an operation
                 fails. You can handle failed operations on your own
                 when set to 'False'. Used when 'wait' is enabled.
+            wait (bool): Wait for operations to end.
 
         Raises:
             ValueError: Operations can't be converted to json string.
@@ -2558,7 +2566,8 @@ class ServerAPI(
         response = self.post(
             f"projects/{project_name}/operations/background",
             operations=operations_body,
-            canFail=can_fail
+            canFail=can_fail,
+            waitForEvents=wait_for_events,
         )
         response.raise_for_status()
         if not wait:
@@ -2631,7 +2640,8 @@ class ServerAPI(
         uri: str,
         operations: list[dict[str, Any]],
         can_fail: bool,
-        raise_on_fail: bool
+        wait_for_events: bool,
+        raise_on_fail: bool,
     ) -> list[dict[str, Any]]:
         if not operations:
             return []
@@ -2643,7 +2653,8 @@ class ServerAPI(
         response = self.post(
             uri,
             operations=operations_body,
-            canFail=can_fail
+            canFail=can_fail,
+            waitForEvents=wait_for_events,
         )
 
         op_results = response.get("operations")
