@@ -833,6 +833,7 @@ class OperationsSession(object):
             wait_for_events (bool | None): Wait for events to be processed
                 on server. Use 'None' to use the default value defined on
                 OperationsSession object.
+
         """
         operations, self._operations = self._operations, []
         if not operations:
