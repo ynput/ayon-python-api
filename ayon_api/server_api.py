@@ -1489,6 +1489,8 @@ class ServerAPI(
         response = self.raw_get(
             "info",
             handle_invalid_token=False,
+            verify=self.ssl_verify,
+            cert=self.cert
         )
         response.raise_for_status()
         return response.data
