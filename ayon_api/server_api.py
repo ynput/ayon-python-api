@@ -385,9 +385,9 @@ class ServerAPI(
         return self._rest_url
 
     def get_websocket_url(
-        self, endpoint: str = "ws"
+        self, endpoint: str
     ) -> str:
-        """Prepare websocket url from endpoint and optional params."""
+        """Prepare websocket url from endpoint."""
         endpoint = (endpoint or "").strip()
 
         if self._base_url.startswith("https"):
@@ -403,48 +403,6 @@ class ServerAPI(
 
     base_url = property(get_base_url)
     rest_url = property(get_rest_url)
-
-    def create_websocket(
-        self,
-        endpoint: str = "ws",
-        timeout: float | None = None,
-        headers: dict[str, Any] | None = None,
-        sslopt: dict[str, Any] | None = None,
-        **kwargs,
-    ) -> WebSocket:
-        """Create websocket connection to AYON server."""
-        ws_url = self.get_websocket_url(endpoint)
-        ws_headers = self.get_headers()
-        ws_headers.pop("Content-Type", None)
-        if headers:
-            ws_headers.update(headers)
-
-        ws_kwargs = copy.deepcopy(kwargs)
-        if timeout is None:
-            timeout = self.timeout
-        if timeout:
-            ws_kwargs["timeout"] = timeout
-
-        if ws_headers:
-            ws_kwargs["header"] = [
-                f"{key}: {value}"
-                for key, value in ws_headers.items()
-                if value is not None
-            ]
-
-        prepared_sslopt = copy.deepcopy(sslopt) if sslopt else {}
-        if self._ssl_verify is False:
-            prepared_sslopt.setdefault("cert_reqs", ssl.CERT_NONE)
-        elif isinstance(self._ssl_verify, str):
-            prepared_sslopt.setdefault("ca_certs", self._ssl_verify)
-
-        if self._cert:
-            prepared_sslopt.setdefault("certfile", self._cert)
-
-        if ws_url.startswith("wss://") and prepared_sslopt:
-            ws_kwargs["sslopt"] = prepared_sslopt
-
-        return websocket.create_connection(ws_url, **ws_kwargs)
 
     def get_ssl_verify(self) -> bool | str | None:
         """Enable ssl verification.
@@ -927,6 +885,49 @@ class ServerAPI(
         self._session = None
         self._session_functions_mapping = {}
         session.close()
+
+    def create_websocket(
+        self,
+        endpoint: str,
+        *,
+        timeout: float | None = None,
+        headers: dict[str, Any] | None = None,
+        sslopt: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> WebSocket:
+        """Create a websocket connection to AYON server."""
+        ws_url = self.get_websocket_url(endpoint)
+        ws_headers = self.get_headers()
+        ws_headers.pop("Content-Type", None)
+        if headers:
+            ws_headers.update(headers)
+
+        ws_kwargs = copy.deepcopy(kwargs)
+        if timeout is None:
+            timeout = self.timeout
+        if timeout:
+            ws_kwargs["timeout"] = timeout
+
+        if ws_headers:
+            ws_kwargs["header"] = [
+                f"{key}: {value}"
+                for key, value in ws_headers.items()
+                if value is not None
+            ]
+
+        prepared_sslopt = copy.deepcopy(sslopt) if sslopt else {}
+        if self._ssl_verify is False:
+            prepared_sslopt.setdefault("cert_reqs", ssl.CERT_NONE)
+        elif isinstance(self._ssl_verify, str):
+            prepared_sslopt.setdefault("ca_certs", self._ssl_verify)
+
+        if self._cert:
+            prepared_sslopt.setdefault("certfile", self._cert)
+
+        if ws_url.startswith("wss://") and prepared_sslopt:
+            ws_kwargs["sslopt"] = prepared_sslopt
+
+        return websocket.create_connection(ws_url, **ws_kwargs)
 
     def _update_session_headers(self) -> None:
         if self._session is None:

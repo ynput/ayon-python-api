@@ -623,7 +623,7 @@ class EventHub:
         self.stop()
         self._loop_state.stop_event = threading.Event()
 
-        ws_connection = self._connection.create_websocket()
+        ws_connection = self._connection.create_websocket("ws")
         self._ws_connection = ws_connection
 
         callbacks = [
