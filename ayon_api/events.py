@@ -1,18 +1,25 @@
 from __future__ import annotations
 
 import atexit
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import inspect
 import json
 import logging
 import os
 import re
+import socket
+import time
 import threading
 import typing
 from typing import Any, Callable
 import weakref
 
-from ._api import get_server_api_connection
+from websocket import (
+    ABNF,
+    WebSocketProtocolException,
+    WebSocketConnectionClosedException,
+    WebSocketTimeoutException,
+)
 
 if typing.TYPE_CHECKING:
     from websocket import WebSocket
@@ -484,8 +491,12 @@ class EventCallback:
 
 @dataclass
 class _LoopState:
+    started: bool = False
     running: bool = False
     stop_event: threading.Event = threading.Event()
+    auth_required: bool = False
+    registered_topics: set[str] = field(default_factory=set)
+    server_is_restarting: bool = False
 
 
 class EventHub:
@@ -502,22 +513,25 @@ class EventHub:
 
     def __init__(self, connection: ServerAPI | None = None) -> None:
         if connection is None:
+            from ._api import get_server_api_connection
+
             connection = get_server_api_connection()
 
         self._connection: ServerAPI = connection
         self._ws_connection: WebSocket | None = None
         self._loop_state: _LoopState = _LoopState()
         self._loop_thread: threading.Thread | None = None
-        self._registered_topics: set[str] = set()
         self._registered_callbacks: list[EventCallback] = []
         self._internal_callbacks: list[EventCallback] = []
-        atexit.register(self.stop)
+        atexit.register(self._stop)
 
     def add_callback(
         self,
         topic: str,
         callback: Callable | weakref_partial,
         order: int | None = None,
+        *,
+        create_connection: bool = True,
     ) -> EventCallback:
         """Register callback in event system.
 
@@ -527,6 +541,8 @@ class EventHub:
                 that will be called when topic is triggered.
             order (int | None): Order of callback. Lower number means
                 higher priority.
+            create_connection (bool): Create websocket connection if
+                not already created.
 
         Returns:
             EventCallback: Created callback object which can be used to
@@ -534,19 +550,30 @@ class EventHub:
 
         """
         callback = EventCallback(topic, callback, order)
-        self.add_callbacks([callback])
+        self.add_callbacks(
+            [callback], create_connection=create_connection
+        )
         return callback
 
-    def add_callbacks(self, callbacks: list[EventCallback]) -> None:
+    def add_callbacks(
+        self,
+        callbacks: list[EventCallback],
+        *,
+        create_connection: bool = True,
+    ) -> None:
         """Register callback in event system.
 
         Args:
             callbacks (list[EventCallback]): List of EventCallback
                 objects to register.
+            create_connection (bool): Create websocket connection if
+                not already created.
 
         """
         self._registered_callbacks.extend(callbacks)
         self._update_topics()
+        if create_connection:
+            self.start()
 
     def emit_event(self, event: Event) -> None:
         """Emit event object.
@@ -557,18 +584,32 @@ class EventHub:
         """
         self._process_event(event)
 
-    def clear_callbacks(self) -> None:
-        """Clear all registered callbacks."""
-        self._registered_callbacks = []
+    def start(self) -> None:
+        """Start event loop.
+
+        This will create websocket connection and start listening to events.
+        """
+        if self._loop_state.started:
+            return
+
+        self._loop_state.started = True
+        self._create_connection_thread()
 
     def stop(self) -> None:
-        if self._loop_thread is None:
-            return
+        self._stop()
+
+    def _stop(self) -> None:
+        loop_thread, self._loop_thread = self._loop_thread, None
+        self._loop_state.stop_event.set()
+
+        if self._loop_state.started:
+            self._loop_state.started = False
 
         if self._ws_connection is not None:
             self._ws_connection.close()
-        self._loop_state.stop_event.set()
-        self._loop_thread.join()
+
+        if loop_thread is not None:
+            loop_thread.join()
 
     def _update_topics(self) -> None:
         """Subscribe to topics in server based on registered callbacks.
@@ -598,38 +639,28 @@ class EventHub:
             else:
                 topics.add("*")
 
-        if topics == self._registered_topics:
+        if topics == self._loop_state.registered_topics:
             return
 
-        self._registered_topics = topics
-
-        ws_connection = self._get_ws_connection()
-        subscribe_payload = {
-            "topic": "auth",
-            "token": self._connection.get_token(),
-            "subscribe": list(self._registered_topics),
-        }
-        ws_connection.send(json.dumps(subscribe_payload))
-
-    def _get_ws_connection(self) -> WebSocket:
-        if self._ws_connection is None:
-            return self._create_ws_connection()
-        # TODO validate if is still alive and re-create if needed
-        if not self._ws_connection.connected:
-            return self._create_ws_connection()
-        return self._ws_connection
+        self._loop_state.registered_topics = topics
+        self._loop_state.auth_required = True
 
     def _create_ws_connection(self) -> WebSocket:
-        self.stop()
+        if self._ws_connection is not None:
+            if self._ws_connection.connected:
+                return self._ws_connection
+            self._ws_connection = None
+
+        con = self._connection.create_websocket("ws")
+        self._ws_connection = con
+        return con
+
+    def _create_connection_thread(self) -> None:
+        self._stop()
+        self._loop_state.started = True
         self._loop_state.stop_event = threading.Event()
 
-        ws_connection = self._connection.create_websocket("ws")
-        self._ws_connection = ws_connection
-
         callbacks = [
-            EventCallback(
-                "server.started", self._on_server_started,
-            ),
             EventCallback(
                 "server.restart_requested", self._on_server_restart,
             ),
@@ -644,17 +675,87 @@ class EventHub:
         self._loop_thread = loop_thread
         loop_thread.start()
 
-        return ws_connection
-
     def _thread_loop(self) -> None:
         self._loop_state.running = True
+        con: WebSocket | None
+        new_connection: bool = True
         try:
-            con = self._get_ws_connection()
-            while con.connected:
+            while True:
+                con = self._ws_connection
                 if self._loop_state.stop_event.is_set():
+                    if con is not None and con.connected:
+                        con.close()
+                    self._ws_connection = None
                     break
 
-                message = con.recv()
+                if con is None:
+                    try:
+                        con = self._create_ws_connection()
+                    except (
+                        WebSocketTimeoutException,
+                        WebSocketConnectionClosedException,
+                        socket.error,
+                    ):
+                        time.sleep(0.5)
+                        continue
+                    self._loop_state.server_is_restarting = False
+                    self._loop_state.auth_required = True
+                    new_connection = True
+
+                if self._loop_state.auth_required:
+                    token = self._connection.get_token()
+                    subscribe_payload = {
+                        "topic": "auth",
+                        "token": token,
+                        "subscribe": list(
+                            self._loop_state.registered_topics
+                        ),
+                    }
+                    try:
+                        con.send(json.dumps(subscribe_payload))
+                    except WebSocketConnectionClosedException:
+                        self._ws_connection = None
+                        if not new_connection:
+                            self.emit_event(Event(
+                                topic="connection.closed", data={}
+                            ))
+                        continue
+
+                    self._loop_state.auth_required = False
+                    continue
+
+                try:
+                    op_code, message = con.recv_data()
+                except (
+                    WebSocketProtocolException,
+                    WebSocketConnectionClosedException,
+                ):
+                    self._ws_connection = None
+                    if not new_connection:
+                        self.emit_event(
+                            Event(topic="connection.closed", data={})
+                        )
+                    continue
+
+                if op_code == ABNF.OPCODE_CLOSE:
+                    self._ws_connection = None
+                    # NOTE if is new connection then token is probably invalid
+                    # - question is what to do in that case?
+                    if not new_connection:
+                        self.emit_event(
+                            Event(topic="connection.closed", data={})
+                        )
+                    continue
+
+                if new_connection:
+                    new_connection = False
+                    self.emit_event(
+                        Event(topic="connection.opened", data={})
+                    )
+
+                if op_code != ABNF.OPCODE_TEXT:
+                    continue
+
                 if not message:
                     continue
 
@@ -664,20 +765,12 @@ class EventHub:
                     self.emit_event(event)
 
         finally:
-            self._loop_state.running = True
+            self._loop_state.server_is_restarting = False
+            self._loop_state.running = False
             self._loop_state.stop_event.set()
 
-    def _on_server_started(self, event: Event) -> None:
-        """Handle server started event.
-
-        Args:
-            event (Event): Event object with topic and data.
-
-        """
-        print("HeHe?")
-
     def _on_server_restart(self, event: Event) -> None:
-        print("Server is restarting")
+        self._loop_state.server_is_restarting = True
 
     def _process_event(self, event: Event) -> None:
         """Process event topic and trigger callbacks.
