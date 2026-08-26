@@ -25,9 +25,16 @@ requests.__dict__["Response"] = type(
     "Response", (), {"__module__": "requests"}
 )
 websocket = type(sys)("websocket")
-websocket.__dict__["WebSocket"] = type(
-    "WebSocket", (), {"__module__": "websocket"}
-)
+websocket.__dict__.update({
+    name: type(name, (), {"__module__": "websocket"})
+    for name in (
+        "WebSocket",
+        "ABNF",
+        "WebSocketProtocolException",
+        "WebSocketConnectionClosedException",
+        "WebSocketTimeoutException",
+    )
+})
 
 sys.modules["requests"] = requests
 sys.modules["websocket"] = websocket
