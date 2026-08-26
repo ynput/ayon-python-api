@@ -48,6 +48,7 @@ from .constants import (
 )
 from .graphql import INTROSPECTION_QUERY
 from .graphql_queries import users_graphql_query
+from .events import EventHub
 from .exceptions import (
     FailedOperations,
     UnauthorizedError,
@@ -373,6 +374,8 @@ class ServerAPI(
         if self._token_info.token and create_session:
             self.validate_server_availability()
             self.create_session()
+
+        self._event_hub: EventHub = EventHub(self)
 
     @property
     def log(self) -> logging.Logger:
@@ -1220,6 +1223,17 @@ class ServerAPI(
             else:
                 headers["Authorization"] = f"Bearer {self._token_info.token}"
         return headers
+
+    def get_event_hub(self) -> EventHub:
+        """Get event hub for connection.
+
+        Event hub is used to subscribe to events from server.
+
+        Returns:
+            EventHub: Event hub instance.
+
+        """
+        return self._event_hub
 
     def login(
         self,

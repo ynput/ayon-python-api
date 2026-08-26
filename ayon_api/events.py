@@ -525,13 +525,35 @@ class EventHub:
         self._internal_callbacks: list[EventCallback] = []
         atexit.register(self._stop)
 
+    def is_running(self) -> bool:
+        """Check if event loop is running.
+
+        Returns:
+            bool: Is event loop running.
+
+        """
+        return self._loop_state.running
+
+    def is_connected(self) -> bool:
+        """Check if event loop is connected to server.
+
+        Returns:
+            bool: Is event loop connected to server.
+
+        """
+        con = self._ws_connection
+        if con is None:
+            return False
+
+        return con.connected
+
     def add_callback(
         self,
         topic: str,
         callback: Callable | weakref_partial,
         order: int | None = None,
         *,
-        create_connection: bool = True,
+        connect: bool = True,
     ) -> EventCallback:
         """Register callback in event system.
 
@@ -541,7 +563,7 @@ class EventHub:
                 that will be called when topic is triggered.
             order (int | None): Order of callback. Lower number means
                 higher priority.
-            create_connection (bool): Create websocket connection if
+            connect (bool): Create websocket connection if
                 not already created.
 
         Returns:
@@ -551,7 +573,7 @@ class EventHub:
         """
         callback = EventCallback(topic, callback, order)
         self.add_callbacks(
-            [callback], create_connection=create_connection
+            [callback], connect=connect
         )
         return callback
 
@@ -559,20 +581,20 @@ class EventHub:
         self,
         callbacks: list[EventCallback],
         *,
-        create_connection: bool = True,
+        connect: bool = True,
     ) -> None:
         """Register callback in event system.
 
         Args:
             callbacks (list[EventCallback]): List of EventCallback
                 objects to register.
-            create_connection (bool): Create websocket connection if
+            connect (bool): Create websocket connection if
                 not already created.
 
         """
         self._registered_callbacks.extend(callbacks)
         self._update_topics()
-        if create_connection:
+        if connect:
             self.start()
 
     def emit_event(self, event: Event) -> None:

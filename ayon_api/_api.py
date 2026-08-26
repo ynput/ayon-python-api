@@ -93,6 +93,7 @@ if typing.TYPE_CHECKING:
         EntityListAttributeDefinitionDict,
         AdvancedFilterDict,
     )
+    from .events import EventHub
 
 
 class GlobalServerAPI(ServerAPI):
@@ -872,6 +873,19 @@ def get_user(
     return con.get_user(
         username=username,
     )
+
+
+def get_event_hub() -> EventHub:
+    """Get event hub for connection.
+
+    Event hub is used to subscribe to events from server.
+
+    Returns:
+        EventHub: Event hub instance.
+
+    """
+    con = get_server_api_connection()
+    return con.get_event_hub()
 
 
 def raw_post(
