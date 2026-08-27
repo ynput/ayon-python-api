@@ -30,7 +30,7 @@ if typing.TYPE_CHECKING:
 @dataclass
 class Event:
     topic: str
-    data: dict[str, Any]
+    data: dict[str, Any] = field(default_factory=dict)
     id: str | None = None
     sender: str | None = None
     event_hash: str | None = None
@@ -495,6 +495,7 @@ class _LoopState:
     running: bool = False
     stop_event: threading.Event = threading.Event()
     auth_required: bool = False
+    new_connection: bool = True
     registered_topics: set[str] = field(default_factory=set)
     server_is_restarting: bool = False
 
@@ -699,18 +700,37 @@ class EventHub:
 
     def _thread_loop(self) -> None:
         self._loop_state.running = True
+
+        def _on_close(handle_token: bool = True):
+            self._ws_connection = None
+            if not self._loop_state.new_connection:
+                self.emit_event(Event("connection.closed"))
+
+            if not handle_token:
+                return
+
+            if self._connection.has_valid_token:
+                self._connection.validate_token()
+            if not self._connection.has_valid_token:
+                self.emit_event(Event("auth.failed"))
+
         con: WebSocket | None
-        new_connection: bool = True
         try:
             while True:
                 con = self._ws_connection
                 if self._loop_state.stop_event.is_set():
                     if con is not None and con.connected:
                         con.close()
-                    self._ws_connection = None
+                    _on_close(handle_token=False)
                     break
 
                 if con is None:
+                    # NOTE: Don't even try to connect if token is invalid,
+                    #   wait for change
+                    if not self._connection.has_valid_token:
+                        time.sleep(0.5)
+                        continue
+
                     try:
                         con = self._create_ws_connection()
                     except (
@@ -722,13 +742,12 @@ class EventHub:
                         continue
                     self._loop_state.server_is_restarting = False
                     self._loop_state.auth_required = True
-                    new_connection = True
+                    self._loop_state.new_connection = True
 
                 if self._loop_state.auth_required:
-                    token = self._connection.get_token()
                     subscribe_payload = {
                         "topic": "auth",
-                        "token": token,
+                        "token": self._connection.access_token,
                         "subscribe": list(
                             self._loop_state.registered_topics
                         ),
@@ -736,11 +755,7 @@ class EventHub:
                     try:
                         con.send(json.dumps(subscribe_payload))
                     except WebSocketConnectionClosedException:
-                        self._ws_connection = None
-                        if not new_connection:
-                            self.emit_event(Event(
-                                topic="connection.closed", data={}
-                            ))
+                        _on_close()
                         continue
 
                     self._loop_state.auth_required = False
@@ -752,28 +767,16 @@ class EventHub:
                     WebSocketProtocolException,
                     WebSocketConnectionClosedException,
                 ):
-                    self._ws_connection = None
-                    if not new_connection:
-                        self.emit_event(
-                            Event(topic="connection.closed", data={})
-                        )
+                    _on_close()
                     continue
 
                 if op_code == ABNF.OPCODE_CLOSE:
-                    self._ws_connection = None
-                    # NOTE if is new connection then token is probably invalid
-                    # - question is what to do in that case?
-                    if not new_connection:
-                        self.emit_event(
-                            Event(topic="connection.closed", data={})
-                        )
+                    _on_close()
                     continue
 
-                if new_connection:
-                    new_connection = False
-                    self.emit_event(
-                        Event(topic="connection.opened", data={})
-                    )
+                if self._loop_state.new_connection:
+                    self._loop_state.new_connection = False
+                    self.emit_event(Event("connection.opened"))
 
                 if op_code != ABNF.OPCODE_TEXT:
                     continue
