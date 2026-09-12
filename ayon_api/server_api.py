@@ -1660,7 +1660,7 @@ class ServerAPI(
         url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_source_url(url)
 
-        retries = self.get_default_max_retries()
+        retries = max(self.max_retries, 1)
         api_prepended = False
         for attempt in range(retries):
             # Continue in download
@@ -2095,7 +2095,7 @@ class ServerAPI(
                 headers.pop(orig_key)
             headers[key] = value
 
-        retries = self.get_default_max_retries()
+        retries = max(self.max_retries, 1)
         response = None
 
         # Get size of file
