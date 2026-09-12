@@ -1662,7 +1662,9 @@ class ServerAPI(
 
         retries = max(self.max_retries, 1)
         api_prepended = False
-        for attempt in range(retries):
+        attempt = 0
+        while True:
+            attempt += 1
             # Continue in download
             offset = progress.get_transferred_size()
             if offset > 0:
@@ -1671,20 +1673,29 @@ class ServerAPI(
             try:
                 with get_func(url, **kwargs) as response:
                     # Auto-fix missing 'api/'
+                    # NOTE Web frontend returns 'index.html' with status 200
+                    #   for unknown urls, which is not a file to download.
+                    is_frontend_page = (
+                        response.ok
+                        and "text/html" in response.headers.get(
+                            "Content-Type", ""
+                        )
+                    )
                     if (
-                        response.status_code in (404, 405)
+                        (
+                            response.status_code in (404, 405)
+                            or is_frontend_page
+                        )
                         and not api_prepended
+                        and not endpoint.startswith(self._base_url)
+                        and not endpoint.startswith("api/")
                     ):
                         api_prepended = True
-                        if (
-                            not endpoint.startswith(self._base_url)
-                            and not endpoint.startswith("api/")
-                        ):
-                            url = self._endpoint_to_url(
-                                endpoint, use_rest=True
-                            )
-                            progress.set_destination_url(url)
-                            continue
+                        url = self._endpoint_to_url(endpoint, use_rest=True)
+                        progress.set_source_url(url)
+                        # Endpoint fix is not a failed attempt
+                        attempt -= 1
+                        continue
                     response.raise_for_status()
                     if offset > 0 and response.status_code != 206:
                         # Server ignored 'Range' and sends whole file again,
@@ -1722,7 +1733,7 @@ class ServerAPI(
                 requests.exceptions.ConnectionError,
                 requests.exceptions.ChunkedEncodingError,
             ):
-                if attempt == retries - 1:
+                if attempt >= retries:
                     raise
                 progress.next_attempt()
 
@@ -2127,7 +2138,9 @@ class ServerAPI(
         progress.set_content_size(size)
 
         api_prepended = False
-        for attempt in range(retries):
+        attempt = 0
+        while True:
+            attempt += 1
             try:
                 response = post_func(
                     url,
@@ -2137,22 +2150,27 @@ class ServerAPI(
                     **kwargs
                 )
                 # Auto-fix missing 'api/'
-                if response.status_code in (404, 405) and not api_prepended:
+                if (
+                    response.status_code in (404, 405)
+                    and not api_prepended
+                    and not endpoint.startswith(self._base_url)
+                    and not endpoint.startswith("api/")
+                ):
                     api_prepended = True
-                    if (
-                        not endpoint.startswith(self._base_url)
-                        and not endpoint.startswith("api/")
-                    ):
-                        url = self._endpoint_to_url(endpoint, use_rest=True)
-                        progress.set_destination_url(url)
-                        continue
+                    url = self._endpoint_to_url(endpoint, use_rest=True)
+                    progress.set_destination_url(url)
+                    # Content is sent again and endpoint fix is not a failed
+                    #   attempt
+                    progress.reset_transferred()
+                    attempt -= 1
+                    continue
                 break
 
             except (
                 requests.exceptions.Timeout,
                 requests.exceptions.ConnectionError,
             ):
-                if attempt == retries - 1:
+                if attempt >= retries:
                     raise
                 progress.next_attempt()
                 progress.reset_transferred()
