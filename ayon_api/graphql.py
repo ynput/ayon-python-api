@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import numbers
 from abc import ABC, abstractmethod
 import typing
@@ -15,6 +16,8 @@ if typing.TYPE_CHECKING:
     from .server_api import ServerAPI
 
 FIELD_VALUE = object()
+
+log = logging.getLogger(__name__)
 
 
 def fields_to_dict(fields: Iterable[str] | None) -> dict:
@@ -353,6 +356,25 @@ class GraphQlQuery:
         for child in self._children:
             child.parse_result(data, output, progress_data)
 
+    def _query_data(self, con: ServerAPI) -> dict[str, Any]:
+        """Send single query to server and return 'data' of the response."""
+        query_str = self.calculate_query()
+        variables = self.get_variables_values()
+        response = con.query_graphql(query_str, variables)
+        if response.errors:
+            raise GraphQlQueryFailed(response.errors, query_str, variables)
+
+        data = response.data.get("data")
+        if data is None:
+            # Parsing 'None' would not change pagination state and the same
+            #   query would be sent again in an infinite loop.
+            raise GraphQlQueryError(
+                f"GraphQl query '{self._name}' response does not contain"
+                f" 'data'. Response: {str(response.data)[:1000]}"
+                f"\nQuery:\n{query_str}\nVariables: {variables}"
+            )
+        return data
+
     def query(self, con: ServerAPI) -> dict[str, Any]:
         """Do a query from server.
 
@@ -366,15 +388,8 @@ class GraphQlQuery:
         progress_data = {}
         output = {}
         while self.need_query:
-            query_str = self.calculate_query()
-            variables = self.get_variables_values()
-            response = con.query_graphql(
-                query_str,
-                variables
-            )
-            if response.errors:
-                raise GraphQlQueryFailed(response.errors, query_str, variables)
-            self.parse_result(response.data["data"], output, progress_data)
+            data = self._query_data(con)
+            self.parse_result(data, output, progress_data)
 
         return output
 
@@ -394,30 +409,16 @@ class GraphQlQuery:
         if self.has_multiple_edge_fields:
             output = {}
             while self.need_query:
-                query_str = self.calculate_query()
-                variables = self.get_variables_values()
-
-                response = con.query_graphql(query_str, variables)
-                if response.errors:
-                    raise GraphQlQueryFailed(
-                        response.errors, query_str, variables
-                    )
-                self.parse_result(response.data["data"], output, progress_data)
+                data = self._query_data(con)
+                self.parse_result(data, output, progress_data)
 
             yield output
 
         else:
             while self.need_query:
                 output = {}
-                query_str = self.calculate_query()
-                variables = self.get_variables_values()
-                response = con.query_graphql(query_str, variables)
-                if response.errors:
-                    raise GraphQlQueryFailed(
-                        response.errors, query_str, variables
-                    )
-
-                self.parse_result(response.data["data"], output, progress_data)
+                data = self._query_data(con)
+                self.parse_result(data, output, progress_data)
 
                 yield output
 
@@ -943,6 +944,16 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
                 change_cursor = False
 
         if change_cursor and self._need_query:
+            if new_cursor is None:
+                # Without cursor the pagination would start from beginning
+                log.warning(
+                    "Field '%s' reported another page without a cursor."
+                    " Stopping pagination after %s items.",
+                    self.path, self._fetched_counter,
+                )
+                self._need_query = False
+                return
+
             if new_cursor == self._cursor:
                 raise GraphQlQueryError(
                     "Cursor didn't change during pagination."
