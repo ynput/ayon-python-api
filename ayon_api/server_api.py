@@ -2678,23 +2678,31 @@ class ServerAPI(
         if result.get("success"):
             return None
 
-        print(result)
-        for op_result in result["operations"]:
+        self.log.warning(
+            "Operations failed. Server response:\n%s",
+            json.dumps(result, indent=4, default=str),
+        )
+        for op_result in result.get("operations") or []:
             if op_result["success"]:
                 continue
 
             operation_id = op_result["id"]
             operation = next(
-                op
-                for op in operations_body
-                if op["id"] == operation_id
+                (op for op in operations_body if op["id"] == operation_id),
+                op_result,
             )
             detail = op_result["detail"]
             raise FailedOperations(
                 f"Operation \"{operation_id}\" failed with data:"
-                f"\n{json.dumps(operation, indent=4)}"
+                f"\n{json.dumps(operation, indent=4, default=str)}"
                 f"\nDetail: {detail}."
             )
+
+        # Server did not report which operation failed
+        raise FailedOperations(
+            "Operations failed. Server response:"
+            f"\n{json.dumps(result, indent=4, default=str)}"
+        )
 
     def _prepare_fields(
         self,
