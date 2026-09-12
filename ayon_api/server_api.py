@@ -1521,7 +1521,10 @@ class ServerAPI(
         **kwargs
     ) -> RestApiResponse:
         kwargs.setdefault("timeout", self.timeout)
-        max_retries = kwargs.get("max_retries", self.max_retries)
+        # 'max_retries' must not be passed to request function
+        max_retries = kwargs.pop("max_retries", None)
+        if max_retries is None:
+            max_retries = self.max_retries
         if max_retries < 1:
             max_retries = 1
 
