@@ -867,6 +867,9 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         # Reset cursor only for edges
         self._cursor = None
         self._need_query = True
+        # Limit of a nested edge field is counted per parent item, so the
+        #   counter must be reset when parent item changes.
+        self._fetched_counter = 0
 
         super().reset_cursor()
 
@@ -972,7 +975,9 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
             # overwritten by another parent from the same outer page.
             limit_amount = 1
 
-        filters[limit_key] = limit_amount
+        # Never ask for less than a single item, pagination is stopped
+        #   using 'need_query' when the limit is reached
+        filters[limit_key] = max(limit_amount, 1)
 
         if self._cursor:
             cursor_key = (
