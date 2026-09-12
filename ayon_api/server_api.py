@@ -1686,19 +1686,41 @@ class ServerAPI(
                             progress.set_destination_url(url)
                             continue
                     response.raise_for_status()
-                    if progress.get_content_size() is None:
+                    if offset > 0 and response.status_code != 206:
+                        # Server ignored 'Range' and sends whole file again,
+                        #   already downloaded content must be discarded
+                        stream.seek(0)
+                        stream.truncate()
+                        progress.reset_transferred()
+
+                    content_length = response.headers.get("Content-Length")
+                    if (
+                        progress.get_content_size() is None
+                        and content_length is not None
+                    ):
                         progress.set_content_size(
-                            response.headers["Content-length"]
+                            int(content_length)
+                            + progress.get_transferred_size()
                         )
 
                     for chunk in response.iter_content(chunk_size=chunk_size):
                         stream.write(chunk)
                         progress.add_transferred_chunk(len(chunk))
+
+                content_size = progress.get_content_size()
+                transferred = progress.get_transferred_size()
+                if content_size is not None and transferred != content_size:
+                    # Connection was closed before all content was received
+                    raise requests.exceptions.ConnectionError(
+                        f"Downloaded {transferred} out of {content_size}"
+                        f" bytes from '{url}'."
+                    )
                 break
 
             except (
                 requests.exceptions.Timeout,
                 requests.exceptions.ConnectionError,
+                requests.exceptions.ChunkedEncodingError,
             ):
                 if attempt == retries - 1:
                     raise
