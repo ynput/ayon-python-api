@@ -903,11 +903,13 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
                 progress_data[cursor_key] = nodes_by_cursor
 
         page_info = value["pageInfo"]
+        # Continue from the last received edge for both orders. Server
+        #   returns edges of 'last' page from the newest item, so
+        #   'startCursor' would move the cursor back only by one item.
+        new_cursor = page_info["endCursor"]
         if self._order == SortOrder.ascending:
-            new_cursor = page_info["endCursor"]
             self._need_query = page_info["hasNextPage"]
         else:
-            new_cursor = page_info["startCursor"]
             self._need_query = page_info["hasPreviousPage"]
 
         edges = value["edges"]
@@ -1016,11 +1018,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         # Add page information
         output.append(edges_offset + "pageInfo {")
         for page_key in (
-            (
-                "endCursor"
-                if self._order == SortOrder.ascending
-                else "startCursor"
-            ),
+            "endCursor",
             (
                 "hasNextPage"
                 if self._order == SortOrder.ascending
