@@ -1560,6 +1560,9 @@ class ServerAPI(
         response = None
         new_response = None
         for retry_idx in reversed(range(max_retries)):
+            # Reset failure of previous attempt, otherwise a successful
+            #   retry would return the previous failure
+            new_response = None
             try:
                 response = function(url, **kwargs)
 
