@@ -766,6 +766,7 @@ class EventHub:
                 except (
                     WebSocketProtocolException,
                     WebSocketConnectionClosedException,
+                    WebSocketTimeoutException,
                 ):
                     _on_close()
                     continue
