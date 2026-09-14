@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import logging
 import numbers
 from abc import ABC, abstractmethod
 import typing
@@ -16,9 +15,6 @@ if typing.TYPE_CHECKING:
     from .server_api import ServerAPI
 
 FIELD_VALUE = object()
-
-log = logging.getLogger(__name__)
-
 
 def fields_to_dict(fields: Iterable[str] | None) -> dict:
     output = {}
@@ -946,13 +942,11 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         if change_cursor and self._need_query:
             if new_cursor is None:
                 # Without cursor the pagination would start from beginning
-                log.warning(
-                    "Field '%s' reported another page without a cursor."
-                    " Stopping pagination after %s items.",
-                    self.path, self._fetched_counter,
+                raise GraphQlQueryError(
+                    f"Field '{self.path}' reported another page without"
+                    " a cursor. Stopped pagination after"
+                    f" {self._fetched_counter} items."
                 )
-                self._need_query = False
-                return
 
             if new_cursor == self._cursor:
                 raise GraphQlQueryError(
