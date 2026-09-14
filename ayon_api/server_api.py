@@ -1661,7 +1661,7 @@ class ServerAPI(
         url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_source_url(url)
 
-        retries = self.get_default_max_retries()
+        retries = max(self.max_retries, 1)
         api_prepended = False
         for attempt in range(retries):
             # Continue in download
@@ -1687,6 +1687,14 @@ class ServerAPI(
                             progress.set_destination_url(url)
                             continue
                     response.raise_for_status()
+                    if offset > 0 and response.status_code != 206:
+                        # Server ignored 'Range' and sends whole file again,
+                        #   already downloaded content must be discarded
+                        stream.seek(0)
+                        stream.truncate()
+                        progress.reset_transferred()
+                        headers.pop("Range", None)
+
                     if progress.get_content_size() is None:
                         progress.set_content_size(
                             response.headers["Content-length"]
@@ -1695,11 +1703,21 @@ class ServerAPI(
                     for chunk in response.iter_content(chunk_size=chunk_size):
                         stream.write(chunk)
                         progress.add_transferred_chunk(len(chunk))
+
+                content_size = progress.get_content_size()
+                transferred = progress.get_transferred_size()
+                if content_size is not None and transferred != content_size:
+                    # Connection was closed before all content was received
+                    raise requests.exceptions.ConnectionError(
+                        f"Downloaded {transferred} out of {content_size}"
+                        f" bytes from '{url}'."
+                    )
                 break
 
             except (
                 requests.exceptions.Timeout,
                 requests.exceptions.ConnectionError,
+                requests.exceptions.ChunkedEncodingError,
             ):
                 if attempt == retries - 1:
                     raise
@@ -2096,7 +2114,7 @@ class ServerAPI(
                 headers.pop(orig_key)
             headers[key] = value
 
-        retries = self.get_default_max_retries()
+        retries = max(self.max_retries, 1)
         response = None
 
         # Get size of file
@@ -2679,23 +2697,31 @@ class ServerAPI(
         if result.get("success"):
             return None
 
-        print(result)
-        for op_result in result["operations"]:
+        self.log.warning(
+            "Operations failed. Server response:\n%s",
+            json.dumps(result, indent=4, default=str),
+        )
+        for op_result in result.get("operations") or []:
             if op_result["success"]:
                 continue
 
             operation_id = op_result["id"]
             operation = next(
-                op
-                for op in operations_body
-                if op["id"] == operation_id
+                (op for op in operations_body if op["id"] == operation_id),
+                op_result,
             )
             detail = op_result["detail"]
             raise FailedOperations(
                 f"Operation \"{operation_id}\" failed with data:"
-                f"\n{json.dumps(operation, indent=4)}"
+                f"\n{json.dumps(operation, indent=4, default=str)}"
                 f"\nDetail: {detail}."
             )
+
+        # Server did not report which operation failed
+        raise FailedOperations(
+            "Operations failed. Server response:"
+            f"\n{json.dumps(result, indent=4, default=str)}"
+        )
 
     def _prepare_fields(
         self,
