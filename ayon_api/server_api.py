@@ -1692,15 +1692,11 @@ class ServerAPI(
                         stream.seek(0)
                         stream.truncate()
                         progress.reset_transferred()
+                        headers.pop("Range", None)
 
-                    content_length = response.headers.get("Content-Length")
-                    if (
-                        progress.get_content_size() is None
-                        and content_length is not None
-                    ):
+                    if progress.get_content_size() is None:
                         progress.set_content_size(
-                            int(content_length)
-                            + progress.get_transferred_size()
+                            response.headers["Content-length"]
                         )
 
                     for chunk in response.iter_content(chunk_size=chunk_size):
