@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
 
 FIELD_VALUE = object()
 
+
 def fields_to_dict(fields: Iterable[str] | None) -> dict:
     output = {}
     if not fields:
