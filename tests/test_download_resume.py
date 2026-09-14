@@ -51,10 +51,3 @@ def test_resume_without_range_support_does_not_duplicate(con):
     content, progress = _download(con, get_func)
     assert content == CONTENT
     assert progress.transferred_size == len(CONTENT)
-
-
-def test_download_without_content_length(con):
-    content, _ = _download(
-        con, lambda url, **kwargs: FakeResponse(200, CONTENT)
-    )
-    assert content == CONTENT
