@@ -20,6 +20,8 @@ def con(monkeypatch):
 def test_successful_retry_returns_successful_response(con, failure):
     responses = [failure, FakeResponse(200, json_data={"ok": True})]
 
+    # `_do_rest_request` expects a callable that takes a URL and returns a
+    # response. So we just return fake responses to simulate it.
     def request_func(url, **kwargs):
         item = responses.pop(0)
         if isinstance(item, Exception):
