@@ -42,5 +42,6 @@ def test_missing_cursor_stops_pagination():
     server = _ScriptedServer([page(["e0"], "c0"), page([], None)])
     query = events_graphql_query({"id"}, SortOrder.ascending)
 
-    assert query.query(server) == {"events": [{"id": "e0"}]}
-    assert len(server.queries) == 2
+
+    with pytest.raises(GraphQlQueryError, match="page without a cursor"):
+        query.query(server)
