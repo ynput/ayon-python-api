@@ -57,6 +57,7 @@ class DependencyPackagesAPI(BaseServerAPI):
         checksum: str,
         checksum_algorithm: str,
         file_size: int,
+        python_version: str | None = None,
         sources: Optional[list[dict[str, Any]]] = None,
         platform_name: Optional[str] = None,
     ) -> None:
@@ -82,6 +83,8 @@ class DependencyPackagesAPI(BaseServerAPI):
             checksum (str): Checksum of archive file where dependencies are.
             checksum_algorithm (str): Algorithm used to calculate checksum.
             file_size (Optional[int]): Size of file.
+            python_version (str | None): Python version for which
+                is dependency package created.
             sources (Optional[list[dict[str, Any]]]): Information about
                 sources from where it is possible to get file.
             platform_name (Optional[str]): Name of platform for which is
@@ -99,6 +102,9 @@ class DependencyPackagesAPI(BaseServerAPI):
             "size": file_size,
             "platform": platform_name or platform.system().lower(),
         }
+        if python_version:
+            post_body["pythonVersion"] = python_version
+
         if sources:
             post_body["sources"] = sources
 
