@@ -1943,6 +1943,7 @@ def create_dependency_package(
     checksum: str,
     checksum_algorithm: str,
     file_size: int,
+    python_version: str | None = None,
     sources: Optional[list[dict[str, Any]]] = None,
     platform_name: Optional[str] = None,
 ) -> None:
@@ -1968,6 +1969,8 @@ def create_dependency_package(
         checksum (str): Checksum of archive file where dependencies are.
         checksum_algorithm (str): Algorithm used to calculate checksum.
         file_size (Optional[int]): Size of file.
+        python_version (str | None): Python version for which
+            is dependency package created.
         sources (Optional[list[dict[str, Any]]]): Information about
             sources from where it is possible to get file.
         platform_name (Optional[str]): Name of platform for which is
@@ -1984,6 +1987,7 @@ def create_dependency_package(
         checksum=checksum,
         checksum_algorithm=checksum_algorithm,
         file_size=file_size,
+        python_version=python_version,
         sources=sources,
         platform_name=platform_name,
     )
