@@ -1,1 +1,1 @@
-poetry run pydocstyle --convention=google --add-ignore=D103,D104,D100
+pydocstyle --convention=google --add-ignore=D103,D104,D100
