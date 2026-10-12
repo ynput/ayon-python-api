@@ -7,4 +7,3 @@ pydocstyle>=6.3.0
 # ayon_api runtime dependencies (needed by autodoc to import the package)
 requests>=2.27.1
 Unidecode>=1.3.0
-websocket-client>=1.7.0
