@@ -95,7 +95,7 @@ class ActivitiesAPI(BaseServerAPI):
             query.set_variable_value(attr, filter_value)
 
         if limit:
-            activities_field = query.get_field_by_path("activities")
+            activities_field = query.get_field_by_path("project/activities")
             activities_field.set_limit(limit)
 
         for parsed_data in query.continuous_query(self):

@@ -955,7 +955,7 @@ class TransferProgress:
         """
         return self._content_size
 
-    def set_content_size(self, content_size: int) -> None:
+    def set_content_size(self, content_size: int | str) -> None:
         """Set content size in bytes.
 
         Args:
@@ -967,7 +967,7 @@ class TransferProgress:
         """
         if self._content_size is not None:
             raise ValueError("Content size was set more then once")
-        self._content_size = content_size
+        self._content_size = int(content_size)
 
     def get_started(self) -> bool:
         """Transfer was started.
