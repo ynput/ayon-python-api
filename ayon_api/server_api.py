@@ -2754,6 +2754,7 @@ class ServerAPI(
         if result.get("success"):
             return None
 
+        print(result)
         for op_result in result["operations"]:
             if op_result["success"]:
                 continue
