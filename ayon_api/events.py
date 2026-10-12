@@ -555,6 +555,12 @@ class EventHub:
             is used if not passed.
 
     """
+    # Topics emitted by the hub itself
+    TOPIC_CONNECTION_OPENED: str = "connection.opened"
+    TOPIC_CONNECTION_CLOSED: str = "connection.closed"
+    TOPIC_AUTH_FAILED: str = "auth.failed"
+    # Topic sent by server
+    TOPIC_SERVER_RESTART_REQUESTED: str = "server.restart_requested"
 
     def __init__(self, connection: ServerAPI | None = None) -> None:
         if connection is None:
@@ -573,7 +579,8 @@ class EventHub:
         self._registered_callbacks: list[EventCallback] = []
         self._internal_callbacks: list[EventCallback] = [
             EventCallback(
-                "server.restart_requested", self._on_server_restart,
+                self.TOPIC_SERVER_RESTART_REQUESTED,
+                self._on_server_restart,
             ),
         ]
         self.add_callbacks(self._internal_callbacks, connect=False)
@@ -865,9 +872,9 @@ class EventHub:
                 state.auth_failed = False
 
         if connected:
-            self.emit_event(Event("connection.opened"))
+            self.emit_event(Event(self.TOPIC_CONNECTION_OPENED))
         else:
-            self.emit_event(Event("connection.closed"))
+            self.emit_event(Event(self.TOPIC_CONNECTION_CLOSED))
 
     def _on_connection_lost(self, stop_event: threading.Event) -> None:
         state = self._loop_state
@@ -884,7 +891,7 @@ class EventHub:
         if not received_message and not state.auth_failed:
             if self._check_token() is False:
                 state.auth_failed = True
-                self.emit_event(Event("auth.failed"))
+                self.emit_event(Event(self.TOPIC_AUTH_FAILED))
 
         if state.auth_failed:
             delay = _AUTH_FAILED_DELAY
