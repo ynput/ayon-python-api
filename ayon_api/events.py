@@ -7,19 +7,15 @@ import json
 import logging
 import os
 import re
-import socket
-import time
 import threading
 import typing
 from typing import Any, Callable
 import weakref
 
-from websocket import (
-    ABNF,
-    WebSocketProtocolException,
-    WebSocketConnectionClosedException,
-    WebSocketTimeoutException,
-)
+import requests
+from websocket import ABNF
+
+from .exceptions import UnauthorizedError
 
 if typing.TYPE_CHECKING:
     from websocket import WebSocket
@@ -489,27 +485,75 @@ class EventCallback:
             self._partial_func = None
 
 
+# Server sends 'heartbeat' message to authorized clients when there was no
+#   other message for ~5 seconds. If nothing arrives for this amount of time
+#   the connection is considered dead.
+_RECV_TIMEOUT: float = 15.0
+# Timeout for opening websocket connection and for the auth check request.
+_CONNECT_TIMEOUT: float = 5.0
+# Delays between reconnection attempts (last value is used repeatedly).
+_RECONNECT_DELAYS: tuple[float, ...] = (0.5, 1.0, 2.0, 5.0)
+# Delay between reconnection attempts when the token is known to be invalid.
+_AUTH_FAILED_DELAY: float = 30.0
+# How long to wait for the loop thread on stop. The thread is daemon so
+#   it can't block process exit even if it does not finish in time.
+_STOP_TIMEOUT: float = 1.0
+
+
+def _abort_ws(ws_con: WebSocket) -> None:
+    """Close websocket without waiting for server response.
+
+    'WebSocket.close' sends close frame and waits for the response
+        (up to 3 seconds) which would block the caller.
+
+    """
+    for method_name in ("abort", "shutdown"):
+        method = getattr(ws_con, method_name, None)
+        if method is None:
+            continue
+        try:
+            method()
+            return
+        except Exception:
+            pass
+
+
 @dataclass
 class _LoopState:
-    started: bool = False
-    running: bool = False
-    stop_event: threading.Event = threading.Event()
+    stop_event: threading.Event = field(default_factory=threading.Event)
+    # Subscribe message has to be sent
     auth_required: bool = False
-    new_connection: bool = True
+    # Some message was received with current websocket connection
+    received_message: bool = False
+    # Connection state reported via events
+    #   - 'None' means unknown (nothing was reported yet)
+    connected: bool | None = None
+    auth_failed: bool = False
+    failed_attempts: int = 0
     registered_topics: set[str] = field(default_factory=set)
     server_is_restarting: bool = False
 
 
 class EventHub:
-    """Encapsulate event handling into an object.
+    """Receive AYON server events via websocket and trigger callbacks.
 
-    System wraps registered callbacks and triggered events into single object,
-    so it is possible to create multiple independent systems that have their
-    topics and callbacks.
+    Websocket connection is handled in a daemon thread, so it never blocks
+        the caller (e.g. DCC main thread) nor the process exit.
 
-    Callbacks are stored by order of their registration, but it is possible to
-    manually define order of callbacks using 'order' argument within
-    'add_callback'.
+    Warnings:
+        Callbacks are triggered in the websocket thread! Use
+            'WSEventsModel' (or own queue) to process them in main thread,
+            especially if a callback touches Qt widgets.
+
+    Internal topics:
+        - 'connection.opened' first message received after (re)connection.
+        - 'connection.closed' connection was lost or could not be created.
+        - 'auth.failed' server rejected the token.
+
+    Args:
+        connection (ServerAPI | None): Server connection. Global connection
+            is used if not passed.
+
     """
 
     def __init__(self, connection: ServerAPI | None = None) -> None:
@@ -518,12 +562,21 @@ class EventHub:
 
             connection = get_server_api_connection()
 
+        self._log = logging.getLogger(self.__class__.__name__)
         self._connection: ServerAPI = connection
         self._ws_connection: WebSocket | None = None
         self._loop_state: _LoopState = _LoopState()
         self._loop_thread: threading.Thread | None = None
+        self._thread_lock = threading.Lock()
+        self._callbacks_lock = threading.RLock()
+        self._state_lock = threading.Lock()
         self._registered_callbacks: list[EventCallback] = []
-        self._internal_callbacks: list[EventCallback] = []
+        self._internal_callbacks: list[EventCallback] = [
+            EventCallback(
+                "server.restart_requested", self._on_server_restart,
+            ),
+        ]
+        self.add_callbacks(self._internal_callbacks, connect=False)
         atexit.register(self._stop)
 
     def is_running(self) -> bool:
@@ -533,7 +586,8 @@ class EventHub:
             bool: Is event loop running.
 
         """
-        return self._loop_state.running
+        thread = self._loop_thread
+        return thread is not None and thread.is_alive()
 
     def is_connected(self) -> bool:
         """Check if event loop is connected to server.
@@ -542,11 +596,62 @@ class EventHub:
             bool: Is event loop connected to server.
 
         """
-        con = self._ws_connection
-        if con is None:
-            return False
+        return self._loop_state.connected is True
 
-        return con.connected
+    def get_connection_state(self) -> bool | None:
+        """Connection state as was reported by events.
+
+        Returns:
+            bool | None: 'True' if connected, 'False' if disconnected and
+                'None' if state is not known yet.
+
+        """
+        return self._loop_state.connected
+
+    def is_auth_failed(self) -> bool:
+        return self._loop_state.auth_failed
+
+    def is_server_restarting(self) -> bool:
+        return self._loop_state.server_is_restarting
+
+    def check_server_available(self) -> bool | None:
+        """Quick synchronous check if server is available.
+
+        Websocket connection is created in a background thread, so it takes
+            a while until the connection state is known. This check can be
+            used e.g. when a tool is opened to find out that the server is
+            not available before the tool tries to fetch data from it.
+
+        Request is sent only if the connection state is not known yet. When
+            the server is not available, the state is changed to
+            disconnected and 'connection.closed' event is emitted.
+
+        Returns:
+            bool | None: 'False' if server is not available, 'True' if
+                websocket is connected, 'None' if server did respond but
+                websocket connection is not established yet.
+
+        """
+        state = self._loop_state.connected
+        if state is not None:
+            return state
+
+        # Use 'get_info' so timeout and retries configured on the
+        #   connection are respected
+        try:
+            self._connection.get_info()
+            available = True
+        except UnauthorizedError:
+            # Server is running but rejected the token
+            available = True
+        except Exception:
+            available = False
+
+        if available:
+            return self._loop_state.connected
+
+        self._set_connected(False)
+        return False
 
     def add_callback(
         self,
@@ -593,8 +698,9 @@ class EventHub:
                 not already created.
 
         """
-        self._registered_callbacks.extend(callbacks)
-        self._update_topics()
+        with self._callbacks_lock:
+            self._registered_callbacks.extend(callbacks)
+            self._update_topics()
         if connect:
             self.start()
 
@@ -610,29 +716,46 @@ class EventHub:
     def start(self) -> None:
         """Start event loop.
 
-        This will create websocket connection and start listening to events.
-        """
-        if self._loop_state.started:
-            return
+        Websocket connection is created in a daemon thread, this method
+            does not block.
 
-        self._loop_state.started = True
-        self._create_connection_thread()
+        """
+        with self._thread_lock:
+            if self.is_running():
+                return
+
+            stop_event = threading.Event()
+            self._loop_state.stop_event = stop_event
+            loop_thread = threading.Thread(
+                target=self._thread_loop,
+                args=(stop_event,),
+                name="AYONEventHub",
+                # Daemon thread must be used! Non-daemon threads are joined
+                #   by the interpreter BEFORE 'atexit' callbacks are called,
+                #   so the process would hang on exit.
+                daemon=True,
+            )
+            self._loop_thread = loop_thread
+            loop_thread.start()
 
     def stop(self) -> None:
         self._stop()
 
     def _stop(self) -> None:
-        loop_thread, self._loop_thread = self._loop_thread, None
-        self._loop_state.stop_event.set()
+        with self._thread_lock:
+            loop_thread, self._loop_thread = self._loop_thread, None
+            self._loop_state.stop_event.set()
+            ws_con = self._ws_connection
 
-        if self._loop_state.started:
-            self._loop_state.started = False
+        # Unblock 'recv' in the loop thread
+        if ws_con is not None:
+            _abort_ws(ws_con)
 
-        if self._ws_connection is not None:
-            self._ws_connection.close()
-
-        if loop_thread is not None:
-            loop_thread.join()
+        if (
+            loop_thread is not None
+            and loop_thread is not threading.current_thread()
+        ):
+            loop_thread.join(_STOP_TIMEOUT)
 
     def _update_topics(self) -> None:
         """Subscribe to topics in server based on registered callbacks.
@@ -646,7 +769,10 @@ class EventHub:
 
         """
         topics = set()
-        for callback in self._registered_callbacks:
+        with self._callbacks_lock:
+            callbacks = list(self._registered_callbacks)
+
+        for callback in callbacks:
             topic = callback.topic
             if topic == "*":
                 topics.add(topic)
@@ -669,133 +795,186 @@ class EventHub:
         self._loop_state.auth_required = True
 
     def _create_ws_connection(self) -> WebSocket:
-        if self._ws_connection is not None:
-            if self._ws_connection.connected:
-                return self._ws_connection
-            self._ws_connection = None
+        ws_con = self._connection.create_websocket("ws")
+        # Server sends heartbeat periodically, so timeout on receive means
+        #   that the connection is dead.
+        ws_con.settimeout(_RECV_TIMEOUT)
+        return ws_con
 
-        con = self._connection.create_websocket("ws")
-        self._ws_connection = con
-        return con
+    def _close_ws_connection(self) -> None:
+        with self._thread_lock:
+            ws_con, self._ws_connection = self._ws_connection, None
+        if ws_con is not None:
+            _abort_ws(ws_con)
 
-    def _create_connection_thread(self) -> None:
-        self._stop()
-        self._loop_state.started = True
-        self._loop_state.stop_event = threading.Event()
+    def _check_token(self) -> bool | None:
+        """Check if token is valid without affecting the server connection.
 
-        callbacks = [
-            EventCallback(
-                "server.restart_requested", self._on_server_restart,
-            ),
-        ]
-        old_c, self._internal_callbacks = self._internal_callbacks, callbacks
-        for callback in old_c:
-            callback.deregister()
+        Do NOT use 'ServerAPI.validate_token' here. It marks the token
+            as invalid on any non-200 response (e.g. 502 while server is
+            restarting) which would break all requests of the process.
 
-        self.add_callbacks(callbacks)
+        Returns:
+            bool | None: 'True' if valid, 'False' if server rejected the
+                token, 'None' if it is not possible to tell (server is
+                not reachable).
 
-        loop_thread = threading.Thread(target=self._thread_loop)
-        self._loop_thread = loop_thread
-        loop_thread.start()
+        """
+        token = self._connection.access_token
+        if not token:
+            return False
 
-    def _thread_loop(self) -> None:
-        self._loop_state.running = True
+        ssl_verify = self._connection.get_ssl_verify()
+        if ssl_verify is None:
+            ssl_verify = True
+        url = f"{self._connection.get_base_url()}/api/users/me"
+        status_codes = set()
+        for headers in (
+            {"Authorization": f"Bearer {token}"},
+            {"X-Api-Key": token},
+        ):
+            try:
+                response = requests.get(
+                    url,
+                    headers=headers,
+                    verify=ssl_verify,
+                    cert=self._connection.get_cert(),
+                    timeout=_CONNECT_TIMEOUT,
+                )
+            except Exception:
+                return None
+            if response.status_code == 200:
+                return True
+            status_codes.add(response.status_code)
 
-        def _on_close(handle_token: bool = True):
-            self._ws_connection = None
-            if not self._loop_state.new_connection:
-                self.emit_event(Event("connection.closed"))
+        if status_codes <= {401, 403}:
+            return False
+        return None
 
-            if not handle_token:
+    def _set_connected(self, connected: bool) -> None:
+        # Can be called from websocket thread and from main thread
+        #   ('check_server_available').
+        state = self._loop_state
+        with self._state_lock:
+            if state.connected is connected:
                 return
+            state.connected = connected
+            if connected:
+                state.failed_attempts = 0
+                state.server_is_restarting = False
+                state.auth_failed = False
 
-            if self._connection.has_valid_token:
-                self._connection.validate_token()
-            if not self._connection.has_valid_token:
+        if connected:
+            self.emit_event(Event("connection.opened"))
+        else:
+            self.emit_event(Event("connection.closed"))
+
+    def _on_connection_lost(self, stop_event: threading.Event) -> None:
+        state = self._loop_state
+        received_message = state.received_message
+        state.received_message = False
+        self._close_ws_connection()
+        if stop_event.is_set():
+            return
+
+        self._set_connected(False)
+
+        # Server closes unauthorized clients after few seconds without
+        #   sending anything, authorized clients receive heartbeat.
+        if not received_message and not state.auth_failed:
+            if self._check_token() is False:
+                state.auth_failed = True
                 self.emit_event(Event("auth.failed"))
 
-        con: WebSocket | None
+        if state.auth_failed:
+            delay = _AUTH_FAILED_DELAY
+        else:
+            idx = min(state.failed_attempts, len(_RECONNECT_DELAYS) - 1)
+            delay = _RECONNECT_DELAYS[idx]
+        state.failed_attempts += 1
+        stop_event.wait(delay)
+
+    def _thread_loop(self, stop_event: threading.Event) -> None:
         try:
-            while True:
-                con = self._ws_connection
-                if self._loop_state.stop_event.is_set():
-                    if con is not None and con.connected:
-                        con.close()
-                    _on_close(handle_token=False)
-                    break
+            self._loop(stop_event)
+        except Exception:
+            self._log.warning("AYON event hub loop crashed", exc_info=True)
+        finally:
+            self._close_ws_connection()
+            self._loop_state.received_message = False
 
-                if con is None:
-                    # NOTE: Don't even try to connect if token is invalid,
-                    #   wait for change
-                    if not self._connection.has_valid_token:
-                        time.sleep(0.5)
-                        continue
-
-                    try:
-                        con = self._create_ws_connection()
-                    except (
-                        WebSocketTimeoutException,
-                        WebSocketConnectionClosedException,
-                        socket.error,
-                    ):
-                        time.sleep(0.5)
-                        continue
-                    self._loop_state.server_is_restarting = False
-                    self._loop_state.auth_required = True
-                    self._loop_state.new_connection = True
-
-                if self._loop_state.auth_required:
-                    subscribe_payload = {
-                        "topic": "auth",
-                        "token": self._connection.access_token,
-                        "subscribe": list(
-                            self._loop_state.registered_topics
-                        ),
-                    }
-                    try:
-                        con.send(json.dumps(subscribe_payload))
-                    except WebSocketConnectionClosedException:
-                        _on_close()
-                        continue
-
-                    self._loop_state.auth_required = False
+    def _loop(self, stop_event: threading.Event) -> None:
+        state = self._loop_state
+        while not stop_event.is_set():
+            ws_con = self._ws_connection
+            if ws_con is None:
+                if not self._connection.access_token:
+                    stop_event.wait(1.0)
                     continue
 
                 try:
-                    op_code, message = con.recv_data()
-                except (
-                    WebSocketProtocolException,
-                    WebSocketConnectionClosedException,
-                    WebSocketTimeoutException,
-                ):
-                    _on_close()
+                    ws_con = self._create_ws_connection()
+                except Exception:
+                    # Server is not available (connection refused, timeout,
+                    #   502 from proxy during restart, ssl error...)
+                    self._on_connection_lost(stop_event)
                     continue
 
-                if op_code == ABNF.OPCODE_CLOSE:
-                    _on_close()
-                    continue
+                with self._thread_lock:
+                    if stop_event.is_set():
+                        _abort_ws(ws_con)
+                        break
+                    self._ws_connection = ws_con
+                state.received_message = False
+                state.auth_required = True
 
-                if self._loop_state.new_connection:
-                    self._loop_state.new_connection = False
-                    self.emit_event(Event("connection.opened"))
+            if state.auth_required:
+                state.auth_required = False
+                subscribe_payload = {
+                    "topic": "auth",
+                    "token": self._connection.access_token,
+                    "subscribe": list(state.registered_topics),
+                }
+                try:
+                    ws_con.send(json.dumps(subscribe_payload))
+                except Exception:
+                    self._on_connection_lost(stop_event)
+                continue
 
-                if op_code != ABNF.OPCODE_TEXT:
-                    continue
+            try:
+                op_code, message = ws_con.recv_data()
+            except Exception:
+                # Timeout (no heartbeat), closed connection, socket error...
+                self._on_connection_lost(stop_event)
+                continue
 
-                if not message:
-                    continue
+            if op_code == ABNF.OPCODE_CLOSE:
+                self._on_connection_lost(stop_event)
+                continue
 
+            if not state.received_message:
+                state.received_message = True
+                self._set_connected(True)
+
+            if op_code != ABNF.OPCODE_TEXT or not message:
+                continue
+
+            try:
                 event_data = json.loads(message)
-                event = Event.from_ws_message(event_data)
-                if event is not None:
-                    self.emit_event(event)
+            except ValueError:
+                self._log.debug(
+                    "Failed to parse websocket message", exc_info=True
+                )
+                continue
 
-        finally:
-            self._loop_state.server_is_restarting = False
-            self._loop_state.running = False
-            self._loop_state.stop_event.set()
+            if not isinstance(event_data, dict):
+                continue
 
-    def _on_server_restart(self, event: Event) -> None:
+            event = Event.from_ws_message(event_data)
+            if event is not None:
+                self.emit_event(event)
+
+    def _on_server_restart(self) -> None:
         self._loop_state.server_is_restarting = True
 
     def _process_event(self, event: Event) -> None:
@@ -805,15 +984,24 @@ class EventHub:
             event (Event): Prepared event with topic and data.
 
         """
-        callbacks = tuple(sorted(
-            self._registered_callbacks, key=lambda x: x.order
-        ))
-        any_removed = False
+        with self._callbacks_lock:
+            callbacks = tuple(sorted(
+                self._registered_callbacks, key=lambda x: x.order
+            ))
+
+        removed = []
         for callback in callbacks:
             callback.process_event(event)
             if not callback.is_ref_valid:
-                any_removed = True
-                self._registered_callbacks.remove(callback)
+                removed.append(callback)
 
-        if any_removed:
+        if not removed:
+            return
+
+        with self._callbacks_lock:
+            for callback in removed:
+                try:
+                    self._registered_callbacks.remove(callback)
+                except ValueError:
+                    pass
             self._update_topics()
