@@ -878,7 +878,13 @@ def get_user(
 def get_event_hub() -> EventHub:
     """Get event hub for connection.
 
-    Event hub is used to subscribe to events from server.
+    Event hub is used to subscribe to events from server. The hub is
+        created on first call, websocket connection is created when
+        a callback is registered or when the hub is started.
+
+    Notes:
+        Running hub keeps reference to the connection, call
+            'EventHub.stop' when the connection is not used anymore.
 
     Returns:
         EventHub: Event hub instance.

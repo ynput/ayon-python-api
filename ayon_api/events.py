@@ -532,6 +532,21 @@ class _LoopState:
     failed_attempts: int = 0
     registered_topics: set[str] = field(default_factory=set)
     server_is_restarting: bool = False
+    # Interrupts waiting between reconnection attempts
+    wake_event: threading.Event = field(default_factory=threading.Event)
+
+
+# Hubs stopped on process exit, stored weakly so a hub that is not running
+#   can be garbage collected
+_EVENT_HUBS: weakref.WeakSet[EventHub] = weakref.WeakSet()
+
+
+def _stop_event_hubs() -> None:
+    for event_hub in list(_EVENT_HUBS):
+        event_hub.stop()
+
+
+atexit.register(_stop_event_hubs)
 
 
 class EventHub:
@@ -541,9 +556,9 @@ class EventHub:
         the caller (e.g. DCC main thread) nor the process exit.
 
     Warnings:
-        Callbacks are triggered in the websocket thread! Use
-            'WSEventsModel' (or own queue) to process them in main thread,
-            especially if a callback touches Qt widgets.
+        Callbacks are triggered in the websocket thread! Use own queue
+            to process them in main thread, especially if a callback
+            touches Qt widgets.
 
     Internal topics:
         - 'connection.opened' first message received after (re)connection.
@@ -551,8 +566,7 @@ class EventHub:
         - 'auth.failed' server rejected the token.
 
     Args:
-        connection (ServerAPI | None): Server connection. Global connection
-            is used if not passed.
+        connection (ServerAPI): Server connection.
 
     """
     # Topics emitted by the hub itself
@@ -562,12 +576,7 @@ class EventHub:
     # Topic sent by server
     TOPIC_SERVER_RESTART_REQUESTED: str = "server.restart_requested"
 
-    def __init__(self, connection: ServerAPI | None = None) -> None:
-        if connection is None:
-            from ._api import get_server_api_connection
-
-            connection = get_server_api_connection()
-
+    def __init__(self, connection: ServerAPI) -> None:
         self._log = logging.getLogger(self.__class__.__name__)
         self._connection: ServerAPI = connection
         self._ws_connection: WebSocket | None = None
@@ -584,7 +593,7 @@ class EventHub:
             ),
         ]
         self.add_callbacks(self._internal_callbacks, connect=False)
-        atexit.register(self._stop)
+        _EVENT_HUBS.add(self)
 
     def is_running(self) -> bool:
         """Check if event loop is running.
@@ -748,10 +757,43 @@ class EventHub:
     def stop(self) -> None:
         self._stop()
 
+    def reconnect(self) -> None:
+        """Drop current websocket connection and connect again.
+
+        Should be called when websocket connection should be recreated,
+            e.g. server url of the connection did change.
+
+        """
+        state = self._loop_state
+        state.auth_failed = False
+        state.failed_attempts = 0
+        self._close_ws_connection()
+        state.wake_event.set()
+
+    def reauthenticate(self) -> None:
+        """Authenticate websocket connection with current token.
+
+        Should be called when token of the server connection did change.
+            Websocket connection is kept if is open, otherwise next
+            connection attempt happens immediately.
+
+        """
+        if not self._connection.access_token:
+            # Token was removed, server would close the connection anyway
+            self.reconnect()
+            return
+
+        state = self._loop_state
+        state.auth_failed = False
+        state.failed_attempts = 0
+        state.auth_required = True
+        state.wake_event.set()
+
     def _stop(self) -> None:
         with self._thread_lock:
             loop_thread, self._loop_thread = self._loop_thread, None
             self._loop_state.stop_event.set()
+            self._loop_state.wake_event.set()
             ws_con = self._ws_connection
 
         # Unblock 'recv' in the loop thread
@@ -870,6 +912,7 @@ class EventHub:
                 state.failed_attempts = 0
                 state.server_is_restarting = False
                 state.auth_failed = False
+                state.wake_event.clear()
 
         if connected:
             self.emit_event(Event(self.TOPIC_CONNECTION_OPENED))
@@ -899,7 +942,15 @@ class EventHub:
             idx = min(state.failed_attempts, len(_RECONNECT_DELAYS) - 1)
             delay = _RECONNECT_DELAYS[idx]
         state.failed_attempts += 1
-        stop_event.wait(delay)
+        self._wait(stop_event, delay)
+
+    def _wait(self, stop_event: threading.Event, timeout: float) -> None:
+        """Wait until timeout, stop or wake request."""
+        if stop_event.is_set():
+            return
+        wake_event = self._loop_state.wake_event
+        wake_event.wait(timeout)
+        wake_event.clear()
 
     def _thread_loop(self, stop_event: threading.Event) -> None:
         try:
@@ -916,7 +967,7 @@ class EventHub:
             ws_con = self._ws_connection
             if ws_con is None:
                 if not self._connection.access_token:
-                    stop_event.wait(1.0)
+                    self._wait(stop_event, 1.0)
                     continue
 
                 try:

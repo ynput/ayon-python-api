@@ -375,7 +375,8 @@ class ServerAPI(
             self.validate_server_availability()
             self.create_session()
 
-        self._event_hub: EventHub = EventHub(self)
+        # Created on demand by 'get_event_hub'
+        self._event_hub: EventHub | None = None
 
     @property
     def log(self) -> logging.Logger:
@@ -828,11 +829,16 @@ class ServerAPI(
         return self._token_info.is_valid
 
     def set_token(self, token: str | None) -> None:
-        self.reset_token()
+        self._reset_token()
         self._token_info.token = token
         self.validate_token()
+        self._token_changed()
 
     def reset_token(self) -> None:
+        self._reset_token()
+        self._token_changed()
+
+    def _reset_token(self) -> None:
         self._token_info.token = None
         self._token_info.is_service = None
         self._token_info.is_valid = None
@@ -1227,13 +1233,26 @@ class ServerAPI(
     def get_event_hub(self) -> EventHub:
         """Get event hub for connection.
 
-        Event hub is used to subscribe to events from server.
+        Event hub is used to subscribe to events from server. The hub is
+            created on first call, websocket connection is created when
+            a callback is registered or when the hub is started.
+
+        Notes:
+            Running hub keeps reference to the connection, call
+                'EventHub.stop' when the connection is not used anymore.
 
         Returns:
             EventHub: Event hub instance.
 
         """
+        if self._event_hub is None:
+            self._event_hub = EventHub(self)
         return self._event_hub
+
+    def _token_changed(self) -> None:
+        """Let event hub know that token did change."""
+        if self._event_hub is not None:
+            self._event_hub.reauthenticate()
 
     def login(
         self,
@@ -1266,34 +1285,37 @@ class ServerAPI(
                     self.create_session()
                 return
 
-        self.reset_token()
+        self._reset_token()
+        try:
+            self.validate_server_availability()
 
-        self.validate_server_availability()
+            response = self.raw_post(
+                "auth/login",
+                json=dict(
+                    name=username,
+                    password=password,
+                ),
+                handle_invalid_token=False,
+            )
+            if response.status_code != 200:
+                _detail = response.data.get("detail")
+                details = ""
+                if _detail:
+                    details = f" {_detail}"
 
-        response = self.raw_post(
-            "auth/login",
-            json=dict(
-                name=username,
-                password=password,
-            ),
-            handle_invalid_token=False,
-        )
-        if response.status_code != 200:
-            _detail = response.data.get("detail")
-            details = ""
-            if _detail:
-                details = f" {_detail}"
+                raise AuthenticationError(f"Login failed {details}")
 
-            raise AuthenticationError(f"Login failed {details}")
+            self._token_info.token = response["token"]
+            # Should be valid if was just logged in
+            self._token_info.is_valid = True
+            # Service token can't be obtained by login, so it is not
+            #   service token
+            self._token_info.is_service = False
 
-        self._token_info.token = response["token"]
-        # Should be valid if was just logged in
-        self._token_info.is_valid = True
-        # Service token can't be obtained by login, so it is not service token
-        self._token_info.is_service = False
-
-        if not self.has_valid_token:
-            raise AuthenticationError("Invalid credentials")
+            if not self.has_valid_token:
+                raise AuthenticationError("Invalid credentials")
+        finally:
+            self._token_changed()
 
         if create_session:
             self.create_session()
