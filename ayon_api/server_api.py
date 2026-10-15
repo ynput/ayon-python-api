@@ -94,6 +94,10 @@ from ._api_helpers import (
     ActionsAPI,
     LinksAPI,
     ListsAPI,
+    UsersAPI,
+    ServicesAPI,
+    SystemAPI,
+    ReviewablesAPI,
 )
 
 if typing.TYPE_CHECKING:
@@ -249,6 +253,10 @@ class ServerAPI(
     ActionsAPI,
     LinksAPI,
     ListsAPI,
+    UsersAPI,
+    ServicesAPI,
+    SystemAPI,
+    ReviewablesAPI,
 ):
     """Base handler of connection to server.
 

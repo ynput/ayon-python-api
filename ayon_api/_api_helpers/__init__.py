@@ -17,6 +17,10 @@ from .activities import ActivitiesAPI
 from .actions import ActionsAPI
 from .links import LinksAPI
 from .lists import ListsAPI
+from .users import UsersAPI
+from .services import ServicesAPI
+from .system import SystemAPI
+from .reviewables import ReviewablesAPI
 
 
 __all__ = (
@@ -39,4 +43,8 @@ __all__ = (
     "ActionsAPI",
     "LinksAPI",
     "ListsAPI",
+    "UsersAPI",
+    "ServicesAPI",
+    "SystemAPI",
+    "ReviewablesAPI",
 )

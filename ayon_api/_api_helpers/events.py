@@ -342,6 +342,45 @@ class EventsAPI(BaseServerAPI):
         response = self.delete(f"events/{event_id}")
         response.raise_for_status()
 
+    def delete_events(self, events_filter: EventFilter) -> None:
+        """Delete events matching filter.
+
+        Requires administrator privileges.
+
+        Example filter::
+
+            {
+                "conditions": [
+                    {
+                        "key": "topic",
+                        "value": "my.topic",
+                        "operator": "eq",
+                    }
+                ],
+                "operator": "and",
+            }
+
+        Args:
+            events_filter (EventFilter): Filtering conditions to find events
+                to delete. For more technical specifications look to server
+                backed 'ayon_server.sqlfilter.QueryFilter'.
+
+        Raises:
+            ValueError: Filter does not contain any conditions. Server would
+                delete all events.
+
+        """
+        if not events_filter or not events_filter.get("conditions"):
+            raise ValueError(
+                "Filter without conditions would delete all events."
+            )
+        response = self.post(
+            "eventops",
+            type="delete",
+            filter=events_filter,
+        )
+        response.raise_for_status()
+
     def enroll_event_job(
         self,
         source_topic: Union[str, list[str]],

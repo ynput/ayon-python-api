@@ -5,6 +5,7 @@ import warnings
 import typing
 from typing import Optional
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import (
     get_media_mime_type_for_stream,
     get_media_mime_type,
@@ -357,6 +358,189 @@ class ThumbnailsAPI(BaseServerAPI):
             headers={"Content-Type": mime_type},
         )
         response.raise_for_status()
+
+    def set_entity_thumbnail(
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+        src_filepath: str,
+    ) -> str:
+        """Upload new thumbnail for an entity.
+
+        Created thumbnail is automatically set on the entity.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            entity_type (str): Entity type. Supported types are 'folder',
+                'task', 'version' and 'workfile'.
+            entity_id (str): Entity id.
+            src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+        Returns:
+            str: Created thumbnail id.
+
+        Raises:
+            ValueError: When thumbnail source cannot be processed.
+
+        """
+        if not os.path.exists(src_filepath):
+            raise ValueError("Entered filepath does not exist.")
+
+        endpoint = self._get_entity_thumbnail_endpoint(
+            project_name, entity_type, entity_id
+        )
+        mime_type = get_media_mime_type(src_filepath)
+        response = self.upload_file(
+            endpoint,
+            src_filepath,
+            request_type=RequestTypes.post,
+            headers={"Content-Type": mime_type},
+        )
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def set_entity_thumbnail_from_stream(
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_id: str,
+        stream: StreamType,
+    ) -> str:
+        """Upload new thumbnail for an entity from byte stream.
+
+        Created thumbnail is automatically set on the entity.
+
+        Args:
+            project_name (str): Project under which the entity is located.
+            entity_type (str): Entity type. Supported types are 'folder',
+                'task', 'version' and 'workfile'.
+            entity_id (str): Entity id.
+            stream (StreamType): Thumbnail content stream.
+
+        Returns:
+            str: Created thumbnail id.
+
+        """
+        endpoint = self._get_entity_thumbnail_endpoint(
+            project_name, entity_type, entity_id
+        )
+        mime_type = get_media_mime_type_for_stream(stream)
+        response = self.upload_file_from_stream(
+            endpoint,
+            stream,
+            request_type=RequestTypes.post,
+            headers={"Content-Type": mime_type},
+        )
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def get_project_thumbnail(self, project_name: str) -> ThumbnailContent:
+        """Get project thumbnail.
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            ThumbnailContent: Thumbnail content wrapper. Does not have to be
+                valid.
+
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
+        """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'get_project_thumbnail' is supported"
+                " for AYON server 1.15.0 and above."
+            )
+        response = self.raw_get(f"projects/{project_name}/thumbnail")
+        if (
+            response.status_code == 200
+            and "X-Thumbnail-Id" not in response.headers
+        ):
+            # Project skeleton thumbnail does not return thumbnail id
+            #   header, use reserved id of project thumbnail
+            return ThumbnailContent(
+                project_name,
+                "0" * 32,
+                response.content,
+                response.content_type,
+            )
+        return self._prepare_thumbnail_content(project_name, response)
+
+    def set_project_thumbnail(
+        self, project_name: str, src_filepath: str
+    ) -> str:
+        """Upload project thumbnail.
+
+        Args:
+            project_name (str): Project name.
+            src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+        Returns:
+            str: Thumbnail id of project thumbnail.
+
+        Raises:
+            ValueError: When thumbnail source cannot be processed.
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
+        """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'set_project_thumbnail' is supported"
+                " for AYON server 1.15.0 and above."
+            )
+        if not os.path.exists(src_filepath):
+            raise ValueError("Entered filepath does not exist.")
+
+        mime_type = get_media_mime_type(src_filepath)
+        response = self.upload_file(
+            f"api/projects/{project_name}/thumbnail",
+            src_filepath,
+            request_type=RequestTypes.post,
+            headers={"Content-Type": mime_type},
+        )
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def set_project_thumbnail_from_stream(
+        self, project_name: str, stream: StreamType
+    ) -> str:
+        """Upload project thumbnail from byte stream.
+
+        Args:
+            project_name (str): Project name.
+            stream (StreamType): Thumbnail content stream.
+
+        Returns:
+            str: Thumbnail id of project thumbnail.
+
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
+        """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'set_project_thumbnail_from_stream' is supported"
+                " for AYON server 1.15.0 and above."
+            )
+        mime_type = get_media_mime_type_for_stream(stream)
+        response = self.upload_file_from_stream(
+            f"api/projects/{project_name}/thumbnail",
+            stream,
+            request_type=RequestTypes.post,
+            headers={"Content-Type": mime_type},
+        )
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def _get_entity_thumbnail_endpoint(
+        self, project_name: str, entity_type: str, entity_id: str
+    ) -> str:
+        return (
+            f"api/projects/{project_name}/{entity_type}s/{entity_id}/thumbnail"
+        )
 
     def _prepare_thumbnail_content(
         self,
