@@ -538,16 +538,6 @@ class ThumbnailsAPI(BaseServerAPI):
     def _get_entity_thumbnail_endpoint(
         self, project_name: str, entity_type: str, entity_id: str
     ) -> str:
-        if entity_type not in (
-            "folder",
-            "task",
-            "version",
-            "workfile",
-        ):
-            raise ValueError(
-                f"Entity type '{entity_type}' does not support thumbnails."
-            )
-
         return (
             f"api/projects/{project_name}/{entity_type}s/{entity_id}/thumbnail"
         )
