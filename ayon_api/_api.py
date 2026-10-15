@@ -53,6 +53,7 @@ if typing.TYPE_CHECKING:
         EntityListEntityType,
         EntityListItemMode,
         EntityListScope,
+        ReviewablesEntityType,
         BackgroundOperationTask,
         LinkDirection,
         CreateLinkData,
@@ -3219,6 +3220,8 @@ def get_addon_settings_schema(
     addon_name: str,
     addon_version: str,
     project_name: Optional[str] = None,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
 ) -> dict[str, Any]:
     """Sudio/Project settings schema of an addon.
 
@@ -3230,6 +3233,10 @@ def get_addon_settings_schema(
         addon_version (str): Version of addon.
         project_name (Optional[str]): Schema for specific project or
             default studio schemas.
+        variant (Optional[str]): Settings variant used as context for
+            the schema. Server uses 'production' if not passed.
+        site_id (Optional[str]): Site id used as context for project
+            schema. Ignored if 'project_name' is not passed.
 
     Returns:
         dict[str, Any]: Schema of studio/project settings.
@@ -3240,6 +3247,8 @@ def get_addon_settings_schema(
         addon_name=addon_name,
         addon_version=addon_version,
         project_name=project_name,
+        variant=variant,
+        site_id=site_id,
     )
 
 
@@ -3614,6 +3623,481 @@ def get_addons_settings(
     )
 
 
+def set_addon_studio_settings(
+    addon_name: str,
+    addon_version: str,
+    settings: dict[str, Any],
+    variant: Optional[str] = None,
+) -> None:
+    """Set studio settings of an addon.
+
+    Server calculates studio overrides from passed settings values.
+    Explicit (un)pinning of fields can be done with
+        '__pinned_fields__' and '__unpinned_fields__' keys in settings.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        settings (dict[str, Any]): Full settings values.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+
+    """
+    con = get_server_api_connection()
+    return con.set_addon_studio_settings(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        settings=settings,
+        variant=variant,
+    )
+
+
+def set_addon_project_settings(
+    addon_name: str,
+    addon_version: str,
+    project_name: str,
+    settings: dict[str, Any],
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+) -> None:
+    """Set project settings of an addon.
+
+    Server calculates project overrides from passed settings values.
+    If 'site_id' is passed then project site overrides of current user
+    are set instead.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        project_name (str): Project name.
+        settings (dict[str, Any]): Full settings values.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+        site_id (Optional[str]): Site id for which are site overrides
+            set. Project overrides are set if not passed.
+
+    """
+    con = get_server_api_connection()
+    return con.set_addon_project_settings(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        settings=settings,
+        variant=variant,
+        site_id=site_id,
+    )
+
+
+def get_addon_studio_overrides(
+    addon_name: str,
+    addon_version: str,
+    variant: Optional[str] = None,
+    as_version: Optional[str] = None,
+) -> dict[str, Any]:
+    """Get studio overrides of an addon.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+        as_version (Optional[str]): Use overrides of different addon
+            version.
+
+    Returns:
+        dict[str, Any]: Overrides information by settings path.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addon_studio_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        variant=variant,
+        as_version=as_version,
+    )
+
+
+def modify_addon_studio_overrides(
+    addon_name: str,
+    addon_version: str,
+    action: Literal["delete", "pin"],
+    path: list[str],
+    variant: Optional[str] = None,
+) -> None:
+    """Modify studio override of an addon on a settings path.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        action (Literal["delete", "pin"]): Remove override or pin
+            current value as override.
+        path (list[str]): Path to settings key.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+
+    """
+    con = get_server_api_connection()
+    return con.modify_addon_studio_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        action=action,
+        path=path,
+        variant=variant,
+    )
+
+
+def delete_addon_studio_overrides(
+    addon_name: str,
+    addon_version: str,
+    variant: Optional[str] = None,
+) -> None:
+    """Delete all studio overrides of an addon.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon_studio_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        variant=variant,
+    )
+
+
+def get_addon_project_overrides(
+    addon_name: str,
+    addon_version: str,
+    project_name: str,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+    as_version: Optional[str] = None,
+) -> dict[str, Any]:
+    """Get project overrides of an addon.
+
+    Output contains studio and project overrides, and site overrides
+        if 'site_id' is passed.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        project_name (str): Project name.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+        site_id (Optional[str]): Site id to include site overrides.
+        as_version (Optional[str]): Use overrides of different addon
+            version.
+
+    Returns:
+        dict[str, Any]: Overrides information by settings path.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addon_project_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        variant=variant,
+        site_id=site_id,
+        as_version=as_version,
+    )
+
+
+def modify_addon_project_overrides(
+    addon_name: str,
+    addon_version: str,
+    project_name: str,
+    action: Literal["delete", "pin"],
+    path: list[str],
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+) -> None:
+    """Modify project override of an addon on a settings path.
+
+    Project site override of current user is modified if 'site_id'
+        is passed.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        project_name (str): Project name.
+        action (Literal["delete", "pin"]): Remove override or pin
+            current value as override.
+        path (list[str]): Path to settings key.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+        site_id (Optional[str]): Site id to modify site overrides.
+
+    """
+    con = get_server_api_connection()
+    return con.modify_addon_project_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        action=action,
+        path=path,
+        variant=variant,
+        site_id=site_id,
+    )
+
+
+def delete_addon_project_overrides(
+    addon_name: str,
+    addon_version: str,
+    project_name: str,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+) -> None:
+    """Delete all project overrides of an addon.
+
+    Project site overrides of current user are deleted if 'site_id'
+        is passed.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        project_name (str): Project name.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+        site_id (Optional[str]): Site id to delete site overrides.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_addon_project_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        variant=variant,
+        site_id=site_id,
+    )
+
+
+def get_addon_studio_raw_overrides(
+    addon_name: str,
+    addon_version: str,
+    variant: Optional[str] = None,
+) -> dict[str, Any]:
+    """Get raw studio overrides of an addon.
+
+    Raw overrides are stored data without any processing. Only admins
+        can access them.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+
+    Returns:
+        dict[str, Any]: Raw overrides data.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addon_studio_raw_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        variant=variant,
+    )
+
+
+def set_addon_studio_raw_overrides(
+    addon_name: str,
+    addon_version: str,
+    overrides: dict[str, Any],
+    variant: Optional[str] = None,
+) -> None:
+    """Set raw studio overrides of an addon.
+
+    Warnings:
+        Data are stored without any validation. Only admins can use
+            this. Use with caution.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        overrides (dict[str, Any]): Raw overrides data.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+
+    """
+    con = get_server_api_connection()
+    return con.set_addon_studio_raw_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        overrides=overrides,
+        variant=variant,
+    )
+
+
+def get_addon_project_raw_overrides(
+    addon_name: str,
+    addon_version: str,
+    project_name: str,
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+) -> dict[str, Any]:
+    """Get raw project overrides of an addon.
+
+    Raw overrides are stored data without any processing. Project
+        overrides are accessible only by admins, project site overrides
+        of current user are returned if 'site_id' is passed.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        project_name (str): Project name.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+        site_id (Optional[str]): Site id to get site overrides.
+
+    Returns:
+        dict[str, Any]: Raw overrides data.
+
+    """
+    con = get_server_api_connection()
+    return con.get_addon_project_raw_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        variant=variant,
+        site_id=site_id,
+    )
+
+
+def set_addon_project_raw_overrides(
+    addon_name: str,
+    addon_version: str,
+    project_name: str,
+    overrides: dict[str, Any],
+    variant: Optional[str] = None,
+    site_id: Optional[str] = None,
+) -> None:
+    """Set raw project overrides of an addon.
+
+    Project site overrides of current user are set if 'site_id'
+        is passed.
+
+    Warnings:
+        Data are stored without any validation. Use with caution.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        project_name (str): Project name.
+        overrides (dict[str, Any]): Raw overrides data.
+        variant (Optional[str]): Name of settings variant. Used
+            'default_settings_variant' by default.
+        site_id (Optional[str]): Site id to set site overrides.
+
+    """
+    con = get_server_api_connection()
+    return con.set_addon_project_raw_overrides(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        project_name=project_name,
+        overrides=overrides,
+        variant=variant,
+        site_id=site_id,
+    )
+
+
+def set_addon_site_settings(
+    addon_name: str,
+    addon_version: str,
+    settings: dict[str, Any],
+    site_id: Optional[str] = None,
+) -> None:
+    """Set site settings of an addon for current user.
+
+    Args:
+        addon_name (str): Name of addon.
+        addon_version (str): Version of addon.
+        settings (dict[str, Any]): Site settings values.
+        site_id (Optional[str]): Site id for which are settings set.
+            Using 'site_id' attribute if not passed.
+
+    Raises:
+        ValueError: If site id is not available.
+
+    """
+    con = get_server_api_connection()
+    return con.set_addon_site_settings(
+        addon_name=addon_name,
+        addon_version=addon_version,
+        settings=settings,
+        site_id=site_id,
+    )
+
+
+def migrate_addon_settings(
+    addon_name: str,
+    source_version: str,
+    target_version: str,
+    source_variant: Optional[str] = None,
+    target_variant: Optional[str] = None,
+    with_projects: Optional[bool] = None,
+) -> dict[str, Any]:
+    """Migrate settings of an addon between addon versions.
+
+    Args:
+        addon_name (str): Name of addon.
+        source_version (str): Source addon version.
+        target_version (str): Target addon version.
+        source_variant (Optional[str]): Source settings variant. Server
+            uses 'production' if not passed.
+        target_variant (Optional[str]): Target settings variant. Server
+            uses 'production' if not passed.
+        with_projects (Optional[bool]): Migrate also project settings.
+            Server uses 'True' if not passed.
+
+    Returns:
+        dict[str, Any]: Server response with 'events' created during
+            the migration.
+
+    """
+    con = get_server_api_connection()
+    return con.migrate_addon_settings(
+        addon_name=addon_name,
+        source_version=source_version,
+        target_version=target_version,
+        source_variant=source_variant,
+        target_variant=target_variant,
+        with_projects=with_projects,
+    )
+
+
+def migrate_settings_by_bundle(
+    source_bundle: str,
+    target_bundle: str,
+    source_variant: str,
+    target_variant: str,
+    with_projects: bool = True,
+) -> None:
+    """Migrate settings of addons from source to target bundle.
+
+    Settings of addons present in both bundles are migrated.
+
+    Args:
+        source_bundle (str): Source bundle name.
+        target_bundle (str): Target bundle name.
+        source_variant (str): Source settings variant.
+        target_variant (str): Target settings variant.
+        with_projects (bool): Migrate also project settings.
+
+    """
+    con = get_server_api_connection()
+    return con.migrate_settings_by_bundle(
+        source_bundle=source_bundle,
+        target_bundle=target_bundle,
+        source_variant=source_variant,
+        target_variant=target_variant,
+        with_projects=with_projects,
+    )
+
+
 def get_event(
     event_id: str,
 ) -> Optional[dict[str, Any]]:
@@ -3882,6 +4366,39 @@ def delete_event(
     con = get_server_api_connection()
     return con.delete_event(
         event_id=event_id,
+    )
+
+
+def delete_events(
+    events_filter: EventFilter,
+) -> None:
+    """Delete events matching filter.
+
+    Requires administrator privileges. All events are deleted if
+        filter does not contain any conditions.
+
+    Example filter::
+
+        {
+            "conditions": [
+                {
+                    "key": "topic",
+                    "value": "my.topic",
+                    "operator": "eq",
+                }
+            ],
+            "operator": "and",
+        }
+
+    Args:
+        events_filter (EventFilter): Filtering conditions to find events
+            to delete. For more technical specifications look to server
+            backed 'ayon_server.sqlfilter.QueryFilter'.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_events(
+        events_filter=events_filter,
     )
 
 
@@ -4193,6 +4710,107 @@ def get_build_in_anatomy_preset() -> AnatomyPresetDict:
     return con.get_build_in_anatomy_preset()
 
 
+def get_anatomy_schema() -> dict[str, Any]:
+    """Get anatomy JSON schema.
+
+    The schema is used to display the anatomy preset editor form.
+
+    Returns:
+        dict[str, Any]: Anatomy JSON schema.
+
+    """
+    con = get_server_api_connection()
+    return con.get_anatomy_schema()
+
+
+def save_project_anatomy_preset(
+    preset_name: str,
+    preset: AnatomyPresetDict,
+) -> None:
+    """Create or update anatomy preset.
+
+    Built-in preset '__builtin__' and primary preset reference
+        '__primary__' cannot be updated.
+
+    Args:
+        preset_name (str): Anatomy preset name.
+        preset (AnatomyPresetDict): Anatomy preset values.
+
+    """
+    con = get_server_api_connection()
+    return con.save_project_anatomy_preset(
+        preset_name=preset_name,
+        preset=preset,
+    )
+
+
+def rename_project_anatomy_preset(
+    preset_name: str,
+    new_preset_name: str,
+) -> None:
+    """Rename anatomy preset.
+
+    Args:
+        preset_name (str): Current anatomy preset name.
+        new_preset_name (str): New anatomy preset name.
+
+    """
+    con = get_server_api_connection()
+    return con.rename_project_anatomy_preset(
+        preset_name=preset_name,
+        new_preset_name=new_preset_name,
+    )
+
+
+def delete_project_anatomy_preset(
+    preset_name: str,
+) -> None:
+    """Delete anatomy preset.
+
+    Args:
+        preset_name (str): Anatomy preset name.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_project_anatomy_preset(
+        preset_name=preset_name,
+    )
+
+
+def set_primary_anatomy_preset(
+    preset_name: str,
+) -> None:
+    """Set anatomy preset as primary.
+
+    Primary preset is used as default preset for new projects. Use
+        preset name '_' to unset any primary preset (built-in preset
+        is used as default).
+
+    Args:
+        preset_name (str): Anatomy preset name.
+
+    """
+    con = get_server_api_connection()
+    return con.set_primary_anatomy_preset(
+        preset_name=preset_name,
+    )
+
+
+def unset_primary_anatomy_preset(
+    preset_name: str,
+) -> None:
+    """Unset primary flag of anatomy preset.
+
+    Args:
+        preset_name (str): Anatomy preset name.
+
+    """
+    con = get_server_api_connection()
+    return con.unset_primary_anatomy_preset(
+        preset_name=preset_name,
+    )
+
+
 def get_rest_project(
     project_name: str,
 ) -> Optional[ProjectDict]:
@@ -4481,6 +5099,310 @@ def delete_project(
     )
 
 
+def rename_project(
+    project_name: str,
+    new_project_name: str,
+    new_project_code: Optional[str] = None,
+) -> None:
+    """Rename project.
+
+    Args:
+        project_name (str): Current project name.
+        new_project_name (str): New project name.
+        new_project_code (Optional[str]): New project code. Project code
+            is unchanged if not passed.
+
+    """
+    con = get_server_api_connection()
+    return con.rename_project(
+        project_name=project_name,
+        new_project_name=new_project_name,
+        new_project_code=new_project_code,
+    )
+
+
+def get_project_anatomy(
+    project_name: str,
+) -> AnatomyPresetDict:
+    """Get project anatomy.
+
+    Args:
+        project_name (str): Project name.
+
+    Returns:
+        AnatomyPresetDict: Project anatomy in anatomy preset format.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_anatomy(
+        project_name=project_name,
+    )
+
+
+def set_project_anatomy(
+    project_name: str,
+    anatomy: AnatomyPresetDict,
+) -> None:
+    """Set project anatomy.
+
+    Args:
+        project_name (str): Project name.
+        anatomy (AnatomyPresetDict): Anatomy data in anatomy
+            preset format.
+
+    """
+    con = get_server_api_connection()
+    return con.set_project_anatomy(
+        project_name=project_name,
+        anatomy=anatomy,
+    )
+
+
+def get_project_stats(
+    project_name: str,
+) -> dict[str, Any]:
+    """Get project statistics.
+
+    Example output::
+
+        {
+            "counts": {
+                "folders": 10,
+                "products": 20,
+                "versions": 30,
+                "representations": 40,
+                "tasks": 50
+            }
+        }
+
+    Args:
+        project_name (str): Project name.
+
+    Returns:
+        dict[str, Any]: Project statistics.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_stats(
+        project_name=project_name,
+    )
+
+
+def get_project_tags(
+    project_name: str,
+) -> dict[str, list[str]]:
+    """Get tags used on entities in project.
+
+    Example output::
+
+        {
+            "folders": ["tag1"],
+            "tasks": [],
+            "products": [],
+            "versions": ["tag2"],
+            "representations": [],
+            "workfiles": []
+        }
+
+    Args:
+        project_name (str): Project name.
+
+    Returns:
+        dict[str, list[str]]: Used tags by entity type (plural).
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_tags(
+        project_name=project_name,
+    )
+
+
+def get_project_bundle(
+    project_name: str,
+    variant: str = 'production',
+) -> dict[str, Any]:
+    """Get project bundle information.
+
+    Information contains addon versions used by project, installer
+        version, dependency packages and available options for each.
+
+    Args:
+        project_name (str): Project name.
+        variant (str): Bundle variant 'production' or 'staging'.
+
+    Returns:
+        dict[str, Any]: Project bundle information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_bundle(
+        project_name=project_name,
+        variant=variant,
+    )
+
+
+def set_project_bundle(
+    project_name: str,
+    addons: dict[str, Optional[str]],
+    installer_version: Optional[str] = None,
+    dependency_packages: Optional[dict[str, Optional[str]]] = None,
+    variant: str = 'production',
+) -> None:
+    """Set (freeze) project bundle.
+
+    Args:
+        project_name (str): Project name.
+        addons (dict[str, Optional[str]]): Addon versions by addon name.
+            Use 'None' to disable an addon.
+        installer_version (Optional[str]): Installer version.
+        dependency_packages (Optional[dict[str, Optional[str]]]):
+            Dependency package names by platform name.
+        variant (str): Bundle variant 'production' or 'staging'.
+
+    """
+    con = get_server_api_connection()
+    return con.set_project_bundle(
+        project_name=project_name,
+        addons=addons,
+        installer_version=installer_version,
+        dependency_packages=dependency_packages,
+        variant=variant,
+    )
+
+
+def unset_project_bundle(
+    project_name: str,
+    variant: str = 'production',
+) -> None:
+    """Unset (unfreeze) project bundle.
+
+    Args:
+        project_name (str): Project name.
+        variant (str): Bundle variant 'production' or 'staging'.
+
+    """
+    con = get_server_api_connection()
+    return con.unset_project_bundle(
+        project_name=project_name,
+        variant=variant,
+    )
+
+
+def get_project_entity_uris(
+    project_name: str,
+    entity_type: str,
+    entity_ids: Iterable[str],
+) -> list[dict[str, str]]:
+    """Get AYON URIs for project entities.
+
+    Example output::
+
+        [
+            {
+                "id": "0254c370005811ee9a740242ac130004",
+                "uri": "ayon+entity://demo/assets/hero"
+            },
+            ...
+        ]
+
+    Args:
+        project_name (str): Project name.
+        entity_type (str): Entity type, e.g. 'folder', 'task',
+            'product', 'version', 'representation' or 'workfile'.
+        entity_ids (Iterable[str]): Entity ids.
+
+    Returns:
+        list[dict[str, str]]: Entity URIs with entity ids.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_entity_uris(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+    )
+
+
+def resolve_uris(
+    uris: Iterable[str],
+    resolve_roots: bool = False,
+    path_only: bool = False,
+    site_id: Optional[str] = None,
+) -> list[dict[str, Any]]:
+    """Resolve AYON URIs to entities.
+
+    Each URI starts with 'ayon://{project_name}/{path}' with optional
+        query arguments 'product', 'version', 'representation' or
+        'task', 'workfile'.
+
+    Example output::
+
+        [
+            {
+                "uri": "ayon://demo/assets/hero?product=modelMain",
+                "entities": [
+                    {
+                        "projectName": "demo",
+                        "folderId": "0254c370005811ee9a740242ac130004",
+                        "productId": "0255ce50005811ee9a740242ac130004",
+                        "target": "product"
+                    }
+                ]
+            },
+            ...
+        ]
+
+    Args:
+        uris (Iterable[str]): AYON URIs to resolve.
+        resolve_roots (bool): Resolve roots in representation paths.
+            Requires site id.
+        path_only (bool): Return only file paths of entities.
+        site_id (Optional[str]): Site id used to resolve roots. Site id
+            set on connection is used if not passed.
+
+    Returns:
+        list[dict[str, Any]]: Resolved URIs.
+
+    """
+    con = get_server_api_connection()
+    return con.resolve_uris(
+        uris=uris,
+        resolve_roots=resolve_roots,
+        path_only=path_only,
+        site_id=site_id,
+    )
+
+
+def get_project_file_info(
+    project_name: str,
+    file_id: str,
+) -> dict[str, Any]:
+    """Get information about project file.
+
+    Example output::
+
+        {
+            "size": 1024,
+            "filename": "image.png",
+            "contentType": "image/png",
+            "mediaInfo": None
+        }
+
+    Args:
+        project_name (str): Project name.
+        file_id (str): File id.
+
+    Returns:
+        dict[str, Any]: File information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_file_info(
+        project_name=project_name,
+        file_id=file_id,
+    )
+
+
 def get_raw_project_folders() -> dict[str, Any]:
     """Get project folders (raw data)."""
     con = get_server_api_connection()
@@ -4626,6 +5548,31 @@ def get_project_root_overrides_by_site_id(
     return con.get_project_root_overrides_by_site_id(
         project_name=project_name,
         site_id=site_id,
+    )
+
+
+def set_project_root_overrides(
+    project_name: str,
+    site_id: str,
+    roots: dict[str, Optional[str]],
+) -> None:
+    """Set root overrides of logged user for a site.
+
+    Only roots defined in project anatomy are stored. Roots with empty
+        value are removed, and all overrides for the site are removed
+        if no root value is passed.
+
+    Args:
+        project_name (str): Project name.
+        site_id (str): Site id for which overrides are set.
+        roots (dict[str, Optional[str]]): Root values by root name.
+
+    """
+    con = get_server_api_connection()
+    return con.set_project_root_overrides(
+        project_name=project_name,
+        site_id=site_id,
+        roots=roots,
     )
 
 
@@ -5091,6 +6038,86 @@ def get_folder_ids_with_products(
     return con.get_folder_ids_with_products(
         project_name=project_name,
         folder_ids=folder_ids,
+    )
+
+
+def search_folders(
+    project_name: str,
+    search: Optional[str] = None,
+    folder_search: Optional[str] = None,
+    folder_filter: Optional[AdvancedFilterDict] = None,
+    task_search: Optional[str] = None,
+    task_filter: Optional[AdvancedFilterDict] = None,
+) -> list[str]:
+    """Search folders using text search and filters.
+
+    Returns ids of folders matching the folder conditions, or containing
+        tasks matching the task conditions.
+
+    Args:
+        project_name (str): Project name.
+        search (Optional[str]): Fulltext search applied to both
+            folders and tasks.
+        folder_search (Optional[str]): Fulltext search applied
+            to folders.
+        folder_filter (Optional[AdvancedFilterDict]): Filter applied
+            to folders.
+        task_search (Optional[str]): Fulltext search applied to tasks.
+        task_filter (Optional[AdvancedFilterDict]): Filter applied
+            to tasks.
+
+    Returns:
+        list[str]: Matching folder ids.
+
+    """
+    con = get_server_api_connection()
+    return con.search_folders(
+        project_name=project_name,
+        search=search,
+        folder_search=folder_search,
+        folder_filter=folder_filter,
+        task_search=task_search,
+        task_filter=task_filter,
+    )
+
+
+def get_entity_groups(
+    project_name: str,
+    entity_type: str,
+    grouping_key: str,
+    empty: bool = False,
+) -> dict[str, Any]:
+    """Get groups of entities based on grouping key.
+
+    Example output::
+
+        {
+            "groups": [
+                {"value": "john.doe", "count": 42, ...},
+                ...
+            ],
+            "key": "assignees",
+            "entityType": "task"
+        }
+
+    Args:
+        project_name (str): Project name.
+        entity_type (str): Entity type, e.g. 'folder' or 'task'.
+        grouping_key (str): Grouping key, e.g. 'status', 'tags',
+            'taskType', 'folderType', 'productType', 'productBaseType',
+            'assignees' (tasks only) or 'attrib.{attribute name}'.
+        empty (bool): Include empty groups.
+
+    Returns:
+        dict[str, Any]: Entity groups data.
+
+    """
+    con = get_server_api_connection()
+    return con.get_entity_groups(
+        project_name=project_name,
+        entity_type=entity_type,
+        grouping_key=grouping_key,
+        empty=empty,
     )
 
 
@@ -5644,6 +6671,36 @@ def delete_task(
     return con.delete_task(
         project_name=project_name,
         task_id=task_id,
+    )
+
+
+def assign_users_to_task(
+    project_name: str,
+    task_id: str,
+    users: Iterable[str],
+    mode: Literal["add", "remove", "set"] = 'add',
+) -> None:
+    """Change users assigned to a task.
+
+    Notes:
+        Users without manager role can only assign or unassign
+            themselves.
+
+    Args:
+        project_name (str): Project name.
+        task_id (str): Task id.
+        users (Iterable[str]): User names.
+        mode (Literal["add", "remove", "set"]): How passed users are
+            applied. 'add' adds users to current assignees, 'remove'
+            removes them and 'set' replaces assignees with passed users.
+
+    """
+    con = get_server_api_connection()
+    return con.assign_users_to_task(
+        project_name=project_name,
+        task_id=task_id,
+        users=users,
+        mode=mode,
     )
 
 
@@ -8561,6 +9618,49 @@ def set_entity_list_folders_order(
     )
 
 
+def materialize_entity_list(
+    project_name: str,
+    list_id: str,
+) -> dict[str, Any]:
+    """Materialize entity list.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+
+    Returns:
+        dict[str, Any]: Summary of materialized entity list.
+
+    """
+    con = get_server_api_connection()
+    return con.materialize_entity_list(
+        project_name=project_name,
+        list_id=list_id,
+    )
+
+
+def set_entity_list_items_order(
+    project_name: str,
+    list_id: str,
+    order: list[str],
+) -> None:
+    """Change order of items in entity list.
+
+    Args:
+        project_name (str): Project name.
+        list_id (str): Entity list id.
+        order (list[str]): Item ids in desired order. Must contain
+            each item of the entity list exactly once.
+
+    """
+    con = get_server_api_connection()
+    return con.set_entity_list_items_order(
+        project_name=project_name,
+        list_id=list_id,
+        order=order,
+    )
+
+
 def get_thumbnail_by_id(
     project_name: str,
     thumbnail_id: str,
@@ -8844,4 +9944,1255 @@ def update_thumbnail_from_stream(
         project_name=project_name,
         thumbnail_id=thumbnail_id,
         stream=stream,
+    )
+
+
+def set_entity_thumbnail(
+    project_name: str,
+    entity_type: str,
+    entity_id: str,
+    src_filepath: str,
+) -> str:
+    """Upload new thumbnail for an entity.
+
+    Created thumbnail is automatically set on the entity.
+
+    Args:
+        project_name (str): Project under which the entity is located.
+        entity_type (str): Entity type. Supported types are 'folder',
+            'task', 'version' and 'workfile'.
+        entity_id (str): Entity id.
+        src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+    Returns:
+        str: Created thumbnail id.
+
+    Raises:
+        ValueError: When thumbnail source cannot be processed.
+
+    """
+    con = get_server_api_connection()
+    return con.set_entity_thumbnail(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        src_filepath=src_filepath,
+    )
+
+
+def set_entity_thumbnail_from_stream(
+    project_name: str,
+    entity_type: str,
+    entity_id: str,
+    stream: StreamType,
+) -> str:
+    """Upload new thumbnail for an entity from byte stream.
+
+    Created thumbnail is automatically set on the entity.
+
+    Args:
+        project_name (str): Project under which the entity is located.
+        entity_type (str): Entity type. Supported types are 'folder',
+            'task', 'version' and 'workfile'.
+        entity_id (str): Entity id.
+        stream (StreamType): Thumbnail content stream.
+
+    Returns:
+        str: Created thumbnail id.
+
+    """
+    con = get_server_api_connection()
+    return con.set_entity_thumbnail_from_stream(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        stream=stream,
+    )
+
+
+def get_project_thumbnail(
+    project_name: str,
+) -> ThumbnailContent:
+    """Get project thumbnail.
+
+    Args:
+        project_name (str): Project name.
+
+    Returns:
+        ThumbnailContent: Thumbnail content wrapper. Does not have to be
+            valid.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_thumbnail(
+        project_name=project_name,
+    )
+
+
+def set_project_thumbnail(
+    project_name: str,
+    src_filepath: str,
+) -> None:
+    """Upload project thumbnail.
+
+    Args:
+        project_name (str): Project name.
+        src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+    Raises:
+        ValueError: When thumbnail source cannot be processed.
+
+    """
+    con = get_server_api_connection()
+    return con.set_project_thumbnail(
+        project_name=project_name,
+        src_filepath=src_filepath,
+    )
+
+
+def set_project_thumbnail_from_stream(
+    project_name: str,
+    stream: StreamType,
+) -> None:
+    """Upload project thumbnail from byte stream.
+
+    Args:
+        project_name (str): Project name.
+        stream (StreamType): Thumbnail content stream.
+
+    """
+    con = get_server_api_connection()
+    return con.set_project_thumbnail_from_stream(
+        project_name=project_name,
+        stream=stream,
+    )
+
+
+def create_user(
+    user_name: str,
+    *,
+    password: Optional[str] = None,
+    api_key: Optional[str] = None,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    active: Optional[bool] = None,
+) -> None:
+    """Create new user.
+
+    User level and access is defined in 'data', e.g. 'isAdmin',
+        'isManager', 'isService', 'isGuest', 'accessGroups'
+        ({project_name: [access_group_name, ...]}) or
+        'defaultAccessGroups' ([access_group_name, ...]).
+
+    Args:
+        user_name (str): Name of the user.
+        password (Optional[str]): Password of the user. Service users
+            cannot have password.
+        api_key (Optional[str]): Api key for a service user.
+        attrib (Optional[dict[str, Any]]): User attributes.
+        data (Optional[dict[str, Any]]): User data.
+        active (Optional[bool]): User active state.
+
+    """
+    con = get_server_api_connection()
+    return con.create_user(
+        user_name=user_name,
+        password=password,
+        api_key=api_key,
+        attrib=attrib,
+        data=data,
+        active=active,
+    )
+
+
+def update_user(
+    user_name: str,
+    *,
+    attrib: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    active: Optional[bool] = None,
+) -> None:
+    """Update user.
+
+    Non-manager users can change only their own attributes.
+
+    Args:
+        user_name (str): Name of the user.
+        attrib (Optional[dict[str, Any]]): User attributes to change.
+        data (Optional[dict[str, Any]]): User data to change.
+        active (Optional[bool]): User active state.
+
+    """
+    con = get_server_api_connection()
+    return con.update_user(
+        user_name=user_name,
+        attrib=attrib,
+        data=data,
+        active=active,
+    )
+
+
+def delete_user(
+    user_name: str,
+) -> None:
+    """Delete user.
+
+    Args:
+        user_name (str): Name of the user.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_user(
+        user_name=user_name,
+    )
+
+
+def rename_user(
+    user_name: str,
+    new_user_name: str,
+) -> None:
+    """Rename user.
+
+    This is a manager-only operation. Target user name must not exist.
+
+    Args:
+        user_name (str): Current name of the user.
+        new_user_name (str): New name of the user.
+
+    """
+    con = get_server_api_connection()
+    return con.rename_user(
+        user_name=user_name,
+        new_user_name=new_user_name,
+    )
+
+
+def change_password(
+    user_name: str,
+    *,
+    password: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> None:
+    """Change user password or service user api key.
+
+    Only one of 'password' or 'api_key' should be passed. If both are
+        passed the password is changed.
+
+    Args:
+        user_name (str): Name of the user.
+        password (Optional[str]): New password.
+        api_key (Optional[str]): New api key of a service user. Must be
+            32 characters long hex string.
+
+    """
+    con = get_server_api_connection()
+    return con.change_password(
+        user_name=user_name,
+        password=password,
+        api_key=api_key,
+    )
+
+
+def set_user_access_groups(
+    user_name: str,
+    access_groups: dict[str, list[str]],
+) -> None:
+    """Set user access groups on projects.
+
+    Projects that are not in 'access_groups' are not affected. Pass
+        an empty list to remove access to a project.
+
+    Args:
+        user_name (str): Name of the user.
+        access_groups (dict[str, list[str]]): Access groups by
+            project name.
+
+    """
+    con = get_server_api_connection()
+    return con.set_user_access_groups(
+        user_name=user_name,
+        access_groups=access_groups,
+    )
+
+
+def get_user_sessions(
+    user_name: str,
+) -> list[dict[str, Any]]:
+    """Get active sessions of user.
+
+    Args:
+        user_name (str): Name of the user.
+
+    Returns:
+        list[dict[str, Any]]: Sessions with 'token', 'isService',
+            'lastUsed' and 'clientInfo' keys.
+
+    """
+    con = get_server_api_connection()
+    return con.get_user_sessions(
+        user_name=user_name,
+    )
+
+
+def delete_user_session(
+    user_name: str,
+    session_id: str,
+) -> None:
+    """Delete user session (logout).
+
+    Args:
+        user_name (str): Name of the user.
+        session_id (str): Session id (token).
+
+    """
+    con = get_server_api_connection()
+    return con.delete_user_session(
+        user_name=user_name,
+        session_id=session_id,
+    )
+
+
+def get_user_api_keys(
+    user_name: str,
+) -> list[dict[str, Any]]:
+    """Get api keys of user.
+
+    Args:
+        user_name (str): Name of the user.
+
+    Returns:
+        list[dict[str, Any]]: Api keys with 'id', 'label', 'preview',
+            'created' and 'expires' keys.
+
+    """
+    con = get_server_api_connection()
+    return con.get_user_api_keys(
+        user_name=user_name,
+    )
+
+
+def create_user_api_key(
+    user_name: str,
+    label: str,
+    key: str,
+    *,
+    expires: Optional[float] = None,
+) -> None:
+    """Create api key for user.
+
+    Args:
+        user_name (str): Name of the user.
+        label (str): Label of the api key. Must be unique for the user.
+        key (str): The api key value.
+        expires (Optional[float]): Expiration timestamp.
+
+    """
+    con = get_server_api_connection()
+    return con.create_user_api_key(
+        user_name=user_name,
+        label=label,
+        key=key,
+        expires=expires,
+    )
+
+
+def update_user_api_key(
+    user_name: str,
+    api_key_id: str,
+    *,
+    label: Optional[str] = None,
+    expires: Optional[float] = None,
+) -> None:
+    """Update api key of user.
+
+    Args:
+        user_name (str): Name of the user.
+        api_key_id (str): Api key id.
+        label (Optional[str]): New label of the api key.
+        expires (Optional[float]): New expiration timestamp.
+
+    """
+    con = get_server_api_connection()
+    return con.update_user_api_key(
+        user_name=user_name,
+        api_key_id=api_key_id,
+        label=label,
+        expires=expires,
+    )
+
+
+def delete_user_api_key(
+    user_name: str,
+    api_key_id: str,
+) -> None:
+    """Delete api key of user.
+
+    Args:
+        user_name (str): Name of the user.
+        api_key_id (str): Api key id.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_user_api_key(
+        user_name=user_name,
+        api_key_id=api_key_id,
+    )
+
+
+def get_user_permissions(
+    user_name: Optional[str] = None,
+    project_name: Optional[str] = None,
+) -> dict[str, Any]:
+    """Get user permissions.
+
+    Without 'user_name' are returned permissions of current user. For
+        current user without 'project_name' is returned user level with
+        studio and per-project permissions. Otherwise, are returned
+        studio permissions, or project permissions if 'project_name'
+        is passed.
+
+    Args:
+        user_name (Optional[str]): Name of the user. Current user is used
+            if not passed.
+        project_name (Optional[str]): Project name.
+
+    Returns:
+        dict[str, Any]: User permissions.
+
+    """
+    con = get_server_api_connection()
+    return con.get_user_permissions(
+        user_name=user_name,
+        project_name=project_name,
+    )
+
+
+def get_access_groups(
+    project_name: Optional[str] = None,
+) -> list[dict[str, Any]]:
+    """Get access groups.
+
+    Args:
+        project_name (Optional[str]): Project name. Studio level access
+            groups are returned if not passed.
+
+    Returns:
+        list[dict[str, Any]]: Access groups with 'name' and
+            'isProjectLevel' keys.
+
+    """
+    con = get_server_api_connection()
+    return con.get_access_groups(
+        project_name=project_name,
+    )
+
+
+def get_access_group_schema(
+    project_name: Optional[str] = None,
+) -> dict[str, Any]:
+    """Get access group (permissions) settings schema.
+
+    Args:
+        project_name (Optional[str]): Project name used as context.
+
+    Returns:
+        dict[str, Any]: Access group schema.
+
+    """
+    con = get_server_api_connection()
+    return con.get_access_group_schema(
+        project_name=project_name,
+    )
+
+
+def get_access_group(
+    access_group_name: str,
+    project_name: Optional[str] = None,
+) -> dict[str, Any]:
+    """Get access group definition (permissions).
+
+    Args:
+        access_group_name (str): Access group name.
+        project_name (Optional[str]): Project name. Studio level access
+            group is returned if not passed.
+
+    Returns:
+        dict[str, Any]: Access group permissions.
+
+    """
+    con = get_server_api_connection()
+    return con.get_access_group(
+        access_group_name=access_group_name,
+        project_name=project_name,
+    )
+
+
+def save_access_group(
+    access_group_name: str,
+    permissions: dict[str, Any],
+    project_name: Optional[str] = None,
+) -> None:
+    """Create or update access group.
+
+    Args:
+        access_group_name (str): Access group name.
+        permissions (dict[str, Any]): Access group permissions.
+        project_name (Optional[str]): Project name. Studio level access
+            group is saved if not passed.
+
+    """
+    con = get_server_api_connection()
+    return con.save_access_group(
+        access_group_name=access_group_name,
+        permissions=permissions,
+        project_name=project_name,
+    )
+
+
+def delete_access_group(
+    access_group_name: str,
+    project_name: Optional[str] = None,
+) -> None:
+    """Delete access group.
+
+    Args:
+        access_group_name (str): Access group name.
+        project_name (Optional[str]): Project name. Studio level access
+            group is deleted if not passed.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_access_group(
+        access_group_name=access_group_name,
+        project_name=project_name,
+    )
+
+
+def set_projects_access(
+    access: dict[str, dict[str, list[str]]],
+) -> None:
+    """Set access of multiple users to multiple projects.
+
+    Projects not present in the payload are not affected. Pass an empty
+        list to revoke access to a project.
+
+    Example::
+
+        {
+            "alice": {
+                "MyProject01": ["editor"],
+                "MyProject02": ["artist"],
+            },
+            "bob": {
+                "MyProject01": ["artist", "reviewer"],
+                "MyProject02": [],
+            },
+        }
+
+    Args:
+        access (dict[str, dict[str, list[str]]]): Access groups by
+            project name by user name.
+
+    """
+    con = get_server_api_connection()
+    return con.set_projects_access(
+        access=access,
+    )
+
+
+def get_teams(
+    project_name: str,
+    *,
+    show_members: bool = False,
+) -> list[dict[str, Any]]:
+    """Get teams in a project.
+
+    Args:
+        project_name (str): Project name.
+        show_members (bool): Include team members in the response.
+
+    Returns:
+        list[dict[str, Any]]: Teams with 'name', 'memberCount',
+            'leaders' and optionally 'members' keys.
+
+    """
+    con = get_server_api_connection()
+    return con.get_teams(
+        project_name=project_name,
+        show_members=show_members,
+    )
+
+
+def update_teams(
+    project_name: str,
+    teams: list[dict[str, Any]],
+) -> None:
+    """Create or replace multiple teams in a project.
+
+    Teams that are not in 'teams' are not affected.
+
+    Args:
+        project_name (str): Project name.
+        teams (list[dict[str, Any]]): Teams with 'name' and 'members'
+            keys. Member is a dictionary with 'name', 'leader'
+            and 'roles' keys.
+
+    """
+    con = get_server_api_connection()
+    return con.update_teams(
+        project_name=project_name,
+        teams=teams,
+    )
+
+
+def save_team(
+    project_name: str,
+    team_name: str,
+    members: list[dict[str, Any]],
+) -> None:
+    """Create or replace a team in a project.
+
+    Args:
+        project_name (str): Project name.
+        team_name (str): Team name.
+        members (list[dict[str, Any]]): Team members. Member is
+            a dictionary with 'name', 'leader' and 'roles' keys.
+
+    """
+    con = get_server_api_connection()
+    return con.save_team(
+        project_name=project_name,
+        team_name=team_name,
+        members=members,
+    )
+
+
+def delete_team(
+    project_name: str,
+    team_name: str,
+) -> None:
+    """Delete a team from a project.
+
+    Args:
+        project_name (str): Project name.
+        team_name (str): Team name.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_team(
+        project_name=project_name,
+        team_name=team_name,
+    )
+
+
+def save_team_member(
+    project_name: str,
+    team_name: str,
+    member_name: str,
+    *,
+    leader: bool = False,
+    roles: Optional[list[str]] = None,
+) -> None:
+    """Add or replace a team member.
+
+    Args:
+        project_name (str): Project name.
+        team_name (str): Team name.
+        member_name (str): User name.
+        leader (bool): Is user a leader of the team.
+        roles (Optional[list[str]]): User roles in the team.
+
+    """
+    con = get_server_api_connection()
+    return con.save_team_member(
+        project_name=project_name,
+        team_name=team_name,
+        member_name=member_name,
+        leader=leader,
+        roles=roles,
+    )
+
+
+def delete_team_member(
+    project_name: str,
+    team_name: str,
+    member_name: str,
+) -> None:
+    """Remove a member from a team.
+
+    Args:
+        project_name (str): Project name.
+        team_name (str): Team name.
+        member_name (str): User name.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_team_member(
+        project_name=project_name,
+        team_name=team_name,
+        member_name=member_name,
+    )
+
+
+def get_project_users(
+    project_name: str,
+) -> dict[str, list[str]]:
+    """Get users with explicitly set access groups on a project.
+
+    Managers and admins are not included as they have access to all
+        projects.
+
+    Args:
+        project_name (str): Project name.
+
+    Returns:
+        dict[str, list[str]]: Access groups by user name.
+
+    """
+    con = get_server_api_connection()
+    return con.get_project_users(
+        project_name=project_name,
+    )
+
+
+def set_project_user_access_groups(
+    project_name: str,
+    user_name: str,
+    access_groups: list[str],
+) -> dict[str, list[str]]:
+    """Set access groups of a user on a project.
+
+    Pass an empty list to remove user access to the project.
+
+    Args:
+        project_name (str): Project name.
+        user_name (str): User name.
+        access_groups (list[str]): Access group names.
+
+    Returns:
+        dict[str, list[str]]: Access groups by user name of all users
+            on the project.
+
+    """
+    con = get_server_api_connection()
+    return con.set_project_user_access_groups(
+        project_name=project_name,
+        user_name=user_name,
+        access_groups=access_groups,
+    )
+
+
+def get_services() -> list[dict[str, Any]]:
+    """Get addon services registered on server.
+
+    Only administrators receive the services, other users get an
+        empty list.
+
+    Returns:
+        list[dict[str, Any]]: List of services.
+
+    """
+    con = get_server_api_connection()
+    return con.get_services()
+
+
+def spawn_service(
+    service_name: str,
+    addon_name: str,
+    addon_version: str,
+    service: str,
+    hostname: str,
+    config: Optional[dict[str, Any]] = None,
+) -> None:
+    """Spawn (create) a new addon service.
+
+    Requires administrator privileges.
+
+    Args:
+        service_name (str): Unique name of the service.
+        addon_name (str): Name of addon that provides the service.
+        addon_version (str): Version of addon.
+        service (str): Name of service defined by the addon.
+        hostname (str): Name of host (ASH) where service should run.
+        config (Optional[dict[str, Any]]): Service configuration
+            e.g. 'volumes', 'ports', 'memLimit', 'user', 'env',
+            'storagePath' or 'registryAuth'.
+
+    """
+    con = get_server_api_connection()
+    return con.spawn_service(
+        service_name=service_name,
+        addon_name=addon_name,
+        addon_version=addon_version,
+        service=service,
+        hostname=hostname,
+        config=config,
+    )
+
+
+def update_service(
+    service_name: str,
+    should_run: Optional[bool] = None,
+    hostname: Optional[str] = None,
+    error: Optional[str] = None,
+    config: Optional[dict[str, Any]] = None,
+) -> None:
+    """Update addon service.
+
+    Requires administrator privileges.
+
+    Args:
+        service_name (str): Name of the service.
+        should_run (Optional[bool]): Service should be running.
+        hostname (Optional[str]): Name of host where service should run.
+        error (Optional[str]): Error message. Ignored when service
+            should be running.
+        config (Optional[dict[str, Any]]): Service configuration
+            values to change e.g. 'volumes', 'ports', 'memLimit',
+            'user', 'env', 'storagePath' or 'registryAuth'.
+
+    """
+    con = get_server_api_connection()
+    return con.update_service(
+        service_name=service_name,
+        should_run=should_run,
+        hostname=hostname,
+        error=error,
+        config=config,
+    )
+
+
+def delete_service(
+    service_name: str,
+) -> None:
+    """Delete addon service.
+
+    Requires administrator privileges.
+
+    Args:
+        service_name (str): Name of the service.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_service(
+        service_name=service_name,
+    )
+
+
+def get_hosts() -> list[dict[str, Any]]:
+    """Get AYON service hosts (ASH) registered on server.
+
+    Host is registered automatically when it sends heartbeat to server.
+
+    Example output::
+
+        [
+            {
+                "name": "my-host",
+                "lastSeen": "2025-01-01T00:00:00",
+                "health": {"cpu": 0.5, "mem": 42.0},
+            }
+        ]
+
+    Returns:
+        list[dict[str, Any]]: List of hosts.
+
+    """
+    con = get_server_api_connection()
+    return con.get_hosts()
+
+
+def get_sites(
+    platform_name: Optional[str] = None,
+    hostname: Optional[str] = None,
+) -> list[dict[str, Any]]:
+    """Get sites registered on server.
+
+    Non-manager users receive only sites they have used.
+
+    Example output::
+
+        [
+            {
+                "id": "site-id",
+                "platform": "windows",
+                "hostname": "my-machine",
+                "version": "1.0.0",
+                "users": ["admin"],
+            }
+        ]
+
+    Args:
+        platform_name (Optional[str]): Filter sites by platform name.
+            Possible values are 'windows', 'linux' and 'darwin'.
+        hostname (Optional[str]): Filter sites by machine hostname.
+
+    Returns:
+        list[dict[str, Any]]: List of sites.
+
+    """
+    con = get_server_api_connection()
+    return con.get_sites(
+        platform_name=platform_name,
+        hostname=hostname,
+    )
+
+
+def delete_site(
+    site_id: str,
+) -> None:
+    """Unregister site from server.
+
+    Requires administrator privileges.
+
+    Args:
+        site_id (str): Site id.
+
+    """
+    con = get_server_api_connection()
+    return con.delete_site(
+        site_id=site_id,
+    )
+
+
+def get_restart_required() -> dict[str, Any]:
+    """Get information whether server requires restart.
+
+    Example output::
+
+        {
+            "required": True,
+            "reason": "Server restart is required",
+        }
+
+    Returns:
+        dict[str, Any]: Restart required information with keys
+            'required' and 'reason'.
+
+    """
+    con = get_server_api_connection()
+    return con.get_restart_required()
+
+
+def set_restart_required(
+    required: bool,
+    reason: Optional[str] = None,
+) -> None:
+    """Set or clear the server restart required flag.
+
+    This notifies administrators that the server needs to be restarted.
+        Use 'trigger_server_restart' to actually restart the server.
+
+    Args:
+        required (bool): Server requires restart.
+        reason (Optional[str]): Human-readable reason for the restart.
+
+    """
+    con = get_server_api_connection()
+    return con.set_restart_required(
+        required=required,
+        reason=reason,
+    )
+
+
+def get_server_config_schema() -> dict[str, Any]:
+    """Get JSON schema of server configuration.
+
+    Returns:
+        dict[str, Any]: Server configuration schema.
+
+    """
+    con = get_server_api_connection()
+    return con.get_server_config_schema()
+
+
+def update_server_config(
+    config: dict[str, Any],
+) -> None:
+    """Partially update server configuration.
+
+    Values are recursively merged into current server configuration.
+        Keys that are not passed remain unchanged. Use the same
+        structure as 'get_server_config' returns, e.g.
+        '{"studio_name": "My Studio"}'.
+
+    Requires administrator privileges.
+
+    Args:
+        config (dict[str, Any]): Server configuration values to change.
+
+    """
+    con = get_server_api_connection()
+    return con.update_server_config(
+        config=config,
+    )
+
+
+def get_enums() -> list[dict[str, Any]]:
+    """Get available enum resolvers.
+
+    Example output::
+
+        [
+            {
+                "name": "statuses",
+                "label": "Statuses",
+                ...
+            }
+        ]
+
+    Returns:
+        list[dict[str, Any]]: List of enum resolvers information.
+
+    """
+    con = get_server_api_connection()
+    return con.get_enums()
+
+
+def get_enum(
+    enum_name: str,
+    project_name: Optional[str] = None,
+    user_name: Optional[str] = None,
+    context: Optional[dict[str, Any]] = None,
+) -> list[dict[str, Any]]:
+    """Get enum items resolved by server.
+
+    Accepted context values depend on the enum resolver, use 'get_enums'
+        to find out which parameters a resolver accepts.
+
+    Example output::
+
+        [
+            {
+                "value": "in_progress",
+                "label": "In progress",
+                ...
+            }
+        ]
+
+    Args:
+        enum_name (str): Name of the enum e.g. 'statuses'.
+        project_name (Optional[str]): Project name for project context.
+        user_name (Optional[str]): Resolve enum for different user.
+            Only administrators can use this.
+        context (Optional[dict[str, Any]]): Additional context
+            parameters for the resolver. Lists are joined with comma.
+
+    Returns:
+        list[dict[str, Any]]: List of enum items.
+
+    """
+    con = get_server_api_connection()
+    return con.get_enum(
+        enum_name=enum_name,
+        project_name=project_name,
+        user_name=user_name,
+        context=context,
+    )
+
+
+def get_reviewables(
+    project_name: str,
+    entity_type: ReviewablesEntityType,
+    entity_ids: Iterable[str],
+    *,
+    latest: bool = False,
+    latest_done: bool = False,
+) -> list[dict[str, Any]]:
+    """Get reviewables for multiple entities of one entity type.
+
+    Each item in output represents a version with its reviewables.
+
+    Args:
+        project_name (str): Project name.
+        entity_type (ReviewablesEntityType): Entity type of passed
+            entity ids. Supported types are 'folder', 'product',
+            'version' and 'task'.
+        entity_ids (Iterable[str]): Entity ids for which reviewables
+            should be returned.
+        latest (bool): Return only reviewables of the latest version.
+        latest_done (bool): Return only reviewables of the latest
+            approved versions.
+
+    Returns:
+        list[dict[str, Any]]: Versions with reviewables.
+
+    """
+    con = get_server_api_connection()
+    return con.get_reviewables(
+        project_name=project_name,
+        entity_type=entity_type,
+        entity_ids=entity_ids,
+        latest=latest,
+        latest_done=latest_done,
+    )
+
+
+def get_version_reviewables(
+    project_name: str,
+    version_id: str,
+    *,
+    latest: bool = False,
+    latest_done: bool = False,
+) -> dict[str, Any]:
+    """Get reviewables of a version.
+
+    Notes:
+        Server responds with an error if version does not have
+            any reviewables.
+
+    Args:
+        project_name (str): Project name.
+        version_id (str): Version id.
+        latest (bool): Return only reviewables of the latest version.
+        latest_done (bool): Return only reviewables of the latest
+            approved versions.
+
+    Returns:
+        dict[str, Any]: Version information with reviewables.
+
+    """
+    con = get_server_api_connection()
+    return con.get_version_reviewables(
+        project_name=project_name,
+        version_id=version_id,
+        latest=latest,
+        latest_done=latest_done,
+    )
+
+
+def get_product_reviewables(
+    project_name: str,
+    product_id: str,
+    *,
+    latest: bool = False,
+    latest_done: bool = False,
+) -> list[dict[str, Any]]:
+    """Get reviewables of all versions of a product.
+
+    Args:
+        project_name (str): Project name.
+        product_id (str): Product id.
+        latest (bool): Return only reviewables of the latest version.
+        latest_done (bool): Return only reviewables of the latest
+            approved versions.
+
+    Returns:
+        list[dict[str, Any]]: Versions with reviewables.
+
+    """
+    con = get_server_api_connection()
+    return con.get_product_reviewables(
+        project_name=project_name,
+        product_id=product_id,
+        latest=latest,
+        latest_done=latest_done,
+    )
+
+
+def get_folder_reviewables(
+    project_name: str,
+    folder_id: str,
+    *,
+    latest: bool = False,
+    latest_done: bool = False,
+) -> list[dict[str, Any]]:
+    """Get reviewables of all versions under a folder.
+
+    Args:
+        project_name (str): Project name.
+        folder_id (str): Folder id.
+        latest (bool): Return only reviewables of the latest versions.
+        latest_done (bool): Return only reviewables of the latest
+            approved versions.
+
+    Returns:
+        list[dict[str, Any]]: Versions with reviewables.
+
+    """
+    con = get_server_api_connection()
+    return con.get_folder_reviewables(
+        project_name=project_name,
+        folder_id=folder_id,
+        latest=latest,
+        latest_done=latest_done,
+    )
+
+
+def get_task_reviewables(
+    project_name: str,
+    task_id: str,
+    *,
+    latest: bool = False,
+    latest_done: bool = False,
+) -> list[dict[str, Any]]:
+    """Get reviewables of all versions linked to a task.
+
+    Args:
+        project_name (str): Project name.
+        task_id (str): Task id.
+        latest (bool): Return only reviewables of the latest versions.
+        latest_done (bool): Return only reviewables of the latest
+            approved versions.
+
+    Returns:
+        list[dict[str, Any]]: Versions with reviewables.
+
+    """
+    con = get_server_api_connection()
+    return con.get_task_reviewables(
+        project_name=project_name,
+        task_id=task_id,
+        latest=latest,
+        latest_done=latest_done,
+    )
+
+
+def sort_version_reviewables(
+    project_name: str,
+    version_id: str,
+    reviewable_ids: list[str],
+) -> None:
+    """Change order of reviewables of a version.
+
+    Args:
+        project_name (str): Project name.
+        version_id (str): Version id.
+        reviewable_ids (list[str]): Reviewable (activity) ids in
+            the desired order. Must contain all reviewables of
+            the version.
+
+    """
+    con = get_server_api_connection()
+    return con.sort_version_reviewables(
+        project_name=project_name,
+        version_id=version_id,
+        reviewable_ids=reviewable_ids,
+    )
+
+
+def update_reviewable(
+    project_name: str,
+    version_id: str,
+    reviewable_id: str,
+    *,
+    label: Optional[str] = None,
+) -> None:
+    """Update reviewable of a version.
+
+    At this moment only label of reviewable can be changed.
+
+    Args:
+        project_name (str): Project name.
+        version_id (str): Version id.
+        reviewable_id (str): Reviewable (activity) id.
+        label (Optional[str]): New label of reviewable.
+
+    """
+    con = get_server_api_connection()
+    return con.update_reviewable(
+        project_name=project_name,
+        version_id=version_id,
+        reviewable_id=reviewable_id,
+        label=label,
     )

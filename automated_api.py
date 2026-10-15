@@ -349,6 +349,10 @@ def prepare_api_functions(api_globals):
         ActionsAPI,
         LinksAPI,
         ListsAPI,
+        UsersAPI,
+        ServicesAPI,
+        SystemAPI,
+        ReviewablesAPI,
     )
 
     functions = []
@@ -371,6 +375,10 @@ def prepare_api_functions(api_globals):
     _items.extend(LinksAPI.__dict__.items())
     _items.extend(ListsAPI.__dict__.items())
     _items.extend(ThumbnailsAPI.__dict__.items())
+    _items.extend(UsersAPI.__dict__.items())
+    _items.extend(ServicesAPI.__dict__.items())
+    _items.extend(SystemAPI.__dict__.items())
+    _items.extend(ReviewablesAPI.__dict__.items())
 
     processed = set()
     for attr_name, attr in _items:

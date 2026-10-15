@@ -675,3 +675,40 @@ class ListsAPI(BaseServerAPI):
             order=order,
         )
         response.raise_for_status()
+
+    def materialize_entity_list(
+        self, project_name: str, list_id: str
+    ) -> dict[str, Any]:
+        """Materialize entity list.
+
+        Args:
+            project_name (str): Project name.
+            list_id (str): Entity list id.
+
+        Returns:
+            dict[str, Any]: Summary of materialized entity list.
+
+        """
+        response = self.post(
+            f"projects/{project_name}/lists/{list_id}/materialize"
+        )
+        response.raise_for_status()
+        return response.data
+
+    def set_entity_list_items_order(
+        self, project_name: str, list_id: str, order: list[str]
+    ) -> None:
+        """Change order of items in entity list.
+
+        Args:
+            project_name (str): Project name.
+            list_id (str): Entity list id.
+            order (list[str]): Item ids in desired order. Must contain
+                each item of the entity list exactly once.
+
+        """
+        response = self.post(
+            f"projects/{project_name}/lists/{list_id}/order",
+            order=order,
+        )
+        response.raise_for_status()
