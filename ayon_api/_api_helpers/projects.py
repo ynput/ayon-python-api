@@ -167,7 +167,7 @@ class ProjectsAPI(BaseServerAPI):
             preset (AnatomyPresetDict): Anatomy preset values.
 
         """
-        response = self.put(f"anatomy/presets/{preset_name}", **preset)
+        response = self.raw_put(f"anatomy/presets/{preset_name}", json=preset)
         response.raise_for_status()
 
     def rename_project_anatomy_preset(
@@ -674,9 +674,9 @@ class ProjectsAPI(BaseServerAPI):
                 preset format.
 
         """
-        response = self.post(
+        response = self.raw_post(
             f"projects/{project_name}/anatomy",
-            **anatomy
+            json=anatomy,
         )
         response.raise_for_status()
 
@@ -1066,9 +1066,9 @@ class ProjectsAPI(BaseServerAPI):
     ) -> None:
         """Set root overrides of logged user for a site.
 
-        Only roots defined in project anatomy are stored. Roots with empty
-            value are removed, and all overrides for the site are removed
-            if no root value is passed.
+        Roots defined in project anatomy with empty value are removed,
+            and all overrides for the site are removed if no root value
+            is left.
 
         Args:
             project_name (str): Project name.
@@ -1076,9 +1076,9 @@ class ProjectsAPI(BaseServerAPI):
             roots (dict[str, Optional[str]]): Root values by root name.
 
         """
-        response = self.put(
+        response = self.raw_put(
             f"projects/{project_name}/roots/{site_id}",
-            **roots
+            json=roots,
         )
         response.raise_for_status()
 

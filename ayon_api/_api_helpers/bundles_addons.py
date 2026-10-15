@@ -936,9 +936,9 @@ class BundlesAddonsAPI(BaseServerAPI):
             variant = self.get_default_settings_variant()
 
         query = prepare_query_string({"variant": variant or None})
-        response = self.post(
+        response = self.raw_post(
             f"addons/{addon_name}/{addon_version}/settings{query}",
-            **settings
+            json=settings,
         )
         response.raise_for_status()
 
@@ -975,10 +975,10 @@ class BundlesAddonsAPI(BaseServerAPI):
             "site_id": site_id or None,
             "variant": variant or None,
         })
-        response = self.post(
+        response = self.raw_post(
             f"addons/{addon_name}/{addon_version}"
             f"/settings/{project_name}{query}",
-            **settings
+            json=settings,
         )
         response.raise_for_status()
 
@@ -1247,9 +1247,9 @@ class BundlesAddonsAPI(BaseServerAPI):
             variant = self.get_default_settings_variant()
 
         query = prepare_query_string({"variant": variant or None})
-        response = self.put(
+        response = self.raw_put(
             f"addons/{addon_name}/{addon_version}/rawOverrides{query}",
-            **overrides
+            json=overrides,
         )
         response.raise_for_status()
 
@@ -1327,10 +1327,10 @@ class BundlesAddonsAPI(BaseServerAPI):
             "site_id": site_id or None,
             "variant": variant or None,
         })
-        response = self.put(
+        response = self.raw_put(
             f"addons/{addon_name}/{addon_version}"
             f"/rawOverrides/{project_name}{query}",
-            **overrides
+            json=overrides,
         )
         response.raise_for_status()
 
@@ -1361,9 +1361,9 @@ class BundlesAddonsAPI(BaseServerAPI):
             raise ValueError("Site id is not available.")
 
         query = prepare_query_string({"site_id": site_id})
-        response = self.put(
+        response = self.raw_put(
             f"addons/{addon_name}/{addon_version}/siteSettings{query}",
-            **settings
+            json=settings,
         )
         response.raise_for_status()
 

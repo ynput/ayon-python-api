@@ -69,7 +69,7 @@ class ReviewablesAPI(BaseServerAPI):
 
         Notes:
             Server responds with an error if version does not have
-                any reviewables.
+                any reviewables and 'latest' or 'latest_done' is used.
 
         Args:
             project_name (str): Project name.

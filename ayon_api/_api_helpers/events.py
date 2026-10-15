@@ -345,8 +345,7 @@ class EventsAPI(BaseServerAPI):
     def delete_events(self, events_filter: EventFilter) -> None:
         """Delete events matching filter.
 
-        Requires administrator privileges. All events are deleted if
-            filter does not contain any conditions.
+        Requires administrator privileges.
 
         Example filter::
 
@@ -366,7 +365,15 @@ class EventsAPI(BaseServerAPI):
                 to delete. For more technical specifications look to server
                 backed 'ayon_server.sqlfilter.QueryFilter'.
 
+        Raises:
+            ValueError: Filter does not contain any conditions. Server would
+                delete all events.
+
         """
+        if not events_filter or not events_filter.get("conditions"):
+            raise ValueError(
+                "Filter without conditions would delete all events."
+            )
         response = self.post(
             "eventops",
             type="delete",

@@ -471,12 +471,15 @@ class ThumbnailsAPI(BaseServerAPI):
 
     def set_project_thumbnail(
         self, project_name: str, src_filepath: str
-    ) -> None:
+    ) -> str:
         """Upload project thumbnail.
 
         Args:
             project_name (str): Project name.
             src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+        Returns:
+            str: Thumbnail id of project thumbnail.
 
         Raises:
             ValueError: When thumbnail source cannot be processed.
@@ -499,15 +502,19 @@ class ThumbnailsAPI(BaseServerAPI):
             headers={"Content-Type": mime_type},
         )
         response.raise_for_status()
+        return response.json()["id"]
 
     def set_project_thumbnail_from_stream(
         self, project_name: str, stream: StreamType
-    ) -> None:
+    ) -> str:
         """Upload project thumbnail from byte stream.
 
         Args:
             project_name (str): Project name.
             stream (StreamType): Thumbnail content stream.
+
+        Returns:
+            str: Thumbnail id of project thumbnail.
 
         Raises:
             UnsupportedServerVersion: Server version is lower than 1.15.0.
@@ -526,6 +533,7 @@ class ThumbnailsAPI(BaseServerAPI):
             headers={"Content-Type": mime_type},
         )
         response.raise_for_status()
+        return response.json()["id"]
 
     def _get_entity_thumbnail_endpoint(
         self, project_name: str, entity_type: str, entity_id: str

@@ -373,9 +373,9 @@ class UsersAPI(BaseServerAPI):
                 group is saved if not passed.
 
         """
-        response = self.put(
+        response = self.raw_put(
             f"accessGroups/{access_group_name}/{project_name or '_'}",
-            **permissions,
+            json=permissions,
         )
         response.raise_for_status()
 

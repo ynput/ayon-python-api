@@ -4377,8 +4377,7 @@ def delete_events(
 ) -> None:
     """Delete events matching filter.
 
-    Requires administrator privileges. All events are deleted if
-        filter does not contain any conditions.
+    Requires administrator privileges.
 
     Example filter::
 
@@ -4397,6 +4396,10 @@ def delete_events(
         events_filter (EventFilter): Filtering conditions to find events
             to delete. For more technical specifications look to server
             backed 'ayon_server.sqlfilter.QueryFilter'.
+
+    Raises:
+        ValueError: Filter does not contain any conditions. Server would
+            delete all events.
 
     """
     con = get_server_api_connection()
@@ -5564,9 +5567,9 @@ def set_project_root_overrides(
 ) -> None:
     """Set root overrides of logged user for a site.
 
-    Only roots defined in project anatomy are stored. Roots with empty
-        value are removed, and all overrides for the site are removed
-        if no root value is passed.
+    Roots defined in project anatomy with empty value are removed,
+        and all overrides for the site are removed if no root value
+        is left.
 
     Args:
         project_name (str): Project name.
@@ -10048,12 +10051,15 @@ def get_project_thumbnail(
 def set_project_thumbnail(
     project_name: str,
     src_filepath: str,
-) -> None:
+) -> str:
     """Upload project thumbnail.
 
     Args:
         project_name (str): Project name.
         src_filepath (str): Filepath to thumbnail which should be uploaded.
+
+    Returns:
+        str: Thumbnail id of project thumbnail.
 
     Raises:
         ValueError: When thumbnail source cannot be processed.
@@ -10070,12 +10076,15 @@ def set_project_thumbnail(
 def set_project_thumbnail_from_stream(
     project_name: str,
     stream: StreamType,
-) -> None:
+) -> str:
     """Upload project thumbnail from byte stream.
 
     Args:
         project_name (str): Project name.
         stream (StreamType): Thumbnail content stream.
+
+    Returns:
+        str: Thumbnail id of project thumbnail.
 
     Raises:
         UnsupportedServerVersion: Server version is lower than 1.15.0.
@@ -11074,7 +11083,7 @@ def get_version_reviewables(
 
     Notes:
         Server responds with an error if version does not have
-            any reviewables.
+            any reviewables and 'latest' or 'latest_done' is used.
 
     Args:
         project_name (str): Project name.

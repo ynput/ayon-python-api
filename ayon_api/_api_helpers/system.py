@@ -132,7 +132,7 @@ class SystemAPI(BaseServerAPI):
                 "Function 'update_server_config' is supported"
                 " for AYON server 1.15.9 and above."
             )
-        response = self.patch("config", **config)
+        response = self.raw_patch("config", json=config)
         response.raise_for_status()
 
     def get_enums(self) -> list[dict[str, Any]]:
