@@ -11,6 +11,7 @@ import os
 import re
 import io
 import json
+import ssl
 import time
 import logging
 import platform
@@ -22,6 +23,7 @@ from typing import (
 )
 
 import requests
+import websocket
 
 from .constants import (
     SERVER_RETRIES_ENV_KEY,
@@ -46,6 +48,7 @@ from .constants import (
 )
 from .graphql import INTROSPECTION_QUERY
 from .graphql_queries import users_graphql_query
+from .events import EventHub
 from .exceptions import (
     FailedOperations,
     UnauthorizedError,
@@ -94,6 +97,8 @@ from ._api_helpers import (
 )
 
 if typing.TYPE_CHECKING:
+    from websocket import WebSocket
+
     from .typing import (
         ServerVersion,
         AnyEntityDict,
@@ -370,6 +375,9 @@ class ServerAPI(
             self.validate_server_availability()
             self.create_session()
 
+        # Created on demand by 'get_event_hub'
+        self._event_hub: EventHub | None = None
+
     @property
     def log(self) -> logging.Logger:
         return self._log
@@ -379,6 +387,23 @@ class ServerAPI(
 
     def get_rest_url(self) -> str:
         return self._rest_url
+
+    def get_websocket_url(
+        self, endpoint: str
+    ) -> str:
+        """Prepare websocket url from endpoint."""
+        endpoint = (endpoint or "").strip()
+
+        if self._base_url.startswith("https"):
+            base_url = f"wss{self._base_url[5:]}"
+        elif self._base_url.startswith("http"):
+            base_url = f"ws{self._base_url[4:]}"
+        else:
+            raise ValueError(f"Invalid scheme in base URL: {self._base_url}")
+
+        base_url = base_url.rstrip("/")
+        endpoint = endpoint.lstrip("/")
+        return f"{base_url}/{endpoint}"
 
     base_url = property(get_base_url)
     rest_url = property(get_rest_url)
@@ -804,11 +829,16 @@ class ServerAPI(
         return self._token_info.is_valid
 
     def set_token(self, token: str | None) -> None:
-        self.reset_token()
+        self._reset_token()
         self._token_info.token = token
         self.validate_token()
+        self._token_changed()
 
     def reset_token(self) -> None:
+        self._reset_token()
+        self._token_changed()
+
+    def _reset_token(self) -> None:
         self._token_info.token = None
         self._token_info.is_service = None
         self._token_info.is_valid = None
@@ -864,6 +894,49 @@ class ServerAPI(
         self._session = None
         self._session_functions_mapping = {}
         session.close()
+
+    def create_websocket(
+        self,
+        endpoint: str,
+        *,
+        timeout: float | None = None,
+        headers: dict[str, Any] | None = None,
+        sslopt: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> WebSocket:
+        """Create a websocket connection to AYON server."""
+        ws_url = self.get_websocket_url(endpoint)
+        ws_headers = self.get_headers()
+        ws_headers.pop("Content-Type", None)
+        if headers:
+            ws_headers.update(headers)
+
+        ws_kwargs = copy.deepcopy(kwargs)
+        if timeout is None:
+            timeout = self.timeout
+        if timeout:
+            ws_kwargs["timeout"] = timeout
+
+        if ws_headers:
+            ws_kwargs["header"] = [
+                f"{key}: {value}"
+                for key, value in ws_headers.items()
+                if value is not None
+            ]
+
+        prepared_sslopt = copy.deepcopy(sslopt) if sslopt else {}
+        if self._ssl_verify is False:
+            prepared_sslopt.setdefault("cert_reqs", ssl.CERT_NONE)
+        elif isinstance(self._ssl_verify, str):
+            prepared_sslopt.setdefault("ca_certs", self._ssl_verify)
+
+        if self._cert:
+            prepared_sslopt.setdefault("certfile", self._cert)
+
+        if ws_url.startswith("wss://") and prepared_sslopt:
+            ws_kwargs["sslopt"] = prepared_sslopt
+
+        return websocket.create_connection(ws_url, **ws_kwargs)
 
     def _update_session_headers(self) -> None:
         if self._session is None:
@@ -1157,6 +1230,30 @@ class ServerAPI(
                 headers["Authorization"] = f"Bearer {self._token_info.token}"
         return headers
 
+    def get_event_hub(self) -> EventHub:
+        """Get event hub for connection.
+
+        Event hub is used to subscribe to events from server. The hub is
+            created on first call, websocket connection is created when
+            a callback is registered or when the hub is started.
+
+        Notes:
+            Running hub keeps reference to the connection, call
+                'EventHub.stop' when the connection is not used anymore.
+
+        Returns:
+            EventHub: Event hub instance.
+
+        """
+        if self._event_hub is None:
+            self._event_hub = EventHub(self)
+        return self._event_hub
+
+    def _token_changed(self) -> None:
+        """Let event hub know that token did change."""
+        if self._event_hub is not None:
+            self._event_hub.reauthenticate()
+
     def login(
         self,
         username: str,
@@ -1188,34 +1285,37 @@ class ServerAPI(
                     self.create_session()
                 return
 
-        self.reset_token()
+        self._reset_token()
+        try:
+            self.validate_server_availability()
 
-        self.validate_server_availability()
+            response = self.raw_post(
+                "auth/login",
+                json=dict(
+                    name=username,
+                    password=password,
+                ),
+                handle_invalid_token=False,
+            )
+            if response.status_code != 200:
+                _detail = response.data.get("detail")
+                details = ""
+                if _detail:
+                    details = f" {_detail}"
 
-        response = self.raw_post(
-            "auth/login",
-            json=dict(
-                name=username,
-                password=password,
-            ),
-            handle_invalid_token=False,
-        )
-        if response.status_code != 200:
-            _detail = response.data.get("detail")
-            details = ""
-            if _detail:
-                details = f" {_detail}"
+                raise AuthenticationError(f"Login failed {details}")
 
-            raise AuthenticationError(f"Login failed {details}")
+            self._token_info.token = response["token"]
+            # Should be valid if was just logged in
+            self._token_info.is_valid = True
+            # Service token can't be obtained by login, so it is not
+            #   service token
+            self._token_info.is_service = False
 
-        self._token_info.token = response["token"]
-        # Should be valid if was just logged in
-        self._token_info.is_valid = True
-        # Service token can't be obtained by login, so it is not service token
-        self._token_info.is_service = False
-
-        if not self.has_valid_token:
-            raise AuthenticationError("Invalid credentials")
+            if not self.has_valid_token:
+                raise AuthenticationError("Invalid credentials")
+        finally:
+            self._token_changed()
 
         if create_session:
             self.create_session()

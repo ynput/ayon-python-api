@@ -43,6 +43,9 @@ from .server_api import (
 
 if typing.TYPE_CHECKING:
     from typing import Union, Literal
+
+    from websocket import WebSocket
+
     from .typing import (
         ServerVersion,
         ActivityType,
@@ -90,6 +93,7 @@ if typing.TYPE_CHECKING:
         EntityListAttributeDefinitionDict,
         AdvancedFilterDict,
     )
+    from .events import EventHub
 
 
 class GlobalServerAPI(ServerAPI):
@@ -453,6 +457,16 @@ def get_rest_url() -> str:
     return con.get_rest_url()
 
 
+def get_websocket_url(
+    endpoint: str,
+) -> str:
+    """Prepare websocket url from endpoint."""
+    con = get_server_api_connection()
+    return con.get_websocket_url(
+        endpoint=endpoint,
+    )
+
+
 def get_ssl_verify() -> bool | str | None:
     """Enable ssl verification.
 
@@ -705,6 +719,25 @@ def set_sender_type(
     )
 
 
+def create_websocket(
+    endpoint: str,
+    *,
+    timeout: float | None = None,
+    headers: dict[str, Any] | None = None,
+    sslopt: dict[str, Any] | None = None,
+    **kwargs,
+) -> WebSocket:
+    """Create a websocket connection to AYON server."""
+    con = get_server_api_connection()
+    return con.create_websocket(
+        endpoint=endpoint,
+        timeout=timeout,
+        headers=headers,
+        sslopt=sslopt,
+        **kwargs,
+    )
+
+
 def get_info() -> dict[str, Any]:
     """Get information about current used api key.
 
@@ -752,15 +785,13 @@ def get_server_version_tuple() -> ServerVersion:
 
 
 def is_product_base_type_supported() -> bool:
-    """Product base types are available on server.
-    """
+    """Product base types are available on server."""
     con = get_server_api_connection()
     return con.is_product_base_type_supported()
 
 
 def links_graphql_support_data() -> bool:
-    """Links data can be received by GraphQl.
-    """
+    """Links data can be received by GraphQl."""
     con = get_server_api_connection()
     return con.links_graphql_support_data()
 
@@ -842,6 +873,25 @@ def get_user(
     return con.get_user(
         username=username,
     )
+
+
+def get_event_hub() -> EventHub:
+    """Get event hub for connection.
+
+    Event hub is used to subscribe to events from server. The hub is
+        created on first call, websocket connection is created when
+        a callback is registered or when the hub is started.
+
+    Notes:
+        Running hub keeps reference to the connection, call
+            'EventHub.stop' when the connection is not used anymore.
+
+    Returns:
+        EventHub: Event hub instance.
+
+    """
+    con = get_server_api_connection()
+    return con.get_event_hub()
 
 
 def raw_post(
@@ -1369,8 +1419,7 @@ def delete_project_file(
     project_name: str,
     file_id: str,
 ) -> None:
-    """Delete project file.
-    """
+    """Delete project file."""
     con = get_server_api_connection()
     return con.delete_project_file(
         project_name=project_name,
@@ -2621,8 +2670,7 @@ def create_activity_reaction(
     activity_id: str,
     reaction: str,
 ) -> None:
-    """React to activity.
-    """
+    """React to activity."""
     con = get_server_api_connection()
     return con.create_activity_reaction(
         project_name=project_name,
@@ -2676,8 +2724,7 @@ def get_raw_entity_watchers(
     entity_id: str,
     entity_type: str,
 ) -> dict[str, Any]:
-    """Get entity watchers (raw response).
-    """
+    """Get entity watchers (raw response)."""
     con = get_server_api_connection()
     return con.get_raw_entity_watchers(
         project_name=project_name,
@@ -2691,8 +2738,7 @@ def get_entity_watchers(
     entity_id: str,
     entity_type: str,
 ) -> list[str]:
-    """List watchers of an entity.
-    """
+    """List watchers of an entity."""
     con = get_server_api_connection()
     return con.get_entity_watchers(
         project_name=project_name,
@@ -2707,8 +2753,7 @@ def set_entity_watchers(
     entity_type: str,
     watchers: list[str],
 ):
-    """Change watchers of an entity.
-    """
+    """Change watchers of an entity."""
     con = get_server_api_connection()
     return con.set_entity_watchers(
         project_name=project_name,
@@ -4437,8 +4482,7 @@ def delete_project(
 
 
 def get_raw_project_folders() -> dict[str, Any]:
-    """Get project folders (raw data).
-    """
+    """Get project folders (raw data)."""
     con = get_server_api_connection()
     return con.get_raw_project_folders()
 
@@ -4453,8 +4497,7 @@ def create_project_folder(
     parent_id: str | None = None,
     data: dict[str, Any] | None = None,
 ) -> str:
-    """Create project folder.
-    """
+    """Create project folder."""
     con = get_server_api_connection()
     return con.create_project_folder(
         label=label,
@@ -4481,8 +4524,7 @@ def update_project_folder(
 def set_project_folders_order(
     folder_ids: list[str],
 ) -> None:
-    """Set project folders order.
-    """
+    """Set project folders order."""
     con = get_server_api_connection()
     return con.set_project_folders_order(
         folder_ids=folder_ids,
@@ -4493,8 +4535,7 @@ def assign_projects_to_project_folder(
     folder_id: str,
     project_names: list[str],
 ) -> None:
-    """Assign project folder to project.
-    """
+    """Assign project folder to project."""
     con = get_server_api_connection()
     return con.assign_projects_to_project_folder(
         folder_id=folder_id,
@@ -4505,8 +4546,7 @@ def assign_projects_to_project_folder(
 def delete_project_folder(
     folder_id: str,
 ):
-    """Delete project folder.
-    """
+    """Delete project folder."""
     con = get_server_api_connection()
     return con.delete_project_folder(
         folder_id=folder_id,
@@ -8495,8 +8535,7 @@ def delete_entity_list_folder(
     project_name: str,
     entity_list_folder_id: str,
 ) -> None:
-    """Delete entity list folder.
-    """
+    """Delete entity list folder."""
     con = get_server_api_connection()
     return con.delete_entity_list_folder(
         project_name=project_name,

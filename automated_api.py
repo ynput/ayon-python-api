@@ -24,8 +24,20 @@ requests = type(sys)("requests")
 requests.__dict__["Response"] = type(
     "Response", (), {"__module__": "requests"}
 )
+websocket = type(sys)("websocket")
+websocket.__dict__.update({
+    name: type(name, (), {"__module__": "websocket"})
+    for name in (
+        "WebSocket",
+        "ABNF",
+        "WebSocketProtocolException",
+        "WebSocketConnectionClosedException",
+        "WebSocketTimeoutException",
+    )
+})
 
 sys.modules["requests"] = requests
+sys.modules["websocket"] = websocket
 sys.modules["unidecode"] = type(sys)("unidecode")
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -113,8 +125,8 @@ def prepare_docstring(func):
 
     line_char = ""
     if "\n" in docstring:
-        line_char = "\n"
-    return f'"""{docstring}{line_char}\n"""'
+        line_char = "\n\n"
+    return f'"""{docstring}{line_char}"""'
 
 
 def _find_obj(obj_full, api_globals):
