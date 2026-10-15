@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Optional, Any
 
+from ayon_api.exceptions import UnsupportedServerVersion
+
 from .base import BaseServerAPI
 
 
@@ -42,6 +44,7 @@ class ServicesAPI(BaseServerAPI):
             config (Optional[dict[str, Any]]): Service configuration
                 e.g. 'volumes', 'ports', 'memLimit', 'user', 'env',
                 'storagePath' or 'registryAuth'.
+                'registryAuth' is ignored by AYON server older than 1.16.7.
 
         """
         body: dict[str, Any] = {
@@ -76,8 +79,21 @@ class ServicesAPI(BaseServerAPI):
             config (Optional[dict[str, Any]]): Service configuration
                 values to change e.g. 'volumes', 'ports', 'memLimit',
                 'user', 'env', 'storagePath' or 'registryAuth'.
+                'registryAuth' is ignored by AYON server older than 1.16.7.
+
+        Raises:
+            UnsupportedServerVersion: 'error' is used with server version
+                lower than 1.16.7.
 
         """
+        if (
+            error is not None
+            and self.get_server_version_tuple() < (1, 16, 7)
+        ):
+            raise UnsupportedServerVersion(
+                "Argument 'error' of 'update_service' is supported"
+                " for AYON server 1.16.7 and above."
+            )
         body: dict[str, Any] = {}
         if config:
             body.update(config)

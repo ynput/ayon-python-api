@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing
 from typing import Any, Iterable, Optional
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import prepare_query_string
 
 from .base import BaseServerAPI
@@ -39,7 +40,15 @@ class ReviewablesAPI(BaseServerAPI):
         Returns:
             list[dict[str, Any]]: Versions with reviewables.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.16.4.
+
         """
+        if self.get_server_version_tuple() < (1, 16, 4):
+            raise UnsupportedServerVersion(
+                "Function 'get_reviewables' is supported"
+                " for AYON server 1.16.4 and above."
+            )
         query = self._prepare_reviewables_query(latest, latest_done)
         response = self.post(
             f"projects/{project_name}/{entity_type}s/reviewables/list{query}",
@@ -72,6 +81,10 @@ class ReviewablesAPI(BaseServerAPI):
         Returns:
             dict[str, Any]: Version information with reviewables.
 
+        Raises:
+            UnsupportedServerVersion: 'latest' or 'latest_done' is used
+                with server version lower than 1.16.4.
+
         """
         return self._get_entity_reviewables(
             project_name, "versions", version_id, latest, latest_done
@@ -96,6 +109,10 @@ class ReviewablesAPI(BaseServerAPI):
 
         Returns:
             list[dict[str, Any]]: Versions with reviewables.
+
+        Raises:
+            UnsupportedServerVersion: 'latest' or 'latest_done' is used
+                with server version lower than 1.16.4.
 
         """
         return self._get_entity_reviewables(
@@ -122,6 +139,10 @@ class ReviewablesAPI(BaseServerAPI):
         Returns:
             list[dict[str, Any]]: Versions with reviewables.
 
+        Raises:
+            UnsupportedServerVersion: 'latest' or 'latest_done' is used
+                with server version lower than 1.16.4.
+
         """
         return self._get_entity_reviewables(
             project_name, "folders", folder_id, latest, latest_done
@@ -146,6 +167,10 @@ class ReviewablesAPI(BaseServerAPI):
 
         Returns:
             list[dict[str, Any]]: Versions with reviewables.
+
+        Raises:
+            UnsupportedServerVersion: 'latest' or 'latest_done' is used
+                with server version lower than 1.16.4.
 
         """
         return self._get_entity_reviewables(
@@ -207,6 +232,14 @@ class ReviewablesAPI(BaseServerAPI):
     def _prepare_reviewables_query(
         self, latest: bool, latest_done: bool
     ) -> str:
+        if (
+            (latest or latest_done)
+            and self.get_server_version_tuple() < (1, 16, 4)
+        ):
+            raise UnsupportedServerVersion(
+                "Arguments 'latest' and 'latest_done' are supported"
+                " for AYON server 1.16.4 and above."
+            )
         return prepare_query_string({
             "latest": "true" if latest else None,
             "latest_done": "true" if latest_done else None,

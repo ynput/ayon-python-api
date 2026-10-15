@@ -103,9 +103,15 @@ class UsersAPI(BaseServerAPI):
             new_user_name (str): New name of the user.
 
         """
-        response = self.post(
-            f"users/{user_name}/rename", name=new_user_name
-        )
+        if self.get_server_version_tuple() < (1, 15, 0):
+            # Older servers have only the deprecated PATCH endpoint
+            response = self.patch(
+                f"users/{user_name}/rename", newName=new_user_name
+            )
+        else:
+            response = self.post(
+                f"users/{user_name}/rename", name=new_user_name
+            )
         response.raise_for_status()
 
     def change_password(

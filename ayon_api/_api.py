@@ -4057,6 +4057,9 @@ def migrate_addon_settings(
         dict[str, Any]: Server response with 'events' created during
             the migration.
 
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.16.8.
+
     """
     con = get_server_api_connection()
     return con.migrate_addon_settings(
@@ -5112,6 +5115,9 @@ def rename_project(
         new_project_code (Optional[str]): New project code. Project code
             is unchanged if not passed.
 
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.15.0.
+
     """
     con = get_server_api_connection()
     return con.rename_project(
@@ -6068,6 +6074,10 @@ def search_folders(
 
     Returns:
         list[str]: Matching folder ids.
+
+    Raises:
+        UnsupportedServerVersion: 'search' is used with server version
+            lower than 1.15.4.
 
     """
     con = get_server_api_connection()
@@ -9652,6 +9662,9 @@ def set_entity_list_items_order(
         order (list[str]): Item ids in desired order. Must contain
             each item of the entity list exactly once.
 
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.15.9.
+
     """
     con = get_server_api_connection()
     return con.set_entity_list_items_order(
@@ -10022,6 +10035,9 @@ def get_project_thumbnail(
         ThumbnailContent: Thumbnail content wrapper. Does not have to be
             valid.
 
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.15.0.
+
     """
     con = get_server_api_connection()
     return con.get_project_thumbnail(
@@ -10041,6 +10057,7 @@ def set_project_thumbnail(
 
     Raises:
         ValueError: When thumbnail source cannot be processed.
+        UnsupportedServerVersion: Server version is lower than 1.15.0.
 
     """
     con = get_server_api_connection()
@@ -10059,6 +10076,9 @@ def set_project_thumbnail_from_stream(
     Args:
         project_name (str): Project name.
         stream (StreamType): Thumbnail content stream.
+
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.15.0.
 
     """
     con = get_server_api_connection()
@@ -10717,6 +10737,7 @@ def spawn_service(
         config (Optional[dict[str, Any]]): Service configuration
             e.g. 'volumes', 'ports', 'memLimit', 'user', 'env',
             'storagePath' or 'registryAuth'.
+            'registryAuth' is ignored by AYON server older than 1.16.7.
 
     """
     con = get_server_api_connection()
@@ -10750,6 +10771,11 @@ def update_service(
         config (Optional[dict[str, Any]]): Service configuration
             values to change e.g. 'volumes', 'ports', 'memLimit',
             'user', 'env', 'storagePath' or 'registryAuth'.
+            'registryAuth' is ignored by AYON server older than 1.16.7.
+
+    Raises:
+        UnsupportedServerVersion: 'error' is used with server version
+            lower than 1.16.7.
 
     """
     con = get_server_api_connection()
@@ -10921,6 +10947,9 @@ def update_server_config(
     Args:
         config (dict[str, Any]): Server configuration values to change.
 
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.15.9.
+
     """
     con = get_server_api_connection()
     return con.update_server_config(
@@ -10943,6 +10972,9 @@ def get_enums() -> list[dict[str, Any]]:
 
     Returns:
         list[dict[str, Any]]: List of enum resolvers information.
+
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.16.4.
 
     """
     con = get_server_api_connection()
@@ -11017,6 +11049,9 @@ def get_reviewables(
     Returns:
         list[dict[str, Any]]: Versions with reviewables.
 
+    Raises:
+        UnsupportedServerVersion: Server version is lower than 1.16.4.
+
     """
     con = get_server_api_connection()
     return con.get_reviewables(
@@ -11051,6 +11086,10 @@ def get_version_reviewables(
     Returns:
         dict[str, Any]: Version information with reviewables.
 
+    Raises:
+        UnsupportedServerVersion: 'latest' or 'latest_done' is used
+            with server version lower than 1.16.4.
+
     """
     con = get_server_api_connection()
     return con.get_version_reviewables(
@@ -11079,6 +11118,10 @@ def get_product_reviewables(
 
     Returns:
         list[dict[str, Any]]: Versions with reviewables.
+
+    Raises:
+        UnsupportedServerVersion: 'latest' or 'latest_done' is used
+            with server version lower than 1.16.4.
 
     """
     con = get_server_api_connection()
@@ -11109,6 +11152,10 @@ def get_folder_reviewables(
     Returns:
         list[dict[str, Any]]: Versions with reviewables.
 
+    Raises:
+        UnsupportedServerVersion: 'latest' or 'latest_done' is used
+            with server version lower than 1.16.4.
+
     """
     con = get_server_api_connection()
     return con.get_folder_reviewables(
@@ -11137,6 +11184,10 @@ def get_task_reviewables(
 
     Returns:
         list[dict[str, Any]]: Versions with reviewables.
+
+    Raises:
+        UnsupportedServerVersion: 'latest' or 'latest_done' is used
+            with server version lower than 1.16.4.
 
     """
     con = get_server_api_connection()

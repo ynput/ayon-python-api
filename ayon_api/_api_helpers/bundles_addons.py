@@ -4,6 +4,7 @@ import os
 import typing
 from typing import Optional, Any, Literal
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import (
     RequestTypes,
     prepare_query_string,
@@ -1392,7 +1393,15 @@ class BundlesAddonsAPI(BaseServerAPI):
             dict[str, Any]: Server response with 'events' created during
                 the migration.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.16.8.
+
         """
+        if self.get_server_version_tuple() < (1, 16, 8):
+            raise UnsupportedServerVersion(
+                "Function 'migrate_addon_settings' is supported"
+                " for AYON server 1.16.8 and above."
+            )
         body = {
             "sourceVersion": source_version,
             "targetVersion": target_version,

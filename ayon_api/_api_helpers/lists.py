@@ -4,6 +4,7 @@ import json
 import typing
 from typing import Optional, Iterable, Any, Generator
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import NOT_SET, create_entity_id
 from ayon_api.graphql_queries import entity_lists_graphql_query
 
@@ -706,7 +707,15 @@ class ListsAPI(BaseServerAPI):
             order (list[str]): Item ids in desired order. Must contain
                 each item of the entity list exactly once.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.9.
+
         """
+        if self.get_server_version_tuple() < (1, 15, 9):
+            raise UnsupportedServerVersion(
+                "Function 'set_entity_list_items_order' is supported"
+                " for AYON server 1.15.9 and above."
+            )
         response = self.post(
             f"projects/{project_name}/lists/{list_id}/order",
             order=order,

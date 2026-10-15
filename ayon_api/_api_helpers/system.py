@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, Any
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import prepare_query_string
 
 from .base import BaseServerAPI
@@ -122,7 +123,15 @@ class SystemAPI(BaseServerAPI):
         Args:
             config (dict[str, Any]): Server configuration values to change.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.9.
+
         """
+        if self.get_server_version_tuple() < (1, 15, 9):
+            raise UnsupportedServerVersion(
+                "Function 'update_server_config' is supported"
+                " for AYON server 1.15.9 and above."
+            )
         response = self.patch("config", **config)
         response.raise_for_status()
 
@@ -142,7 +151,15 @@ class SystemAPI(BaseServerAPI):
         Returns:
             list[dict[str, Any]]: List of enum resolvers information.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.16.4.
+
         """
+        if self.get_server_version_tuple() < (1, 16, 4):
+            raise UnsupportedServerVersion(
+                "Function 'get_enums' is supported"
+                " for AYON server 1.16.4 and above."
+            )
         response = self.get("enum")
         response.raise_for_status()
         return response.data

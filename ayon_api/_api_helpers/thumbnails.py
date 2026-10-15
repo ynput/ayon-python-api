@@ -5,6 +5,7 @@ import warnings
 import typing
 from typing import Optional
 
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import (
     get_media_mime_type_for_stream,
     get_media_mime_type,
@@ -444,7 +445,15 @@ class ThumbnailsAPI(BaseServerAPI):
             ThumbnailContent: Thumbnail content wrapper. Does not have to be
                 valid.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
         """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'get_project_thumbnail' is supported"
+                " for AYON server 1.15.0 and above."
+            )
         response = self.raw_get(f"projects/{project_name}/thumbnail")
         if (
             response.status_code == 200
@@ -471,8 +480,14 @@ class ThumbnailsAPI(BaseServerAPI):
 
         Raises:
             ValueError: When thumbnail source cannot be processed.
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
 
         """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'set_project_thumbnail' is supported"
+                " for AYON server 1.15.0 and above."
+            )
         if not os.path.exists(src_filepath):
             raise ValueError("Entered filepath does not exist.")
 
@@ -494,7 +509,15 @@ class ThumbnailsAPI(BaseServerAPI):
             project_name (str): Project name.
             stream (StreamType): Thumbnail content stream.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
         """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'set_project_thumbnail_from_stream' is supported"
+                " for AYON server 1.15.0 and above."
+            )
         mime_type = get_media_mime_type_for_stream(stream)
         response = self.upload_file_from_stream(
             f"api/projects/{project_name}/thumbnail",

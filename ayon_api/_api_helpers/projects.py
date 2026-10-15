@@ -11,6 +11,7 @@ from ayon_api.constants import (
     PROJECT_NAME_REGEX,
     DEFAULT_PRODUCT_TYPE_FIELDS,
 )
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import prepare_query_string, fill_own_attribs
 from ayon_api.graphql_queries import projects_graphql_query
 
@@ -633,7 +634,15 @@ class ProjectsAPI(BaseServerAPI):
             new_project_code (Optional[str]): New project code. Project code
                 is unchanged if not passed.
 
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
         """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'rename_project' is supported"
+                " for AYON server 1.15.0 and above."
+            )
         body = {"name": new_project_name}
         if new_project_code is not None:
             body["code"] = new_project_code

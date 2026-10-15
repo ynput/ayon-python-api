@@ -522,7 +522,16 @@ class FoldersAPI(BaseServerAPI):
         Returns:
             list[str]: Matching folder ids.
 
+        Raises:
+            UnsupportedServerVersion: 'search' is used with server version
+                lower than 1.15.4.
+
         """
+        if search and self.get_server_version_tuple() < (1, 15, 4):
+            raise UnsupportedServerVersion(
+                "Argument 'search' of 'search_folders' is supported"
+                " for AYON server 1.15.4 and above."
+            )
         body = {
             key: value
             for key, value in (
