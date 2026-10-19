@@ -18,17 +18,14 @@ import uuid
 import pytest
 
 from ayon_api import (
-    delete_addon_project_overrides,
-    delete_addon_studio_overrides,
+    delete_addon_overrides,
     delete_site,
-    get_addon_project_overrides,
-    get_addon_project_raw_overrides,
+    get_addon_overrides,
     get_addon_project_settings,
+    get_addon_raw_overrides,
     get_addon_settings_schema,
     get_addon_site_settings,
     get_addon_site_settings_schema,
-    get_addon_studio_overrides,
-    get_addon_studio_raw_overrides,
     get_addon_studio_settings,
     get_addons_info,
     get_bundles,
@@ -39,15 +36,13 @@ from ayon_api import (
     get_sites,
     migrate_addon_settings,
     migrate_settings_by_bundle,
-    modify_addon_project_overrides,
-    modify_addon_studio_overrides,
-    set_addon_project_raw_overrides,
-    set_addon_project_settings,
+    modify_addon_overrides,
+    set_addon_raw_overrides,
+    set_addon_settings,
     set_addon_site_settings,
-    set_addon_studio_raw_overrides,
-    set_addon_studio_settings,
     set_client_version,
     set_site_id,
+    ServerAPI,
     exceptions,
 )
 
@@ -216,22 +211,21 @@ def studio_variant(settings_addon):
     variant = _unique_name()
     name = settings_addon["name"]
     version = settings_addon["version"]
-    original = get_addon_studio_raw_overrides(
-        name, version, variant=variant
-    )
+    original = get_addon_raw_overrides(name, version, variant=variant)
     try:
         yield variant
     finally:
-        current = get_addon_studio_raw_overrides(
-            name, version, variant=variant
-        )
+        current = get_addon_raw_overrides(name, version, variant=variant)
         if current != original:
             if original:
-                set_addon_studio_raw_overrides(
-                    name, version, original, variant=variant
+                set_addon_raw_overrides(
+                    name,
+                    version,
+                    original,
+                    variant=variant,
                 )
             else:
-                delete_addon_studio_overrides(name, version, variant=variant)
+                delete_addon_overrides(name, version, variant=variant)
 
 
 @pytest.fixture
@@ -245,27 +239,36 @@ def project_addon(settings_addon, project_entity_fixture):
     project_name = project_entity_fixture["name"]
     name = settings_addon["name"]
     version = settings_addon["version"]
-    original = get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    original = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     try:
         yield {**settings_addon, "project_name": project_name}
     finally:
-        current = get_addon_project_raw_overrides(
-            name, version, project_name, variant="production"
+        current = get_addon_raw_overrides(
+            name,
+            version,
+            project_name=project_name,
+            variant="production",
         )
         if current != original:
             if original:
-                set_addon_project_raw_overrides(
+                set_addon_raw_overrides(
                     name,
                     version,
-                    project_name,
                     original,
+                    project_name=project_name,
                     variant="production",
                 )
             else:
-                delete_addon_project_overrides(
-                    name, version, project_name, variant="production"
+                delete_addon_overrides(
+                    name,
+                    version,
+                    project_name=project_name,
+                    variant="production",
                 )
 
 
@@ -281,10 +284,10 @@ def project_site_id(project_addon):
     try:
         yield site_id
     finally:
-        delete_addon_project_overrides(
+        delete_addon_overrides(
             project_addon["name"],
             project_addon["version"],
-            project_addon["project_name"],
+            project_name=project_addon["project_name"],
             site_id=site_id,
         )
 
@@ -405,7 +408,7 @@ def test_get_addon_settings_schema_project_variant_site(
 
 
 # --- Studio settings ---
-def test_set_addon_studio_settings(settings_addon, studio_variant):
+def test_set_addon_settings_studio(settings_addon, studio_variant):
     """Set full studio settings and check calculated overrides.
 
     Verifies:
@@ -423,19 +426,15 @@ def test_set_addon_studio_settings(settings_addon, studio_variant):
     new_settings = copy.deepcopy(settings)
     _set_value(new_settings, path, new_value)
 
-    set_addon_studio_settings(
-        name, version, new_settings, variant=studio_variant
-    )
+    set_addon_settings(name, version, new_settings, variant=studio_variant)
 
     updated = get_addon_studio_settings(name, version, variant=studio_variant)
     assert _get_value(updated, path) is new_value
 
-    raw = get_addon_studio_raw_overrides(name, version, variant=studio_variant)
+    raw = get_addon_raw_overrides(name, version, variant=studio_variant)
     assert _get_value(raw, path) is new_value
 
-    overrides = get_addon_studio_overrides(
-        name, version, variant=studio_variant
-    )
+    overrides = get_addon_overrides(name, version, variant=studio_variant)
     item = overrides[_override_key(path)]
     assert item["path"] == path
     assert item["value"] is new_value
@@ -448,7 +447,7 @@ def test_set_addon_studio_settings(settings_addon, studio_variant):
     assert _get_value(production, path) is _get_value(settings, path)
 
 
-def test_set_addon_studio_settings_explicit_pin(
+def test_set_addon_settings_studio_explicit_pin(
     settings_addon, studio_variant
 ):
     """Unchanged value is stored when pinned with '__pinned_fields__'."""
@@ -460,13 +459,13 @@ def test_set_addon_studio_settings_explicit_pin(
     value = _get_value(settings, path)
     payload = copy.deepcopy(settings)
     payload["__pinned_fields__"] = [path]
-    set_addon_studio_settings(name, version, payload, variant=studio_variant)
+    set_addon_settings(name, version, payload, variant=studio_variant)
 
-    raw = get_addon_studio_raw_overrides(name, version, variant=studio_variant)
+    raw = get_addon_raw_overrides(name, version, variant=studio_variant)
     assert _get_value(raw, path) is value
 
 
-def test_get_addon_studio_overrides_as_version(
+def test_get_addon_overrides_studio_as_version(
     settings_addon, studio_variant
 ):
     """Overrides with 'as_version' of the same version are equal."""
@@ -476,24 +475,25 @@ def test_get_addon_studio_overrides_as_version(
 
     settings = get_addon_studio_settings(name, version, variant=studio_variant)
     new_value = not _get_value(settings, path)
-    set_addon_studio_raw_overrides(
+    set_addon_raw_overrides(
         name,
         version,
         _build_overrides(path, new_value),
         variant=studio_variant,
     )
 
-    overrides = get_addon_studio_overrides(
-        name, version, variant=studio_variant
-    )
-    as_version_overrides = get_addon_studio_overrides(
-        name, version, variant=studio_variant, as_version=version
+    overrides = get_addon_overrides(name, version, variant=studio_variant)
+    as_version_overrides = get_addon_overrides(
+        name,
+        version,
+        variant=studio_variant,
+        as_version=version,
     )
     assert overrides == as_version_overrides
     assert overrides[_override_key(path)]["value"] is new_value
 
 
-def test_modify_addon_studio_overrides(settings_addon, studio_variant):
+def test_modify_addon_overrides_studio(settings_addon, studio_variant):
     """Remove and pin studio override on a settings path.
 
     Verifies:
@@ -509,37 +509,35 @@ def test_modify_addon_studio_overrides(settings_addon, studio_variant):
         get_addon_studio_settings(name, version, variant=studio_variant),
         path,
     )
-    set_addon_studio_raw_overrides(
+    set_addon_raw_overrides(
         name,
         version,
         _build_overrides(path, not default_value),
         variant=studio_variant,
     )
 
-    modify_addon_studio_overrides(
-        name, version, "delete", path, variant=studio_variant
+    modify_addon_overrides(
+        name,
+        version,
+        "delete",
+        path,
+        variant=studio_variant,
     )
-    raw = get_addon_studio_raw_overrides(name, version, variant=studio_variant)
+    raw = get_addon_raw_overrides(name, version, variant=studio_variant)
     assert not _has_path(raw, path)
     settings = get_addon_studio_settings(name, version, variant=studio_variant)
     assert _get_value(settings, path) is default_value
-    overrides = get_addon_studio_overrides(
-        name, version, variant=studio_variant
-    )
+    overrides = get_addon_overrides(name, version, variant=studio_variant)
     assert _override_key(path) not in overrides
 
-    modify_addon_studio_overrides(
-        name, version, "pin", path, variant=studio_variant
-    )
-    raw = get_addon_studio_raw_overrides(name, version, variant=studio_variant)
+    modify_addon_overrides(name, version, "pin", path, variant=studio_variant)
+    raw = get_addon_raw_overrides(name, version, variant=studio_variant)
     assert _get_value(raw, path) is default_value
-    overrides = get_addon_studio_overrides(
-        name, version, variant=studio_variant
-    )
+    overrides = get_addon_overrides(name, version, variant=studio_variant)
     assert overrides[_override_key(path)]["value"] is default_value
 
 
-def test_delete_addon_studio_overrides(settings_addon, studio_variant):
+def test_delete_addon_overrides_studio(settings_addon, studio_variant):
     """Delete all studio overrides of the variant."""
     name = settings_addon["name"]
     version = settings_addon["version"]
@@ -549,24 +547,18 @@ def test_delete_addon_studio_overrides(settings_addon, studio_variant):
         get_addon_studio_settings(name, version, variant=studio_variant),
         path,
     )
-    set_addon_studio_raw_overrides(
+    set_addon_raw_overrides(
         name,
         version,
         _build_overrides(path, not default_value),
         variant=studio_variant,
     )
-    assert get_addon_studio_raw_overrides(
-        name, version, variant=studio_variant
-    )
+    assert get_addon_raw_overrides(name, version, variant=studio_variant)
 
-    delete_addon_studio_overrides(name, version, variant=studio_variant)
+    delete_addon_overrides(name, version, variant=studio_variant)
 
-    assert get_addon_studio_raw_overrides(
-        name, version, variant=studio_variant
-    ) == {}
-    assert get_addon_studio_overrides(
-        name, version, variant=studio_variant
-    ) == {}
+    assert get_addon_raw_overrides(name, version, variant=studio_variant) == {}
+    assert get_addon_overrides(name, version, variant=studio_variant) == {}
     settings = get_addon_studio_settings(name, version, variant=studio_variant)
     assert _get_value(settings, path) is default_value
 
@@ -577,28 +569,26 @@ def test_studio_raw_overrides_roundtrip(settings_addon, studio_variant):
     version = settings_addon["version"]
     path = settings_addon["path"]
 
-    assert get_addon_studio_raw_overrides(
-        name, version, variant=studio_variant
-    ) == {}
+    assert get_addon_raw_overrides(name, version, variant=studio_variant) == {}
 
     default_value = _get_value(
         get_addon_studio_settings(name, version, variant=studio_variant),
         path,
     )
     overrides = _build_overrides(path, not default_value)
-    set_addon_studio_raw_overrides(
-        name, version, overrides, variant=studio_variant
-    )
+    set_addon_raw_overrides(name, version, overrides, variant=studio_variant)
 
-    assert get_addon_studio_raw_overrides(
-        name, version, variant=studio_variant
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        variant=studio_variant,
     ) == overrides
     settings = get_addon_studio_settings(name, version, variant=studio_variant)
     assert _get_value(settings, path) is (not default_value)
 
 
 # --- Project settings ---
-def test_set_addon_project_settings(project_addon):
+def test_set_addon_settings_project(project_addon):
     """Set full project settings and check calculated overrides.
 
     Verifies:
@@ -619,8 +609,12 @@ def test_set_addon_project_settings(project_addon):
     new_settings = copy.deepcopy(settings)
     _set_value(new_settings, path, new_value)
 
-    set_addon_project_settings(
-        name, version, project_name, new_settings, variant="production"
+    set_addon_settings(
+        name,
+        version,
+        new_settings,
+        project_name=project_name,
+        variant="production",
     )
 
     updated = get_addon_project_settings(
@@ -628,13 +622,19 @@ def test_set_addon_project_settings(project_addon):
     )
     assert _get_value(updated, path) is new_value
 
-    raw = get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     assert _get_value(raw, path) is new_value
 
-    overrides = get_addon_project_overrides(
-        name, version, project_name, variant="production"
+    overrides = get_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     item = overrides[_override_key(path)]
     assert item["path"] == path
@@ -642,15 +642,18 @@ def test_set_addon_project_settings(project_addon):
     assert item["level"] == "project"
 
 
-def test_modify_addon_project_overrides(project_addon):
+def test_modify_addon_overrides_project(project_addon):
     """Remove and pin project override on a settings path."""
     name = project_addon["name"]
     version = project_addon["version"]
     path = project_addon["path"]
     project_name = project_addon["project_name"]
 
-    delete_addon_project_overrides(
-        name, version, project_name, variant="production"
+    delete_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     studio_value = _get_value(
         get_addon_project_settings(
@@ -658,19 +661,27 @@ def test_modify_addon_project_overrides(project_addon):
         ),
         path,
     )
-    set_addon_project_raw_overrides(
+    set_addon_raw_overrides(
         name,
         version,
-        project_name,
         _build_overrides(path, not studio_value),
+        project_name=project_name,
         variant="production",
     )
 
-    modify_addon_project_overrides(
-        name, version, project_name, "delete", path, variant="production"
+    modify_addon_overrides(
+        name,
+        version,
+        "delete",
+        path,
+        project_name=project_name,
+        variant="production",
     )
-    raw = get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     assert not _has_path(raw, path)
     settings = get_addon_project_settings(
@@ -678,15 +689,26 @@ def test_modify_addon_project_overrides(project_addon):
     )
     assert _get_value(settings, path) is studio_value
 
-    modify_addon_project_overrides(
-        name, version, project_name, "pin", path, variant="production"
+    modify_addon_overrides(
+        name,
+        version,
+        "pin",
+        path,
+        project_name=project_name,
+        variant="production",
     )
-    raw = get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     assert _get_value(raw, path) is studio_value
-    overrides = get_addon_project_overrides(
-        name, version, project_name, variant="production"
+    overrides = get_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     item = overrides[_override_key(path)]
     assert item["level"] == "project"
@@ -700,11 +722,17 @@ def test_project_raw_overrides_and_delete(project_addon):
     path = project_addon["path"]
     project_name = project_addon["project_name"]
 
-    delete_addon_project_overrides(
-        name, version, project_name, variant="production"
+    delete_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     ) == {}
 
     studio_value = _get_value(
@@ -714,22 +742,35 @@ def test_project_raw_overrides_and_delete(project_addon):
         path,
     )
     overrides = _build_overrides(path, not studio_value)
-    set_addon_project_raw_overrides(
-        name, version, project_name, overrides, variant="production"
+    set_addon_raw_overrides(
+        name,
+        version,
+        overrides,
+        project_name=project_name,
+        variant="production",
     )
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     ) == overrides
     settings = get_addon_project_settings(
         name, version, project_name, variant="production", use_site=False
     )
     assert _get_value(settings, path) is (not studio_value)
 
-    delete_addon_project_overrides(
-        name, version, project_name, variant="production"
+    delete_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     ) == {}
     settings = get_addon_project_settings(
         name, version, project_name, variant="production", use_site=False
@@ -752,11 +793,17 @@ def test_project_site_overrides(project_addon, project_site_id):
     project_name = project_addon["project_name"]
     site_id = project_site_id
 
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, site_id=site_id
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        site_id=site_id,
     ) == {}
-    project_raw = get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    project_raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
 
     project_value = _get_value(
@@ -766,15 +813,25 @@ def test_project_site_overrides(project_addon, project_site_id):
         path,
     )
     overrides = _build_overrides(path, not project_value)
-    set_addon_project_raw_overrides(
-        name, version, project_name, overrides, site_id=site_id
+    set_addon_raw_overrides(
+        name,
+        version,
+        overrides,
+        project_name=project_name,
+        site_id=site_id,
     )
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, site_id=site_id
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        site_id=site_id,
     ) == overrides
     # Project overrides are not affected
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     ) == project_raw
 
     site_settings = get_addon_project_settings(
@@ -782,45 +839,74 @@ def test_project_site_overrides(project_addon, project_site_id):
     )
     assert _get_value(site_settings, path) is (not project_value)
 
-    listing = get_addon_project_overrides(
-        name, version, project_name, variant="production", site_id=site_id
+    listing = get_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
+        site_id=site_id,
     )
     item = listing[_override_key(path)]
     assert item["level"] == "site"
     assert item["value"] is (not project_value)
 
     # Site overrides are not listed without site id
-    listing = get_addon_project_overrides(
-        name, version, project_name, variant="production"
+    listing = get_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     item = listing.get(_override_key(path))
     assert item is None or item["level"] != "site"
 
-    modify_addon_project_overrides(
-        name, version, project_name, "delete", path, site_id=site_id
+    modify_addon_overrides(
+        name,
+        version,
+        "delete",
+        path,
+        project_name=project_name,
+        site_id=site_id,
     )
-    raw = get_addon_project_raw_overrides(
-        name, version, project_name, site_id=site_id
+    raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        site_id=site_id,
     )
     assert not _has_path(raw, path)
 
-    modify_addon_project_overrides(
-        name, version, project_name, "pin", path, site_id=site_id
+    modify_addon_overrides(
+        name,
+        version,
+        "pin",
+        path,
+        project_name=project_name,
+        site_id=site_id,
     )
-    raw = get_addon_project_raw_overrides(
-        name, version, project_name, site_id=site_id
+    raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        site_id=site_id,
     )
     assert _get_value(raw, path) is project_value
 
-    delete_addon_project_overrides(
-        name, version, project_name, site_id=site_id
+    delete_addon_overrides(
+        name,
+        version,
+        project_name=project_name,
+        site_id=site_id,
     )
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, site_id=site_id
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        site_id=site_id,
     ) == {}
 
 
-def test_set_addon_project_settings_site(project_addon, project_site_id):
+def test_set_addon_settings_project_site(project_addon, project_site_id):
     """Set full project settings as site overrides with 'site_id'."""
     name = project_addon["name"]
     version = project_addon["version"]
@@ -828,8 +914,11 @@ def test_set_addon_project_settings_site(project_addon, project_site_id):
     project_name = project_addon["project_name"]
     site_id = project_site_id
 
-    project_raw = get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    project_raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     )
     settings = get_addon_project_settings(
         name, version, project_name, variant="production", site_id=site_id
@@ -838,21 +927,27 @@ def test_set_addon_project_settings_site(project_addon, project_site_id):
     new_settings = copy.deepcopy(settings)
     _set_value(new_settings, path, new_value)
 
-    set_addon_project_settings(
+    set_addon_settings(
         name,
         version,
-        project_name,
         new_settings,
+        project_name=project_name,
         variant="production",
         site_id=site_id,
     )
 
-    raw = get_addon_project_raw_overrides(
-        name, version, project_name, site_id=site_id
+    raw = get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        site_id=site_id,
     )
     assert _get_value(raw, path) is new_value
-    assert get_addon_project_raw_overrides(
-        name, version, project_name, variant="production"
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        project_name=project_name,
+        variant="production",
     ) == project_raw
 
     updated = get_addon_project_settings(
@@ -957,15 +1052,17 @@ def test_migrate_addon_settings(
     if other_version is None:
         pytest.skip(f"Addon '{name}' does not have other version installed.")
 
-    assert get_addon_studio_raw_overrides(
-        name, other_version, variant=studio_variant
+    assert get_addon_raw_overrides(
+        name,
+        other_version,
+        variant=studio_variant,
     ) == {}
 
     default_value = _get_value(
         get_addon_studio_settings(name, version, variant=studio_variant),
         path,
     )
-    set_addon_studio_raw_overrides(
+    set_addon_raw_overrides(
         name,
         version,
         _build_overrides(path, not default_value),
@@ -990,12 +1087,16 @@ def test_migrate_addon_settings(
     assert summary["addon_version"] == version
 
     # Converted (empty) source overrides replaced the target overrides
-    assert get_addon_studio_raw_overrides(
-        name, version, variant=studio_variant
+    assert get_addon_raw_overrides(
+        name,
+        version,
+        variant=studio_variant,
     ) != _build_overrides(path, not default_value)
     # Source overrides stay untouched
-    assert get_addon_studio_raw_overrides(
-        name, other_version, variant=studio_variant
+    assert get_addon_raw_overrides(
+        name,
+        other_version,
+        variant=studio_variant,
     ) == {}
 
 
@@ -1010,9 +1111,7 @@ def test_migrate_settings_by_bundle_same_bundle(
     """
     name = settings_addon["name"]
     version = settings_addon["version"]
-    original = get_addon_studio_raw_overrides(
-        name, version, variant="production"
-    )
+    original = get_addon_raw_overrides(name, version, variant="production")
     try:
         migrate_settings_by_bundle(
             production_bundle["name"],
@@ -1021,16 +1120,19 @@ def test_migrate_settings_by_bundle_same_bundle(
             "production",
             with_projects=False,
         )
-        assert get_addon_studio_raw_overrides(
-            name, version, variant="production"
+        assert get_addon_raw_overrides(
+            name,
+            version,
+            variant="production",
         ) == original
     finally:
-        current = get_addon_studio_raw_overrides(
-            name, version, variant="production"
-        )
+        current = get_addon_raw_overrides(name, version, variant="production")
         if current != original and original:
-            set_addon_studio_raw_overrides(
-                name, version, original, variant="production"
+            set_addon_raw_overrides(
+                name,
+                version,
+                original,
+                variant="production",
             )
 
 
@@ -1060,3 +1162,31 @@ def test_migrate_settings_by_bundle_invalid(production_bundle):
             "production",
             with_projects=False,
         )
+
+
+@pytest.mark.parametrize(
+    "method_name, args",
+    [
+        ("set_addon_settings", ({},)),
+        ("get_addon_overrides", ()),
+        ("modify_addon_overrides", ("pin", ["key"])),
+        ("delete_addon_overrides", ()),
+        ("get_addon_raw_overrides", ()),
+        ("set_addon_raw_overrides", ({},)),
+    ],
+)
+def test_site_id_without_project_name_raises(monkeypatch, method_name, args):
+    """Studio level methods refuse 'site_id' before sending any request.
+
+    Does not require running AYON server.
+
+    """
+    api = ServerAPI("http://127.0.0.1:1", site_id=None, create_session=False)
+
+    def _request(*args, **kwargs):
+        raise AssertionError("Request should not be sent.")
+
+    monkeypatch.setattr(api, "_do_rest_request", _request)
+    method = getattr(api, method_name)
+    with pytest.raises(ValueError):
+        method("addon", "1.0.0", *args, site_id="site")

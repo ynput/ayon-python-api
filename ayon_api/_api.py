@@ -3623,180 +3623,81 @@ def get_addons_settings(
     )
 
 
-def set_addon_studio_settings(
+def set_addon_settings(
     addon_name: str,
     addon_version: str,
     settings: dict[str, Any],
-    variant: Optional[str] = None,
-) -> None:
-    """Set studio settings of an addon.
-
-    Server calculates studio overrides from passed settings values.
-    Explicit (un)pinning of fields can be done with
-        '__pinned_fields__' and '__unpinned_fields__' keys in settings.
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        settings (dict[str, Any]): Full settings values.
-        variant (Optional[str]): Name of settings variant. Used
-            'default_settings_variant' by default.
-
-    """
-    con = get_server_api_connection()
-    return con.set_addon_studio_settings(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        settings=settings,
-        variant=variant,
-    )
-
-
-def set_addon_project_settings(
-    addon_name: str,
-    addon_version: str,
-    project_name: str,
-    settings: dict[str, Any],
+    project_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
 ) -> None:
-    """Set project settings of an addon.
+    """Set studio or project settings of an addon.
 
-    Server calculates project overrides from passed settings values.
-    If 'site_id' is passed then project site overrides of current user
-    are set instead.
+    Server calculates overrides from passed settings values. Explicit
+        (un)pinning of fields can be done with '__pinned_fields__' and
+        '__unpinned_fields__' keys in settings.
 
     Args:
         addon_name (str): Name of addon.
         addon_version (str): Version of addon.
-        project_name (str): Project name.
         settings (dict[str, Any]): Full settings values.
+        project_name (Optional[str]): Project name. Studio settings
+            are set if not passed.
         variant (Optional[str]): Name of settings variant. Used
             'default_settings_variant' by default.
-        site_id (Optional[str]): Site id for which are site overrides
-            set. Project overrides are set if not passed.
+        site_id (Optional[str]): Project site overrides of current user
+            are set instead of project overrides. Can be used only
+            with 'project_name'.
+
+    Raises:
+        ValueError: 'site_id' is passed without 'project_name'.
 
     """
     con = get_server_api_connection()
-    return con.set_addon_project_settings(
+    return con.set_addon_settings(
         addon_name=addon_name,
         addon_version=addon_version,
-        project_name=project_name,
         settings=settings,
+        project_name=project_name,
         variant=variant,
         site_id=site_id,
     )
 
 
-def get_addon_studio_overrides(
+def get_addon_overrides(
     addon_name: str,
     addon_version: str,
-    variant: Optional[str] = None,
-    as_version: Optional[str] = None,
-) -> dict[str, Any]:
-    """Get studio overrides of an addon.
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        variant (Optional[str]): Name of settings variant. Used
-            'default_settings_variant' by default.
-        as_version (Optional[str]): Use overrides of different addon
-            version.
-
-    Returns:
-        dict[str, Any]: Overrides information by settings path.
-
-    """
-    con = get_server_api_connection()
-    return con.get_addon_studio_overrides(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        variant=variant,
-        as_version=as_version,
-    )
-
-
-def modify_addon_studio_overrides(
-    addon_name: str,
-    addon_version: str,
-    action: Literal["delete", "pin"],
-    path: list[str],
-    variant: Optional[str] = None,
-) -> None:
-    """Modify studio override of an addon on a settings path.
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        action (Literal["delete", "pin"]): Remove override or pin
-            current value as override.
-        path (list[str]): Path to settings key.
-        variant (Optional[str]): Name of settings variant. Used
-            'default_settings_variant' by default.
-
-    """
-    con = get_server_api_connection()
-    return con.modify_addon_studio_overrides(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        action=action,
-        path=path,
-        variant=variant,
-    )
-
-
-def delete_addon_studio_overrides(
-    addon_name: str,
-    addon_version: str,
-    variant: Optional[str] = None,
-) -> None:
-    """Delete all studio overrides of an addon.
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        variant (Optional[str]): Name of settings variant. Used
-            'default_settings_variant' by default.
-
-    """
-    con = get_server_api_connection()
-    return con.delete_addon_studio_overrides(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        variant=variant,
-    )
-
-
-def get_addon_project_overrides(
-    addon_name: str,
-    addon_version: str,
-    project_name: str,
+    project_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
     as_version: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Get project overrides of an addon.
+    """Get studio or project overrides of an addon.
 
-    Output contains studio and project overrides, and site overrides
-        if 'site_id' is passed.
+    Project overrides contain also studio overrides, and project site
+        overrides if 'site_id' is passed.
 
     Args:
         addon_name (str): Name of addon.
         addon_version (str): Version of addon.
-        project_name (str): Project name.
+        project_name (Optional[str]): Project name. Studio overrides
+            are returned if not passed.
         variant (Optional[str]): Name of settings variant. Used
             'default_settings_variant' by default.
-        site_id (Optional[str]): Site id to include site overrides.
+        site_id (Optional[str]): Site id to include project site
+            overrides. Can be used only with 'project_name'.
         as_version (Optional[str]): Use overrides of different addon
             version.
 
     Returns:
         dict[str, Any]: Overrides information by settings path.
 
+    Raises:
+        ValueError: 'site_id' is passed without 'project_name'.
+
     """
     con = get_server_api_connection()
-    return con.get_addon_project_overrides(
+    return con.get_addon_overrides(
         addon_name=addon_name,
         addon_version=addon_version,
         project_name=project_name,
@@ -3806,67 +3707,73 @@ def get_addon_project_overrides(
     )
 
 
-def modify_addon_project_overrides(
+def modify_addon_overrides(
     addon_name: str,
     addon_version: str,
-    project_name: str,
     action: Literal["delete", "pin"],
     path: list[str],
+    project_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
 ) -> None:
-    """Modify project override of an addon on a settings path.
-
-    Project site override of current user is modified if 'site_id'
-        is passed.
+    """Modify studio or project override of an addon on a settings path.
 
     Args:
         addon_name (str): Name of addon.
         addon_version (str): Version of addon.
-        project_name (str): Project name.
         action (Literal["delete", "pin"]): Remove override or pin
             current value as override.
         path (list[str]): Path to settings key.
+        project_name (Optional[str]): Project name. Studio override
+            is modified if not passed.
         variant (Optional[str]): Name of settings variant. Used
             'default_settings_variant' by default.
-        site_id (Optional[str]): Site id to modify site overrides.
+        site_id (Optional[str]): Project site override of current user
+            is modified instead of project override. Can be used only
+            with 'project_name'.
+
+    Raises:
+        ValueError: 'site_id' is passed without 'project_name'.
 
     """
     con = get_server_api_connection()
-    return con.modify_addon_project_overrides(
+    return con.modify_addon_overrides(
         addon_name=addon_name,
         addon_version=addon_version,
-        project_name=project_name,
         action=action,
         path=path,
+        project_name=project_name,
         variant=variant,
         site_id=site_id,
     )
 
 
-def delete_addon_project_overrides(
+def delete_addon_overrides(
     addon_name: str,
     addon_version: str,
-    project_name: str,
+    project_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
 ) -> None:
-    """Delete all project overrides of an addon.
-
-    Project site overrides of current user are deleted if 'site_id'
-        is passed.
+    """Delete all studio or project overrides of an addon.
 
     Args:
         addon_name (str): Name of addon.
         addon_version (str): Version of addon.
-        project_name (str): Project name.
+        project_name (Optional[str]): Project name. Studio overrides
+            are deleted if not passed.
         variant (Optional[str]): Name of settings variant. Used
             'default_settings_variant' by default.
-        site_id (Optional[str]): Site id to delete site overrides.
+        site_id (Optional[str]): Project site overrides of current user
+            are deleted instead of project overrides. Can be used only
+            with 'project_name'.
+
+    Raises:
+        ValueError: 'site_id' is passed without 'project_name'.
 
     """
     con = get_server_api_connection()
-    return con.delete_addon_project_overrides(
+    return con.delete_addon_overrides(
         addon_name=addon_name,
         addon_version=addon_version,
         project_name=project_name,
@@ -3875,90 +3782,38 @@ def delete_addon_project_overrides(
     )
 
 
-def get_addon_studio_raw_overrides(
+def get_addon_raw_overrides(
     addon_name: str,
     addon_version: str,
-    variant: Optional[str] = None,
-) -> dict[str, Any]:
-    """Get raw studio overrides of an addon.
-
-    Raw overrides are stored data without any processing. Only admins
-        can access them.
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        variant (Optional[str]): Name of settings variant. Used
-            'default_settings_variant' by default.
-
-    Returns:
-        dict[str, Any]: Raw overrides data.
-
-    """
-    con = get_server_api_connection()
-    return con.get_addon_studio_raw_overrides(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        variant=variant,
-    )
-
-
-def set_addon_studio_raw_overrides(
-    addon_name: str,
-    addon_version: str,
-    overrides: dict[str, Any],
-    variant: Optional[str] = None,
-) -> None:
-    """Set raw studio overrides of an addon.
-
-    Warnings:
-        Data are stored without any validation. Only admins can use
-            this. Use with caution.
-
-    Args:
-        addon_name (str): Name of addon.
-        addon_version (str): Version of addon.
-        overrides (dict[str, Any]): Raw overrides data.
-        variant (Optional[str]): Name of settings variant. Used
-            'default_settings_variant' by default.
-
-    """
-    con = get_server_api_connection()
-    return con.set_addon_studio_raw_overrides(
-        addon_name=addon_name,
-        addon_version=addon_version,
-        overrides=overrides,
-        variant=variant,
-    )
-
-
-def get_addon_project_raw_overrides(
-    addon_name: str,
-    addon_version: str,
-    project_name: str,
+    project_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Get raw project overrides of an addon.
+    """Get raw studio or project overrides of an addon.
 
-    Raw overrides are stored data without any processing. Project
-        overrides are accessible only by admins, project site overrides
-        of current user are returned if 'site_id' is passed.
+    Raw overrides are stored data without any processing. Studio and
+        project overrides are accessible only by admins, project site
+        overrides of current user are returned if 'site_id' is passed.
 
     Args:
         addon_name (str): Name of addon.
         addon_version (str): Version of addon.
-        project_name (str): Project name.
+        project_name (Optional[str]): Project name. Studio overrides
+            are returned if not passed.
         variant (Optional[str]): Name of settings variant. Used
             'default_settings_variant' by default.
-        site_id (Optional[str]): Site id to get site overrides.
+        site_id (Optional[str]): Site id to get project site overrides.
+            Can be used only with 'project_name'.
 
     Returns:
         dict[str, Any]: Raw overrides data.
 
+    Raises:
+        ValueError: 'site_id' is passed without 'project_name'.
+
     """
     con = get_server_api_connection()
-    return con.get_addon_project_raw_overrides(
+    return con.get_addon_raw_overrides(
         addon_name=addon_name,
         addon_version=addon_version,
         project_name=project_name,
@@ -3967,18 +3822,15 @@ def get_addon_project_raw_overrides(
     )
 
 
-def set_addon_project_raw_overrides(
+def set_addon_raw_overrides(
     addon_name: str,
     addon_version: str,
-    project_name: str,
     overrides: dict[str, Any],
+    project_name: Optional[str] = None,
     variant: Optional[str] = None,
     site_id: Optional[str] = None,
 ) -> None:
-    """Set raw project overrides of an addon.
-
-    Project site overrides of current user are set if 'site_id'
-        is passed.
+    """Set raw studio or project overrides of an addon.
 
     Warnings:
         Data are stored without any validation. Use with caution.
@@ -3986,19 +3838,25 @@ def set_addon_project_raw_overrides(
     Args:
         addon_name (str): Name of addon.
         addon_version (str): Version of addon.
-        project_name (str): Project name.
         overrides (dict[str, Any]): Raw overrides data.
+        project_name (Optional[str]): Project name. Studio overrides
+            are set if not passed.
         variant (Optional[str]): Name of settings variant. Used
             'default_settings_variant' by default.
-        site_id (Optional[str]): Site id to set site overrides.
+        site_id (Optional[str]): Project site overrides of current user
+            are set instead of project overrides. Can be used only
+            with 'project_name'.
+
+    Raises:
+        ValueError: 'site_id' is passed without 'project_name'.
 
     """
     con = get_server_api_connection()
-    return con.set_addon_project_raw_overrides(
+    return con.set_addon_raw_overrides(
         addon_name=addon_name,
         addon_version=addon_version,
-        project_name=project_name,
         overrides=overrides,
+        project_name=project_name,
         variant=variant,
         site_id=site_id,
     )
