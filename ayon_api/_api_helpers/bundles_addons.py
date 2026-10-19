@@ -911,6 +911,77 @@ class BundlesAddonsAPI(BaseServerAPI):
             only_values=only_values
         )
 
+    def set_addon_studio_settings(
+        self,
+        addon_name: str,
+        addon_version: str,
+        settings: dict[str, Any],
+        variant: Optional[str] = None,
+    ) -> None:
+        """Set studio settings of an addon.
+
+        Server calculates studio overrides from passed settings values.
+        Explicit (un)pinning of fields can be done with
+            '__pinned_fields__' and '__unpinned_fields__' keys in settings.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            settings (dict[str, Any]): Full settings values.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({"variant": variant or None})
+        response = self.raw_post(
+            f"addons/{addon_name}/{addon_version}/settings{query}",
+            json=settings,
+        )
+        response.raise_for_status()
+
+    def set_addon_project_settings(
+        self,
+        addon_name: str,
+        addon_version: str,
+        project_name: str,
+        settings: dict[str, Any],
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+    ) -> None:
+        """Set project settings of an addon.
+
+        Server calculates project overrides from passed settings values.
+        If 'site_id' is passed then project site overrides of current user
+        are set instead.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Project name.
+            settings (dict[str, Any]): Full settings values.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+            site_id (Optional[str]): Site id for which are site overrides
+                set. Project overrides are set if not passed.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({
+            "site_id": site_id or None,
+            "variant": variant or None,
+        })
+        response = self.raw_post(
+            f"addons/{addon_name}/{addon_version}"
+            f"/settings/{project_name}{query}",
+            json=settings,
+        )
+        response.raise_for_status()
+
     def set_addon_settings(
         self,
         addon_name: str,
@@ -922,16 +993,13 @@ class BundlesAddonsAPI(BaseServerAPI):
     ) -> None:
         """Set studio or project settings of an addon.
 
-        Server calculates overrides from passed settings values. Explicit
-            (un)pinning of fields can be done with '__pinned_fields__' and
-            '__unpinned_fields__' keys in settings.
+        Studio settings are set if 'project_name' is not passed.
 
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
             settings (dict[str, Any]): Full settings values.
-            project_name (Optional[str]): Project name. Studio settings
-                are set if not passed.
+            project_name (Optional[str]): Project name.
             variant (Optional[str]): Name of settings variant. Used
                 'default_settings_variant' by default.
             site_id (Optional[str]): Project site overrides of current user
@@ -942,12 +1010,92 @@ class BundlesAddonsAPI(BaseServerAPI):
             ValueError: 'site_id' is passed without 'project_name'.
 
         """
-        endpoint = self._get_addon_settings_endpoint(
-            addon_name, addon_version, "settings", project_name, variant,
+        if project_name is None:
+            self._validate_studio_site_id(site_id)
+            return self.set_addon_studio_settings(
+                addon_name, addon_version, settings, variant
+            )
+        return self.set_addon_project_settings(
+            addon_name, addon_version, project_name, settings, variant,
             site_id
         )
-        response = self.raw_post(endpoint, json=settings)
+
+    def get_addon_studio_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        variant: Optional[str] = None,
+        as_version: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Get studio overrides of an addon.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+            as_version (Optional[str]): Use overrides of different addon
+                version.
+
+        Returns:
+            dict[str, Any]: Overrides information by settings path.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({
+            "variant": variant or None,
+            "as": as_version or None,
+        })
+        response = self.get(
+            f"addons/{addon_name}/{addon_version}/overrides{query}"
+        )
         response.raise_for_status()
+        return response.data
+
+    def get_addon_project_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        project_name: str,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+        as_version: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Get project overrides of an addon.
+
+        Output contains studio and project overrides, and site overrides
+            if 'site_id' is passed.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Project name.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+            site_id (Optional[str]): Site id to include site overrides.
+            as_version (Optional[str]): Use overrides of different addon
+                version.
+
+        Returns:
+            dict[str, Any]: Overrides information by settings path.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({
+            "site_id": site_id or None,
+            "variant": variant or None,
+            "as": as_version or None,
+        })
+        response = self.get(
+            f"addons/{addon_name}/{addon_version}"
+            f"/overrides/{project_name}{query}"
+        )
+        response.raise_for_status()
+        return response.data
 
     def get_addon_overrides(
         self,
@@ -960,14 +1108,12 @@ class BundlesAddonsAPI(BaseServerAPI):
     ) -> dict[str, Any]:
         """Get studio or project overrides of an addon.
 
-        Project overrides contain also studio overrides, and project site
-            overrides if 'site_id' is passed.
+        Studio overrides are returned if 'project_name' is not passed.
 
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            project_name (Optional[str]): Project name. Studio overrides
-                are returned if not passed.
+            project_name (Optional[str]): Project name.
             variant (Optional[str]): Name of settings variant. Used
                 'default_settings_variant' by default.
             site_id (Optional[str]): Site id to include project site
@@ -982,13 +1128,88 @@ class BundlesAddonsAPI(BaseServerAPI):
             ValueError: 'site_id' is passed without 'project_name'.
 
         """
-        endpoint = self._get_addon_settings_endpoint(
-            addon_name, addon_version, "overrides", project_name, variant,
-            site_id, {"as": as_version or None}
+        if project_name is None:
+            self._validate_studio_site_id(site_id)
+            return self.get_addon_studio_overrides(
+                addon_name, addon_version, variant, as_version
+            )
+        return self.get_addon_project_overrides(
+            addon_name, addon_version, project_name, variant, site_id,
+            as_version
         )
-        response = self.get(endpoint)
+
+    def modify_addon_studio_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        action: Literal["delete", "pin"],
+        path: list[str],
+        variant: Optional[str] = None,
+    ) -> None:
+        """Modify studio override of an addon on a settings path.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            action (Literal["delete", "pin"]): Remove override or pin
+                current value as override.
+            path (list[str]): Path to settings key.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({"variant": variant or None})
+        response = self.post(
+            f"addons/{addon_name}/{addon_version}/overrides{query}",
+            action=action,
+            path=path,
+        )
         response.raise_for_status()
-        return response.data
+
+    def modify_addon_project_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        project_name: str,
+        action: Literal["delete", "pin"],
+        path: list[str],
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+    ) -> None:
+        """Modify project override of an addon on a settings path.
+
+        Project site override of current user is modified if 'site_id'
+            is passed.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Project name.
+            action (Literal["delete", "pin"]): Remove override or pin
+                current value as override.
+            path (list[str]): Path to settings key.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+            site_id (Optional[str]): Site id to modify site overrides.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({
+            "site_id": site_id or None,
+            "variant": variant or None,
+        })
+        response = self.post(
+            f"addons/{addon_name}/{addon_version}"
+            f"/overrides/{project_name}{query}",
+            action=action,
+            path=path,
+        )
+        response.raise_for_status()
 
     def modify_addon_overrides(
         self,
@@ -1002,14 +1223,15 @@ class BundlesAddonsAPI(BaseServerAPI):
     ) -> None:
         """Modify studio or project override of an addon on a settings path.
 
+        Studio override is modified if 'project_name' is not passed.
+
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
             action (Literal["delete", "pin"]): Remove override or pin
                 current value as override.
             path (list[str]): Path to settings key.
-            project_name (Optional[str]): Project name. Studio override
-                is modified if not passed.
+            project_name (Optional[str]): Project name.
             variant (Optional[str]): Name of settings variant. Used
                 'default_settings_variant' by default.
             site_id (Optional[str]): Project site override of current user
@@ -1020,11 +1242,73 @@ class BundlesAddonsAPI(BaseServerAPI):
             ValueError: 'site_id' is passed without 'project_name'.
 
         """
-        endpoint = self._get_addon_settings_endpoint(
-            addon_name, addon_version, "overrides", project_name, variant,
+        if project_name is None:
+            self._validate_studio_site_id(site_id)
+            return self.modify_addon_studio_overrides(
+                addon_name, addon_version, action, path, variant
+            )
+        return self.modify_addon_project_overrides(
+            addon_name, addon_version, project_name, action, path, variant,
             site_id
         )
-        response = self.post(endpoint, action=action, path=path)
+
+    def delete_addon_studio_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        variant: Optional[str] = None,
+    ) -> None:
+        """Delete all studio overrides of an addon.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({"variant": variant or None})
+        response = self.delete(
+            f"addons/{addon_name}/{addon_version}/overrides{query}"
+        )
+        response.raise_for_status()
+
+    def delete_addon_project_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        project_name: str,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+    ) -> None:
+        """Delete all project overrides of an addon.
+
+        Project site overrides of current user are deleted if 'site_id'
+            is passed.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Project name.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+            site_id (Optional[str]): Site id to delete site overrides.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({
+            "site_id": site_id or None,
+            "variant": variant or None,
+        })
+        response = self.delete(
+            f"addons/{addon_name}/{addon_version}"
+            f"/overrides/{project_name}{query}"
+        )
         response.raise_for_status()
 
     def delete_addon_overrides(
@@ -1037,11 +1321,12 @@ class BundlesAddonsAPI(BaseServerAPI):
     ) -> None:
         """Delete all studio or project overrides of an addon.
 
+        Studio overrides are deleted if 'project_name' is not passed.
+
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            project_name (Optional[str]): Project name. Studio overrides
-                are deleted if not passed.
+            project_name (Optional[str]): Project name.
             variant (Optional[str]): Name of settings variant. Used
                 'default_settings_variant' by default.
             site_id (Optional[str]): Project site overrides of current user
@@ -1052,12 +1337,85 @@ class BundlesAddonsAPI(BaseServerAPI):
             ValueError: 'site_id' is passed without 'project_name'.
 
         """
-        endpoint = self._get_addon_settings_endpoint(
-            addon_name, addon_version, "overrides", project_name, variant,
-            site_id
+        if project_name is None:
+            self._validate_studio_site_id(site_id)
+            return self.delete_addon_studio_overrides(
+                addon_name, addon_version, variant
+            )
+        return self.delete_addon_project_overrides(
+            addon_name, addon_version, project_name, variant, site_id
         )
-        response = self.delete(endpoint)
+
+    def get_addon_studio_raw_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        variant: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Get raw studio overrides of an addon.
+
+        Raw overrides are stored data without any processing. Only admins
+            can access them.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+
+        Returns:
+            dict[str, Any]: Raw overrides data.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({"variant": variant or None})
+        response = self.get(
+            f"addons/{addon_name}/{addon_version}/rawOverrides{query}"
+        )
         response.raise_for_status()
+        return response.data
+
+    def get_addon_project_raw_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        project_name: str,
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Get raw project overrides of an addon.
+
+        Raw overrides are stored data without any processing. Project
+            overrides are accessible only by admins, project site overrides
+            of current user are returned if 'site_id' is passed.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Project name.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+            site_id (Optional[str]): Site id to get site overrides.
+
+        Returns:
+            dict[str, Any]: Raw overrides data.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({
+            "site_id": site_id or None,
+            "variant": variant or None,
+        })
+        response = self.get(
+            f"addons/{addon_name}/{addon_version}"
+            f"/rawOverrides/{project_name}{query}"
+        )
+        response.raise_for_status()
+        return response.data
 
     def get_addon_raw_overrides(
         self,
@@ -1069,15 +1427,12 @@ class BundlesAddonsAPI(BaseServerAPI):
     ) -> dict[str, Any]:
         """Get raw studio or project overrides of an addon.
 
-        Raw overrides are stored data without any processing. Studio and
-            project overrides are accessible only by admins, project site
-            overrides of current user are returned if 'site_id' is passed.
+        Studio overrides are returned if 'project_name' is not passed.
 
         Args:
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
-            project_name (Optional[str]): Project name. Studio overrides
-                are returned if not passed.
+            project_name (Optional[str]): Project name.
             variant (Optional[str]): Name of settings variant. Used
                 'default_settings_variant' by default.
             site_id (Optional[str]): Site id to get project site overrides.
@@ -1090,13 +1445,86 @@ class BundlesAddonsAPI(BaseServerAPI):
             ValueError: 'site_id' is passed without 'project_name'.
 
         """
-        endpoint = self._get_addon_settings_endpoint(
-            addon_name, addon_version, "rawOverrides", project_name, variant,
-            site_id
+        if project_name is None:
+            self._validate_studio_site_id(site_id)
+            return self.get_addon_studio_raw_overrides(
+                addon_name, addon_version, variant
+            )
+        return self.get_addon_project_raw_overrides(
+            addon_name, addon_version, project_name, variant, site_id
         )
-        response = self.get(endpoint)
+
+    def set_addon_studio_raw_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        overrides: dict[str, Any],
+        variant: Optional[str] = None,
+    ) -> None:
+        """Set raw studio overrides of an addon.
+
+        Warnings:
+            Data are stored without any validation. Only admins can use
+                this. Use with caution.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            overrides (dict[str, Any]): Raw overrides data.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({"variant": variant or None})
+        response = self.raw_put(
+            f"addons/{addon_name}/{addon_version}/rawOverrides{query}",
+            json=overrides,
+        )
         response.raise_for_status()
-        return response.data
+
+    def set_addon_project_raw_overrides(
+        self,
+        addon_name: str,
+        addon_version: str,
+        project_name: str,
+        overrides: dict[str, Any],
+        variant: Optional[str] = None,
+        site_id: Optional[str] = None,
+    ) -> None:
+        """Set raw project overrides of an addon.
+
+        Project site overrides of current user are set if 'site_id'
+            is passed.
+
+        Warnings:
+            Data are stored without any validation. Use with caution.
+
+        Args:
+            addon_name (str): Name of addon.
+            addon_version (str): Version of addon.
+            project_name (str): Project name.
+            overrides (dict[str, Any]): Raw overrides data.
+            variant (Optional[str]): Name of settings variant. Used
+                'default_settings_variant' by default.
+            site_id (Optional[str]): Site id to set site overrides.
+
+        """
+        if variant is None:
+            variant = self.get_default_settings_variant()
+
+        query = prepare_query_string({
+            "site_id": site_id or None,
+            "variant": variant or None,
+        })
+        response = self.raw_put(
+            f"addons/{addon_name}/{addon_version}"
+            f"/rawOverrides/{project_name}{query}",
+            json=overrides,
+        )
+        response.raise_for_status()
 
     def set_addon_raw_overrides(
         self,
@@ -1109,6 +1537,8 @@ class BundlesAddonsAPI(BaseServerAPI):
     ) -> None:
         """Set raw studio or project overrides of an addon.
 
+        Studio overrides are set if 'project_name' is not passed.
+
         Warnings:
             Data are stored without any validation. Use with caution.
 
@@ -1116,8 +1546,7 @@ class BundlesAddonsAPI(BaseServerAPI):
             addon_name (str): Name of addon.
             addon_version (str): Version of addon.
             overrides (dict[str, Any]): Raw overrides data.
-            project_name (Optional[str]): Project name. Studio overrides
-                are set if not passed.
+            project_name (Optional[str]): Project name.
             variant (Optional[str]): Name of settings variant. Used
                 'default_settings_variant' by default.
             site_id (Optional[str]): Project site overrides of current user
@@ -1128,12 +1557,15 @@ class BundlesAddonsAPI(BaseServerAPI):
             ValueError: 'site_id' is passed without 'project_name'.
 
         """
-        endpoint = self._get_addon_settings_endpoint(
-            addon_name, addon_version, "rawOverrides", project_name, variant,
+        if project_name is None:
+            self._validate_studio_site_id(site_id)
+            return self.set_addon_studio_raw_overrides(
+                addon_name, addon_version, overrides, variant
+            )
+        return self.set_addon_project_raw_overrides(
+            addon_name, addon_version, project_name, overrides, variant,
             site_id
         )
-        response = self.raw_put(endpoint, json=overrides)
-        response.raise_for_status()
 
     def set_addon_site_settings(
         self,
@@ -1249,30 +1681,8 @@ class BundlesAddonsAPI(BaseServerAPI):
         )
         response.raise_for_status()
 
-    def _get_addon_settings_endpoint(
-        self,
-        addon_name: str,
-        addon_version: str,
-        endpoint: str,
-        project_name: Optional[str],
-        variant: Optional[str],
-        site_id: Optional[str],
-        query_data: Optional[dict[str, Any]] = None,
-    ) -> str:
-        if site_id and not project_name:
+    def _validate_studio_site_id(self, site_id: Optional[str]) -> None:
+        if site_id:
             raise ValueError(
                 "Argument 'site_id' can be used only with 'project_name'."
             )
-
-        if variant is None:
-            variant = self.get_default_settings_variant()
-
-        query = prepare_query_string({
-            "site_id": site_id or None,
-            "variant": variant or None,
-            **(query_data or {}),
-        })
-        endpoint = f"addons/{addon_name}/{addon_version}/{endpoint}"
-        if project_name:
-            endpoint = f"{endpoint}/{project_name}"
-        return f"{endpoint}{query}"

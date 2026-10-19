@@ -1190,3 +1190,82 @@ def test_site_id_without_project_name_raises(monkeypatch, method_name, args):
     method = getattr(api, method_name)
     with pytest.raises(ValueError):
         method("addon", "1.0.0", *args, site_id="site")
+
+
+@pytest.mark.parametrize(
+    "method_name, args, studio_name, project_name",
+    [
+        (
+            "set_addon_settings",
+            ({},),
+            "set_addon_studio_settings",
+            "set_addon_project_settings",
+        ),
+        (
+            "get_addon_overrides",
+            (),
+            "get_addon_studio_overrides",
+            "get_addon_project_overrides",
+        ),
+        (
+            "modify_addon_overrides",
+            ("pin", ["key"]),
+            "modify_addon_studio_overrides",
+            "modify_addon_project_overrides",
+        ),
+        (
+            "delete_addon_overrides",
+            (),
+            "delete_addon_studio_overrides",
+            "delete_addon_project_overrides",
+        ),
+        (
+            "get_addon_raw_overrides",
+            (),
+            "get_addon_studio_raw_overrides",
+            "get_addon_project_raw_overrides",
+        ),
+        (
+            "set_addon_raw_overrides",
+            ({},),
+            "set_addon_studio_raw_overrides",
+            "set_addon_project_raw_overrides",
+        ),
+    ],
+)
+def test_merged_methods_dispatch(
+    monkeypatch, method_name, args, studio_name, project_name
+):
+    """Merged methods call studio or project method by 'project_name'.
+
+    Does not require running AYON server.
+
+    """
+    api = ServerAPI("http://127.0.0.1:1", site_id=None, create_session=False)
+    calls = []
+    for name in (studio_name, project_name):
+        monkeypatch.setattr(
+            api,
+            name,
+            lambda *a, _name=name, **kw: calls.append((_name, a, kw)),
+        )
+
+    method = getattr(api, method_name)
+    method("addon", "1.0.0", *args, variant="production")
+    method(
+        "addon",
+        "1.0.0",
+        *args,
+        project_name="project",
+        variant="production",
+        site_id="site",
+    )
+
+    assert [call[0] for call in calls] == [studio_name, project_name]
+    _, studio_args, _ = calls[0]
+    _, project_args, _ = calls[1]
+    assert studio_args[:2] == ("addon", "1.0.0")
+    assert "production" in studio_args
+    assert project_args[:3] == ("addon", "1.0.0", "project")
+    assert "production" in project_args
+    assert "site" in project_args
