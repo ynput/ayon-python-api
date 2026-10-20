@@ -62,6 +62,8 @@ from ayon_api import (
 )
 from ayon_api.exceptions import HTTPRequestError
 
+from requests.exceptions import HTTPError
+
 from .conftest import project_entity_fixture, project_name_fixture
 
 
@@ -673,7 +675,7 @@ def test_set_entity_thumbnail_from_stream(test_hierarchy):
 
 
 def test_set_entity_thumbnail_invalid(test_hierarchy):
-    """Invalid inputs are refused before any request is sent."""
+    """Missing file is refused before request, unsupported type by server."""
     project_name = test_hierarchy["project_name"]
     folder_id = test_hierarchy["folder_id"]
 
@@ -685,7 +687,7 @@ def test_set_entity_thumbnail_invalid(test_hierarchy):
             os.path.join(RESOURCES_DIR, "missing-image.png"),
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(HTTPError):
         set_entity_thumbnail(
             project_name, "product", folder_id, IMAGE_PATH
         )
