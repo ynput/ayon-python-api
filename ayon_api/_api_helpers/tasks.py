@@ -98,7 +98,7 @@ class TasksAPI(BaseServerAPI):
             fields = self.get_default_fields_for_type("task")
         else:
             fields = set(fields)
-            self._prepare_fields("task", fields, own_attributes)
+        self._prepare_fields("task", fields, own_attributes)
 
         if active is not None:
             fields.add("active")
@@ -253,7 +253,6 @@ class TasksAPI(BaseServerAPI):
             fields = self.get_default_fields_for_type("task")
         else:
             fields = set(fields)
-            self._prepare_fields("task", fields, own_attributes)
 
         fields.add("folderId")
 
@@ -269,6 +268,7 @@ class TasksAPI(BaseServerAPI):
             active=active,
             filters=filters,
             fields=fields,
+            own_attributes=own_attributes,
         ):
             folder_id = task_entity["folderId"]
             folder_path = folder_path_by_id[folder_id]
