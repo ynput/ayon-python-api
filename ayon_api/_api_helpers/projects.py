@@ -298,6 +298,8 @@ class ProjectsAPI(BaseServerAPI):
         """
         if fields is not None:
             fields = set(fields)
+            if own_attributes:
+                fields.add("attrib")
 
         graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         if fetch_type == ProjectFetchType.RESTList:
@@ -358,6 +360,8 @@ class ProjectsAPI(BaseServerAPI):
         """
         if fields is not None:
             fields = set(fields)
+            if own_attributes:
+                fields.add("attrib")
 
         graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
         graphql_project = None
