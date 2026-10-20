@@ -512,10 +512,11 @@ class FoldersAPI(BaseServerAPI):
             search (Optional[str]): Fulltext search applied to both
                 folders and tasks.
             folder_search (Optional[str]): Fulltext search applied
-                to folders.
+                to folder name, label and path.
             folder_filter (Optional[AdvancedFilterDict]): Filter applied
                 to folders.
-            task_search (Optional[str]): Fulltext search applied to tasks.
+            task_search (Optional[str]): Fulltext search applied to task
+                name, label, type and folder path of the task.
             task_filter (Optional[AdvancedFilterDict]): Filter applied
                 to tasks.
 

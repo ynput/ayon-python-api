@@ -572,10 +572,16 @@ def test_search_folders(test_hierarchy):
         folder_id
     ]
 
-    # Folder name does not match task conditions
-    assert search_folders(project_name, task_search=folder_name) == []
+    # Task search matches also folder path of the task
+    assert search_folders(project_name, task_search=folder_name) == [
+        folder_id
+    ]
+
     assert search_folders(
         project_name, folder_search=f"{folder_name}_missing"
+    ) == []
+    assert search_folders(
+        project_name, task_search=f"{task_name}_missing"
     ) == []
 
 
