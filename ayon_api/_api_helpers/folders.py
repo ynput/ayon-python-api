@@ -493,6 +493,104 @@ class FoldersAPI(BaseServerAPI):
             for folder in folders
         }
 
+    def search_folders(
+        self,
+        project_name: str,
+        search: Optional[str] = None,
+        folder_search: Optional[str] = None,
+        folder_filter: Optional[AdvancedFilterDict] = None,
+        task_search: Optional[str] = None,
+        task_filter: Optional[AdvancedFilterDict] = None,
+    ) -> list[str]:
+        """Search folders using text search and filters.
+
+        Returns ids of folders matching the folder conditions, or containing
+            tasks matching the task conditions.
+
+        Args:
+            project_name (str): Project name.
+            search (Optional[str]): Fulltext search applied to both
+                folders and tasks.
+            folder_search (Optional[str]): Fulltext search applied
+                to folder name, label and path.
+            folder_filter (Optional[AdvancedFilterDict]): Filter applied
+                to folders.
+            task_search (Optional[str]): Fulltext search applied to task
+                name, label, type and folder path of the task.
+            task_filter (Optional[AdvancedFilterDict]): Filter applied
+                to tasks.
+
+        Returns:
+            list[str]: Matching folder ids.
+
+        Raises:
+            UnsupportedServerVersion: 'search' is used with server version
+                lower than 1.15.4.
+
+        """
+        if search and self.get_server_version_tuple() < (1, 15, 4):
+            raise UnsupportedServerVersion(
+                "Argument 'search' of 'search_folders' is supported"
+                " for AYON server 1.15.4 and above."
+            )
+        body = {
+            key: value
+            for key, value in (
+                ("search", search),
+                ("folderSearch", folder_search),
+                ("folderFilter", folder_filter),
+                ("taskSearch", task_search),
+                ("taskFilter", task_filter),
+            )
+            if value is not None
+        }
+        response = self.post(
+            f"projects/{project_name}/folders/search",
+            **body
+        )
+        response.raise_for_status()
+        return response.data["folderIds"]
+
+    def get_entity_groups(
+        self,
+        project_name: str,
+        entity_type: str,
+        grouping_key: str,
+        empty: bool = False,
+    ) -> dict[str, Any]:
+        """Get groups of entities based on grouping key.
+
+        Example output::
+
+            {
+                "groups": [
+                    {"value": "john.doe", "count": 42, ...},
+                    ...
+                ],
+                "key": "assignees",
+                "entityType": "task"
+            }
+
+        Args:
+            project_name (str): Project name.
+            entity_type (str): Entity type, e.g. 'folder' or 'task'.
+            grouping_key (str): Grouping key, e.g. 'status', 'tags',
+                'taskType', 'folderType', 'productType', 'productBaseType',
+                'assignees' (tasks only) or 'attrib.{attribute name}'.
+            empty (bool): Include empty groups.
+
+        Returns:
+            dict[str, Any]: Entity groups data.
+
+        """
+        query = prepare_query_string({"empty": "true" if empty else None})
+        response = self.get(
+            f"projects/{project_name}/grouping/{entity_type}/{grouping_key}"
+            f"{query}"
+        )
+        response.raise_for_status()
+        return response.data
+
     def create_folder(
         self,
         project_name: str,
