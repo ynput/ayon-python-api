@@ -11,6 +11,7 @@ from ayon_api.constants import (
     PROJECT_NAME_REGEX,
     DEFAULT_PRODUCT_TYPE_FIELDS,
 )
+from ayon_api.exceptions import UnsupportedServerVersion
 from ayon_api.utils import prepare_query_string, fill_own_attribs
 from ayon_api.graphql_queries import projects_graphql_query
 
@@ -139,6 +140,85 @@ class ProjectsAPI(BaseServerAPI):
             DeprecationWarning
         )
         return self.get_built_in_anatomy_preset()
+
+    def get_anatomy_schema(self) -> dict[str, Any]:
+        """Get anatomy JSON schema.
+
+        The schema is used to display the anatomy preset editor form.
+
+        Returns:
+            dict[str, Any]: Anatomy JSON schema.
+
+        """
+        response = self.get("anatomy/schema")
+        response.raise_for_status()
+        return response.data
+
+    def save_project_anatomy_preset(
+        self, preset_name: str, preset: AnatomyPresetDict
+    ) -> None:
+        """Create or update anatomy preset.
+
+        Built-in preset '__builtin__' and primary preset reference
+            '__primary__' cannot be updated.
+
+        Args:
+            preset_name (str): Anatomy preset name.
+            preset (AnatomyPresetDict): Anatomy preset values.
+
+        """
+        response = self.raw_put(f"anatomy/presets/{preset_name}", json=preset)
+        response.raise_for_status()
+
+    def rename_project_anatomy_preset(
+        self, preset_name: str, new_preset_name: str
+    ) -> None:
+        """Rename anatomy preset.
+
+        Args:
+            preset_name (str): Current anatomy preset name.
+            new_preset_name (str): New anatomy preset name.
+
+        """
+        response = self.post(
+            f"anatomy/presets/{preset_name}/rename",
+            name=new_preset_name,
+        )
+        response.raise_for_status()
+
+    def delete_project_anatomy_preset(self, preset_name: str) -> None:
+        """Delete anatomy preset.
+
+        Args:
+            preset_name (str): Anatomy preset name.
+
+        """
+        response = self.delete(f"anatomy/presets/{preset_name}")
+        response.raise_for_status()
+
+    def set_primary_anatomy_preset(self, preset_name: str) -> None:
+        """Set anatomy preset as primary.
+
+        Primary preset is used as default preset for new projects. Use
+            preset name '_' to unset any primary preset (built-in preset
+            is used as default).
+
+        Args:
+            preset_name (str): Anatomy preset name.
+
+        """
+        response = self.post(f"anatomy/presets/{preset_name}/primary")
+        response.raise_for_status()
+
+    def unset_primary_anatomy_preset(self, preset_name: str) -> None:
+        """Unset primary flag of anatomy preset.
+
+        Args:
+            preset_name (str): Anatomy preset name.
+
+        """
+        response = self.delete(f"anatomy/presets/{preset_name}/primary")
+        response.raise_for_status()
 
     def get_rest_project(
         self, project_name: str
@@ -544,6 +624,300 @@ class ProjectsAPI(BaseServerAPI):
                 f"Failed to delete project \"{project_name}\". {detail}"
             )
 
+    def rename_project(
+        self,
+        project_name: str,
+        new_project_name: str,
+        new_project_code: Optional[str] = None,
+    ) -> None:
+        """Rename project.
+
+        Args:
+            project_name (str): Current project name.
+            new_project_name (str): New project name.
+            new_project_code (Optional[str]): New project code. Project code
+                is unchanged if not passed.
+
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
+        """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'rename_project' is supported"
+                " for AYON server 1.15.0 and above."
+            )
+        body = {"name": new_project_name}
+        if new_project_code is not None:
+            body["code"] = new_project_code
+        response = self.post(f"projects/{project_name}/rename", **body)
+        response.raise_for_status()
+
+    def get_project_anatomy(self, project_name: str) -> AnatomyPresetDict:
+        """Get project anatomy.
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            AnatomyPresetDict: Project anatomy in anatomy preset format.
+
+        """
+        response = self.get(f"projects/{project_name}/anatomy")
+        response.raise_for_status()
+        return response.data
+
+    def set_project_anatomy(
+        self, project_name: str, anatomy: AnatomyPresetDict
+    ) -> None:
+        """Set project anatomy.
+
+        Args:
+            project_name (str): Project name.
+            anatomy (AnatomyPresetDict): Anatomy data in anatomy
+                preset format.
+
+        """
+        response = self.raw_post(
+            f"projects/{project_name}/anatomy",
+            json=anatomy,
+        )
+        response.raise_for_status()
+
+    def get_project_stats(self, project_name: str) -> dict[str, Any]:
+        """Get project statistics.
+
+        Example output::
+
+            {
+                "counts": {
+                    "folders": 10,
+                    "products": 20,
+                    "versions": 30,
+                    "representations": 40,
+                    "tasks": 50
+                }
+            }
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            dict[str, Any]: Project statistics.
+
+        """
+        response = self.get(f"projects/{project_name}/stats")
+        response.raise_for_status()
+        return response.data
+
+    def get_project_tags(self, project_name: str) -> dict[str, list[str]]:
+        """Get tags used on entities in project.
+
+        Example output::
+
+            {
+                "folders": ["tag1"],
+                "tasks": [],
+                "products": [],
+                "versions": ["tag2"],
+                "representations": [],
+                "workfiles": []
+            }
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            dict[str, list[str]]: Used tags by entity type (plural).
+
+        """
+        response = self.get(f"projects/{project_name}/tags")
+        response.raise_for_status()
+        return response.data
+
+    def get_project_bundle(
+        self, project_name: str, variant: str = "production"
+    ) -> dict[str, Any]:
+        """Get project bundle information.
+
+        Information contains addon versions used by project, installer
+            version, dependency packages and available options for each.
+
+        Args:
+            project_name (str): Project name.
+            variant (str): Bundle variant 'production' or 'staging'.
+
+        Returns:
+            dict[str, Any]: Project bundle information.
+
+        """
+        query = prepare_query_string({"variant": variant})
+        response = self.get(f"projects/{project_name}/bundle{query}")
+        response.raise_for_status()
+        return response.data
+
+    def set_project_bundle(
+        self,
+        project_name: str,
+        addons: dict[str, Optional[str]],
+        installer_version: Optional[str] = None,
+        dependency_packages: Optional[dict[str, Optional[str]]] = None,
+        variant: str = "production",
+    ) -> None:
+        """Set (freeze) project bundle.
+
+        Args:
+            project_name (str): Project name.
+            addons (dict[str, Optional[str]]): Addon versions by addon name.
+                Use 'None' to disable an addon.
+            installer_version (Optional[str]): Installer version.
+            dependency_packages (Optional[dict[str, Optional[str]]]):
+                Dependency package names by platform name.
+            variant (str): Bundle variant 'production' or 'staging'.
+
+        """
+        body = {"addons": addons}
+        if installer_version is not None:
+            body["installerVersion"] = installer_version
+        if dependency_packages is not None:
+            body["dependencyPackages"] = dependency_packages
+        query = prepare_query_string({"variant": variant})
+        response = self.post(
+            f"projects/{project_name}/bundle{query}",
+            **body
+        )
+        response.raise_for_status()
+
+    def unset_project_bundle(
+        self, project_name: str, variant: str = "production"
+    ) -> None:
+        """Unset (unfreeze) project bundle.
+
+        Args:
+            project_name (str): Project name.
+            variant (str): Bundle variant 'production' or 'staging'.
+
+        """
+        query = prepare_query_string({"variant": variant})
+        response = self.delete(f"projects/{project_name}/bundle{query}")
+        response.raise_for_status()
+
+    def get_project_entity_uris(
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_ids: Iterable[str],
+    ) -> list[dict[str, str]]:
+        """Get AYON URIs for project entities.
+
+        Example output::
+
+            [
+                {
+                    "id": "0254c370005811ee9a740242ac130004",
+                    "uri": "ayon+entity://demo/assets/hero"
+                },
+                ...
+            ]
+
+        Args:
+            project_name (str): Project name.
+            entity_type (str): Entity type, e.g. 'folder', 'task',
+                'product', 'version', 'representation' or 'workfile'.
+            entity_ids (Iterable[str]): Entity ids.
+
+        Returns:
+            list[dict[str, str]]: Entity URIs with entity ids.
+
+        """
+        response = self.post(
+            f"projects/{project_name}/uris",
+            entityType=entity_type,
+            ids=list(entity_ids),
+        )
+        response.raise_for_status()
+        return response.data["uris"]
+
+    def resolve_uris(
+        self,
+        uris: Iterable[str],
+        resolve_roots: bool = False,
+        path_only: bool = False,
+        site_id: Optional[str] = None,
+    ) -> list[dict[str, Any]]:
+        """Resolve AYON URIs to entities.
+
+        Each URI starts with 'ayon://{project_name}/{path}' with optional
+            query arguments 'product', 'version', 'representation' or
+            'task', 'workfile'.
+
+        Example output::
+
+            [
+                {
+                    "uri": "ayon://demo/assets/hero?product=modelMain",
+                    "entities": [
+                        {
+                            "projectName": "demo",
+                            "folderId": "0254c370005811ee9a740242ac130004",
+                            "productId": "0255ce50005811ee9a740242ac130004",
+                            "target": "product"
+                        }
+                    ]
+                },
+                ...
+            ]
+
+        Args:
+            uris (Iterable[str]): AYON URIs to resolve.
+            resolve_roots (bool): Resolve roots in representation paths.
+                Requires site id.
+            path_only (bool): Return only file paths of entities.
+            site_id (Optional[str]): Site id used to resolve roots. Site id
+                set on connection is used if not passed.
+
+        Returns:
+            list[dict[str, Any]]: Resolved URIs.
+
+        """
+        query = prepare_query_string({
+            "pathOnly": "true" if path_only else None,
+            "site_id": site_id,
+        })
+        response = self.post(
+            f"resolve{query}",
+            uris=list(uris),
+            resolveRoots=resolve_roots,
+        )
+        response.raise_for_status()
+        return response.data
+
+    def get_project_file_info(
+        self, project_name: str, file_id: str
+    ) -> dict[str, Any]:
+        """Get information about project file.
+
+        Example output::
+
+            {
+                "size": 1024,
+                "filename": "image.png",
+                "contentType": "image/png",
+                "mediaInfo": None
+            }
+
+        Args:
+            project_name (str): Project name.
+            file_id (str): File id.
+
+        Returns:
+            dict[str, Any]: File information.
+
+        """
+        response = self.get(f"projects/{project_name}/files/{file_id}/info")
+        response.raise_for_status()
+        return response.data
+
     def get_raw_project_folders(self) -> dict[str, Any]:
         """Get project folders (raw data)."""
         response = self.get("projectFolders")
@@ -687,6 +1061,30 @@ class ProjectsAPI(BaseServerAPI):
             return {}
         roots = self.get_project_root_overrides(project_name)
         return roots.get(site_id, {})
+
+    def set_project_root_overrides(
+        self,
+        project_name: str,
+        site_id: str,
+        roots: dict[str, Optional[str]],
+    ) -> None:
+        """Set root overrides of logged user for a site.
+
+        Roots defined in project anatomy with empty value are removed,
+            and all overrides for the site are removed if no root value
+            is left.
+
+        Args:
+            project_name (str): Project name.
+            site_id (str): Site id for which overrides are set.
+            roots (dict[str, Optional[str]]): Root values by root name.
+
+        """
+        response = self.raw_put(
+            f"projects/{project_name}/roots/{site_id}",
+            json=roots,
+        )
+        response.raise_for_status()
 
     def get_project_roots_for_site(
         self, project_name: str, site_id: Optional[str] = None

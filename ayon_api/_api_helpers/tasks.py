@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Optional, Iterable, Generator, Any
+from typing import Optional, Iterable, Generator, Any, Literal
 
 from ayon_api.utils import (
     prepare_list_filters,
@@ -511,5 +511,34 @@ class TasksAPI(BaseServerAPI):
         """
         response = self.delete(
             f"projects/{project_name}/tasks/{task_id}"
+        )
+        response.raise_for_status()
+
+    def assign_users_to_task(
+        self,
+        project_name: str,
+        task_id: str,
+        users: Iterable[str],
+        mode: Literal["add", "remove", "set"] = "add",
+    ) -> None:
+        """Change users assigned to a task.
+
+        Notes:
+            Users without manager role can only assign or unassign
+                themselves.
+
+        Args:
+            project_name (str): Project name.
+            task_id (str): Task id.
+            users (Iterable[str]): User names.
+            mode (Literal["add", "remove", "set"]): How passed users are
+                applied. 'add' adds users to current assignees, 'remove'
+                removes them and 'set' replaces assignees with passed users.
+
+        """
+        response = self.post(
+            f"projects/{project_name}/tasks/{task_id}/assign",
+            mode=mode,
+            users=list(users),
         )
         response.raise_for_status()

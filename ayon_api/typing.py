@@ -51,6 +51,13 @@ EntityListScope = Literal[
     "review-session",
 ]
 
+ReviewablesEntityType = Literal[
+    "folder",
+    "product",
+    "version",
+    "task",
+]
+
 EventFilterValueType = Union[
     None,
     str, int, float,
