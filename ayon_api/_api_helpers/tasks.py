@@ -64,7 +64,7 @@ class TasksAPI(BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (Optional[bool]): Fill 'own_attrib' with
+            own_attributes (Optional[bool]): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 
@@ -138,7 +138,7 @@ class TasksAPI(BaseServerAPI):
             task_name (str): Task name
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Fill 'own_attrib' with
+            own_attributes (Optional[bool]): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 
@@ -172,7 +172,7 @@ class TasksAPI(BaseServerAPI):
             task_id (str): Task id.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Fill 'own_attrib' with
+            own_attributes (Optional[bool]): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 
@@ -228,7 +228,7 @@ class TasksAPI(BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (Optional[bool]): Fill 'own_attrib' with
+            own_attributes (Optional[bool]): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 
@@ -316,7 +316,7 @@ class TasksAPI(BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (Optional[bool]): Fill 'own_attrib' with
+            own_attributes (Optional[bool]): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 
@@ -351,7 +351,7 @@ class TasksAPI(BaseServerAPI):
             task_name (str): Task name.
             fields (Optional[Iterable[str]]): Task fields that should
                 be returned.
-            own_attributes (Optional[bool]): Fill 'own_attrib' with
+            own_attributes (Optional[bool]): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 

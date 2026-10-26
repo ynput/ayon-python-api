@@ -1210,7 +1210,7 @@ class ServerAPI(
                         own_attrib.setdefault(name, None)
 
                     user["attrib"] = attrib
-                    user["own_attrib"] = copy.deepcopy(own_attrib)
+                    user["own_attributes"] = copy.deepcopy(own_attrib)
 
                 yield user
 

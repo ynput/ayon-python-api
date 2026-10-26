@@ -264,7 +264,7 @@ class RestApiResponse:
 def fill_own_attribs(entity: AnyEntityDict) -> None:
     """Fill own attributes.
 
-    Prepare data with own attributes to 'own_attrib'. Prepare data based on
+    Prepare data with own attributes to 'own_attributes'. Prepare data based on
         a list of attribute names in 'ownAttrib' and 'attrib'. If is not
         attribute in 'ownAttrib' then it's value is set to 'None'.
 
@@ -293,7 +293,7 @@ def fill_own_attribs(entity: AnyEntityDict) -> None:
         else:
             own_attrib[key] = copy.deepcopy(value)
 
-    entity["own_attrib"] = own_attrib
+    entity["own_attributes"] = own_attrib
     # TODO remove when nothing uses 'ownAttrib' as dictionary,
     #   it should be list of attribute names as returned from server
     entity["ownAttrib"] = copy.deepcopy(own_attrib)

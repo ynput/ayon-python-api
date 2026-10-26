@@ -5173,7 +5173,7 @@ def get_projects(
         include_skeleton (bool): Include skeleton projects.
         fields (Optional[Iterable[str]]): fields to be queried
             for project.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -5202,7 +5202,7 @@ def get_project(
         project_name (str): Name of project.
         fields (Optional[Iterable[str]]): fields to be queried
             for project.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6130,7 +6130,7 @@ def get_folders(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6175,7 +6175,7 @@ def get_folder_by_id(
         folder_id (str): Folder id.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6209,7 +6209,7 @@ def get_folder_by_path(
         folder_path (str): Folder path.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6245,7 +6245,7 @@ def get_folder_by_name(
         folder_name (str): Folder name.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6558,7 +6558,7 @@ def get_tasks(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6600,7 +6600,7 @@ def get_task_by_name(
         task_name (str): Task name
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6632,7 +6632,7 @@ def get_task_by_id(
         task_id (str): Task id.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6686,7 +6686,7 @@ def get_tasks_by_folder_paths(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6747,7 +6747,7 @@ def get_tasks_by_folder_path(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
@@ -6783,7 +6783,7 @@ def get_task_by_folder_path(
         task_name (str): Task name.
         fields (Optional[Iterable[str]]): Task fields that should
             be returned.
-        own_attributes (Optional[bool]): Fill 'own_attrib' with
+        own_attributes (Optional[bool]): Fill 'own_attributes' with
             attribute values that are explicitly set on entity, other
             attributes have 'None' value.
 
