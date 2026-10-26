@@ -919,7 +919,11 @@ class EventHub:
         else:
             self.emit_event(Event(self.TOPIC_CONNECTION_CLOSED))
 
-    def _on_connection_lost(self, stop_event: threading.Event) -> None:
+    def _on_connection_lost(
+        self,
+        stop_event: threading.Event,
+        exc: Exception | None = None,
+    ) -> None:
         state = self._loop_state
         received_message = state.received_message
         state.received_message = False
@@ -927,6 +931,12 @@ class EventHub:
         if stop_event.is_set():
             return
 
+        # Log only first failure, reconnection attempts would spam the log
+        if state.connected is not False:
+            self._log.warning(
+                "Lost connection to AYON server websocket: %s",
+                exc if exc is not None else "Closed by server",
+            )
         self._set_connected(False)
 
         # Server closes unauthorized clients after few seconds without
@@ -972,10 +982,10 @@ class EventHub:
 
                 try:
                     ws_con = self._create_ws_connection()
-                except Exception:
+                except Exception as exc:
                     # Server is not available (connection refused, timeout,
                     #   502 from proxy during restart, ssl error...)
-                    self._on_connection_lost(stop_event)
+                    self._on_connection_lost(stop_event, exc)
                     continue
 
                 with self._thread_lock:
@@ -995,15 +1005,15 @@ class EventHub:
                 }
                 try:
                     ws_con.send(json.dumps(subscribe_payload))
-                except Exception:
-                    self._on_connection_lost(stop_event)
+                except Exception as exc:
+                    self._on_connection_lost(stop_event, exc)
                 continue
 
             try:
                 op_code, message = ws_con.recv_data()
-            except Exception:
+            except Exception as exc:
                 # Timeout (no heartbeat), closed connection, socket error...
-                self._on_connection_lost(stop_event)
+                self._on_connection_lost(stop_event, exc)
                 continue
 
             if op_code == ABNF.OPCODE_CLOSE:
