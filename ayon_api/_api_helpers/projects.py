@@ -369,7 +369,7 @@ class ProjectsAPI(BaseServerAPI):
             include_skeleton (bool): Include skeleton projects.
             fields (Optional[Iterable[str]]): fields to be queried
                 for project.
-            own_attributes (Optional[bool]): Fill 'own_attributes' with
+            own_attributes (bool): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 
@@ -431,7 +431,7 @@ class ProjectsAPI(BaseServerAPI):
             project_name (str): Name of project.
             fields (Optional[Iterable[str]]): fields to be queried
                 for project.
-            own_attributes (Optional[bool]): Fill 'own_attributes' with
+            own_attributes (bool): Fill 'own_attributes' with
                 attribute values that are explicitly set on entity, other
                 attributes have 'None' value.
 
