@@ -129,9 +129,7 @@ class BaseServerAPI:
         raise NotImplementedError()
 
     def get_user(
-        self,
-        username: Optional[str] = None,
-        own_attributes: bool = False,
+        self, username: Optional[str] = None
     ) -> Optional[dict[str, Any]]:
         raise NotImplementedError()
 
