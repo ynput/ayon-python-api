@@ -802,6 +802,7 @@ def get_users(
     usernames: Iterable[str] | None = None,
     emails: Iterable[str] | None = None,
     fields: Iterable[str] | None = None,
+    own_attributes: bool = False,
 ) -> Generator[dict[str, Any], None, None]:
     """Get Users.
 
@@ -814,6 +815,9 @@ def get_users(
         emails (Iterable[str] | None): Filter by emails.
         fields (Iterable[str] | None): Fields to be queried
             for users.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on user, other
+            attributes have 'None' value.
 
     Returns:
         Generator[dict[str, Any], None, None]: Queried users.
@@ -825,6 +829,7 @@ def get_users(
         usernames=usernames,
         emails=emails,
         fields=fields,
+        own_attributes=own_attributes,
     )
 
 
@@ -832,6 +837,7 @@ def get_user_by_name(
     username: str,
     project_name: str | None = None,
     fields: Iterable[str] | None = None,
+    own_attributes: bool = False,
 ) -> dict[str, Any] | None:
     """Get user by name using GraphQl.
 
@@ -842,6 +848,9 @@ def get_user_by_name(
         username (str): Username.
         project_name (str | None): Define scope of project.
         fields (Iterable[str] | None): Fields to be queried for users.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on user, other
+            attributes have 'None' value.
 
     Returns:
         dict[str, Any] | None: User info or None if user is not found.
@@ -852,11 +861,13 @@ def get_user_by_name(
         username=username,
         project_name=project_name,
         fields=fields,
+        own_attributes=own_attributes,
     )
 
 
 def get_user(
     username: str | None = None,
+    own_attributes: bool = False,
 ) -> dict[str, Any] | None:
     """Get user info using REST endpoint.
 
@@ -864,6 +875,9 @@ def get_user(
 
     Args:
         username (str | None): Username.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on user, other
+            attributes have 'None' value.
 
     Returns:
         dict[str, Any] | None: User info or None if user is not
@@ -873,6 +887,7 @@ def get_user(
     con = get_server_api_connection()
     return con.get_user(
         username=username,
+        own_attributes=own_attributes,
     )
 
 
@@ -5173,8 +5188,9 @@ def get_projects(
         include_skeleton (bool): Include skeleton projects.
         fields (Optional[Iterable[str]]): fields to be queried
             for project.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Generator[ProjectDict, None, None]: Queried projects.
@@ -5201,8 +5217,9 @@ def get_project(
         project_name (str): Name of project.
         fields (Optional[Iterable[str]]): fields to be queried
             for project.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Optional[ProjectDict]: Project entity data or None
@@ -6128,8 +6145,9 @@ def get_folders(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Generator[FolderDict, None, None]: Queried folder entities.
@@ -6172,8 +6190,9 @@ def get_folder_by_id(
         folder_id (str): Folder id.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Optional[FolderDict]: Folder entity data or None
@@ -6205,8 +6224,9 @@ def get_folder_by_path(
         folder_path (str): Folder path.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Optional[FolderDict]: Folder entity data or None
@@ -6240,8 +6260,9 @@ def get_folder_by_name(
         folder_name (str): Folder name.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Optional[FolderDict]: Folder entity data or None
@@ -6552,8 +6573,9 @@ def get_tasks(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Generator[TaskDict, None, None]: Queried task entities.
@@ -6593,8 +6615,9 @@ def get_task_by_name(
         task_name (str): Task name
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Optional[TaskDict]: Task entity data or None if was not found.
@@ -6624,8 +6647,9 @@ def get_task_by_id(
         task_id (str): Task id.
         fields (Optional[Iterable[str]]): Fields that should be returned.
             All fields are returned if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Optional[TaskDict]: Task entity data or None if was not found.
@@ -6677,8 +6701,9 @@ def get_tasks_by_folder_paths(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         dict[str, list[TaskDict]]: Task entities by
@@ -6737,8 +6762,9 @@ def get_tasks_by_folder_path(
         fields (Optional[Iterable[str]]): Fields to be queried for
             folder. All possible folder fields are returned
             if 'None' is passed.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     """
     con = get_server_api_connection()
@@ -6772,8 +6798,9 @@ def get_task_by_folder_path(
         task_name (str): Task name.
         fields (Optional[Iterable[str]]): Task fields that should
             be returned.
-        own_attributes (Optional[bool]): Attribute values that are
-            not explicitly set on entity will have 'None' value.
+        own_attributes (bool): Fill 'own_attributes' with
+            attribute values that are explicitly set on entity, other
+            attributes have 'None' value.
 
     Returns:
         Optional[TaskDict]: Task entity data or None if was not found.

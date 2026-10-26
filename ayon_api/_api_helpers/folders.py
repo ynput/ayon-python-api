@@ -263,8 +263,9 @@ class FoldersAPI(BaseServerAPI):
             fields (Optional[Iterable[str]]): Fields to be queried for
                 folder. All possible folder fields are returned
                 if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (bool): Fill 'own_attributes' with
+                attribute values that are explicitly set on entity, other
+                attributes have 'None' value.
 
         Returns:
             Generator[FolderDict, None, None]: Queried folder entities.
@@ -360,8 +361,9 @@ class FoldersAPI(BaseServerAPI):
             folder_id (str): Folder id.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (bool): Fill 'own_attributes' with
+                attribute values that are explicitly set on entity, other
+                attributes have 'None' value.
 
         Returns:
             Optional[FolderDict]: Folder entity data or None
@@ -396,8 +398,9 @@ class FoldersAPI(BaseServerAPI):
             folder_path (str): Folder path.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (bool): Fill 'own_attributes' with
+                attribute values that are explicitly set on entity, other
+                attributes have 'None' value.
 
         Returns:
             Optional[FolderDict]: Folder entity data or None
@@ -434,8 +437,9 @@ class FoldersAPI(BaseServerAPI):
             folder_name (str): Folder name.
             fields (Optional[Iterable[str]]): Fields that should be returned.
                 All fields are returned if 'None' is passed.
-            own_attributes (Optional[bool]): Attribute values that are
-                not explicitly set on entity will have 'None' value.
+            own_attributes (bool): Fill 'own_attributes' with
+                attribute values that are explicitly set on entity, other
+                attributes have 'None' value.
 
         Returns:
             Optional[FolderDict]: Folder entity data or None
