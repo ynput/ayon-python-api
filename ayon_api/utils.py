@@ -276,7 +276,7 @@ def fill_own_attribs(entity: AnyEntityDict) -> None:
         entity (dict): Entity dictionary.
 
     """
-    if not entity or entity.get("attrib") is None:
+    if not entity or not entity.get("attrib"):
         return
 
     attributes = entity.get("ownAttrib")
