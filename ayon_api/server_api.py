@@ -1127,6 +1127,7 @@ class ServerAPI(
         usernames: Iterable[str] | None = None,
         emails: Iterable[str] | None = None,
         fields: Iterable[str] | None = None,
+        own_attributes: bool = False,
     ) -> Generator[dict[str, Any], None, None]:
         """Get Users.
 
@@ -1139,6 +1140,9 @@ class ServerAPI(
             emails (Iterable[str] | None): Filter by emails.
             fields (Iterable[str] | None): Fields to be queried
                 for users.
+            own_attributes (bool): Attribute values that are
+                not explicitly set on user will have 'None' value
+                in 'ownAttrib'.
 
         Returns:
             Generator[dict[str, Any], None, None]: Queried users.
@@ -1195,13 +1199,14 @@ class ServerAPI(
                     attrib = json.loads(attrib)
 
                 if attrib is not None:
-                    own_attrib = copy.deepcopy(attrib)
-                    user["ownAttrib"] = own_attrib
+                    user["ownAttrib"] = list(attrib)
                     for name, attr_data in attributes.items():
                         attrib.setdefault(name, attr_data["default"])
-                        own_attrib.setdefault(name, None)
 
                     user["attrib"] = attrib
+
+                if own_attributes:
+                    fill_own_attribs(user)
 
                 yield user
 
@@ -1210,6 +1215,7 @@ class ServerAPI(
         username: str,
         project_name: str | None = None,
         fields: Iterable[str] | None = None,
+        own_attributes: bool = False,
     ) -> dict[str, Any] | None:
         """Get user by name using GraphQl.
 
@@ -1220,6 +1226,9 @@ class ServerAPI(
             username (str): Username.
             project_name (str | None): Define scope of project.
             fields (Iterable[str] | None): Fields to be queried for users.
+            own_attributes (bool): Attribute values that are
+                not explicitly set on user will have 'None' value
+                in 'ownAttrib'.
 
         Returns:
             dict[str, Any] | None: User info or None if user is not found.
@@ -1232,12 +1241,15 @@ class ServerAPI(
             project_name=project_name,
             usernames={username},
             fields=fields,
+            own_attributes=own_attributes,
         ):
             return user
         return None
 
     def get_user(
-        self, username: str | None = None
+        self,
+        username: str | None = None,
+        own_attributes: bool = False,
     ) -> dict[str, Any] | None:
         """Get user info using REST endpoint.
 
@@ -1245,6 +1257,9 @@ class ServerAPI(
 
         Args:
             username (str | None): Username.
+            own_attributes (bool): Attribute values that are
+                not explicitly set on user will have 'None' value
+                in 'ownAttrib'.
 
         Returns:
             dict[str, Any] | None: User info or None if user is not
@@ -1264,7 +1279,8 @@ class ServerAPI(
         for attr_name, attr_data in attributes.items():
             user["attrib"].setdefault(attr_name, attr_data["default"])
 
-        fill_own_attribs(user)
+        if own_attributes:
+            fill_own_attribs(user)
         return user
 
     def get_headers(

@@ -801,6 +801,7 @@ def get_users(
     usernames: Iterable[str] | None = None,
     emails: Iterable[str] | None = None,
     fields: Iterable[str] | None = None,
+    own_attributes: bool = False,
 ) -> Generator[dict[str, Any], None, None]:
     """Get Users.
 
@@ -813,6 +814,9 @@ def get_users(
         emails (Iterable[str] | None): Filter by emails.
         fields (Iterable[str] | None): Fields to be queried
             for users.
+        own_attributes (bool): Attribute values that are
+            not explicitly set on user will have 'None' value
+            in 'ownAttrib'.
 
     Returns:
         Generator[dict[str, Any], None, None]: Queried users.
@@ -824,6 +828,7 @@ def get_users(
         usernames=usernames,
         emails=emails,
         fields=fields,
+        own_attributes=own_attributes,
     )
 
 
@@ -831,6 +836,7 @@ def get_user_by_name(
     username: str,
     project_name: str | None = None,
     fields: Iterable[str] | None = None,
+    own_attributes: bool = False,
 ) -> dict[str, Any] | None:
     """Get user by name using GraphQl.
 
@@ -841,6 +847,9 @@ def get_user_by_name(
         username (str): Username.
         project_name (str | None): Define scope of project.
         fields (Iterable[str] | None): Fields to be queried for users.
+        own_attributes (bool): Attribute values that are
+            not explicitly set on user will have 'None' value
+            in 'ownAttrib'.
 
     Returns:
         dict[str, Any] | None: User info or None if user is not found.
@@ -851,11 +860,13 @@ def get_user_by_name(
         username=username,
         project_name=project_name,
         fields=fields,
+        own_attributes=own_attributes,
     )
 
 
 def get_user(
     username: str | None = None,
+    own_attributes: bool = False,
 ) -> dict[str, Any] | None:
     """Get user info using REST endpoint.
 
@@ -863,6 +874,9 @@ def get_user(
 
     Args:
         username (str | None): Username.
+        own_attributes (bool): Attribute values that are
+            not explicitly set on user will have 'None' value
+            in 'ownAttrib'.
 
     Returns:
         dict[str, Any] | None: User info or None if user is not
@@ -872,6 +886,7 @@ def get_user(
     con = get_server_api_connection()
     return con.get_user(
         username=username,
+        own_attributes=own_attributes,
     )
 
 
