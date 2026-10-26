@@ -323,13 +323,10 @@ class FoldersAPI(BaseServerAPI):
             fields = self.get_default_fields_for_type("folder")
         else:
             fields = set(fields)
-            self._prepare_fields("folder", fields)
+        self._prepare_fields("folder", fields, own_attributes)
 
         if active is not None:
             fields.add("active")
-
-        if own_attributes:
-            fields.add("ownAttrib")
 
         self._prepare_link_fields(fields)
 

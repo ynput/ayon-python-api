@@ -2913,6 +2913,8 @@ class ServerAPI(
             if entity_type == "project":
                 add_all_attrib = True
             elif entity_type in {"folder", "task"}:
+                # Attribute values are needed to fill 'ownAttrib'
+                add_all_attrib = True
                 fields.add("ownAttrib")
 
         if add_all_attrib:
