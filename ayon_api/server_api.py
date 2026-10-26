@@ -15,6 +15,7 @@ import ssl
 import time
 import logging
 import platform
+import socket
 import uuid
 from contextlib import contextmanager
 import typing
@@ -113,6 +114,64 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
+
+
+def _get_requests_ca_bundle() -> str | None:
+    """CA bundle used by 'requests' for ssl verification.
+
+    Returns:
+        str | None: Path to CA bundle file or directory.
+
+    """
+    # Same order as 'requests' uses when 'trust_env' is enabled
+    for env_key in ("REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
+        path = os.environ.get(env_key)
+        if path:
+            return path
+    try:
+        from requests.certs import where
+
+        return where()
+    except Exception:
+        return None
+
+
+def _disable_websocket_ipv6() -> None:
+    """Skip IPv6 addresses in 'websocket' when python does not support IPv6.
+
+    Some DCC pythons are built without IPv6 support (e.g. Flame's on macOS).
+        'websocket' tries resolved addresses in order and fails on the first
+        IPv6 address with 'connect(): bad family' instead of trying the next
+        one. As 'localhost' resolves to '::1' first, websocket never
+        connected while REST requests (which use only IPv4) did work.
+
+    """
+    if socket.has_ipv6:
+        return
+
+    try:
+        from websocket import _http
+    except ImportError:
+        return
+
+    # Private function of 'websocket', skip if not available
+    get_addrinfo_list = getattr(_http, "_get_addrinfo_list", None)
+    if get_addrinfo_list is None or getattr(
+        get_addrinfo_list, "_ayon_ipv6_disabled", False
+    ):
+        return
+
+    def _get_ipv4_addrinfo_list(*args, **kwargs):
+        addrinfo_list, *other = get_addrinfo_list(*args, **kwargs)
+        ipv4_addrinfo_list = [
+            addrinfo
+            for addrinfo in addrinfo_list
+            if addrinfo[0] != socket.AF_INET6
+        ]
+        return (ipv4_addrinfo_list or addrinfo_list, *other)
+
+    _get_ipv4_addrinfo_list._ayon_ipv6_disabled = True
+    _http._get_addrinfo_list = _get_ipv4_addrinfo_list
 
 
 class GraphQlResponse:
@@ -927,8 +986,19 @@ class ServerAPI(
         prepared_sslopt = copy.deepcopy(sslopt) if sslopt else {}
         if self._ssl_verify is False:
             prepared_sslopt.setdefault("cert_reqs", ssl.CERT_NONE)
-        elif isinstance(self._ssl_verify, str):
-            prepared_sslopt.setdefault("ca_certs", self._ssl_verify)
+        else:
+            # Verify with the same CA bundle as REST requests do. Without
+            #   it 'websocket' uses system certificates of the python ssl
+            #   module, which might be missing (e.g. python on macOS), so
+            #   REST would work but websocket would always fail.
+            ca_bundle = self._ssl_verify
+            if not isinstance(ca_bundle, str):
+                ca_bundle = _get_requests_ca_bundle()
+            if ca_bundle:
+                key = "ca_certs"
+                if os.path.isdir(ca_bundle):
+                    key = "ca_cert_path"
+                prepared_sslopt.setdefault(key, ca_bundle)
 
         if self._cert:
             prepared_sslopt.setdefault("certfile", self._cert)
@@ -936,6 +1006,7 @@ class ServerAPI(
         if ws_url.startswith("wss://") and prepared_sslopt:
             ws_kwargs["sslopt"] = prepared_sslopt
 
+        _disable_websocket_ipv6()
         return websocket.create_connection(ws_url, **ws_kwargs)
 
     def _update_session_headers(self) -> None:
