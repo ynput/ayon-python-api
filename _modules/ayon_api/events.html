@@ -1,0 +1,1258 @@
+
+	
+
+<!DOCTYPE html>
+<html class="writer-html5 " lang="en" >
+<head>
+	<meta charset="utf-8">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+		<title>ayon_api.events &mdash; ayon-python-api 1.2.25 documentation</title>
+	
+	
+	
+	<link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+	<link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+	<link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+	
+	
+	
+	
+		<link rel="canonical" href="https://github.com/ynput/ayon-python-api_modules/ayon_api/events.html"/>
+	
+
+	
+	<!--[if lt IE 9]>
+		<script src="../../_static/js/html5shiv.min.js"></script>
+	<![endif]-->
+	
+		
+			<script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+				<script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+				<script src="../../_static/doctools.js"></script>
+				<script src="../../_static/sphinx_highlight.js"></script>
+		
+		<script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+		
+		<link rel="index" title="Index" href="../../genindex.html" />
+		<link rel="search" title="Search" href="../../search.html" /> 
+</head>
+<body class="wy-body-for-nav">
+
+
+	 
+	<div class="wy-grid-for-nav">
+		
+		<nav data-toggle="wy-nav-shift" class="wy-nav-side">
+			<div class="wy-side-scroll">
+				<div class="wy-side-nav-search">
+					
+						<div class="brand">
+							<a href="../../index.html">
+							
+								ayon-python-api
+							
+							</a>
+						</div>
+						
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+					
+				</div>
+				
+				<div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+					
+						
+						
+							
+						
+						
+							<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ayon_api</a></li>
+</ul>
+
+						
+					
+				</div>
+				
+			</div>
+		</nav>
+
+		<section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+			
+			<nav class="wy-nav-top" aria-label="top navigation">
+			
+				<i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+				<a href="../../index.html">
+					
+						ayon-python-api
+					
+				</a>
+			
+			</nav>
+
+
+			<div class="wy-nav-content">
+				
+				<div class="rst-content">
+				
+					<div role="navigation" aria-label="breadcrumbs navigation">
+
+	<ul class="wy-breadcrumbs">
+		
+			
+				<li><a href="../../index.html">ayon-python-api</a> ⁄&nbsp;</li>
+				
+					<li><a href="../index.html">Module code</a> ⁄&nbsp;</li>
+				
+				<li><a href="">ayon_api.events</a></li>
+			
+		
+		
+			<li class="wy-breadcrumbs-aside">
+			
+				<a href="https://github.com/ynput/ayon-python-api" class="fa fa-github-alt"></a>
+			
+			</li>
+		
+	</ul>
+
+</div>
+					<div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+					 <div itemprop="articleBody">
+						
+  <h1>Source code for ayon_api.events</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">atexit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">weakref</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">websocket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABNF</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnauthorizedError</span>
+
+<span class="k">if</span> <span class="n">typing</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">websocket</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebSocket</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.server_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ServerAPI</span>
+
+
+<div class="viewcode-block" id="Event"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.Event">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Event</span><span class="p">:</span>
+    <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">sender</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">event_hash</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">project_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">dependencies</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Event.get"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.Event.get">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Event.from_ws_message"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.Event.from_ws_message">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_ws_message</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Event</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">topic</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"topic"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">topic</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">topic</span><span class="o">=</span><span class="n">topic</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">),</span>
+            <span class="n">sender</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sender"</span><span class="p">),</span>
+            <span class="n">event_hash</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"eventHash"</span><span class="p">),</span>
+            <span class="n">project_name</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"project"</span><span class="p">),</span>
+            <span class="n">dependencies</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dependsOn"</span><span class="p">),</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">),</span>
+            <span class="n">summary</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"summary"</span><span class="p">),</span>
+            <span class="n">payload</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"payload"</span><span class="p">),</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">),</span>
+            <span class="n">store</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"store"</span><span class="p">),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="is_func_signature_supported"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.is_func_signature_supported">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">is_func_signature_supported</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Check if a function signature supports passed args and kwargs.</span>
+
+<span class="sd">    This check does not actually call the function, just look if function can</span>
+<span class="sd">    be called with the arguments.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        This does NOT check if the function would work with passed arguments</span>
+<span class="sd">            only if they can be passed in. If function have *args, **kwargs</span>
+<span class="sd">            in parameters, this will always return 'True'.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; def my_function(my_number):</span>
+<span class="sd">        ...     return my_number + 1</span>
+<span class="sd">        ...</span>
+<span class="sd">        &gt;&gt;&gt; is_func_signature_supported(my_function, 1)</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; is_func_signature_supported(my_function, 1, 2)</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; is_func_signature_supported(my_function, my_number=1)</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; is_func_signature_supported(my_function, number=1)</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; is_func_signature_supported(my_function, "string")</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; def my_other_function(*args, **kwargs):</span>
+<span class="sd">        ...     my_function(*args, **kwargs)</span>
+<span class="sd">        ...</span>
+<span class="sd">        &gt;&gt;&gt; is_func_signature_supported(</span>
+<span class="sd">        ...     my_other_function,</span>
+<span class="sd">        ...     "string",</span>
+<span class="sd">        ...     1,</span>
+<span class="sd">        ...     other=None</span>
+<span class="sd">        ... )</span>
+<span class="sd">        True</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        func (Callable): A function where the signature should be tested.</span>
+<span class="sd">        *args (Any): Positional arguments for function signature.</span>
+<span class="sd">        **kwargs (Any): Keyword arguments for function signature.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: Function can pass in arguments.</span>
+
+<span class="sd">    """</span>
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">sig</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_func_ref</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakMethod</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_func_info</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="s2">"&lt;unknown path&gt;"</span>
+    <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"&lt;unknown&gt;"</span><span class="p">,</span> <span class="n">path</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">"__name__"</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="c1"># Get path to file and fallback to '&lt;unknown path&gt;' if fails</span>
+    <span class="c1"># NOTE This was added because of 'partial' functions which is handled,</span>
+    <span class="c1">#   but who knows what else can cause this to fail?</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="n">func</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">name</span><span class="p">,</span> <span class="n">path</span>
+
+
+<div class="viewcode-block" id="weakref_partial"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.weakref_partial">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">weakref_partial</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Partial function with weak reference to the wrapped function.</span>
+
+<span class="sd">    Can be used as 'functools.partial' but it will store weak reference to</span>
+<span class="sd">        function. That means that the function must be reference counted</span>
+<span class="sd">        to avoid garbage collecting the function itself.</span>
+
+<span class="sd">        When the referenced functions is garbage collected then calling the</span>
+<span class="sd">        weakref partial (no matter the args/kwargs passed) will do nothing.</span>
+<span class="sd">        It will fail silently, returning `None`. The `is_valid()` method can</span>
+<span class="sd">        be used to detect whether the reference is still valid.</span>
+
+<span class="sd">    Is useful for object methods. In that case the callback is</span>
+<span class="sd">        deregistered when object is destroyed.</span>
+
+<span class="sd">    Warnings:</span>
+<span class="sd">        Values passed as *args and **kwargs are stored strongly in memory.</span>
+<span class="sd">            That may "keep alive" objects that should be already destroyed.</span>
+<span class="sd">            It is recommended to pass only immutable objects like 'str',</span>
+<span class="sd">            'bool', 'int' etc.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        func (Callable): Function to wrap.</span>
+<span class="sd">        *args: Arguments passed to the wrapped function.</span>
+<span class="sd">        **kwargs: Keyword arguments passed to the wrapped function.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">:</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">_get_func_ref</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">new_args</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+        <span class="n">new_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">)</span>
+        <span class="n">new_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">new_args</span><span class="p">,</span> <span class="o">**</span><span class="n">new_kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="weakref_partial.get_func"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.weakref_partial.get_func">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get wrapped function.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Callable | None: Wrapped function or None if it was destroyed.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="weakref_partial.is_valid"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.weakref_partial.is_valid">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check if wrapped function is still valid.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Is wrapped function still valid.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="weakref_partial.validate_signature"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.weakref_partial.validate_signature">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Validate if passed arguments are supported by wrapped function.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Are passed arguments supported by wrapped function.</span>
+
+<span class="sd">        """</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">new_args</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+        <span class="n">new_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">)</span>
+        <span class="n">new_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">is_func_signature_supported</span><span class="p">(</span>
+            <span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">new_args</span><span class="p">,</span> <span class="o">**</span><span class="n">new_kwargs</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="EventCallback"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">EventCallback</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Callback registered to a topic.</span>
+
+<span class="sd">    The callback function is registered to a topic. Topic is a string which</span>
+<span class="sd">    may contain '*' that will be handled as "any characters".</span>
+
+<span class="sd">    # Examples:</span>
+<span class="sd">    - "entity.folder.attr_changed" - Callback will be triggered if the event</span>
+<span class="sd">        topic is exactly "entity.folder.attr_changed".</span>
+<span class="sd">    - "entity.*" - Callback will be triggered an event topic starts with</span>
+<span class="sd">        "entity." so "entity.folder.created" and "entity.version.created"</span>
+<span class="sd">        will trigger the callback.</span>
+<span class="sd">    - "*" Callback will listen to all events.</span>
+
+<span class="sd">    Callback can be function or method. In both cases it should expect one</span>
+<span class="sd">    or none arguments. When 1 argument is expected then the processed 'Event'</span>
+<span class="sd">    object is passed in.</span>
+
+<span class="sd">    The callbacks are validated against their reference counter, that is</span>
+<span class="sd">        achieved using 'weakref' module. That means that the callback must</span>
+<span class="sd">        be stored in memory somewhere. e.g. lambda functions are not</span>
+<span class="sd">        supported as valid callback.</span>
+
+<span class="sd">    You can use 'weakref_partial' functions. In that case is partial object</span>
+<span class="sd">        stored in the callback object and reference counter is checked for</span>
+<span class="sd">        the wrapped function.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        topic (str): Topic which will be listened.</span>
+<span class="sd">        func (Callable): Callback to a topic.</span>
+<span class="sd">        order (int | None): Order of callback. Lower number means higher</span>
+<span class="sd">            priority.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: When passed function is not a callable object.</span>
+<span class="sd">    """</span>
+    <span class="n">default_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Registered callback is not callable. </span><span class="se">\"</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="se">\"</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_topic</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">topic</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># Replace '*' with any character regex and escape rest of text</span>
+        <span class="c1">#   - when callback is registered for '*' topic it will receive all</span>
+        <span class="c1">#       events</span>
+        <span class="c1">#   - it is possible to register to a partial topis 'my.event.*'</span>
+        <span class="c1">#       - it will receive all matching event topics</span>
+        <span class="c1">#           e.g. 'my.event.start' and 'my.event.end'</span>
+        <span class="n">topic_regex_str</span> <span class="o">=</span> <span class="s2">"^</span><span class="si">{}</span><span class="s2">$"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="s2">".+"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">topic</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"*"</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">topic_regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">topic_regex_str</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_topic_regex</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span> <span class="o">=</span> <span class="n">topic_regex</span>
+
+        <span class="c1"># Callback function prep</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">weakref_partial</span><span class="p">):</span>
+            <span class="n">partial_func</span> <span class="o">=</span> <span class="n">func</span>
+            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">=</span> <span class="n">_get_func_info</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">get_func</span><span class="p">())</span>
+            <span class="n">func_ref</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">expect_args</span> <span class="o">=</span> <span class="n">partial_func</span><span class="o">.</span><span class="n">validate_signature</span><span class="p">(</span><span class="s2">"fake"</span><span class="p">)</span>
+            <span class="n">expect_kwargs</span> <span class="o">=</span> <span class="n">partial_func</span><span class="o">.</span><span class="n">validate_signature</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">"fake"</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">partial_func</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">=</span> <span class="n">_get_func_info</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+            <span class="c1"># Convert callback into references</span>
+            <span class="c1">#   - deleted functions won't cause crashes</span>
+            <span class="n">func_ref</span> <span class="o">=</span> <span class="n">_get_func_ref</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+            <span class="c1"># Get expected arguments from function spec</span>
+            <span class="c1"># - positional arguments are always preferred</span>
+            <span class="n">expect_args</span> <span class="o">=</span> <span class="n">is_func_signature_supported</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">"fake"</span><span class="p">)</span>
+            <span class="n">expect_kwargs</span> <span class="o">=</span> <span class="n">is_func_signature_supported</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="s2">"fake"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">:</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">func_ref</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_partial_func</span><span class="p">:</span> <span class="n">weakref_partial</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">partial_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_args</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">expect_args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expect_kwargs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">expect_kwargs</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">path</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"&lt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2"> &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_topic</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_ref_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Is reference to callback valid.</span>
+
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ref</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span>
+
+<div class="viewcode-block" id="EventCallback.validate_ref"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback.validate_ref">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Validate if reference to callback is valid.</span>
+
+<span class="sd">        Deprecated:</span>
+<span class="sd">            Reference is always live checkd with 'is_ref_valid'.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># Trigger validate by getting 'is_valid'</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ref_valid</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Is callback enabled.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Is callback enabled.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span>
+
+<div class="viewcode-block" id="EventCallback.set_enabled"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback.set_enabled">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Change if callback is enabled.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            enabled (bool): Change enabled state of the callback.</span>
+
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="n">enabled</span></div>
+
+<div class="viewcode-block" id="EventCallback.deregister"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback.deregister">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">deregister</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Calling this function will cause that callback will be removed."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_partial_func</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="EventCallback.get_order"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback.get_order">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_order</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get callback order.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Callback order.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order</span></div>
+
+<div class="viewcode-block" id="EventCallback.set_order"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback.set_order">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Change callback order.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            order (int): Order of callback. Lower number means</span>
+<span class="sd">                higher priority.</span>
+
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">=</span> <span class="n">order</span></div>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_order</span><span class="p">,</span> <span class="n">set_order</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EventCallback.topic_matches"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback.topic_matches">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">topic_matches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check if event topic matches callback's topic.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            topic (str): Topic name.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Topic matches callback's topic.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_topic_regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EventCallback.process_event"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventCallback.process_event">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">process_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Process event.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event(Event): Event that was triggered.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># Skip if callback is not enabled</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Get reference and skip if is not available</span>
+        <span class="n">callback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_callback</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_matches</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">topic</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Try to execute callback</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_args</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_kwargs</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Failed to execute event callback </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected type 'int' got '</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">order</span><span class="p">)</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_partial_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_partial_func</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_partial_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_partial_func</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ref_is_valid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_func_ref</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_partial_func</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<span class="c1"># Server sends 'heartbeat' message to authorized clients when there was no</span>
+<span class="c1">#   other message for ~5 seconds. If nothing arrives for this amount of time</span>
+<span class="c1">#   the connection is considered dead.</span>
+<span class="n">_RECV_TIMEOUT</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">15.0</span>
+<span class="c1"># Timeout for opening websocket connection and for the auth check request.</span>
+<span class="n">_CONNECT_TIMEOUT</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span>
+<span class="c1"># Delays between reconnection attempts (last value is used repeatedly).</span>
+<span class="n">_RECONNECT_DELAYS</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)</span>
+<span class="c1"># Delay between reconnection attempts when the token is known to be invalid.</span>
+<span class="n">_AUTH_FAILED_DELAY</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span>
+<span class="c1"># How long to wait for the loop thread on stop. The thread is daemon so</span>
+<span class="c1">#   it can't block process exit even if it does not finish in time.</span>
+<span class="n">_STOP_TIMEOUT</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_abort_ws</span><span class="p">(</span><span class="n">ws_con</span><span class="p">:</span> <span class="n">WebSocket</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Close websocket without waiting for server response.</span>
+
+<span class="sd">    'WebSocket.close' sends close frame and waits for the response</span>
+<span class="sd">        (up to 3 seconds) which would block the caller.</span>
+
+<span class="sd">    """</span>
+    <span class="k">for</span> <span class="n">method_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"abort"</span><span class="p">,</span> <span class="s2">"shutdown"</span><span class="p">):</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ws_con</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">method</span><span class="p">()</span>
+            <span class="k">return</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_LoopState</span><span class="p">:</span>
+    <span class="n">stop_event</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+    <span class="c1"># Subscribe message has to be sent</span>
+    <span class="n">auth_required</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># Some message was received with current websocket connection</span>
+    <span class="n">received_message</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># Connection state reported via events</span>
+    <span class="c1">#   - 'None' means unknown (nothing was reported yet)</span>
+    <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">auth_failed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">failed_attempts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">registered_topics</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">set</span><span class="p">)</span>
+    <span class="n">server_is_restarting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># Interrupts waiting between reconnection attempts</span>
+    <span class="n">wake_event</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+
+
+<span class="c1"># Hubs stopped on process exit, stored weakly so a hub that is not running</span>
+<span class="c1">#   can be garbage collected</span>
+<span class="n">_EVENT_HUBS</span><span class="p">:</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">[</span><span class="n">EventHub</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_stop_event_hubs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">event_hub</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">_EVENT_HUBS</span><span class="p">):</span>
+        <span class="n">event_hub</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+
+<span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">_stop_event_hubs</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="EventHub"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">EventHub</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Receive AYON server events via websocket and trigger callbacks.</span>
+
+<span class="sd">    Websocket connection is handled in a daemon thread, so it never blocks</span>
+<span class="sd">        the caller (e.g. DCC main thread) nor the process exit.</span>
+
+<span class="sd">    Warnings:</span>
+<span class="sd">        Callbacks are triggered in the websocket thread! Use own queue</span>
+<span class="sd">            to process them in main thread, especially if a callback</span>
+<span class="sd">            touches Qt widgets.</span>
+
+<span class="sd">    Internal topics:</span>
+<span class="sd">        - 'connection.opened' first message received after (re)connection.</span>
+<span class="sd">        - 'connection.closed' connection was lost or could not be created.</span>
+<span class="sd">        - 'auth.failed' server rejected the token.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        connection (ServerAPI): Server connection.</span>
+
+<span class="sd">    """</span>
+    <span class="c1"># Topics emitted by the hub itself</span>
+    <span class="n">TOPIC_CONNECTION_OPENED</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"connection.opened"</span>
+    <span class="n">TOPIC_CONNECTION_CLOSED</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"connection.closed"</span>
+    <span class="n">TOPIC_AUTH_FAILED</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"auth.failed"</span>
+    <span class="c1"># Topic sent by server</span>
+    <span class="n">TOPIC_SERVER_RESTART_REQUESTED</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"server.restart_requested"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection</span><span class="p">:</span> <span class="n">ServerAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="p">:</span> <span class="n">ServerAPI</span> <span class="o">=</span> <span class="n">connection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ws_connection</span><span class="p">:</span> <span class="n">WebSocket</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="p">:</span> <span class="n">_LoopState</span> <span class="o">=</span> <span class="n">_LoopState</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop_thread</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_registered_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">EventCallback</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_internal_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">EventCallback</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">EventCallback</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TOPIC_SERVER_RESTART_REQUESTED</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_on_server_restart</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_callbacks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_internal_callbacks</span><span class="p">,</span> <span class="n">connect</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">_EVENT_HUBS</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EventHub.is_running"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.is_running">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check if event loop is running.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Is event loop running.</span>
+
+<span class="sd">        """</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_thread</span>
+        <span class="k">return</span> <span class="n">thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EventHub.is_connected"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.is_connected">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_connected</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check if event loop is connected to server.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Is event loop connected to server.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">connected</span> <span class="ow">is</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="EventHub.get_connection_state"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.get_connection_state">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_connection_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Connection state as was reported by events.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool | None: 'True' if connected, 'False' if disconnected and</span>
+<span class="sd">                'None' if state is not known yet.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">connected</span></div>
+
+<div class="viewcode-block" id="EventHub.is_auth_failed"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.is_auth_failed">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_auth_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">auth_failed</span></div>
+
+<div class="viewcode-block" id="EventHub.is_server_restarting"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.is_server_restarting">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_server_restarting</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">server_is_restarting</span></div>
+
+<div class="viewcode-block" id="EventHub.check_server_available"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.check_server_available">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_server_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Quick synchronous check if server is available.</span>
+
+<span class="sd">        Websocket connection is created in a background thread, so it takes</span>
+<span class="sd">            a while until the connection state is known. This check can be</span>
+<span class="sd">            used e.g. when a tool is opened to find out that the server is</span>
+<span class="sd">            not available before the tool tries to fetch data from it.</span>
+
+<span class="sd">        Request is sent only if the connection state is not known yet. When</span>
+<span class="sd">            the server is not available, the state is changed to</span>
+<span class="sd">            disconnected and 'connection.closed' event is emitted.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool | None: 'False' if server is not available, 'True' if</span>
+<span class="sd">                websocket is connected, 'None' if server did respond but</span>
+<span class="sd">                websocket connection is not established yet.</span>
+
+<span class="sd">        """</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">connected</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">state</span>
+
+        <span class="c1"># Use 'get_info' so timeout and retries configured on the</span>
+        <span class="c1">#   connection are respected</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">get_info</span><span class="p">()</span>
+            <span class="n">available</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="n">UnauthorizedError</span><span class="p">:</span>
+            <span class="c1"># Server is running but rejected the token</span>
+            <span class="n">available</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">available</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">connected</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_connected</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="EventHub.add_callback"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.add_callback">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_callback</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">weakref_partial</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">connect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventCallback</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Register callback in event system.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            topic (str): Topic for EventCallback.</span>
+<span class="sd">            callback (Callable | weakref_partial): Function or method</span>
+<span class="sd">                that will be called when topic is triggered.</span>
+<span class="sd">            order (int | None): Order of callback. Lower number means</span>
+<span class="sd">                higher priority.</span>
+<span class="sd">            connect (bool): Create websocket connection if</span>
+<span class="sd">                not already created.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            EventCallback: Created callback object which can be used to</span>
+<span class="sd">                stop listening.</span>
+
+<span class="sd">        """</span>
+        <span class="n">callback</span> <span class="o">=</span> <span class="n">EventCallback</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_callbacks</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">callback</span><span class="p">],</span> <span class="n">connect</span><span class="o">=</span><span class="n">connect</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">callback</span></div>
+
+<div class="viewcode-block" id="EventHub.add_callbacks"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.add_callbacks">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_callbacks</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">EventCallback</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">connect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Register callback in event system.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            callbacks (list[EventCallback]): List of EventCallback</span>
+<span class="sd">                objects to register.</span>
+<span class="sd">            connect (bool): Create websocket connection if</span>
+<span class="sd">                not already created.</span>
+
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_registered_callbacks</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">callbacks</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_topics</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">connect</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EventHub.emit_event"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.emit_event">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">emit_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Emit event object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event (Event): Prepared event with topic and data.</span>
+
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EventHub.start"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.start">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Start event loop.</span>
+
+<span class="sd">        Websocket connection is created in a daemon thread, this method</span>
+<span class="sd">            does not block.</span>
+
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">():</span>
+                <span class="k">return</span>
+
+            <span class="n">stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">stop_event</span> <span class="o">=</span> <span class="n">stop_event</span>
+            <span class="n">loop_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_thread_loop</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">stop_event</span><span class="p">,),</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"AYONEventHub"</span><span class="p">,</span>
+                <span class="c1"># Daemon thread must be used! Non-daemon threads are joined</span>
+                <span class="c1">#   by the interpreter BEFORE 'atexit' callbacks are called,</span>
+                <span class="c1">#   so the process would hang on exit.</span>
+                <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loop_thread</span> <span class="o">=</span> <span class="n">loop_thread</span>
+            <span class="n">loop_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EventHub.stop"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.stop">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EventHub.reconnect"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.reconnect">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">reconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Drop current websocket connection and connect again.</span>
+
+<span class="sd">        Should be called when websocket connection should be recreated,</span>
+<span class="sd">            e.g. server url of the connection did change.</span>
+
+<span class="sd">        """</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">auth_failed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">failed_attempts</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_ws_connection</span><span class="p">()</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">wake_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EventHub.reauthenticate"><a class="viewcode-back" href="../../ayon_api.events.html#ayon_api.events.EventHub.reauthenticate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">reauthenticate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Authenticate websocket connection with current token.</span>
+
+<span class="sd">        Should be called when token of the server connection did change.</span>
+<span class="sd">            Websocket connection is kept if is open, otherwise next</span>
+<span class="sd">            connection attempt happens immediately.</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">access_token</span><span class="p">:</span>
+            <span class="c1"># Token was removed, server would close the connection anyway</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reconnect</span><span class="p">()</span>
+            <span class="k">return</span>
+
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">auth_failed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">failed_attempts</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">auth_required</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">wake_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread_lock</span><span class="p">:</span>
+            <span class="n">loop_thread</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_thread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_thread</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">wake_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="n">ws_con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws_connection</span>
+
+        <span class="c1"># Unblock 'recv' in the loop thread</span>
+        <span class="k">if</span> <span class="n">ws_con</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_abort_ws</span><span class="p">(</span><span class="n">ws_con</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">loop_thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">loop_thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">threading</span><span class="o">.</span><span class="n">current_thread</span><span class="p">()</span>
+        <span class="p">):</span>
+            <span class="n">loop_thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_STOP_TIMEOUT</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Subscribe to topics in server based on registered callbacks.</span>
+
+<span class="sd">        Server does not allow wildcards in the topic but does validate</span>
+<span class="sd">            start of the topic so 'entity.folder.*' is not allowed</span>
+<span class="sd">            but 'entity.folder.' does work.</span>
+
+<span class="sd">        In case the wildcard is used at the start of the topic we have to</span>
+<span class="sd">            subscribe to all topics.</span>
+
+<span class="sd">        """</span>
+        <span class="n">topics</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks_lock</span><span class="p">:</span>
+            <span class="n">callbacks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_registered_callbacks</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="n">callbacks</span><span class="p">:</span>
+            <span class="n">topic</span> <span class="o">=</span> <span class="n">callback</span><span class="o">.</span><span class="n">topic</span>
+            <span class="k">if</span> <span class="n">topic</span> <span class="o">==</span> <span class="s2">"*"</span><span class="p">:</span>
+                <span class="n">topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">topic</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"*"</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">part</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">part</span><span class="p">:</span>
+                <span class="n">topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"*"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">topics</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">registered_topics</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">registered_topics</span> <span class="o">=</span> <span class="n">topics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">auth_required</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_ws_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WebSocket</span><span class="p">:</span>
+        <span class="n">ws_con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">create_websocket</span><span class="p">(</span><span class="s2">"ws"</span><span class="p">)</span>
+        <span class="c1"># Server sends heartbeat periodically, so timeout on receive means</span>
+        <span class="c1">#   that the connection is dead.</span>
+        <span class="n">ws_con</span><span class="o">.</span><span class="n">settimeout</span><span class="p">(</span><span class="n">_RECV_TIMEOUT</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ws_con</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_close_ws_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread_lock</span><span class="p">:</span>
+            <span class="n">ws_con</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws_connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws_connection</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">ws_con</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_abort_ws</span><span class="p">(</span><span class="n">ws_con</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check if token is valid without affecting the server connection.</span>
+
+<span class="sd">        Do NOT use 'ServerAPI.validate_token' here. It marks the token</span>
+<span class="sd">            as invalid on any non-200 response (e.g. 502 while server is</span>
+<span class="sd">            restarting) which would break all requests of the process.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool | None: 'True' if valid, 'False' if server rejected the</span>
+<span class="sd">                token, 'None' if it is not possible to tell (server is</span>
+<span class="sd">                not reachable).</span>
+
+<span class="sd">        """</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">access_token</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">token</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">ssl_verify</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">get_ssl_verify</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ssl_verify</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ssl_verify</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">get_base_url</span><span class="p">()</span><span class="si">}</span><span class="s2">/api/users/me"</span>
+        <span class="n">status_codes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">headers</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"X-Api-Key"</span><span class="p">:</span> <span class="n">token</span><span class="p">},</span>
+        <span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="n">url</span><span class="p">,</span>
+                    <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+                    <span class="n">verify</span><span class="o">=</span><span class="n">ssl_verify</span><span class="p">,</span>
+                    <span class="n">cert</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">get_cert</span><span class="p">(),</span>
+                    <span class="n">timeout</span><span class="o">=</span><span class="n">_CONNECT_TIMEOUT</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="n">status_codes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">status_codes</span> <span class="o">&lt;=</span> <span class="p">{</span><span class="mi">401</span><span class="p">,</span> <span class="mi">403</span><span class="p">}:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_connected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connected</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Can be called from websocket thread and from main thread</span>
+        <span class="c1">#   ('check_server_available').</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">connected</span> <span class="ow">is</span> <span class="n">connected</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">connected</span> <span class="o">=</span> <span class="n">connected</span>
+            <span class="k">if</span> <span class="n">connected</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">failed_attempts</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">server_is_restarting</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">auth_failed</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">wake_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">connected</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit_event</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TOPIC_CONNECTION_OPENED</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit_event</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TOPIC_CONNECTION_CLOSED</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_connection_lost</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stop_event</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">,</span>
+        <span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span>
+        <span class="n">received_message</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">received_message</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">received_message</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_ws_connection</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Log only first failure, reconnection attempts would spam the log</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">connected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"Lost connection to AYON server websocket: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">exc</span> <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"Closed by server"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_connected</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># Server closes unauthorized clients after few seconds without</span>
+        <span class="c1">#   sending anything, authorized clients receive heartbeat.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">received_message</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">state</span><span class="o">.</span><span class="n">auth_failed</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_token</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">auth_failed</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">emit_event</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TOPIC_AUTH_FAILED</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">auth_failed</span><span class="p">:</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="n">_AUTH_FAILED_DELAY</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">failed_attempts</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">_RECONNECT_DELAYS</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="n">_RECONNECT_DELAYS</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">failed_attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">stop_event</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stop_event</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Wait until timeout, stop or wake request."""</span>
+        <span class="k">if</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="n">wake_event</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">wake_event</span>
+        <span class="n">wake_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">wake_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_thread_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stop_event</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">(</span><span class="n">stop_event</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"AYON event hub loop crashed"</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_close_ws_connection</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">received_message</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stop_event</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="n">ws_con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws_connection</span>
+            <span class="k">if</span> <span class="n">ws_con</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">access_token</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">stop_event</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ws_con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_ws_connection</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="c1"># Server is not available (connection refused, timeout,</span>
+                    <span class="c1">#   502 from proxy during restart, ssl error...)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_on_connection_lost</span><span class="p">(</span><span class="n">stop_event</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread_lock</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                        <span class="n">_abort_ws</span><span class="p">(</span><span class="n">ws_con</span><span class="p">)</span>
+                        <span class="k">break</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_ws_connection</span> <span class="o">=</span> <span class="n">ws_con</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">received_message</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">auth_required</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">auth_required</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">auth_required</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">subscribe_payload</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">"topic"</span><span class="p">:</span> <span class="s2">"auth"</span><span class="p">,</span>
+                    <span class="s2">"token"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">access_token</span><span class="p">,</span>
+                    <span class="s2">"subscribe"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">registered_topics</span><span class="p">),</span>
+                <span class="p">}</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ws_con</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">subscribe_payload</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_on_connection_lost</span><span class="p">(</span><span class="n">stop_event</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">op_code</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="n">ws_con</span><span class="o">.</span><span class="n">recv_data</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="c1"># Timeout (no heartbeat), closed connection, socket error...</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_on_connection_lost</span><span class="p">(</span><span class="n">stop_event</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">op_code</span> <span class="o">==</span> <span class="n">ABNF</span><span class="o">.</span><span class="n">OPCODE_CLOSE</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_on_connection_lost</span><span class="p">(</span><span class="n">stop_event</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="o">.</span><span class="n">received_message</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">received_message</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_connected</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">op_code</span> <span class="o">!=</span> <span class="n">ABNF</span><span class="o">.</span><span class="n">OPCODE_TEXT</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">message</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">event_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">"Failed to parse websocket message"</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="o">.</span><span class="n">from_ws_message</span><span class="p">(</span><span class="n">event_data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">emit_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_server_restart</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop_state</span><span class="o">.</span><span class="n">server_is_restarting</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Process event topic and trigger callbacks.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event (Event): Prepared event with topic and data.</span>
+
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks_lock</span><span class="p">:</span>
+            <span class="n">callbacks</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_registered_callbacks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">order</span>
+            <span class="p">))</span>
+
+        <span class="n">removed</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="n">callbacks</span><span class="p">:</span>
+            <span class="n">callback</span><span class="o">.</span><span class="n">process_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">callback</span><span class="o">.</span><span class="n">is_ref_valid</span><span class="p">:</span>
+                <span class="n">removed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks_lock</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="n">removed</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_registered_callbacks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_topics</span><span class="p">()</span></div>
+</pre></div>
+
+					 </div>
+					 
+					</div>
+					<footer>
+  
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2024, ynput.io <info@ynput.io>
+	  <br>
+      
+      
+      
+      Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+      
+      <a href="https://github.com/revitron/revitron-sphinx-theme">theme</a>
+      
+      provided by <a href="https://github.com/revitron">Revitron</a>.
+
+    </p>
+  </div> 
+
+</footer>
+
+				</div>
+			</div>
+
+		</section>
+
+	</div>
+	
+
+	<script type="text/javascript">
+			jQuery(function () {
+					SphinxRtdTheme.Navigation.enable(true);
+			});
+	</script>
+
+	
+	
+		
+	 
+
+ 
+</body>	
+</html>
