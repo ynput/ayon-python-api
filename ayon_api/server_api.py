@@ -11,6 +11,7 @@ import os
 import re
 import io
 import json
+import random
 import ssl
 import time
 import logging
@@ -118,6 +119,24 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
+
+
+def _get_retry_delay(delay: float) -> float:
+    """Randomize delay before retry of a request.
+
+    Clients that failed at the same moment, e.g. many machines starting at
+        once against an overloaded server, would otherwise retry at the same
+        moment again. Returned delay is between 50% and 150% of passed
+        delay, so the delay is the same on average.
+
+    Args:
+        delay (float): Delay in seconds.
+
+    Returns:
+        float: Randomized delay in seconds.
+
+    """
+    return delay * random.uniform(0.5, 1.5)
 
 
 def _get_requests_ca_bundle() -> str | None:
@@ -1773,7 +1792,7 @@ class ServerAPI(
                         response.status_code
                     )
                     if retry_idx != 0:
-                        time.sleep(2)
+                        time.sleep(_get_retry_delay(2))
                     continue
                 break
 
@@ -1821,7 +1840,7 @@ class ServerAPI(
                 )
 
             if retry_idx != 0:
-                time.sleep(0.1)
+                time.sleep(_get_retry_delay(0.1))
 
         if new_response is not None:
             return new_response

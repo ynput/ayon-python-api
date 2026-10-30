@@ -33,3 +33,35 @@ def test_successful_retry_returns_successful_response(con, failure):
     )
     assert response.status_code == 200
     assert response.data == {"ok": True}
+
+
+def test_retry_delay_is_randomized(monkeypatch):
+    """Clients failing at the same moment should not retry at once."""
+    sleeps = []
+    monkeypatch.setattr("time.sleep", sleeps.append)
+    uniform_args = []
+
+    def uniform(low, high):
+        uniform_args.append((low, high))
+        return high
+
+    monkeypatch.setattr("random.uniform", uniform)
+    con = ServerAPI("http://localhost:0", create_session=False, max_retries=3)
+    responses = [
+        FakeResponse(503),
+        requests.exceptions.ConnectionError("down"),
+        FakeResponse(200, json_data={"ok": True}),
+    ]
+
+    def request_func(url, **kwargs):
+        item = responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    response = con._do_rest_request(
+        request_func, "http://localhost:0/api/x", handle_invalid_token=False
+    )
+    assert response.status_code == 200
+    assert uniform_args == [(0.5, 1.5), (0.5, 1.5)]
+    assert sleeps == [pytest.approx(3.0), pytest.approx(0.15)]
