@@ -74,6 +74,7 @@ from .utils import (
     get_media_mime_type_for_stream,
     get_machine_name,
     fill_own_attribs,
+    UserInfo,
     get_user_info_by_token,
 )
 from ._api_helpers import (
@@ -421,6 +422,9 @@ class ServerAPI(
         self._links_graphql_support_data: bool | None = None
 
         self._session = None
+        # Session without authorization used for availability check and
+        #   token validation, see '_get_validation_session'
+        self._validation_session: requests.Session | None = None
 
         self._base_functions_mapping = {
             RequestTypes.get: requests.get,
@@ -497,8 +501,9 @@ class ServerAPI(
         if self._ssl_verify == ssl_verify:
             return
         self._ssl_verify = ssl_verify
-        if self._session is not None:
-            self._session.verify = ssl_verify
+        for session in (self._session, self._validation_session):
+            if session is not None:
+                session.verify = ssl_verify
 
     def get_cert(self) -> str | None:
         """Current cert file used for connection to server.
@@ -519,8 +524,9 @@ class ServerAPI(
         if cert == self._cert:
             return
         self._cert = cert
-        if self._session is not None:
-            self._session.cert = cert
+        for session in (self._session, self._validation_session):
+            if session is not None:
+                session.cert = cert
 
     ssl_verify = property(get_ssl_verify, set_ssl_verify)
     cert = property(get_cert, set_cert)
@@ -840,11 +846,20 @@ class ServerAPI(
 
     @property
     def is_server_available(self) -> bool:
+        if (
+            self._server_available is None
+            and self._token_info.token
+            and self._token_info.is_valid is None
+        ):
+            # Token validation also finds out if server is available,
+            #   which saves a request
+            user_info, responded = self._request_token_user_info()
+            if responded:
+                self._store_token_validation(user_info)
+
         if self._server_available is None:
-            response = requests.get(
-                self._base_url,
-                cert=self._cert,
-                verify=self._ssl_verify,
+            response = self._get_validation_session().get(
+                f"{self._rest_url}/info",
                 timeout=self.timeout,
             )
             self._server_available = response.status_code == 200
@@ -872,28 +887,48 @@ class ServerAPI(
             self.close_session()
             return False
 
-        # TODO add other possible validations
-        # - existence of 'user' key in info
-        # - validate that 'site_id' is in 'sites' in info
+        user_info, responded = self._request_token_user_info()
+        if not responded:
+            # Check server url, raises an error if the url does not lead
+            #   to AYON server
+            self._get_server_info()
 
-        # Check server url
-        self._get_server_info()
+        self._store_token_validation(user_info)
+        return self._token_info.is_valid
 
+    def _request_token_user_info(self) -> tuple[UserInfo, bool]:
+        """Request information about user of the token.
+
+        Server is marked as available if it did respond to the token.
+
+        Returns:
+            tuple[UserInfo, bool]: User information and if server did
+                respond with success or unauthorized status.
+
+        """
         user_info = get_user_info_by_token(
             self.base_url,
             self._token_info.token,
             verify=self._ssl_verify,
             cert=self._cert,
             timeout=self.timeout,
+            session=self._get_validation_session(),
         )
+        responded = (
+            user_info.response is not None
+            and user_info.response.status_code in (200, 401)
+        )
+        if responded:
+            self._server_available = True
+        return user_info, responded
+
+    def _store_token_validation(self, user_info: UserInfo) -> None:
         self._token_info.is_valid = user_info.is_valid
         self._token_info.unauthorized_response = user_info.response
         is_service = None
         if user_info.is_valid:
             is_service = user_info.is_service
         self._token_info.is_service = is_service
-
-        return self._token_info.is_valid
 
     def set_token(self, token: str | None) -> None:
         self._reset_token()
@@ -936,10 +971,16 @@ class ServerAPI(
             raise ValueError("Session is already created.")
 
         self._as_user_stack.clear()
-        # Validate token before session creation
-        self.validate_token()
+        # Validate token before session creation, unless it was already
+        #   validated (e.g. by server availability check)
+        if self._token_info.is_valid is None:
+            self.validate_token()
 
-        session = requests.Session()
+        # Reuse connection of availability check and token validation
+        session = self._validation_session
+        self._validation_session = None
+        if session is None:
+            session = requests.Session()
         session.cert = self._cert
         session.verify = self._ssl_verify
         session.headers.update(self.get_headers())
@@ -954,6 +995,10 @@ class ServerAPI(
         self._session = session
 
     def close_session(self) -> None:
+        if self._validation_session is not None:
+            self._validation_session.close()
+            self._validation_session = None
+
         if self._session is None:
             return
 
@@ -961,6 +1006,25 @@ class ServerAPI(
         self._session = None
         self._session_functions_mapping = {}
         session.close()
+
+    def _get_validation_session(self) -> requests.Session:
+        """Session for requests made before authorized session is created.
+
+        Server availability check and token validation use the same
+            session, so they share one connection. The session is then used
+            as the authorized session by 'create_session', which reuses
+            the connection too.
+
+        Returns:
+            requests.Session: Session without authorization headers.
+
+        """
+        if self._validation_session is None:
+            session = requests.Session()
+            session.cert = self._cert
+            session.verify = self._ssl_verify
+            self._validation_session = session
+        return self._validation_session
 
     def create_websocket(
         self,
