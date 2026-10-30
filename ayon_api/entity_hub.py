@@ -18,7 +18,7 @@ import collections
 import warnings
 from abc import ABC, abstractmethod
 import typing
-from typing import Optional, Iterable, Any, Generator
+from typing import Optional, Iterable, Any, Callable, Generator
 
 from .server_api import ServerAPI
 from ._api import get_server_api_connection
@@ -287,9 +287,15 @@ class EntityHub:
         if not entity_types:
             return None
 
+        if "project" in entity_types and entity_id == self.project_name:
+            return self.project_entity
+
         entity_type = None
         entity_data = None
         for entity_type in entity_types:
+            if entity_type == "project":
+                continue
+
             if entity_type == "folder":
                 entity_data = self._connection.get_folder_by_id(
                     self.project_name,
@@ -1291,10 +1297,19 @@ class Attributes:
         This could be enhanced to know attribute schema and validate values
         based on the schema.
 
+    Values are own values of the entity. Inherited values can be received
+    using 'get_inherited' or 'inherited_items'. Value is inherited from
+    parent entity if own value is 'None' and the attribute has enabled
+    inheritance in its schema.
+
     Args:
         attrib_keys (Iterable[str]): Keys that are available in attribs of the
             entity.
         values (Optional[dict[str, Any]]): Values of attributes.
+        inherited_keys (Optional[Iterable[str]]): Keys of attributes that
+            can inherit value from parent.
+        parent_attribs_getter (Optional[Callable[[], Optional[Attributes]]]):
+            Callback returning attributes of parent entity.
 
     """
 
@@ -1302,13 +1317,21 @@ class Attributes:
         self,
         attrib_keys: Iterable[str],
         values: Optional[dict[str, Any]] = None,
+        inherited_keys: Optional[Iterable[str]] = None,
+        parent_attribs_getter: Optional[
+            Callable[[], Optional[Attributes]]
+        ] = None,
     ) -> None:
         if values in (UNKNOWN_VALUE, None):
             values = {}
+        if inherited_keys is None:
+            inherited_keys = set()
         self._attributes = {
             key: AttributeValue(values.get(key))
             for key in attrib_keys
         }
+        self._inherited_keys = set(inherited_keys)
+        self._parent_attribs_getter = parent_attribs_getter
 
     def __contains__(self, key: str) -> bool:
         return key in self._attributes
@@ -1358,6 +1381,56 @@ class Attributes:
         """
         self[key] = value
 
+    def get_inherited(self, key: str, default: Optional[Any] = None) -> Any:
+        """Get value of attribute with inheritance from parent entities.
+
+        Own value is returned if is set, otherwise value is taken from
+        the closest parent entity (folder or project) that has the value
+        set, if the attribute is inheritable. Value is resolved on each
+        call from current (not yet committed) values of parent entities.
+
+        Args:
+            key (str): Attribute name.
+            default (Any): Default value to return when attribute was not
+                found.
+
+        """
+        attribute = self._attributes.get(key)
+        if attribute is None:
+            return default
+
+        value = attribute.value
+        if value is not None or key not in self._inherited_keys:
+            return value
+
+        parent_attribs = self._get_parent_attribs()
+        if parent_attribs is None:
+            return value
+        return parent_attribs.get_inherited(key)
+
+    def inherited_items(self) -> Iterable[tuple[str, AttributeValueType]]:
+        """Attribute items with values inherited from parent entities.
+
+        Returns:
+            Iterable[tuple[str, AttributeValueType]]: Attribute name and
+                its value with inheritance.
+
+        """
+        parent_attribs = None
+        for key, attribute in self._attributes.items():
+            value = attribute.value
+            if value is None and key in self._inherited_keys:
+                if parent_attribs is None:
+                    parent_attribs = self._get_parent_attribs()
+                if parent_attribs is not None:
+                    value = parent_attribs.get_inherited(key)
+            yield key, value
+
+    def _get_parent_attribs(self) -> Optional[Attributes]:
+        if self._parent_attribs_getter is None:
+            return None
+        return self._parent_attribs_getter()
+
     def get_attribute(self, key: str) -> AttributeValue:
         """Access to attribute object.
 
@@ -1391,9 +1464,23 @@ class Attributes:
             if attribute.changed
         }
 
-    def to_dict(self, ignore_none: bool = True) -> dict[str, Any]:
+    def to_dict(
+        self, ignore_none: bool = True, inherited: bool = False
+    ) -> dict[str, Any]:
+        """Attribute values as dictionary.
+
+        Args:
+            ignore_none (bool): Skip attributes with 'None' value.
+            inherited (bool): Use values inherited from parent entities
+                if own value is not set.
+
+        Returns:
+            dict[str, Any]: Attribute values by attribute name.
+
+        """
+        items = self.inherited_items() if inherited else self.items()
         output = {}
-        for key, value in self.items():
+        for key, value in items:
             if (
                 value is UNKNOWN_VALUE
                 or (ignore_none and value is None)
@@ -1522,6 +1609,8 @@ class BaseEntity(ABC):
     _supports_status = False
     _supports_tags = False
     _supports_thumbnail = False
+    # Attribute values can be inherited from parent entity
+    _inherits_attributes = False
 
     def __init__(
         self,
@@ -1574,9 +1663,21 @@ class BaseEntity(ABC):
         self._parent_id = parent_id
         self.active = active
         self._created = created
+        attributes_schema = self._get_attributes_for_type(self.entity_type)
+        inherited_keys = None
+        parent_attribs_getter = None
+        if self._inherits_attributes:
+            inherited_keys = {
+                key
+                for key, schema in attributes_schema.items()
+                if schema.get("inherit", True)
+            }
+            parent_attribs_getter = self._get_parent_attribs
         self._attribs = Attributes(
-            self._get_attributes_for_type(self.entity_type),
-            attribs
+            attributes_schema,
+            attribs,
+            inherited_keys=inherited_keys,
+            parent_attribs_getter=parent_attribs_getter,
         )
         self._data = data
         self._children_ids = children_ids
@@ -1832,6 +1933,14 @@ class BaseEntity(ABC):
         self, entity_type: EntityType
     ) -> dict[str, AttributeSchemaDict]:
         return self._entity_hub.get_attributes_for_type(entity_type)
+
+    def _get_parent_attribs(self) -> Optional[Attributes]:
+        if not self._parent_id:
+            return None
+        parent = self.get_parent()
+        if isinstance(parent, BaseEntity):
+            return parent.attribs
+        return None
 
     def lock(self) -> None:
         """Lock entity as 'saved' so all changes are discarded."""
@@ -3193,6 +3302,7 @@ class FolderEntity(BaseEntity):
     _supports_tags = True
     _supports_status = True
     _supports_thumbnail = True
+    _inherits_attributes = True
 
     entity_type = "folder"
     parent_entity_types = ["folder", "project"]
@@ -3404,6 +3514,7 @@ class TaskEntity(BaseEntity):
     _supports_tags = True
     _supports_status = True
     _supports_thumbnail = True
+    _inherits_attributes = True
     entity_type = "task"
     parent_entity_types = ["folder"]
 
