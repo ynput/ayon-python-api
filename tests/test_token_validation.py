@@ -17,6 +17,7 @@ URL = "http://localhost:0"
 USER_TOKEN = "a" * 64
 API_KEY = "b" * 32
 LONG_API_KEY = "c" * 64
+SHORT_USER_TOKEN = "e" * 32
 
 
 class FakeServer:
@@ -95,8 +96,14 @@ def server(monkeypatch):
     "token, expected_requests, is_service",
     [
         (USER_TOKEN, [("/api/users/me", "bearer")], False),
-        # Only 64 characters long token can be used as 'Bearer'
+        # Tokens that are not 64 characters long are tried as API key first
         (API_KEY, [("/api/users/me", "x-api-key")], True),
+        # Session token of other length falls back to 'Bearer'
+        (
+            SHORT_USER_TOKEN,
+            [("/api/users/me", "x-api-key"), ("/api/users/me", "bearer")],
+            False,
+        ),
         (
             LONG_API_KEY,
             [("/api/users/me", "bearer"), ("/api/users/me", "x-api-key")],
@@ -105,7 +112,9 @@ def server(monkeypatch):
     ],
 )
 def test_user_info_by_token(token, expected_requests, is_service):
-    server = FakeServer(user_tokens=[USER_TOKEN], api_keys=[LONG_API_KEY])
+    server = FakeServer(
+        user_tokens=[USER_TOKEN, SHORT_USER_TOKEN], api_keys=[LONG_API_KEY]
+    )
     server.api_keys.add(API_KEY)
     user_info = get_user_info_by_token(
         URL, token, session=server.create_session()
@@ -146,7 +155,10 @@ def test_invalid_token_marks_server_available(server):
 
     assert con.is_server_available
     assert not con.has_valid_token
-    assert server.requests == [("/api/users/me", "x-api-key")]
+    assert server.requests == [
+        ("/api/users/me", "x-api-key"),
+        ("/api/users/me", "bearer"),
+    ]
 
 
 def test_availability_without_token(server):
@@ -165,5 +177,6 @@ def test_url_of_other_server_is_not_available(monkeypatch):
         ServerAPI(URL, API_KEY)
     assert server.requests == [
         ("/api/users/me", "x-api-key"),
+        ("/api/users/me", "bearer"),
         ("/api/info", "none"),
     ]

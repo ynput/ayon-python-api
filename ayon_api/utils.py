@@ -751,14 +751,15 @@ def get_user_info_by_token(
     base_headers = {
         "Content-Type": "application/json",
     }
-    # Server accepts only 64 characters long tokens in 'Authorization'
-    #   header (session tokens), a token of other length can be only
-    #   an API key. Skip the request that would fail.
+    # Session tokens created by AYON are 64 characters long, so try
+    #   'Authorization' header first for those and 'X-Api-Key' first for
+    #   anything else. Valid tokens are then checked with a single request.
     auth_headers = [({"X-Api-Key": token}, True)]
+    user_item = ({"Authorization": f"Bearer {token}"}, False)
     if len(token) == 64:
-        auth_headers.insert(
-            0, ({"Authorization": f"Bearer {token}"}, False)
-        )
+        auth_headers.insert(0, user_item)
+    else:
+        auth_headers.append(user_item)
 
     request_func = requests.get if session is None else session.get
     for header_value, is_service in auth_headers:
