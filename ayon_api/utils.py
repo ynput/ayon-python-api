@@ -812,7 +812,7 @@ def get_user_by_token(
         url, token, timeout=timeout, verify=verify, cert=cert,
     )
     if user_info.is_valid:
-        return user_info.data
+        return user_info.response.json()
     return None
 
 
