@@ -2,12 +2,11 @@ from traceback import print_exc
 import uuid
 
 from requests import delete
-import test
 
 import pytest
 
 import ayon_api
-from ayon_api.entity_hub import EntityHub, UNKNOWN_VALUE
+from ayon_api.entity_hub import EntityHub, Attributes, UNKNOWN_VALUE
 
 from .conftest import project_entity_fixture, TestProductData
 
@@ -1287,3 +1286,358 @@ def test_status_definition_on_project_with_invalid_values(
             icon="invalid_icon",
             color="invalid_color"
         )
+
+
+# --- Attribute inheritance (unit, no server) ---
+def _attribs_chain(*levels, inherited_keys=("fps", "resolutionWidth")):
+    """Create chain of 'Attributes' from top (project) to bottom.
+
+    Each level is a dictionary with own values. First level has no parent.
+    """
+    keys = ["fps", "resolutionWidth", "frameStart", "description"]
+    parent = None
+    output = []
+    for idx, values in enumerate(levels):
+        getter = None
+        if parent is not None:
+            getter = (lambda p=parent: p)
+        attribs = Attributes(
+            keys,
+            values,
+            # Top level (project) does not inherit
+            inherited_keys=inherited_keys if idx else None,
+            parent_attribs_getter=getter,
+        )
+        output.append(attribs)
+        parent = attribs
+    return output
+
+
+def test_attributes_inherited_closest_parent():
+    project, folder, subfolder, task = _attribs_chain(
+        {"fps": 25.0, "resolutionWidth": 1920},
+        {"fps": 30.0},
+        {},
+        {},
+    )
+    # Closest parent with value wins, empty intermediate levels are skipped
+    assert task.get_inherited("fps") == 30.0
+    assert subfolder.get_inherited("fps") == 30.0
+    # Project fallback
+    assert task.get_inherited("resolutionWidth") == 1920
+    # Own values are not affected
+    assert task["fps"] is None
+    assert task.get("fps") is None
+    # Own value has precedence over parents
+    task["fps"] = 60.0
+    assert task.get_inherited("fps") == 60.0
+    assert subfolder.get_inherited("fps") == 30.0
+
+
+def test_attributes_inherited_not_inheritable_key():
+    _, task = _attribs_chain(
+        {"fps": 25.0, "frameStart": 1001, "description": "project"},
+        {},
+    )
+    # Keys not in 'inherited_keys' are never inherited
+    assert task.get_inherited("frameStart") is None
+    assert task.get_inherited("description") is None
+    assert task.get_inherited("fps") == 25.0
+    output = task.to_dict(inherited=True)
+    assert output == {"fps": 25.0}
+
+
+def test_attributes_inherited_unknown_key_and_no_parent():
+    attribs = Attributes(["fps"], {"fps": None}, inherited_keys={"fps"})
+    # No parent getter
+    assert attribs.get_inherited("fps") is None
+    assert attribs.get_inherited("unknown", "default") == "default"
+    assert dict(attribs.inherited_items()) == {"fps": None}
+
+    # Parent getter returning 'None' (e.g. parent not found)
+    attribs = Attributes(
+        ["fps"],
+        {"fps": None},
+        inherited_keys={"fps"},
+        parent_attribs_getter=lambda: None,
+    )
+    assert attribs.get_inherited("fps") is None
+
+    # Parent does not have the key available
+    parent = Attributes(["resolutionWidth"], {"resolutionWidth": 1920})
+    attribs = Attributes(
+        ["fps"],
+        {},
+        inherited_keys={"fps"},
+        parent_attribs_getter=lambda: parent,
+    )
+    assert attribs.get_inherited("fps") is None
+
+
+def test_attributes_inherited_is_live():
+    project, folder, task = _attribs_chain(
+        {"fps": 25.0}, {"fps": 30.0}, {}
+    )
+    assert task.get_inherited("fps") == 30.0
+    folder["fps"] = 24.0
+    assert task.get_inherited("fps") == 24.0
+    folder["fps"] = None
+    assert task.get_inherited("fps") == 25.0
+    project["fps"] = 50.0
+    assert task.get_inherited("fps") == 50.0
+    # Inheritance must not mark the child as changed
+    assert task.changes == {}
+
+
+def test_attributes_inherited_to_dict_and_items():
+    project, folder, task = _attribs_chain(
+        {"fps": 25.0, "resolutionWidth": 1920, "frameStart": 1},
+        {"resolutionWidth": 1280},
+        {"frameStart": 1001},
+    )
+    assert task.to_dict() == {"frameStart": 1001}
+    assert task.to_dict(inherited=True) == {
+        "fps": 25.0,
+        "resolutionWidth": 1280,
+        "frameStart": 1001,
+    }
+    assert task.to_dict(ignore_none=False, inherited=True) == {
+        "fps": 25.0,
+        "resolutionWidth": 1280,
+        "frameStart": 1001,
+        "description": None,
+    }
+    # Same keys and order as own items
+    assert (
+        [key for key, _ in task.inherited_items()]
+        == [key for key, _ in task.items()]
+    )
+
+
+def test_attributes_parent_getter_is_lazy():
+    parent = Attributes(["fps", "frameStart"], {"fps": 25.0})
+    calls = []
+
+    def getter():
+        calls.append(1)
+        return parent
+
+    attribs = Attributes(
+        ["fps", "frameStart"],
+        {"fps": 30.0, "frameStart": None},
+        inherited_keys={"fps", "frameStart"},
+        parent_attribs_getter=getter,
+    )
+    # Own value set -> parent is not resolved
+    assert attribs.get_inherited("fps") == 30.0
+    assert not calls
+    # 'inherited_items' resolves the parent at most once
+    dict(attribs.inherited_items())
+    assert len(calls) == 1
+
+
+# --- Attribute inheritance (integration) ---
+def _get_inheritable_keys(hub, keys):
+    folder_schema = hub.get_attributes_for_type("folder")
+    task_schema = hub.get_attributes_for_type("task")
+    for key in keys:
+        for schema in (folder_schema, task_schema):
+            if key not in schema or not schema[key].get("inherit", True):
+                pytest.skip(f"Attribute '{key}' is not inheritable")
+        if key not in hub.project_entity.attribs:
+            pytest.skip(f"Attribute '{key}' is not available on project")
+
+
+def _create_inherit_hierarchy(project_entity, hub):
+    """Create hierarchy for inheritance tests.
+
+    project
+    ├── root_a (fps=11)
+    │   └── mid (no values)
+    │       ├── task_mid
+    │       └── leaf (fps=33)
+    │           └── task_leaf
+    └── root_b (fps=44)
+    """
+    folder_type = project_entity["folderTypes"][0]["name"]
+    task_type = project_entity["taskTypes"][0]["name"]
+    root_a = hub.add_new_folder(
+        folder_type=folder_type, name="inherit_root_a",
+        attribs={"fps": 11.0},
+    )
+    root_b = hub.add_new_folder(
+        folder_type=folder_type, name="inherit_root_b",
+        attribs={"fps": 44.0},
+    )
+    mid = hub.add_new_folder(
+        folder_type=folder_type, name="inherit_mid", parent_id=root_a.id,
+    )
+    leaf = hub.add_new_folder(
+        folder_type=folder_type, name="inherit_leaf", parent_id=mid.id,
+        attribs={"fps": 33.0},
+    )
+    task_mid = hub.add_new_task(
+        task_type=task_type, name="inherit_task_mid", folder_id=mid.id,
+    )
+    task_leaf = hub.add_new_task(
+        task_type=task_type, name="inherit_task_leaf", folder_id=leaf.id,
+    )
+    hub.commit_changes()
+    return {
+        "root_a": root_a,
+        "root_b": root_b,
+        "mid": mid,
+        "leaf": leaf,
+        "task_mid": task_mid,
+        "task_leaf": task_leaf,
+    }
+
+
+@pytest.mark.usefixtures("clean_project")
+def test_inherited_attributes_closest_parent(project_entity_fixture):
+    project_name = project_entity_fixture["name"]
+    hub = EntityHub(project_name)
+    _get_inheritable_keys(hub, ["fps", "resolutionWidth"])
+    project_width = hub.project_entity.attribs["resolutionWidth"]
+    assert project_width is not None
+
+    entities = _create_inherit_hierarchy(project_entity_fixture, hub)
+    task_mid = entities["task_mid"]
+    task_leaf = entities["task_leaf"]
+    mid = entities["mid"]
+
+    # Own values stay untouched
+    assert task_mid.attribs["fps"] is None
+    assert mid.attribs["fps"] is None
+    assert "fps" not in task_mid.attribs.to_dict()
+
+    # Closest parent with value wins (skips 'mid' without value)
+    assert mid.attribs.get_inherited("fps") == 11.0
+    assert task_mid.attribs.get_inherited("fps") == 11.0
+    assert task_leaf.attribs.get_inherited("fps") == 33.0
+
+    # Project fallback when no folder has a value
+    assert task_leaf.attribs.get_inherited("resolutionWidth") == project_width
+
+    inherited = task_leaf.attribs.to_dict(inherited=True)
+    assert inherited["fps"] == 33.0
+    assert inherited["resolutionWidth"] == project_width
+
+
+@pytest.mark.usefixtures("clean_project")
+def test_inherited_attributes_fetch_unloaded_parents(project_entity_fixture):
+    project_name = project_entity_fixture["name"]
+    hub = EntityHub(project_name)
+    _get_inheritable_keys(hub, ["fps", "resolutionWidth"])
+    entities = _create_inherit_hierarchy(project_entity_fixture, hub)
+
+    # New hub without any hierarchy loaded
+    hub = EntityHub(project_name)
+    project_width = hub.project_entity.attribs["resolutionWidth"]
+    task = hub.get_task_by_id(entities["task_mid"].id)
+    assert task is not None
+    assert hub.get_entity_by_id(entities["mid"].id) is None
+    assert hub.get_entity_by_id(entities["root_a"].id) is None
+
+    # Own values only are fetched from server
+    assert task.attribs["fps"] is None
+    assert task.attribs.get_inherited("fps") == 11.0
+    # Parents were fetched lazily
+    assert hub.get_entity_by_id(entities["mid"].id) is not None
+    assert hub.get_entity_by_id(entities["root_a"].id) is not None
+
+    # Recursion up to project through fetched root folder
+    assert task.attribs.get_inherited("resolutionWidth") == project_width
+    inherited = task.attribs.to_dict(inherited=True)
+    assert inherited["fps"] == 11.0
+    assert inherited["resolutionWidth"] == project_width
+
+
+@pytest.mark.usefixtures("clean_project")
+def test_inherited_attributes_uncommitted_changes(project_entity_fixture):
+    project_name = project_entity_fixture["name"]
+    hub = EntityHub(project_name)
+    _get_inheritable_keys(hub, ["fps"])
+    entities = _create_inherit_hierarchy(project_entity_fixture, hub)
+    root_a = entities["root_a"]
+    root_b = entities["root_b"]
+    mid = entities["mid"]
+    task_mid = entities["task_mid"]
+    task_leaf = entities["task_leaf"]
+
+    project_attribs = hub.project_entity.attribs
+    orig_project_fps = project_attribs["fps"]
+    try:
+        # Set value on closer parent
+        mid.attribs["fps"] = 22.0
+        assert task_mid.attribs.get_inherited("fps") == 22.0
+        # Deeper value is still closest for leaf task
+        assert task_leaf.attribs.get_inherited("fps") == 33.0
+
+        # Unset values -> fall back to upper parents
+        mid.attribs["fps"] = None
+        assert task_mid.attribs.get_inherited("fps") == 11.0
+        root_a.attribs["fps"] = None
+        assert task_mid.attribs.get_inherited("fps") == orig_project_fps
+
+        # Uncommitted project change
+        project_attribs["fps"] = 99.0
+        assert task_mid.attribs.get_inherited("fps") == 99.0
+        root_a.attribs["fps"] = 11.0
+
+        # Move 'mid' under another root
+        mid.parent_id = root_b.id
+        assert task_mid.attribs.get_inherited("fps") == 44.0
+        assert task_leaf.attribs.get_inherited("fps") == 33.0
+
+        # Move task directly
+        task_mid.parent_id = root_a.id
+        assert task_mid.attribs.get_inherited("fps") == 11.0
+
+        # Own value has precedence
+        task_mid.attribs["fps"] = 55.0
+        assert task_mid.attribs.get_inherited("fps") == 55.0
+        assert task_mid.attribs.to_dict(inherited=True)["fps"] == 55.0
+
+        # Inheritance must not create changes on children
+        assert "fps" not in task_leaf.attribs.changes
+    finally:
+        # Never commit project change
+        project_attribs["fps"] = orig_project_fps
+
+
+@pytest.mark.usefixtures("clean_project")
+def test_inherited_attributes_not_inheritable(project_entity_fixture):
+    project_name = project_entity_fixture["name"]
+    hub = EntityHub(project_name)
+    folder_schema = hub.get_attributes_for_type("folder")
+    task_schema = hub.get_attributes_for_type("task")
+    key = next(
+        (
+            key
+            for key, schema in task_schema.items()
+            if not schema.get("inherit", True)
+            and key in folder_schema
+            and schema.get("type") == "string"
+        ),
+        None
+    )
+    if key is None:
+        pytest.skip("No non-inheritable string attribute on task and folder")
+
+    folder_type = project_entity_fixture["folderTypes"][0]["name"]
+    task_type = project_entity_fixture["taskTypes"][0]["name"]
+    folder = hub.add_new_folder(
+        folder_type=folder_type, name="inherit_disabled",
+        attribs={key: "parent_value"},
+    )
+    task = hub.add_new_task(
+        task_type=task_type, name="inherit_disabled_task",
+        folder_id=folder.id,
+    )
+
+    assert task.attribs.get_inherited(key) is None
+    assert key not in task.attribs.to_dict(inherited=True)
+    assert task.attribs.to_dict(
+        ignore_none=False, inherited=True
+    )[key] is None
