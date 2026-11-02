@@ -1289,6 +1289,12 @@ def test_status_definition_on_project_with_invalid_values(
 
 
 # --- Attribute inheritance (unit, no server) ---
+def _make_parent_getter(parent):
+    def getter():
+        return parent
+    return getter
+
+
 def _attribs_chain(*levels, inherited_keys=("fps", "resolutionWidth")):
     """Create chain of 'Attributes' from top (project) to bottom.
 
@@ -1300,7 +1306,7 @@ def _attribs_chain(*levels, inherited_keys=("fps", "resolutionWidth")):
     for idx, values in enumerate(levels):
         getter = None
         if parent is not None:
-            getter = (lambda p=parent: p)
+            getter = _make_parent_getter(parent)
         attribs = Attributes(
             keys,
             values,
