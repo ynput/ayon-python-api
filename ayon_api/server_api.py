@@ -1259,7 +1259,7 @@ class ServerAPI(
         self,
         username: str | None = None,
         own_attributes: bool = False,
-        attrib: bool = True,
+        fill_attrib: bool = True,
     ) -> dict[str, Any] | None:
         """Get user info using REST endpoint.
 
@@ -1270,7 +1270,7 @@ class ServerAPI(
             own_attributes (bool): Fill 'own_attributes' with
                 attribute values that are explicitly set on user, other
                 attributes have 'None' value.
-            attrib (bool): Fill missing attributes in 'attrib' with their
+            fill_attrib (bool): Fill missing attributes in 'attrib' with their
                 default values. Requires an additional request for user
                 attributes. Use 'False' when attributes are not needed.
 
@@ -1288,7 +1288,7 @@ class ServerAPI(
             response.raise_for_status()
             user = response.data
 
-        if attrib:
+        if fill_attrib:
             attributes = self.get_attributes_for_type("user")
             for attr_name, attr_data in attributes.items():
                 user["attrib"].setdefault(attr_name, attr_data["default"])
@@ -1377,7 +1377,7 @@ class ServerAPI(
         """
         if self.has_valid_token:
             try:
-                user_info = self.get_user(attrib=False)
+                user_info = self.get_user(fill_attrib=False)
             except UnauthorizedError:
                 user_info = {}
 

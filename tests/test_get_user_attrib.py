@@ -1,4 +1,4 @@
-"""'get_user' fills default attribute values only if 'attrib' is 'True'.
+"""'get_user' fills default attribute values only if 'fill_attrib' is 'True'.
 
 Does not require running AYON server.
 """
@@ -53,7 +53,7 @@ def test_get_user_fills_default_attributes(con):
 
 
 def test_get_user_without_attributes(con):
-    user = con.get_user("artist", attrib=False)
+    user = con.get_user("artist", fill_attrib=False)
     assert con.requested == ["users/artist"]
     assert user["name"] == "artist"
     assert user["attrib"] == {"email": "artist@example.com"}
@@ -61,6 +61,6 @@ def test_get_user_without_attributes(con):
 
 
 def test_get_user_without_attributes_own_attributes(con):
-    user = con.get_user("artist", own_attributes=True, attrib=False)
+    user = con.get_user("artist", own_attributes=True, fill_attrib=False)
     assert con.requested == ["users/artist"]
     assert user["own_attributes"] == {"email": "artist@example.com"}
