@@ -121,6 +121,7 @@ def test_user_info_by_token(token, expected_requests, is_service):
     )
     assert user_info.is_valid
     assert user_info.is_service is is_service
+    assert user_info.username == "user"
     assert server.requests == expected_requests
 
 
@@ -136,6 +137,25 @@ def test_connection_validates_with_single_request(server, token, auth):
     # Authorized session reuses connection of the validation
     assert len(server.sessions) == 1
     assert con._session is server.sessions[0]
+
+
+@pytest.mark.parametrize(
+    "token, auth", [(USER_TOKEN, "bearer"), (API_KEY, "x-api-key")]
+)
+def test_access_token_username_from_validation(server, token, auth):
+    con = ServerAPI(URL, token)
+
+    assert con.access_token_username == "user"
+    assert server.requests == [("/api/users/me", auth)]
+
+    con.reset_token()
+    assert con.access_token_username is None
+
+
+def test_invalid_token_has_no_username(server):
+    con = ServerAPI(URL, "d" * 32)
+
+    assert con.access_token_username is None
 
 
 def test_global_connection_validates_with_single_request(

@@ -704,6 +704,7 @@ class UserInfo:
     """User information."""
     is_valid: bool = False
     is_service: bool = False
+    username: str | None = None
     response: requests.Response | None = None
 
 
@@ -779,6 +780,7 @@ def get_user_info_by_token(
             response=response,
         )
         if output.is_valid:
+            output.username = response.json().get("name")
             break
     return output
 

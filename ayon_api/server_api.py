@@ -291,6 +291,7 @@ class TokenInfo:
     token: str | None = None
     is_valid: bool | None = None
     is_service: bool | None = None
+    username: str | None = None
     unauthorized_response: requests.Response | None = None
 
 
@@ -615,6 +616,24 @@ class ServerAPI(
         """
         return self._token_info.token
 
+    @property
+    def access_token_username(self) -> str | None:
+        """Name of user who owns the access token.
+
+        The value is stored on token validation, so it does not require
+            additional request. It is not affected by 'as_username', use
+            'get_user' to get user the requests are made as.
+
+        Returns:
+            str | None: Username or None if token is not valid.
+
+        """
+        if not self.has_valid_token:
+            return None
+        if self._token_info.username is None:
+            self.validate_token()
+        return self._token_info.username
+
     def is_service_user(self) -> bool:
         """Check if connection is using service API key.
 
@@ -925,10 +944,12 @@ class ServerAPI(
     def _store_token_validation(self, user_info: UserInfo) -> None:
         self._token_info.is_valid = user_info.is_valid
         self._token_info.unauthorized_response = user_info.response
-        is_service = None
+        is_service = username = None
         if user_info.is_valid:
             is_service = user_info.is_service
+            username = user_info.username
         self._token_info.is_service = is_service
+        self._token_info.username = username
 
     def set_token(self, token: str | None) -> None:
         self._reset_token()
@@ -943,6 +964,7 @@ class ServerAPI(
     def _reset_token(self) -> None:
         self._token_info.token = None
         self._token_info.is_service = None
+        self._token_info.username = None
         self._token_info.is_valid = None
         self._token_info.unauthorized_response = None
         self.close_session()
@@ -1440,13 +1462,7 @@ class ServerAPI(
 
         """
         if self.has_valid_token:
-            try:
-                user_info = self.get_user(fill_attrib=False)
-            except UnauthorizedError:
-                user_info = {}
-
-            current_username = user_info.get("name")
-            if current_username == username:
+            if self.access_token_username == username:
                 self.close_session()
                 if create_session:
                     self.create_session()
@@ -1478,6 +1494,8 @@ class ServerAPI(
             # Service token can't be obtained by login, so it is not
             #   service token
             self._token_info.is_service = False
+            user = response.data.get("user") or {}
+            self._token_info.username = user.get("name")
 
             if not self.has_valid_token:
                 raise AuthenticationError("Invalid credentials")
