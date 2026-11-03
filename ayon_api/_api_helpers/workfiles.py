@@ -224,7 +224,7 @@ class WorkfilesAPI(BaseServerAPI):
 
         major, minor, patch, _, _ = self.get_server_version_tuple()
         if (major, minor, patch) < (1, 1, 3):
-            user = self.get_user()
+            user = self.get_user(fill_attrib=False)
             username = user["name"]
             create_data["createdBy"] = username
             create_data["updatedBy"] = username

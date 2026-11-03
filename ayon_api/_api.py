@@ -868,6 +868,7 @@ def get_user_by_name(
 def get_user(
     username: str | None = None,
     own_attributes: bool = False,
+    fill_attrib: bool = True,
 ) -> dict[str, Any] | None:
     """Get user info using REST endpoint.
 
@@ -878,6 +879,9 @@ def get_user(
         own_attributes (bool): Fill 'own_attributes' with
             attribute values that are explicitly set on user, other
             attributes have 'None' value.
+        fill_attrib (bool): Fill missing attributes in 'attrib' with their
+            default values. Requires an additional request for user
+            attributes. Use 'False' when attributes are not needed.
 
     Returns:
         dict[str, Any] | None: User info or None if user is not
@@ -888,6 +892,7 @@ def get_user(
     return con.get_user(
         username=username,
         own_attributes=own_attributes,
+        fill_attrib=fill_attrib,
     )
 
 
