@@ -132,6 +132,7 @@ class BaseServerAPI:
         self,
         username: Optional[str] = None,
         own_attributes: bool = False,
+        fill_attrib: bool = True,
     ) -> Optional[dict[str, Any]]:
         raise NotImplementedError()
 
