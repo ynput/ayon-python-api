@@ -714,6 +714,7 @@ def get_user_info_by_token(
     verify: str | bool | None = None,
     cert: str | None = None,
     timeout: float | None = None,
+    session: requests.Session | None = None,
 ) -> UserInfo:
     """Get user information by url and token.
 
@@ -726,6 +727,9 @@ def get_user_info_by_token(
             'AYON_CERT_FILE' environment variable is used if not specified.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        session (requests.Session | None): Session used for requests, so
+            its connection can be reused. New connection is used for each
+            request if not specified.
 
     Returns:
         UserInfo: User information if url and token are valid.
@@ -747,13 +751,21 @@ def get_user_info_by_token(
     base_headers = {
         "Content-Type": "application/json",
     }
-    for header_value, is_service in (
-        ({"Authorization": f"Bearer {token}"}, False),
-        ({"X-Api-Key": token}, True),
-    ):
+    # Session tokens created by AYON are 64 characters long, so try
+    #   'Authorization' header first for those and 'X-Api-Key' first for
+    #   anything else. Valid tokens are then checked with a single request.
+    auth_headers = [({"X-Api-Key": token}, True)]
+    user_item = ({"Authorization": f"Bearer {token}"}, False)
+    if len(token) == 64:
+        auth_headers.insert(0, user_item)
+    else:
+        auth_headers.append(user_item)
+
+    request_func = requests.get if session is None else session.get
+    for header_value, is_service in auth_headers:
         headers = base_headers.copy()
         headers.update(header_value)
-        response = requests.get(
+        response = request_func(
             f"{url}/api/users/me",
             headers=headers,
             timeout=timeout,
