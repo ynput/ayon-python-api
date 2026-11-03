@@ -23,7 +23,7 @@ from .constants import (
     SERVER_URL_ENV_KEY,
     SERVER_API_ENV_KEY,
 )
-from .exceptions import FailedServiceInit
+from .exceptions import FailedServiceInit, UnauthorizedError
 from ._api_helpers.base import _PLACEHOLDER
 from .utils import (
     NOT_SET,
@@ -262,8 +262,10 @@ class ServiceContext:
         if connect:
             print("Connecting to server \"{}\"".format(server_url))
             con = GlobalContext.get_server_api_connection()
-            user = con.get_user()
-            print("Logged in as user \"{}\"".format(user["name"]))
+            username = con.access_token_username
+            if username is None:
+                raise UnauthorizedError("User is not authorized.")
+            print("Logged in as user \"{}\"".format(username))
 
 
 def init_service(*args, **kwargs):
