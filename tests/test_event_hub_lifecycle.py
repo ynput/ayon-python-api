@@ -54,12 +54,12 @@ class FakeWebSocket:
         if message["token"] in self._rejected_tokens:
             self._aborted.set()
 
-    def recv_data(self):
+    def recv_data(self, control_frame=False):
         if self._aborted.wait(0.02):
             raise WebSocketConnectionClosedException("closed")
         if not self.sent:
             # Server does not send anything before auth message
-            return self.recv_data()
+            return self.recv_data(control_frame)
         return ABNF.OPCODE_TEXT, json.dumps({"topic": "heartbeat"})
 
     def abort(self):
