@@ -915,10 +915,7 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
         if not edges:
             self._fake_children_parse()
 
-        self._fetched_counter += len(edges)
-        if self._limit and self._fetched_counter >= self._limit:
-            self._need_query = False
-
+        previous_count = len(node_values)
         for edge in edges:
             if not handle_cursors:
                 edge_value = {}
@@ -936,6 +933,12 @@ class GraphQlQueryEdgeField(BaseGraphQlQueryField):
 
             for child in self._children:
                 child.parse_result(edge["node"], edge_value, progress_data)
+
+        # Count only new items, the same page is queried again while nested
+        #   edge fields need more pages
+        self._fetched_counter += len(node_values) - previous_count
+        if self._limit and self._fetched_counter >= self._limit:
+            self._need_query = False
 
         change_cursor = True
         for child in self._children_iter():
