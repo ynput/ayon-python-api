@@ -77,6 +77,9 @@ from .utils import (
     fill_own_attribs,
     UserInfo,
     get_user_info_by_token,
+    _get_requests_ca_bundle,
+    _create_ssl_context,
+    _apply_ssl_verify,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -120,101 +123,6 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
-
-
-def _get_requests_ca_bundle() -> str | None:
-    """CA bundle used by 'requests' for ssl verification.
-
-    Returns:
-        str | None: Path to CA bundle file or directory.
-
-    """
-    # Same order as 'requests' uses when 'trust_env' is enabled
-    for env_key in ("REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
-        path = os.environ.get(env_key)
-        if path:
-            return path
-    try:
-        from requests.certs import where
-
-        return where()
-    except Exception:
-        return None
-
-
-def _create_ssl_context(ca_path: str) -> ssl.SSLContext:
-    """SSL context trusting default CA bundle and CA certificates from path.
-
-    A CA file passed to 'requests' or 'websocket' replaces their default
-        CA bundle, so a server signed by a private CA would be trusted but
-        nothing else (e.g. redirects to cloud storage). The context trusts
-        both instead.
-
-    Args:
-        ca_path (str): Path to CA file or directory with CA certificates.
-
-    Returns:
-        ssl.SSLContext: SSL context for client connections.
-
-    """
-    default_bundle = _get_requests_ca_bundle()
-    if default_bundle and os.path.isdir(default_bundle):
-        context = ssl.create_default_context(capath=default_bundle)
-    elif default_bundle:
-        context = ssl.create_default_context(cafile=default_bundle)
-    else:
-        context = ssl.create_default_context()
-
-    if os.path.isdir(ca_path):
-        context.load_verify_locations(capath=ca_path)
-    else:
-        context.load_verify_locations(cafile=ca_path)
-    return context
-
-
-class _CAFileAdapter(requests.adapters.HTTPAdapter):
-    """HTTP adapter trusting additional CA certificates.
-
-    Used when 'ssl_verify' is a path. The session still has 'verify' set
-        to the path, which 'urllib3' loads to the context too.
-
-    Args:
-        ca_path (str): Path to CA file or directory with CA certificates.
-
-    """
-    def __init__(self, ca_path: str, **kwargs) -> None:
-        ssl_context = _create_ssl_context(ca_path)
-        # 'urllib3' matches hostname on its own, same as with its default
-        #   context. Python's check fails for IP addresses on 'urllib3' 1.x,
-        #   which does not send server hostname for them.
-        ssl_context.check_hostname = False
-        self._ssl_context = ssl_context
-        super().__init__(**kwargs)
-
-    def init_poolmanager(self, *args, **kwargs) -> None:
-        kwargs["ssl_context"] = self._ssl_context
-        super().init_poolmanager(*args, **kwargs)
-
-    def proxy_manager_for(self, proxy, **proxy_kwargs):
-        proxy_kwargs["ssl_context"] = self._ssl_context
-        return super().proxy_manager_for(proxy, **proxy_kwargs)
-
-
-def _apply_ssl_verify(
-    session: requests.Session, ssl_verify: bool | str | None
-) -> None:
-    """Set 'verify' of session and mount adapter for CA path."""
-    session.verify = ssl_verify
-    current = getattr(session, "adapters", {}).get("https://")
-    if isinstance(ssl_verify, str):
-        adapter = _CAFileAdapter(ssl_verify)
-    elif isinstance(current, _CAFileAdapter):
-        adapter = requests.adapters.HTTPAdapter()
-    else:
-        return
-    session.mount("https://", adapter)
-    if current is not None:
-        current.close()
 
 
 def _disable_websocket_ipv6() -> None:

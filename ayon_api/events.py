@@ -13,10 +13,10 @@ import typing
 from typing import Any, Callable
 import weakref
 
-import requests
 from websocket import ABNF, WebSocketTimeoutException
 
 from .exceptions import UnauthorizedError
+from .utils import RequestTypes, _send_request
 
 if typing.TYPE_CHECKING:
     from websocket import WebSocket
@@ -892,7 +892,8 @@ class EventHub:
             {"X-Api-Key": token},
         ):
             try:
-                response = requests.get(
+                response = _send_request(
+                    RequestTypes.get,
                     url,
                     headers=headers,
                     verify=ssl_verify,
