@@ -77,9 +77,9 @@ from .utils import (
     fill_own_attribs,
     UserInfo,
     get_user_info_by_token,
-    _get_requests_ca_bundle,
-    _create_ssl_context,
-    _apply_ssl_verify,
+    get_requests_ca_bundle,
+    create_ssl_context,
+    apply_ssl_verify,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -496,7 +496,7 @@ class ServerAPI(
         self._ssl_verify = ssl_verify
         for session in (self._session, self._validation_session):
             if session is not None:
-                _apply_ssl_verify(session, ssl_verify)
+                apply_ssl_verify(session, ssl_verify)
 
     def get_cert(self) -> str | None:
         """Current cert file used for connection to server.
@@ -996,7 +996,7 @@ class ServerAPI(
         if session is None:
             session = requests.Session()
             session.cert = self._cert
-            _apply_ssl_verify(session, self._ssl_verify)
+            apply_ssl_verify(session, self._ssl_verify)
         session.headers.update(self.get_headers())
 
         self._session_functions_mapping = {
@@ -1036,7 +1036,7 @@ class ServerAPI(
         if self._validation_session is None:
             session = requests.Session()
             session.cert = self._cert
-            _apply_ssl_verify(session, self._ssl_verify)
+            apply_ssl_verify(session, self._ssl_verify)
             self._validation_session = session
         return self._validation_session
 
@@ -1099,11 +1099,11 @@ class ServerAPI(
             if isinstance(ca_bundle, str):
                 # Trust default CA bundle too, same as REST requests do
                 if "context" not in prepared_sslopt:
-                    prepared_sslopt["context"] = _create_ssl_context(
+                    prepared_sslopt["context"] = create_ssl_context(
                         ca_bundle
                     )
             else:
-                ca_bundle = _get_requests_ca_bundle()
+                ca_bundle = get_requests_ca_bundle()
             if ca_bundle:
                 key = "ca_certs"
                 if os.path.isdir(ca_bundle):

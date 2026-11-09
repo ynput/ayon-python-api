@@ -16,7 +16,7 @@ import weakref
 from websocket import ABNF, WebSocketTimeoutException
 
 from .exceptions import UnauthorizedError
-from .utils import RequestTypes, _send_request
+from .utils import RequestTypes, send_request
 
 if typing.TYPE_CHECKING:
     from websocket import WebSocket
@@ -892,7 +892,7 @@ class EventHub:
             {"X-Api-Key": token},
         ):
             try:
-                response = _send_request(
+                response = send_request(
                     RequestTypes.get,
                     url,
                     headers=headers,

@@ -587,7 +587,7 @@ def prepare_entity_changes(
     return changes
 
 
-def _get_requests_ca_bundle() -> str | None:
+def get_requests_ca_bundle() -> str | None:
     """CA bundle used by 'requests' for ssl verification.
 
     Returns:
@@ -607,7 +607,7 @@ def _get_requests_ca_bundle() -> str | None:
         return None
 
 
-def _create_ssl_context(ca_path: str) -> ssl.SSLContext:
+def create_ssl_context(ca_path: str) -> ssl.SSLContext:
     """SSL context trusting default CA bundle and CA certificates from path.
 
     A CA file passed to 'requests' or 'websocket' replaces their default
@@ -622,7 +622,7 @@ def _create_ssl_context(ca_path: str) -> ssl.SSLContext:
         ssl.SSLContext: SSL context for client connections.
 
     """
-    default_bundle = _get_requests_ca_bundle()
+    default_bundle = get_requests_ca_bundle()
     if default_bundle and os.path.isdir(default_bundle):
         context = ssl.create_default_context(capath=default_bundle)
     elif default_bundle:
@@ -648,7 +648,7 @@ class _CAFileAdapter(requests.adapters.HTTPAdapter):
 
     """
     def __init__(self, ca_path: str, **kwargs) -> None:
-        ssl_context = _create_ssl_context(ca_path)
+        ssl_context = create_ssl_context(ca_path)
         # 'urllib3' matches hostname on its own, same as with its default
         #   context. Python's check fails for IP addresses on 'urllib3' 1.x,
         #   which does not send server hostname for them.
@@ -665,7 +665,7 @@ class _CAFileAdapter(requests.adapters.HTTPAdapter):
         return super().proxy_manager_for(proxy, **proxy_kwargs)
 
 
-def _apply_ssl_verify(
+def apply_ssl_verify(
     session: requests.Session, ssl_verify: bool | str | None
 ) -> None:
     """Set 'verify' of session and mount adapter for CA path."""
@@ -682,7 +682,7 @@ def _apply_ssl_verify(
         current.close()
 
 
-def _send_request(
+def send_request(
     request_type: RequestType,
     url: str,
     verify: str | bool | None = None,
@@ -716,7 +716,7 @@ def _send_request(
     session = requests.Session()
     try:
         session.cert = cert
-        _apply_ssl_verify(session, verify)
+        apply_ssl_verify(session, verify)
         func = getattr(session, request_type.name.lower())
         return func(url, **kwargs)
     finally:
@@ -742,7 +742,7 @@ def _try_connect_to_server(
     try:
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
-        response = _send_request(
+        response = send_request(
             RequestTypes.get,
             f"{url}/api/info",
             timeout=timeout,
@@ -792,7 +792,7 @@ def login_to_server(
         timeout = get_default_timeout()
 
     headers = {"Content-Type": "application/json"}
-    response = _send_request(
+    response = send_request(
         RequestTypes.post,
         f"{url}/api/auth/login",
         headers=headers,
@@ -841,7 +841,7 @@ def logout_from_server(
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",
     }
-    _send_request(
+    send_request(
         RequestTypes.post,
         f"{url}/api/auth/logout",
         headers=headers,
@@ -915,7 +915,7 @@ def get_user_info_by_token(
         auth_headers.append(user_item)
 
     if session is None:
-        request_func = functools.partial(_send_request, RequestTypes.get)
+        request_func = functools.partial(send_request, RequestTypes.get)
     else:
         request_func = session.get
     for header_value, is_service in auth_headers:
@@ -1540,7 +1540,7 @@ def take_web_action_event(
         dict[str, Any]: Web action event.
 
     """
-    response = _send_request(
+    response = send_request(
         RequestTypes.get,
         f"{server_url}/api/actions/take/{action_token}",
         verify=verify,
@@ -1574,7 +1574,7 @@ def abort_web_action_event(
         requests.Response: Response from server.
 
     """
-    response = _send_request(
+    response = send_request(
         RequestTypes.post,
         f"{server_url}/api/actions/abort/{action_token}",
         json={"message": reason},
