@@ -141,6 +141,81 @@ def _get_requests_ca_bundle() -> str | None:
         return None
 
 
+def _create_ssl_context(ca_path: str) -> ssl.SSLContext:
+    """SSL context trusting default CA bundle and CA certificates from path.
+
+    A CA file passed to 'requests' or 'websocket' replaces their default
+        CA bundle, so a server signed by a private CA would be trusted but
+        nothing else (e.g. redirects to cloud storage). The context trusts
+        both instead.
+
+    Args:
+        ca_path (str): Path to CA file or directory with CA certificates.
+
+    Returns:
+        ssl.SSLContext: SSL context for client connections.
+
+    """
+    default_bundle = _get_requests_ca_bundle()
+    if default_bundle and os.path.isdir(default_bundle):
+        context = ssl.create_default_context(capath=default_bundle)
+    elif default_bundle:
+        context = ssl.create_default_context(cafile=default_bundle)
+    else:
+        context = ssl.create_default_context()
+
+    if os.path.isdir(ca_path):
+        context.load_verify_locations(capath=ca_path)
+    else:
+        context.load_verify_locations(cafile=ca_path)
+    return context
+
+
+class _CAFileAdapter(requests.adapters.HTTPAdapter):
+    """HTTP adapter trusting additional CA certificates.
+
+    Used when 'ssl_verify' is a path. The session still has 'verify' set
+        to the path, which 'urllib3' loads to the context too.
+
+    Args:
+        ca_path (str): Path to CA file or directory with CA certificates.
+
+    """
+    def __init__(self, ca_path: str, **kwargs) -> None:
+        ssl_context = _create_ssl_context(ca_path)
+        # 'urllib3' matches hostname on its own, same as with its default
+        #   context. Python's check fails for IP addresses on 'urllib3' 1.x,
+        #   which does not send server hostname for them.
+        ssl_context.check_hostname = False
+        self._ssl_context = ssl_context
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, *args, **kwargs) -> None:
+        kwargs["ssl_context"] = self._ssl_context
+        super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        proxy_kwargs["ssl_context"] = self._ssl_context
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
+
+def _apply_ssl_verify(
+    session: requests.Session, ssl_verify: bool | str | None
+) -> None:
+    """Set 'verify' of session and mount adapter for CA path."""
+    session.verify = ssl_verify
+    current = getattr(session, "adapters", {}).get("https://")
+    if isinstance(ssl_verify, str):
+        adapter = _CAFileAdapter(ssl_verify)
+    elif isinstance(current, _CAFileAdapter):
+        adapter = requests.adapters.HTTPAdapter()
+    else:
+        return
+    session.mount("https://", adapter)
+    if current is not None:
+        current.close()
+
+
 def _disable_websocket_ipv6() -> None:
     """Skip IPv6 addresses in 'websocket' when python does not support IPv6.
 
@@ -342,7 +417,8 @@ class ServerAPI(
             propagated into events.
         ssl_verify (bool | str | None): Verify SSL certificate
             Looks for env variable value ``AYON_CA_FILE`` by default. If not
-            available then 'True' is used.
+            available then 'True' is used. A path to CA file or directory
+            is trusted in addition to the default CA bundle.
         cert (str | None): Path to certificate file. Looks for env
             variable value ``AYON_CERT_FILE`` by default.
         create_session (bool): Create session for connection if
@@ -504,7 +580,7 @@ class ServerAPI(
         self._ssl_verify = ssl_verify
         for session in (self._session, self._validation_session):
             if session is not None:
-                session.verify = ssl_verify
+                _apply_ssl_verify(session, ssl_verify)
 
     def get_cert(self) -> str | None:
         """Current cert file used for connection to server.
@@ -1003,8 +1079,8 @@ class ServerAPI(
         self._validation_session = None
         if session is None:
             session = requests.Session()
-        session.cert = self._cert
-        session.verify = self._ssl_verify
+            session.cert = self._cert
+            _apply_ssl_verify(session, self._ssl_verify)
         session.headers.update(self.get_headers())
 
         self._session_functions_mapping = {
@@ -1044,7 +1120,7 @@ class ServerAPI(
         if self._validation_session is None:
             session = requests.Session()
             session.cert = self._cert
-            session.verify = self._ssl_verify
+            _apply_ssl_verify(session, self._ssl_verify)
             self._validation_session = session
         return self._validation_session
 
@@ -1086,7 +1162,13 @@ class ServerAPI(
             #   module, which might be missing (e.g. python on macOS), so
             #   REST would work but websocket would always fail.
             ca_bundle = self._ssl_verify
-            if not isinstance(ca_bundle, str):
+            if isinstance(ca_bundle, str):
+                # Trust default CA bundle too, same as REST requests do
+                if "context" not in prepared_sslopt:
+                    prepared_sslopt["context"] = _create_ssl_context(
+                        ca_bundle
+                    )
+            else:
                 ca_bundle = _get_requests_ca_bundle()
             if ca_bundle:
                 key = "ca_certs"
