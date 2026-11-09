@@ -682,6 +682,46 @@ def apply_ssl_verify(
         current.close()
 
 
+def resolve_ssl_args(
+    verify: str | bool | None,
+    cert: str | None,
+) -> tuple[str | bool, str | None]:
+    """Resolve SSL verification and client certificate for requests.
+
+    'None' values are filled from environment variables:
+    - 'verify' from 'AYON_CA_FILE', 'True' if it is not set.
+    - 'cert' from 'AYON_CERT_FILE', no client certificate if it is not set.
+
+    Other values skip the environment variables. That is useful e.g. for
+        a process connected to multiple servers, where only some of them
+        use the CA file:
+    - 'verify=True' uses only the default CA bundle.
+    - 'verify=False' disables verification.
+    - 'verify="<path>"' trusts the CA file (or directory) in addition to
+        the default CA bundle.
+    - 'cert=""' does not use any client certificate.
+    - 'cert="<path>"' uses the client certificate.
+
+    Empty string 'cert' is kept, so passing the result to other functions
+        does not fill it from the environment again.
+
+    Args:
+        verify (str | bool | None): SSL verification.
+        cert (str | None): Path to client certificate file.
+
+    Returns:
+        tuple[str | bool, str | None]: SSL verification and client
+            certificate.
+
+    """
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+    return verify, cert
+
+
 def send_request(
     request_type: RequestType,
     url: str,
@@ -707,11 +747,7 @@ def send_request(
         requests.Response: Response from server.
 
     """
-    if verify is None:
-        verify = os.environ.get("AYON_CA_FILE") or True
-
-    if cert is None:
-        cert = os.environ.get("AYON_CERT_FILE") or None
+    verify, cert = resolve_ssl_args(verify, cert)
 
     session = requests.Session()
     try:
@@ -895,11 +931,7 @@ def get_user_info_by_token(
     if timeout is None:
         timeout = get_default_timeout()
 
-    if verify is None:
-        verify = os.environ.get("AYON_CA_FILE") or True
-
-    if cert is None:
-        cert = os.environ.get("AYON_CERT_FILE") or None
+    verify, cert = resolve_ssl_args(verify, cert)
 
     base_headers = {
         "Content-Type": "application/json",

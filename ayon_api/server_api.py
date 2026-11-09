@@ -80,6 +80,7 @@ from .utils import (
     get_requests_ca_bundle,
     create_ssl_context,
     apply_ssl_verify,
+    resolve_ssl_args,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -324,12 +325,10 @@ class ServerAPI(
         sender (str | None): Sender of requests, more specific than
             sender type (e.g. machine name). Used in server logs and
             propagated into events.
-        ssl_verify (bool | str | None): Verify SSL certificate
-            Looks for env variable value ``AYON_CA_FILE`` by default. If not
-            available then 'True' is used. A path to CA file or directory
-            is trusted in addition to the default CA bundle.
-        cert (str | None): Path to certificate file. Looks for env
-            variable value ``AYON_CERT_FILE`` by default.
+        ssl_verify (bool | str | None): Verify SSL certificate, see
+            'resolve_ssl_args' for possible values.
+        cert (str | None): Path to client certificate file, see
+            'resolve_ssl_args' for possible values.
         create_session (bool): Create session for connection if
             token is available. Default is True.
         timeout (float | None): Timeout for requests.
@@ -385,15 +384,7 @@ class ServerAPI(
         self.set_timeout(timeout)
         self.set_max_retries(max_retries)
 
-        if ssl_verify is None:
-            # Custom AYON env variable for CA file or 'True'
-            # - that should cover most default behaviors in 'requests'
-            #   with 'certifi'
-            ssl_verify = os.environ.get("AYON_CA_FILE") or True
-
-        if cert is None:
-            cert = os.environ.get("AYON_CERT_FILE")
-
+        ssl_verify, cert = resolve_ssl_args(ssl_verify, cert)
         self._ssl_verify = ssl_verify
         self._cert = cert
 
