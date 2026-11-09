@@ -1395,7 +1395,9 @@ def get_media_mime_type(filepath: str) -> str | None:
 
 def take_web_action_event(
     server_url: str,
-    action_token: str
+    action_token: str,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> dict[str, Any]:
     """Take web action event using action token.
 
@@ -1404,13 +1406,25 @@ def take_web_action_event(
     Args:
         server_url (str): AYON server url.
         action_token (str): Action token.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         dict[str, Any]: Web action event.
 
     """
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
     response = requests.get(
-        f"{server_url}/api/actions/take/{action_token}"
+        f"{server_url}/api/actions/take/{action_token}",
+        verify=verify,
+        cert=cert,
     )
     response.raise_for_status()
     return response.json()
@@ -1419,7 +1433,9 @@ def take_web_action_event(
 def abort_web_action_event(
     server_url: str,
     action_token: str,
-    reason: str
+    reason: str,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> requests.Response:
     """Abort web action event using action token.
 
@@ -1429,14 +1445,26 @@ def abort_web_action_event(
         server_url (str): AYON server url.
         action_token (str): Action token.
         reason (str): Reason why webaction event was aborted.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         requests.Response: Response from server.
 
     """
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
     response = requests.post(
         f"{server_url}/api/actions/abort/{action_token}",
         json={"message": reason},
+        verify=verify,
+        cert=cert,
     )
     response.raise_for_status()
     return response
