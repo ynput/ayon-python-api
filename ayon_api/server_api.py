@@ -6,6 +6,7 @@ Provides access to server API.
 from __future__ import annotations
 
 import copy
+import functools
 from dataclasses import dataclass
 import os
 import re
@@ -503,12 +504,19 @@ class ServerAPI(
         #   token validation, see '_get_validation_session'
         self._validation_session: requests.Session | None = None
 
+        # Requests made without authorized session use validation session,
+        #   so they respect 'ssl_verify' and 'cert'
         self._base_functions_mapping = {
-            RequestTypes.get: requests.get,
-            RequestTypes.post: requests.post,
-            RequestTypes.put: requests.put,
-            RequestTypes.patch: requests.patch,
-            RequestTypes.delete: requests.delete
+            request_type: functools.partial(
+                self._validation_session_request, request_type
+            )
+            for request_type in (
+                RequestTypes.get,
+                RequestTypes.post,
+                RequestTypes.put,
+                RequestTypes.patch,
+                RequestTypes.delete,
+            )
         }
         self._session_functions_mapping = {}
 
@@ -1123,6 +1131,24 @@ class ServerAPI(
             _apply_ssl_verify(session, self._ssl_verify)
             self._validation_session = session
         return self._validation_session
+
+    def _validation_session_request(
+        self, request_type: RequestType, url: str, **kwargs
+    ) -> requests.Response:
+        """Send request without authorized session.
+
+        Args:
+            request_type (RequestType): Type of request.
+            url (str): Request url.
+            **kwargs: Keyword arguments for 'requests'.
+
+        Returns:
+            requests.Response: Response from server.
+
+        """
+        session = self._get_validation_session()
+        func = getattr(session, request_type.name.lower())
+        return func(url, **kwargs)
 
     def create_websocket(
         self,
@@ -1849,7 +1875,12 @@ class ServerAPI(
 
     def _logout(self) -> None:
         if self._token_info.is_valid:
-            logout_from_server(self._base_url, self._token_info.token)
+            logout_from_server(
+                self._base_url,
+                self._token_info.token,
+                verify=self._ssl_verify,
+                cert=self._cert,
+            )
 
     def _get_server_info(self) -> dict[str, Any]:
         """Get server info without a session."""

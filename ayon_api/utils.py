@@ -635,6 +635,8 @@ def login_to_server(
     username: str,
     password: str,
     timeout: float | None = None,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> str | None:
     """Use login to the server to receive token.
 
@@ -644,6 +646,10 @@ def login_to_server(
         password (str): User's password.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         str | None: User's token if login was successfull.
@@ -652,6 +658,13 @@ def login_to_server(
     """
     if timeout is None:
         timeout = get_default_timeout()
+
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
     headers = {"Content-Type": "application/json"}
     response = requests.post(
         f"{url}/api/auth/login",
@@ -661,6 +674,8 @@ def login_to_server(
             "password": password
         },
         timeout=timeout,
+        verify=verify,
+        cert=cert,
     )
     token = None
     # 200 - success
@@ -676,6 +691,8 @@ def logout_from_server(
     url: str,
     token: str,
     timeout: float | None = None,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> None:
     """Logout from server and throw token away.
 
@@ -684,10 +701,21 @@ def logout_from_server(
         token (str): Token which should be used to log out.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     """
     if timeout is None:
         timeout = get_default_timeout()
+
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",
@@ -696,6 +724,8 @@ def logout_from_server(
         f"{url}/api/auth/logout",
         headers=headers,
         timeout=timeout,
+        verify=verify,
+        cert=cert,
     )
 
 
