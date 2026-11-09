@@ -24,6 +24,11 @@ requests = type(sys)("requests")
 requests.__dict__["Response"] = type(
     "Response", (), {"__module__": "requests"}
 )
+requests_adapters = type(sys)("requests.adapters")
+requests_adapters.__dict__["HTTPAdapter"] = type(
+    "HTTPAdapter", (), {"__module__": "requests.adapters"}
+)
+requests.__dict__["adapters"] = requests_adapters
 websocket = type(sys)("websocket")
 websocket.__dict__.update({
     name: type(name, (), {"__module__": "websocket"})
