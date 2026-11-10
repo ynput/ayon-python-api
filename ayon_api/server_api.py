@@ -511,6 +511,9 @@ class ServerAPI(
         for session in (self._session, self._validation_session):
             if session is not None:
                 session.cert = cert
+                # 'urllib3' loads client cert to SSL context of CA file
+                #   adapter, new adapter does not send the previous one
+                apply_ssl_verify(session, self._ssl_verify)
 
     ssl_verify = property(get_ssl_verify, set_ssl_verify)
     cert = property(get_cert, set_cert)
@@ -1090,9 +1093,11 @@ class ServerAPI(
             if isinstance(ca_bundle, str):
                 # Trust default CA bundle too, same as REST requests do
                 if "context" not in prepared_sslopt:
-                    prepared_sslopt["context"] = create_ssl_context(
-                        ca_bundle
-                    )
+                    context = create_ssl_context(ca_bundle)
+                    # 'websocket' ignores 'certfile' with custom context
+                    if self._cert:
+                        context.load_cert_chain(self._cert)
+                    prepared_sslopt["context"] = context
             else:
                 ca_bundle = get_requests_ca_bundle()
             if ca_bundle:

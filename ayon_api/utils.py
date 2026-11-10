@@ -621,6 +621,9 @@ def create_ssl_context(ca_path: str) -> ssl.SSLContext:
     Returns:
         ssl.SSLContext: SSL context for client connections.
 
+    Raises:
+        OSError: CA certificates could not be loaded from the path.
+
     """
     default_bundle = get_requests_ca_bundle()
     if default_bundle and os.path.isdir(default_bundle):
@@ -629,11 +632,20 @@ def create_ssl_context(ca_path: str) -> ssl.SSLContext:
         context = ssl.create_default_context(cafile=default_bundle)
     else:
         context = ssl.create_default_context()
+    # Same as 'urllib3' 2 default context, certificate without
+    #   'subjectAltName' is not matched by its 'commonName'
+    context.hostname_checks_common_name = False
 
-    if os.path.isdir(ca_path):
-        context.load_verify_locations(capath=ca_path)
-    else:
-        context.load_verify_locations(cafile=ca_path)
+    try:
+        if os.path.isdir(ca_path):
+            context.load_verify_locations(capath=ca_path)
+        else:
+            context.load_verify_locations(cafile=ca_path)
+    except OSError as exc:
+        # Errors of 'ssl' do not contain the path
+        raise OSError(
+            f"Could not load CA certificates from '{ca_path}': {exc}"
+        ) from exc
     return context
 
 
@@ -642,6 +654,13 @@ class _CAFileAdapter(requests.adapters.HTTPAdapter):
 
     Used when 'ssl_verify' is a path. The session still has 'verify' set
         to the path, which 'urllib3' loads to the context too.
+
+    All connections of the adapter share one SSL context, and 'urllib3'
+        loads the client certificate and 'verify' path of each request
+        into it. Create a new adapter when the client certificate changes
+        ('apply_ssl_verify'). Passing 'verify' per request does not
+        restrict trust to it, and other path adds CA to the context for
+        all following connections.
 
     Args:
         ca_path (str): Path to CA file or directory with CA certificates.
