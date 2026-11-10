@@ -1961,6 +1961,7 @@ class ServerAPI(
                 progress.reset_transferred()
                 offset = 0
 
+            headers.pop("Range", None)
             if offset > 0:
                 headers["Range"] = f"bytes={offset}-"
 
@@ -1988,7 +1989,6 @@ class ServerAPI(
                         stream.seek(0)
                         stream.truncate()
                         progress.reset_transferred()
-                        headers.pop("Range", None)
 
                     # Chunked response does not have the size
                     content_length = response.headers.get("Content-Length")
@@ -2012,19 +2012,22 @@ class ServerAPI(
                         stream.write(chunk)
                         progress.add_transferred_chunk(len(chunk))
 
-                    if is_encoded and content_length:
-                        # 'urllib3' 1.x does not fail when compressed
-                        #   content is incomplete, compare received bytes
-                        received = getattr(response.raw, "tell", None)
-                        if (
-                            received is not None
-                            and received() < int(content_length)
-                        ):
-                            raise requests.exceptions.ConnectionError(
-                                f"Downloaded {received()} out of"
-                                f" {content_length} compressed bytes"
-                                f" from '{url}'."
-                            )
+                    # 'urllib3' 1.x does not fail when response ends before
+                    #   'Content-Length', compare received bytes. Size of
+                    #   whole content may be unknown (compressed, or
+                    #   resumed download of chunked response).
+                    received = getattr(
+                        getattr(response, "raw", None), "tell", None
+                    )
+                    if (
+                        content_length
+                        and received is not None
+                        and received() < int(content_length)
+                    ):
+                        raise requests.exceptions.ConnectionError(
+                            f"Received {received()} out of"
+                            f" {content_length} bytes from '{url}'."
+                        )
 
                 content_size = progress.get_content_size()
                 transferred = progress.get_transferred_size()
