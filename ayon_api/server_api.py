@@ -6,6 +6,7 @@ Provides access to server API.
 from __future__ import annotations
 
 import copy
+import functools
 from dataclasses import dataclass
 import os
 import re
@@ -118,6 +119,13 @@ VERSION_REGEX = re.compile(
     r"\.(?P<patch>0|[1-9]\d*)"
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
+)
+
+# Subclasses of 'requests.exceptions.ConnectionError' that won't be fixed
+#   by sending the request again
+_NOT_RETRIABLE_CONNECTION_ERRORS = (
+    requests.exceptions.SSLError,
+    requests.exceptions.ProxyError,
 )
 
 
@@ -426,15 +434,6 @@ class ServerAPI(
         # Session without authorization used for availability check and
         #   token validation, see '_get_validation_session'
         self._validation_session: requests.Session | None = None
-
-        self._base_functions_mapping = {
-            RequestTypes.get: requests.get,
-            RequestTypes.post: requests.post,
-            RequestTypes.put: requests.put,
-            RequestTypes.patch: requests.patch,
-            RequestTypes.delete: requests.delete
-        }
-        self._session_functions_mapping = {}
 
         # Attributes cache
         self._attributes_schema = None
@@ -1002,18 +1001,8 @@ class ServerAPI(
         session = self._validation_session
         self._validation_session = None
         if session is None:
-            session = requests.Session()
-        session.cert = self._cert
-        session.verify = self._ssl_verify
+            session = self._create_requests_session()
         session.headers.update(self.get_headers())
-
-        self._session_functions_mapping = {
-            RequestTypes.get: session.get,
-            RequestTypes.post: session.post,
-            RequestTypes.put: session.put,
-            RequestTypes.patch: session.patch,
-            RequestTypes.delete: session.delete
-        }
         self._session = session
 
     def close_session(self) -> None:
@@ -1026,8 +1015,43 @@ class ServerAPI(
 
         session = self._session
         self._session = None
-        self._session_functions_mapping = {}
         session.close()
+
+    def _create_requests_session(self) -> requests.Session:
+        """Create requests session with connection ssl settings.
+
+        Returns:
+            requests.Session: Session without authorization headers.
+
+        """
+        session = requests.Session()
+        session.cert = self._cert
+        session.verify = self._ssl_verify
+        return session
+
+    @contextmanager
+    def _request_session(self) -> Generator[requests.Session, None, None]:
+        """Session to use for a request.
+
+        Yields the connection session if it was created. Otherwise yields
+            a temporary session, which is closed on exit. The temporary
+            session has the ssl settings of the connection but does not
+            have authorization headers.
+
+        Yields:
+            requests.Session: Session to use for request.
+
+        """
+        session = self._session
+        if session is not None:
+            yield session
+            return
+
+        session = self._create_requests_session()
+        try:
+            yield session
+        finally:
+            session.close()
 
     def _get_validation_session(self) -> requests.Session:
         """Session for requests made before authorized session is created.
@@ -1042,10 +1066,7 @@ class ServerAPI(
 
         """
         if self._validation_session is None:
-            session = requests.Session()
-            session.cert = self._cert
-            session.verify = self._ssl_verify
-            self._validation_session = session
+            self._validation_session = self._create_requests_session()
         return self._validation_session
 
     def create_websocket(
@@ -1836,12 +1857,25 @@ class ServerAPI(
             if "headers" not in kwargs:
                 kwargs["headers"] = self.get_headers()
 
+        with self._request_session() as session:
             if isinstance(function, RequestType):
-                function = self._base_functions_mapping[function]
+                function = functools.partial(session.request, function.name)
+            return self._send_rest_request(
+                function,
+                url,
+                max_retries,
+                handle_invalid_token,
+                kwargs,
+            )
 
-        elif isinstance(function, RequestType):
-            function = self._session_functions_mapping[function]
-
+    def _send_rest_request(
+        self,
+        function: Any,
+        url: str,
+        max_retries: int,
+        handle_invalid_token: bool,
+        kwargs: dict[str, Any],
+    ) -> RestApiResponse:
         response = None
         new_response = None
         for retry_idx in reversed(range(max_retries)):
@@ -1862,6 +1896,23 @@ class ServerAPI(
                     if retry_idx != 0:
                         time.sleep(2)
                     continue
+                break
+
+            except _NOT_RETRIABLE_CONNECTION_ERRORS as exc:
+                # Sending the request again won't help
+                self.log.warning(
+                    "AYON api error: Connection error happened.",
+                    exc_info=True,
+                )
+                new_response = RestApiResponse(
+                    None,
+                    {
+                        "detail": (
+                            "AYON api error: Unable to connect the server."
+                            f" {exc.__class__.__name__}: {exc}"
+                        )
+                    }
+                )
                 break
 
             except ConnectionRefusedError:
@@ -1938,75 +1989,81 @@ class ServerAPI(
             "stream": True,
             "headers": headers,
         }
-        if self._session is None:
-            get_func = self._base_functions_mapping[RequestTypes.get]
-        else:
-            get_func = self._session_functions_mapping[RequestTypes.get]
 
         url = self._endpoint_to_url(endpoint, use_rest=False)
         progress.set_source_url(url)
 
         retries = max(self.max_retries, 1)
         api_prepended = False
-        for attempt in range(retries):
-            # Continue in download
-            offset = progress.get_transferred_size()
-            if offset > 0:
-                headers["Range"] = f"bytes={offset}-"
+        with self._request_session() as session:
+            for attempt in range(retries):
+                # Continue in download
+                offset = progress.get_transferred_size()
+                if offset > 0:
+                    headers["Range"] = f"bytes={offset}-"
 
-            try:
-                with get_func(url, **kwargs) as response:
-                    # Auto-fix missing 'api/'
-                    if (
-                        response.status_code in (404, 405)
-                        and not api_prepended
-                    ):
-                        api_prepended = True
+                try:
+                    with session.get(url, **kwargs) as response:
+                        # Auto-fix missing 'api/'
                         if (
-                            not endpoint.startswith(self._base_url)
-                            and not endpoint.startswith("api/")
+                            response.status_code in (404, 405)
+                            and not api_prepended
                         ):
-                            url = self._endpoint_to_url(
-                                endpoint, use_rest=True
+                            api_prepended = True
+                            if (
+                                not endpoint.startswith(self._base_url)
+                                and not endpoint.startswith("api/")
+                            ):
+                                url = self._endpoint_to_url(
+                                    endpoint, use_rest=True
+                                )
+                                progress.set_destination_url(url)
+                                continue
+                        response.raise_for_status()
+                        if offset > 0 and response.status_code != 206:
+                            # Server ignored 'Range' and sends whole file
+                            #   again, already downloaded content must be
+                            #   discarded
+                            stream.seek(0)
+                            stream.truncate()
+                            progress.reset_transferred()
+                            headers.pop("Range", None)
+
+                        if progress.get_content_size() is None:
+                            progress.set_content_size(
+                                response.headers["Content-length"]
                             )
-                            progress.set_destination_url(url)
-                            continue
-                    response.raise_for_status()
-                    if offset > 0 and response.status_code != 206:
-                        # Server ignored 'Range' and sends whole file again,
-                        #   already downloaded content must be discarded
-                        stream.seek(0)
-                        stream.truncate()
-                        progress.reset_transferred()
-                        headers.pop("Range", None)
 
-                    if progress.get_content_size() is None:
-                        progress.set_content_size(
-                            response.headers["Content-length"]
+                        for chunk in response.iter_content(
+                            chunk_size=chunk_size
+                        ):
+                            stream.write(chunk)
+                            progress.add_transferred_chunk(len(chunk))
+
+                    content_size = progress.get_content_size()
+                    transferred = progress.get_transferred_size()
+                    if (
+                        content_size is not None
+                        and transferred != content_size
+                    ):
+                        # Connection was closed before all content was received
+                        raise requests.exceptions.ConnectionError(
+                            f"Downloaded {transferred} out of {content_size}"
+                            f" bytes from '{url}'."
                         )
+                    break
 
-                    for chunk in response.iter_content(chunk_size=chunk_size):
-                        stream.write(chunk)
-                        progress.add_transferred_chunk(len(chunk))
-
-                content_size = progress.get_content_size()
-                transferred = progress.get_transferred_size()
-                if content_size is not None and transferred != content_size:
-                    # Connection was closed before all content was received
-                    raise requests.exceptions.ConnectionError(
-                        f"Downloaded {transferred} out of {content_size}"
-                        f" bytes from '{url}'."
-                    )
-                break
-
-            except (
-                requests.exceptions.Timeout,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError,
-            ):
-                if attempt == retries - 1:
+                except _NOT_RETRIABLE_CONNECTION_ERRORS:
                     raise
-                progress.next_attempt()
+
+                except (
+                    requests.exceptions.Timeout,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.ChunkedEncodingError,
+                ):
+                    if attempt == retries - 1:
+                        raise
+                    progress.next_attempt()
 
         if api_prepended:
             self.log.warning(
@@ -2377,13 +2434,9 @@ class ServerAPI(
         headers_keys_by_low_key = {key.lower(): key for key in headers}
         if self._session is None:
             for key, value in self.get_headers().items():
-                orig_key = headers_keys_by_low_key.get(key)
+                orig_key = headers_keys_by_low_key.get(key.lower())
                 if not orig_key:
                     headers[key] = value
-
-            post_func = self._base_functions_mapping[request_type]
-        else:
-            post_func = self._session_functions_mapping[request_type]
 
         if not chunk_size:
             chunk_size = self.default_upload_chunk_size
@@ -2411,13 +2464,15 @@ class ServerAPI(
         api_prepended = False
         for attempt in range(retries):
             try:
-                response = post_func(
-                    url,
-                    data=self._upload_chunks_iter(
-                        stream, progress, chunk_size
-                    ),
-                    **kwargs
-                )
+                with self._request_session() as session:
+                    response = session.request(
+                        request_type.name,
+                        url,
+                        data=self._upload_chunks_iter(
+                            stream, progress, chunk_size
+                        ),
+                        **kwargs
+                    )
                 # Auto-fix missing 'api/'
                 if response.status_code in (404, 405) and not api_prepended:
                     api_prepended = True
@@ -2429,6 +2484,9 @@ class ServerAPI(
                         progress.set_destination_url(url)
                         continue
                 break
+
+            except _NOT_RETRIABLE_CONNECTION_ERRORS:
+                raise
 
             except (
                 requests.exceptions.Timeout,

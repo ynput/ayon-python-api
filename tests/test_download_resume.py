@@ -2,9 +2,9 @@
 import io
 
 import pytest
+import requests
 
 from ayon_api.server_api import ServerAPI
-from ayon_api.utils import RequestTypes
 
 from .fake_transfer import FakeResponse
 
@@ -18,14 +18,18 @@ def con(monkeypatch):
     return ServerAPI("http://localhost:0", create_session=False, max_retries=3)
 
 
-def _download(con, get_func):
-    con._base_functions_mapping[RequestTypes.get] = get_func
+def _download(con, monkeypatch, get_func):
+    monkeypatch.setattr(
+        requests.Session,
+        "get",
+        lambda _session, url, **kwargs: get_func(url, **kwargs),
+    )
     stream = io.BytesIO()
     progress = con.download_file_to_stream("api/file", stream)
     return stream.getvalue(), progress
 
 
-def test_incomplete_download_is_continued(con):
+def test_incomplete_download_is_continued(con, monkeypatch):
     def get_func(url, **kwargs):
         if "Range" not in kwargs["headers"]:
             # Connection closed after 4 bytes without an exception
@@ -33,12 +37,14 @@ def test_incomplete_download_is_continued(con):
         assert kwargs["headers"]["Range"] == "bytes=4-"
         return FakeResponse(206, CONTENT[4:], {"Content-Length": "6"})
 
-    content, progress = _download(con, get_func)
+    content, progress = _download(con, monkeypatch, get_func)
     assert content == CONTENT
     assert progress.transferred_size == len(CONTENT)
 
 
-def test_resume_without_range_support_does_not_duplicate(con):
+def test_resume_without_range_support_does_not_duplicate(
+    con, monkeypatch
+):
     calls = []
 
     def get_func(url, **kwargs):
@@ -48,6 +54,6 @@ def test_resume_without_range_support_does_not_duplicate(con):
         # Server ignores 'Range' header and sends whole file again
         return FakeResponse(200, CONTENT, SIZE_HEADER)
 
-    content, progress = _download(con, get_func)
+    content, progress = _download(con, monkeypatch, get_func)
     assert content == CONTENT
     assert progress.transferred_size == len(CONTENT)
