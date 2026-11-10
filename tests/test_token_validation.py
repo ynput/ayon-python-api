@@ -8,6 +8,7 @@ import requests
 from ayon_api import GlobalServerAPI
 from ayon_api.constants import SERVER_API_ENV_KEY, SERVER_URL_ENV_KEY
 from ayon_api.exceptions import ServerNotReached
+from ayon_api import server_api
 from ayon_api.server_api import ServerAPI
 from ayon_api.utils import get_user_info_by_token
 
@@ -87,7 +88,7 @@ def _fail_request(*args, **kwargs):
 @pytest.fixture
 def server(monkeypatch):
     server = FakeServer(user_tokens=[USER_TOKEN], api_keys=[API_KEY])
-    monkeypatch.setattr(requests, "Session", server.create_session)
+    monkeypatch.setattr(server_api, "ServerSession", server.create_session)
     monkeypatch.setattr(requests, "get", _fail_request)
     return server
 
@@ -190,7 +191,7 @@ def test_availability_without_token(server):
 
 def test_url_of_other_server_is_not_available(monkeypatch):
     server = FakeServer(api_keys=[API_KEY], is_ayon=False)
-    monkeypatch.setattr(requests, "Session", server.create_session)
+    monkeypatch.setattr(server_api, "ServerSession", server.create_session)
     monkeypatch.setattr(requests, "get", _fail_request)
 
     with pytest.raises(ServerNotReached):

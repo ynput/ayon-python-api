@@ -586,6 +586,28 @@ def prepare_entity_changes(
     return changes
 
 
+class ServerSession(requests.Session):
+    """Session that does not send AYON auth headers to other hosts.
+
+    'requests' removes only 'Authorization' header when a redirect leads to
+        a different host. Service api key in 'X-Api-Key' would be sent e.g.
+        to cloud storage the server redirects file downloads to.
+
+    """
+    # Headers used for authorization of service api key
+    redirect_strip_headers = ("X-Api-Key", "X-as-user")
+
+    def rebuild_auth(self, prepared_request, response) -> None:
+        headers = prepared_request.headers
+        if any(key in headers for key in self.redirect_strip_headers):
+            if self.should_strip_auth(
+                response.request.url, prepared_request.url
+            ):
+                for key in self.redirect_strip_headers:
+                    headers.pop(key, None)
+        super().rebuild_auth(prepared_request, response)
+
+
 def _try_parse_url(url: str) -> ParseResult | None:
     try:
         return urlparse(url)
