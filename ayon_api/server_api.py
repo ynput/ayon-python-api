@@ -1934,6 +1934,9 @@ class ServerAPI(
         progress: TransferProgress,
     ) -> None:
         headers = self.get_headers()
+        # 'Content-Length' and 'Range' of compressed response are related
+        #   to compressed content, but 'iter_content' returns decoded content
+        headers["Accept-Encoding"] = "identity"
         kwargs = {
             "stream": True,
             "headers": headers,
@@ -1948,9 +1951,16 @@ class ServerAPI(
 
         retries = max(self.max_retries, 1)
         api_prepended = False
+        can_resume = True
         for attempt in range(retries):
             # Continue in download
             offset = progress.get_transferred_size()
+            if offset > 0 and not can_resume:
+                stream.seek(0)
+                stream.truncate()
+                progress.reset_transferred()
+                offset = 0
+
             if offset > 0:
                 headers["Range"] = f"bytes={offset}-"
 
@@ -1980,14 +1990,41 @@ class ServerAPI(
                         progress.reset_transferred()
                         headers.pop("Range", None)
 
-                    if progress.get_content_size() is None:
-                        progress.set_content_size(
-                            response.headers["Content-length"]
-                        )
+                    # Chunked response does not have the size
+                    content_length = response.headers.get("Content-Length")
+                    content_encoding = response.headers.get(
+                        "Content-Encoding", ""
+                    ).strip().lower()
+                    is_encoded = content_encoding not in ("", "identity")
+                    if is_encoded:
+                        # Server compressed content anyway. Size of decoded
+                        #   content is unknown and 'Range' can't be used.
+                        can_resume = False
+
+                    elif (
+                        content_length
+                        and progress.get_content_size() is None
+                        and response.status_code != 206
+                    ):
+                        progress.set_content_size(content_length)
 
                     for chunk in response.iter_content(chunk_size=chunk_size):
                         stream.write(chunk)
                         progress.add_transferred_chunk(len(chunk))
+
+                    if is_encoded and content_length:
+                        # 'urllib3' 1.x does not fail when compressed
+                        #   content is incomplete, compare received bytes
+                        received = getattr(response.raw, "tell", None)
+                        if (
+                            received is not None
+                            and received() < int(content_length)
+                        ):
+                            raise requests.exceptions.ConnectionError(
+                                f"Downloaded {received()} out of"
+                                f" {content_length} compressed bytes"
+                                f" from '{url}'."
+                            )
 
                 content_size = progress.get_content_size()
                 transferred = progress.get_transferred_size()
