@@ -6,6 +6,7 @@ Provides access to server API.
 from __future__ import annotations
 
 import copy
+import functools
 from dataclasses import dataclass
 import os
 import re
@@ -76,6 +77,10 @@ from .utils import (
     fill_own_attribs,
     UserInfo,
     get_user_info_by_token,
+    get_requests_ca_bundle,
+    create_ssl_context,
+    apply_ssl_verify,
+    resolve_ssl_args,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -119,26 +124,6 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
-
-
-def _get_requests_ca_bundle() -> str | None:
-    """CA bundle used by 'requests' for ssl verification.
-
-    Returns:
-        str | None: Path to CA bundle file or directory.
-
-    """
-    # Same order as 'requests' uses when 'trust_env' is enabled
-    for env_key in ("REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
-        path = os.environ.get(env_key)
-        if path:
-            return path
-    try:
-        from requests.certs import where
-
-        return where()
-    except Exception:
-        return None
 
 
 def _disable_websocket_ipv6() -> None:
@@ -340,11 +325,10 @@ class ServerAPI(
         sender (str | None): Sender of requests, more specific than
             sender type (e.g. machine name). Used in server logs and
             propagated into events.
-        ssl_verify (bool | str | None): Verify SSL certificate
-            Looks for env variable value ``AYON_CA_FILE`` by default. If not
-            available then 'True' is used.
-        cert (str | None): Path to certificate file. Looks for env
-            variable value ``AYON_CERT_FILE`` by default.
+        ssl_verify (bool | str | None): Verify SSL certificate, see
+            'resolve_ssl_args' for possible values.
+        cert (str | None): Path to client certificate file, see
+            'resolve_ssl_args' for possible values.
         create_session (bool): Create session for connection if
             token is available. Default is True.
         timeout (float | None): Timeout for requests.
@@ -400,15 +384,7 @@ class ServerAPI(
         self.set_timeout(timeout)
         self.set_max_retries(max_retries)
 
-        if ssl_verify is None:
-            # Custom AYON env variable for CA file or 'True'
-            # - that should cover most default behaviors in 'requests'
-            #   with 'certifi'
-            ssl_verify = os.environ.get("AYON_CA_FILE") or True
-
-        if cert is None:
-            cert = os.environ.get("AYON_CERT_FILE")
-
+        ssl_verify, cert = resolve_ssl_args(ssl_verify, cert)
         self._ssl_verify = ssl_verify
         self._cert = cert
 
@@ -427,12 +403,19 @@ class ServerAPI(
         #   token validation, see '_get_validation_session'
         self._validation_session: requests.Session | None = None
 
+        # Requests made without authorized session use validation session,
+        #   so they respect 'ssl_verify' and 'cert'
         self._base_functions_mapping = {
-            RequestTypes.get: requests.get,
-            RequestTypes.post: requests.post,
-            RequestTypes.put: requests.put,
-            RequestTypes.patch: requests.patch,
-            RequestTypes.delete: requests.delete
+            request_type: functools.partial(
+                self._validation_session_request, request_type
+            )
+            for request_type in (
+                RequestTypes.get,
+                RequestTypes.post,
+                RequestTypes.put,
+                RequestTypes.patch,
+                RequestTypes.delete,
+            )
         }
         self._session_functions_mapping = {}
 
@@ -504,7 +487,7 @@ class ServerAPI(
         self._ssl_verify = ssl_verify
         for session in (self._session, self._validation_session):
             if session is not None:
-                session.verify = ssl_verify
+                apply_ssl_verify(session, ssl_verify)
 
     def get_cert(self) -> str | None:
         """Current cert file used for connection to server.
@@ -528,6 +511,9 @@ class ServerAPI(
         for session in (self._session, self._validation_session):
             if session is not None:
                 session.cert = cert
+                # 'urllib3' loads client cert to SSL context of CA file
+                #   adapter, new adapter does not send the previous one
+                apply_ssl_verify(session, self._ssl_verify)
 
     ssl_verify = property(get_ssl_verify, set_ssl_verify)
     cert = property(get_cert, set_cert)
@@ -1003,8 +989,8 @@ class ServerAPI(
         self._validation_session = None
         if session is None:
             session = requests.Session()
-        session.cert = self._cert
-        session.verify = self._ssl_verify
+            session.cert = self._cert
+            apply_ssl_verify(session, self._ssl_verify)
         session.headers.update(self.get_headers())
 
         self._session_functions_mapping = {
@@ -1044,9 +1030,27 @@ class ServerAPI(
         if self._validation_session is None:
             session = requests.Session()
             session.cert = self._cert
-            session.verify = self._ssl_verify
+            apply_ssl_verify(session, self._ssl_verify)
             self._validation_session = session
         return self._validation_session
+
+    def _validation_session_request(
+        self, request_type: RequestType, url: str, **kwargs
+    ) -> requests.Response:
+        """Send request without authorized session.
+
+        Args:
+            request_type (RequestType): Type of request.
+            url (str): Request url.
+            **kwargs: Keyword arguments for 'requests'.
+
+        Returns:
+            requests.Response: Response from server.
+
+        """
+        session = self._get_validation_session()
+        func = getattr(session, request_type.name.lower())
+        return func(url, **kwargs)
 
     def create_websocket(
         self,
@@ -1086,8 +1090,16 @@ class ServerAPI(
             #   module, which might be missing (e.g. python on macOS), so
             #   REST would work but websocket would always fail.
             ca_bundle = self._ssl_verify
-            if not isinstance(ca_bundle, str):
-                ca_bundle = _get_requests_ca_bundle()
+            if isinstance(ca_bundle, str):
+                # Trust default CA bundle too, same as REST requests do
+                if "context" not in prepared_sslopt:
+                    context = create_ssl_context(ca_bundle)
+                    # 'websocket' ignores 'certfile' with custom context
+                    if self._cert:
+                        context.load_cert_chain(self._cert)
+                    prepared_sslopt["context"] = context
+            else:
+                ca_bundle = get_requests_ca_bundle()
             if ca_bundle:
                 key = "ca_certs"
                 if os.path.isdir(ca_bundle):
@@ -1767,7 +1779,12 @@ class ServerAPI(
 
     def _logout(self) -> None:
         if self._token_info.is_valid:
-            logout_from_server(self._base_url, self._token_info.token)
+            logout_from_server(
+                self._base_url,
+                self._token_info.token,
+                verify=self._ssl_verify,
+                cert=self._cert,
+            )
 
     def _get_server_info(self) -> dict[str, Any]:
         """Get server info without a session."""

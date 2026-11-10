@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import copy
 import logging
 import json
+import ssl
 import uuid
 import string
 import platform
@@ -586,6 +587,197 @@ def prepare_entity_changes(
     return changes
 
 
+def get_requests_ca_bundle() -> str | None:
+    """CA bundle used by 'requests' for ssl verification.
+
+    Returns:
+        str | None: Path to CA bundle file or directory.
+
+    """
+    # Same order as 'requests' uses when 'trust_env' is enabled
+    for env_key in ("REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
+        path = os.environ.get(env_key)
+        if path:
+            return path
+    try:
+        from requests.certs import where
+
+        return where()
+    except Exception:
+        return None
+
+
+def create_ssl_context(ca_path: str) -> ssl.SSLContext:
+    """SSL context trusting default CA bundle and CA certificates from path.
+
+    A CA file passed to 'requests' or 'websocket' replaces their default
+        CA bundle, so a server signed by a private CA would be trusted but
+        nothing else (e.g. redirects to cloud storage). The context trusts
+        both instead.
+
+    Args:
+        ca_path (str): Path to CA file or directory with CA certificates.
+
+    Returns:
+        ssl.SSLContext: SSL context for client connections.
+
+    Raises:
+        OSError: CA certificates could not be loaded from the path.
+
+    """
+    default_bundle = get_requests_ca_bundle()
+    if default_bundle and os.path.isdir(default_bundle):
+        context = ssl.create_default_context(capath=default_bundle)
+    elif default_bundle:
+        context = ssl.create_default_context(cafile=default_bundle)
+    else:
+        context = ssl.create_default_context()
+    # Same as 'urllib3' 2 default context, certificate without
+    #   'subjectAltName' is not matched by its 'commonName'
+    context.hostname_checks_common_name = False
+
+    try:
+        if os.path.isdir(ca_path):
+            context.load_verify_locations(capath=ca_path)
+        else:
+            context.load_verify_locations(cafile=ca_path)
+    except OSError as exc:
+        # Errors of 'ssl' do not contain the path
+        raise OSError(
+            f"Could not load CA certificates from '{ca_path}': {exc}"
+        ) from exc
+    return context
+
+
+class _CAFileAdapter(requests.adapters.HTTPAdapter):
+    """HTTP adapter trusting additional CA certificates.
+
+    Used when 'ssl_verify' is a path. The session still has 'verify' set
+        to the path, which 'urllib3' loads to the context too.
+
+    All connections of the adapter share one SSL context, and 'urllib3'
+        loads the client certificate and 'verify' path of each request
+        into it. Create a new adapter when the client certificate changes
+        ('apply_ssl_verify'). Passing 'verify' per request does not
+        restrict trust to it, and other path adds CA to the context for
+        all following connections.
+
+    Args:
+        ca_path (str): Path to CA file or directory with CA certificates.
+
+    """
+    def __init__(self, ca_path: str, **kwargs) -> None:
+        ssl_context = create_ssl_context(ca_path)
+        # 'urllib3' matches hostname on its own, same as with its default
+        #   context. Python's check fails for IP addresses on 'urllib3' 1.x,
+        #   which does not send server hostname for them.
+        ssl_context.check_hostname = False
+        self._ssl_context = ssl_context
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, *args, **kwargs) -> None:
+        kwargs["ssl_context"] = self._ssl_context
+        super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        proxy_kwargs["ssl_context"] = self._ssl_context
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
+
+def apply_ssl_verify(
+    session: requests.Session, ssl_verify: bool | str | None
+) -> None:
+    """Set 'verify' of session and mount adapter for CA path."""
+    session.verify = ssl_verify
+    current = getattr(session, "adapters", {}).get("https://")
+    if isinstance(ssl_verify, str):
+        adapter = _CAFileAdapter(ssl_verify)
+    elif isinstance(current, _CAFileAdapter):
+        adapter = requests.adapters.HTTPAdapter()
+    else:
+        return
+    session.mount("https://", adapter)
+    if current is not None:
+        current.close()
+
+
+def resolve_ssl_args(
+    verify: str | bool | None,
+    cert: str | None,
+) -> tuple[str | bool, str | None]:
+    """Resolve SSL verification and client certificate for requests.
+
+    'None' values are filled from environment variables:
+    - 'verify' from 'AYON_CA_FILE', 'True' if it is not set.
+    - 'cert' from 'AYON_CERT_FILE', no client certificate if it is not set.
+
+    Other values skip the environment variables. That is useful e.g. for
+        a process connected to multiple servers, where only some of them
+        use the CA file:
+    - 'verify=True' uses only the default CA bundle.
+    - 'verify=False' disables verification.
+    - 'verify="<path>"' trusts the CA file (or directory) in addition to
+        the default CA bundle.
+    - 'cert=""' does not use any client certificate.
+    - 'cert="<path>"' uses the client certificate.
+
+    Empty string 'cert' is kept, so passing the result to other functions
+        does not fill it from the environment again.
+
+    Args:
+        verify (str | bool | None): SSL verification.
+        cert (str | None): Path to client certificate file.
+
+    Returns:
+        tuple[str | bool, str | None]: SSL verification and client
+            certificate.
+
+    """
+    if verify is None:
+        verify = os.environ.get("AYON_CA_FILE") or True
+
+    if cert is None:
+        cert = os.environ.get("AYON_CERT_FILE") or None
+    return verify, cert
+
+
+def send_request(
+    request_type: RequestType,
+    url: str,
+    verify: str | bool | None = None,
+    cert: str | None = None,
+    **kwargs,
+) -> requests.Response:
+    """Send request without existing session.
+
+    Same as 'requests.get' and others, but CA file in 'verify' is trusted
+        in addition to default CA bundle, same as in 'ServerAPI'.
+
+    Args:
+        request_type (RequestType): Type of request.
+        url (str): Request url.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
+        **kwargs: Keyword arguments for 'requests'.
+
+    Returns:
+        requests.Response: Response from server.
+
+    """
+    verify, cert = resolve_ssl_args(verify, cert)
+
+    session = requests.Session()
+    try:
+        session.cert = cert
+        apply_ssl_verify(session, verify)
+        func = getattr(session, request_type.name.lower())
+        return func(url, **kwargs)
+    finally:
+        session.close()
+
+
 def _try_parse_url(url: str) -> ParseResult | None:
     try:
         return urlparse(url)
@@ -602,16 +794,11 @@ def _try_connect_to_server(
     if timeout is None:
         timeout = get_default_timeout()
 
-    if verify is None:
-        verify = os.environ.get("AYON_CA_FILE") or True
-
-    if cert is None:
-        cert = os.environ.get("AYON_CERT_FILE") or None
-
     try:
         # TODO add validation if the url lead to AYON server
         #   - this won't validate if the url lead to 'google.com'
-        response = requests.get(
+        response = send_request(
+            RequestTypes.get,
             f"{url}/api/info",
             timeout=timeout,
             verify=verify,
@@ -635,6 +822,8 @@ def login_to_server(
     username: str,
     password: str,
     timeout: float | None = None,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> str | None:
     """Use login to the server to receive token.
 
@@ -644,6 +833,10 @@ def login_to_server(
         password (str): User's password.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         str | None: User's token if login was successfull.
@@ -652,8 +845,10 @@ def login_to_server(
     """
     if timeout is None:
         timeout = get_default_timeout()
+
     headers = {"Content-Type": "application/json"}
-    response = requests.post(
+    response = send_request(
+        RequestTypes.post,
         f"{url}/api/auth/login",
         headers=headers,
         json={
@@ -661,6 +856,8 @@ def login_to_server(
             "password": password
         },
         timeout=timeout,
+        verify=verify,
+        cert=cert,
     )
     token = None
     # 200 - success
@@ -676,6 +873,8 @@ def logout_from_server(
     url: str,
     token: str,
     timeout: float | None = None,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> None:
     """Logout from server and throw token away.
 
@@ -684,18 +883,26 @@ def logout_from_server(
         token (str): Token which should be used to log out.
         timeout (float | None): Timeout for request. Value from
             'get_default_timeout' is used if not specified.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     """
     if timeout is None:
         timeout = get_default_timeout()
+
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",
     }
-    requests.post(
+    send_request(
+        RequestTypes.post,
         f"{url}/api/auth/logout",
         headers=headers,
         timeout=timeout,
+        verify=verify,
+        cert=cert,
     )
 
 
@@ -743,11 +950,7 @@ def get_user_info_by_token(
     if timeout is None:
         timeout = get_default_timeout()
 
-    if verify is None:
-        verify = os.environ.get("AYON_CA_FILE") or True
-
-    if cert is None:
-        cert = os.environ.get("AYON_CERT_FILE") or None
+    verify, cert = resolve_ssl_args(verify, cert)
 
     base_headers = {
         "Content-Type": "application/json",
@@ -762,7 +965,10 @@ def get_user_info_by_token(
     else:
         auth_headers.append(user_item)
 
-    request_func = requests.get if session is None else session.get
+    if session is None:
+        request_func = functools.partial(send_request, RequestTypes.get)
+    else:
+        request_func = session.get
     for header_value, is_service in auth_headers:
         headers = base_headers.copy()
         headers.update(header_value)
@@ -1365,7 +1571,9 @@ def get_media_mime_type(filepath: str) -> str | None:
 
 def take_web_action_event(
     server_url: str,
-    action_token: str
+    action_token: str,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> dict[str, Any]:
     """Take web action event using action token.
 
@@ -1374,13 +1582,20 @@ def take_web_action_event(
     Args:
         server_url (str): AYON server url.
         action_token (str): Action token.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         dict[str, Any]: Web action event.
 
     """
-    response = requests.get(
-        f"{server_url}/api/actions/take/{action_token}"
+    response = send_request(
+        RequestTypes.get,
+        f"{server_url}/api/actions/take/{action_token}",
+        verify=verify,
+        cert=cert,
     )
     response.raise_for_status()
     return response.json()
@@ -1389,7 +1604,9 @@ def take_web_action_event(
 def abort_web_action_event(
     server_url: str,
     action_token: str,
-    reason: str
+    reason: str,
+    verify: str | bool | None = None,
+    cert: str | None = None,
 ) -> requests.Response:
     """Abort web action event using action token.
 
@@ -1399,14 +1616,21 @@ def abort_web_action_event(
         server_url (str): AYON server url.
         action_token (str): Action token.
         reason (str): Reason why webaction event was aborted.
+        verify (str | bool | None): SSL verification for request. Value from
+            'AYON_CA_FILE' environment variable is used if not specified.
+        cert (str | None): SSL certificate for request. Value from
+            'AYON_CERT_FILE' environment variable is used if not specified.
 
     Returns:
         requests.Response: Response from server.
 
     """
-    response = requests.post(
+    response = send_request(
+        RequestTypes.post,
         f"{server_url}/api/actions/abort/{action_token}",
         json={"message": reason},
+        verify=verify,
+        cert=cert,
     )
     response.raise_for_status()
     return response
