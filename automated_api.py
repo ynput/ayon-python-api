@@ -21,9 +21,10 @@ import typing
 
 # Fake modules to avoid import errors
 requests = type(sys)("requests")
-requests.__dict__["Response"] = type(
-    "Response", (), {"__module__": "requests"}
-)
+requests.__dict__.update({
+    name: type(name, (), {"__module__": "requests"})
+    for name in ("Response", "Session")
+})
 websocket = type(sys)("websocket")
 websocket.__dict__.update({
     name: type(name, (), {"__module__": "websocket"})

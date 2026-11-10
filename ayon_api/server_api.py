@@ -76,6 +76,7 @@ from .utils import (
     fill_own_attribs,
     UserInfo,
     get_user_info_by_token,
+    ServerSession,
 )
 from ._api_helpers import (
     InstallersAPI,
@@ -1002,7 +1003,7 @@ class ServerAPI(
         session = self._validation_session
         self._validation_session = None
         if session is None:
-            session = requests.Session()
+            session = ServerSession()
         session.cert = self._cert
         session.verify = self._ssl_verify
         session.headers.update(self.get_headers())
@@ -1042,7 +1043,7 @@ class ServerAPI(
 
         """
         if self._validation_session is None:
-            session = requests.Session()
+            session = ServerSession()
             session.cert = self._cert
             session.verify = self._ssl_verify
             self._validation_session = session
