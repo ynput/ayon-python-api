@@ -1,3 +1,5 @@
+import re
+
 # Environments where server url and api key are stored for global connection
 SERVER_URL_ENV_KEY = "AYON_SERVER_URL"
 SERVER_API_ENV_KEY = "AYON_API_KEY"
@@ -10,6 +12,12 @@ SITE_ID_ENV_KEY = "AYON_SITE_ID"
 
 # Backwards compatibility
 SERVER_TOKEN_ENV_KEY = SERVER_API_ENV_KEY
+
+# This should be collected from server schema
+PROJECT_NAME_ALLOWED_SYMBOLS = "a-zA-Z0-9_"
+PROJECT_NAME_REGEX = re.compile(
+    f"^[{PROJECT_NAME_ALLOWED_SYMBOLS}]+$"
+)
 
 # --- User ---
 DEFAULT_USER_FIELDS = {
@@ -25,40 +33,73 @@ DEFAULT_USER_FIELDS = {
     "hasPassword",
     "updatedAt",
     "apiKeyPreview",
-    "attrib.avatarUrl",
-    "attrib.email",
-    "attrib.fullName",
 }
 
-# --- Folder types ---
+# --- Project folder types ---
 DEFAULT_FOLDER_TYPE_FIELDS = {
     "name",
     "icon",
 }
 
-# --- Task types ---
+# --- Project task types ---
 DEFAULT_TASK_TYPE_FIELDS = {
     "name",
+}
+
+# --- Project tags ---
+DEFAULT_PROJECT_TAGS_FIELDS = {
+    "name",
+    "color",
+}
+
+# --- Project statuses ---
+DEFAULT_PROJECT_STATUSES_FIELDS = {
+    "color",
+    "icon",
+    "name",
+    "scope",
+    "shortName",
+    "state",
+}
+
+# --- Project link types ---
+DEFAULT_PROJECT_LINK_TYPES_FIELDS = {
+    "color",
+    "inputType",
+    "linkType",
+    "name",
+    "outputType",
+    "style",
 }
 
 # --- Product types ---
 DEFAULT_PRODUCT_TYPE_FIELDS = {
     "name",
-    "icon",
-    "color",
+}
+
+# --- Product base type ---
+DEFAULT_PRODUCT_BASE_TYPE_FIELDS = {
+    # TODO add 'icon' and 'color' when server supports it
+    "name",
+    # "icon",
+    # "color",
 }
 
 # --- Project ---
 DEFAULT_PROJECT_FIELDS = {
     "active",
+    "library",
     "name",
     "code",
     "config",
     "createdAt",
+    "updatedAt",
     "data",
     "folderTypes",
     "taskTypes",
-    "productTypes",
+    "linkTypes",
+    "statuses",
+    "tags",
 }
 
 # --- Folders ---
@@ -131,6 +172,7 @@ DEFAULT_REPRESENTATION_FIELDS = {
     "data",
     "status",
     "tags",
+    "traits",
 }
 
 REPRESENTATION_FILES_FIELDS = {
@@ -194,4 +236,23 @@ DEFAULT_ACTIVITY_FIELDS = {
     "entityId",
     "entityType",
     "author.name",
+}
+
+
+DEFAULT_ENTITY_LIST_FIELDS = {
+    "id",
+    "count",
+    "allAttrib",
+    "attributes",
+    "active",
+    "createdBy",
+    "createdAt",
+    "entityListType",
+    "data",
+    "entityType",
+    "label",
+    "owner",
+    "tags",
+    "updatedAt",
+    "updatedBy",
 }

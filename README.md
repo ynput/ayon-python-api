@@ -20,14 +20,14 @@ Repository does not have submodules or special cases. Clone is simple as:
 
 
 ## Build wheel
-For wheel build is required a `wheel` module from PyPi:
+For wheel build is required a `build` module from PyPi:
 
-    pip install wheel
+    pip install build
 
 Open terminal and change directory to ayon-python-api repository and build wheel:
 
     cd <REPOSITORY ROOT>/ayon-python-api
-    python setup.py sdist bdist_wheel   
+    python -m build
     
 
 Once finished a wheel should be created in `./dist/ayon_python_api-<VERSION>-py3-none-any`.

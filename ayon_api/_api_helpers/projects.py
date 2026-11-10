@@ -1,0 +1,1439 @@
+from __future__ import annotations
+
+import json
+import platform
+import warnings
+from enum import Enum
+import typing
+from typing import Optional, Generator, Iterable, Any
+
+from ayon_api.constants import (
+    PROJECT_NAME_REGEX,
+    DEFAULT_PRODUCT_TYPE_FIELDS,
+)
+from ayon_api.exceptions import UnsupportedServerVersion
+from ayon_api.utils import prepare_query_string, fill_own_attribs
+from ayon_api.graphql_queries import projects_graphql_query
+
+from .base import BaseServerAPI
+
+if typing.TYPE_CHECKING:
+    from ayon_api.typing import (
+        ProjectDict,
+        AnatomyPresetDict,
+        ProjectListDict,
+    )
+
+
+class ProjectFetchType(Enum):
+    """How a project has to be fetched to get all requested data.
+
+    Some project data can be received only from GraphQl, and some can be
+        received only with REST. That is based on requested fields.
+
+    There is also a dedicated endpoint to get information about all projects
+        but returns very limited information about the project.
+
+    Enums:
+        GraphQl: Requested project data can be received with GraphQl.
+        REST: Requested project data can be received with /projects/{project}.
+        RESTList: Requested project data can be received with /projects.
+            Can be considered as a subset of 'REST'.
+        GraphQlAndREST: It is necessary to use GraphQl and REST to get all
+            requested data.
+
+    """
+    GraphQl = "GraphQl"
+    REST = "REST"
+    RESTList = "RESTList"
+    GraphQlAndREST = "GraphQlAndREST"
+
+
+class ProjectsAPI(BaseServerAPI):
+    _project_product_base_type_fields = None
+
+    def get_project_anatomy_presets(self) -> list[AnatomyPresetDict]:
+        """Anatomy presets available on server.
+
+        Content has basic information about presets. Example output::
+
+            [
+                {
+                    "name": "netflix_VFX",
+                    "primary": false,
+                    "version": "1.0.0"
+                },
+                {
+                    ...
+                },
+                ...
+            ]
+
+        Returns:
+            list[dict[str, str]]: Anatomy presets available on server.
+
+        """
+        result = self.get("anatomy/presets")
+        result.raise_for_status()
+        return result.data.get("presets") or []
+
+    def get_default_anatomy_preset_name(self) -> str:
+        """Name of default anatomy preset.
+
+        Primary preset is used as default preset. But when primary preset is
+        not set a built-in is used instead. Built-in preset is named '_'.
+
+        Returns:
+            str: Name of preset that can be used by
+                'get_project_anatomy_preset'.
+
+        """
+        for preset in self.get_project_anatomy_presets():
+            if preset.get("primary"):
+                return preset["name"]
+        return "_"
+
+    def get_project_anatomy_preset(
+        self, preset_name: Optional[str] = None
+    ) -> AnatomyPresetDict:
+        """Anatomy preset values by name.
+
+        Get anatomy preset values by preset name. Primary preset is returned
+        if preset name is set to 'None'.
+
+        Args:
+            preset_name (Optional[str]): Preset name.
+
+        Returns:
+            AnatomyPresetDict: Anatomy preset values.
+
+        """
+        if preset_name is None:
+            preset_name = "__primary__"
+            major, minor, patch, _, _ = self.get_server_version_tuple()
+            if (major, minor, patch) < (1, 0, 8):
+                preset_name = self.get_default_anatomy_preset_name()
+
+        result = self.get(f"anatomy/presets/{preset_name}")
+        result.raise_for_status()
+        return result.data
+
+    def get_built_in_anatomy_preset(self) -> AnatomyPresetDict:
+        """Get built-in anatomy preset.
+
+        Returns:
+            AnatomyPresetDict: Built-in anatomy preset.
+
+        """
+        preset_name = "__builtin__"
+        major, minor, patch, _, _ = self.get_server_version_tuple()
+        if (major, minor, patch) < (1, 0, 8):
+            preset_name = "_"
+        return self.get_project_anatomy_preset(preset_name)
+
+    def get_build_in_anatomy_preset(self) -> AnatomyPresetDict:
+        warnings.warn(
+            (
+                "Used deprecated 'get_build_in_anatomy_preset' use"
+                " 'get_built_in_anatomy_preset' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_built_in_anatomy_preset()
+
+    def get_anatomy_schema(self) -> dict[str, Any]:
+        """Get anatomy JSON schema.
+
+        The schema is used to display the anatomy preset editor form.
+
+        Returns:
+            dict[str, Any]: Anatomy JSON schema.
+
+        """
+        response = self.get("anatomy/schema")
+        response.raise_for_status()
+        return response.data
+
+    def save_project_anatomy_preset(
+        self, preset_name: str, preset: AnatomyPresetDict
+    ) -> None:
+        """Create or update anatomy preset.
+
+        Built-in preset '__builtin__' and primary preset reference
+            '__primary__' cannot be updated.
+
+        Args:
+            preset_name (str): Anatomy preset name.
+            preset (AnatomyPresetDict): Anatomy preset values.
+
+        """
+        response = self.raw_put(f"anatomy/presets/{preset_name}", json=preset)
+        response.raise_for_status()
+
+    def rename_project_anatomy_preset(
+        self, preset_name: str, new_preset_name: str
+    ) -> None:
+        """Rename anatomy preset.
+
+        Args:
+            preset_name (str): Current anatomy preset name.
+            new_preset_name (str): New anatomy preset name.
+
+        """
+        response = self.post(
+            f"anatomy/presets/{preset_name}/rename",
+            name=new_preset_name,
+        )
+        response.raise_for_status()
+
+    def delete_project_anatomy_preset(self, preset_name: str) -> None:
+        """Delete anatomy preset.
+
+        Args:
+            preset_name (str): Anatomy preset name.
+
+        """
+        response = self.delete(f"anatomy/presets/{preset_name}")
+        response.raise_for_status()
+
+    def set_primary_anatomy_preset(self, preset_name: str) -> None:
+        """Set anatomy preset as primary.
+
+        Primary preset is used as default preset for new projects. Use
+            preset name '_' to unset any primary preset (built-in preset
+            is used as default).
+
+        Args:
+            preset_name (str): Anatomy preset name.
+
+        """
+        response = self.post(f"anatomy/presets/{preset_name}/primary")
+        response.raise_for_status()
+
+    def unset_primary_anatomy_preset(self, preset_name: str) -> None:
+        """Unset primary flag of anatomy preset.
+
+        Args:
+            preset_name (str): Anatomy preset name.
+
+        """
+        response = self.delete(f"anatomy/presets/{preset_name}/primary")
+        response.raise_for_status()
+
+    def get_rest_project(
+        self, project_name: str
+    ) -> Optional[ProjectDict]:
+        """Query project by name.
+
+        This call returns project with anatomy data.
+
+        Args:
+            project_name (str): Name of project.
+
+        Returns:
+            Optional[ProjectDict]: Project entity data or 'None' if
+                project was not found.
+
+        """
+        if not project_name:
+            return None
+
+        response = self.get(f"projects/{project_name}")
+        # TODO ignore only error about not existing project
+        if response.status != 200:
+            return None
+        project = response.data
+        attrib = project["attrib"]
+        for attr_name, attr_data in (
+            self.get_attributes_for_type("project").items()
+        ):
+            attrib.setdefault(attr_name, attr_data["default"])
+        self._fill_project_entity_data(project)
+        return project
+
+    def get_rest_projects(
+        self,
+        active: Optional[bool] = True,
+        library: Optional[bool] = None,
+        include_skeleton: bool = False,
+    ) -> Generator[ProjectDict, None, None]:
+        """Query available project entities.
+
+        User must be logged in.
+
+        Args:
+            active (Optional[bool]): Filter active/inactive projects. Both
+                are returned if 'None' is passed.
+            library (Optional[bool]): Filter standard/library projects. Both
+                are returned if 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
+
+        Returns:
+            Generator[ProjectDict, None, None]: Available projects.
+
+        """
+        for project_name in self.get_project_names(
+            active=active,
+            library=library,
+            include_skeleton=include_skeleton,
+        ):
+            project = self.get_rest_project(project_name)
+            if project:
+                yield project
+
+    def get_rest_projects_list(
+        self,
+        active: Optional[bool] = True,
+        library: Optional[bool] = None,
+        include_skeleton: bool = False,
+    ) -> list[ProjectListDict]:
+        """Receive available projects.
+
+        User must be logged in.
+
+        Args:
+            active (Optional[bool]): Filter active/inactive projects. Both
+                are returned if 'None' is passed.
+            library (Optional[bool]): Filter standard/library projects. Both
+                are returned if 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
+
+        Returns:
+            list[ProjectListDict]: List of available projects.
+
+        """
+        if active is not None:
+            active = "true" if active else "false"
+
+        if library is not None:
+            library = "true" if library else "false"
+
+        query_data = {
+            "active": active,
+            "library": library,
+        }
+        if include_skeleton:
+            query_data["skeleton"] = "true"
+
+        query = prepare_query_string(query_data)
+        response = self.get(f"projects{query}")
+        response.raise_for_status()
+        data = response.data
+        return data["projects"]
+
+    def get_project_names(
+        self,
+        active: Optional[bool] = True,
+        library: Optional[bool] = None,
+        include_skeleton: bool = False,
+    ) -> list[str]:
+        """Receive available project names.
+
+        User must be logged in.
+
+        Args:
+            active (Optional[bool]): Filter active/inactive projects. Both
+                are returned if 'None' is passed.
+            library (Optional[bool]): Filter standard/library projects. Both
+                are returned if 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
+
+        Returns:
+            list[str]: List of available project names.
+
+        """
+        return [
+            project["name"]
+            for project in self.get_rest_projects_list(
+                active=active,
+                library=library,
+                include_skeleton=include_skeleton,
+            )
+        ]
+
+    def get_projects(
+        self,
+        active: Optional[bool] = True,
+        library: Optional[bool] = None,
+        include_skeleton: bool = False,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Generator[ProjectDict, None, None]:
+        """Get projects.
+
+        Args:
+            active (Optional[bool]): Filter active or inactive projects.
+                Filter is disabled when 'None' is passed.
+            library (Optional[bool]): Filter library projects. Filter is
+                disabled when 'None' is passed.
+            include_skeleton (bool): Include skeleton projects.
+            fields (Optional[Iterable[str]]): fields to be queried
+                for project.
+            own_attributes (bool): Fill 'own_attributes' with
+                attribute values that are explicitly set on entity, other
+                attributes have 'None' value.
+
+        Returns:
+            Generator[ProjectDict, None, None]: Queried projects.
+
+        """
+        if fields is not None:
+            fields = set(fields)
+            if own_attributes:
+                fields.add("attrib")
+
+        graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
+        if fetch_type == ProjectFetchType.RESTList:
+            yield from self.get_rest_projects_list(
+                active=active,
+                library=library,
+                include_skeleton=include_skeleton,
+            )
+            return
+
+        projects_by_name = {}
+        if graphql_fields:
+            projects = list(self._get_graphql_projects(
+                active,
+                library,
+                include_skeleton=include_skeleton,
+                fields=graphql_fields,
+                own_attributes=own_attributes,
+            ))
+            if fetch_type == ProjectFetchType.GraphQl:
+                yield from projects
+                return
+            projects_by_name = {p["name"]: p for p in projects}
+
+        for project in self.get_rest_projects(
+            active=active,
+            library=library,
+            include_skeleton=include_skeleton,
+        ):
+            if own_attributes:
+                fill_own_attribs(project)
+
+            name = project["name"]
+            graphql_project = projects_by_name.get(name)
+            self._merge_project_graphql_data(project, graphql_project)
+
+            yield project
+
+    def get_project(
+        self,
+        project_name: str,
+        fields: Optional[Iterable[str]] = None,
+        own_attributes: bool = False,
+    ) -> Optional[ProjectDict]:
+        """Get project.
+
+        Args:
+            project_name (str): Name of project.
+            fields (Optional[Iterable[str]]): fields to be queried
+                for project.
+            own_attributes (bool): Fill 'own_attributes' with
+                attribute values that are explicitly set on entity, other
+                attributes have 'None' value.
+
+        Returns:
+            Optional[ProjectDict]: Project entity data or None
+                if project was not found.
+
+        """
+        if fields is not None:
+            fields = set(fields)
+            if own_attributes:
+                fields.add("attrib")
+
+        graphql_fields, fetch_type = self._get_project_graphql_fields(fields)
+        graphql_project = None
+        if graphql_fields:
+            graphql_project = next(self._get_graphql_projects(
+                None,
+                None,
+                include_skeleton=True,
+                project_name=project_name,
+                fields=graphql_fields,
+                own_attributes=own_attributes,
+            ), None)
+            if not graphql_project or fetch_type == fetch_type.GraphQl:
+                return graphql_project
+
+        project = self.get_rest_project(project_name)
+        if own_attributes:
+            fill_own_attribs(project)
+
+        self._merge_project_graphql_data(project, graphql_project)
+
+        return project
+
+    def create_project(
+        self,
+        project_name: str,
+        project_code: str,
+        library_project: bool = False,
+        preset_name: Optional[str] = None,
+        data: dict[str, Any] | None = None,
+        skeleton: bool = False,
+    ) -> ProjectDict:
+        """Create project using AYON settings.
+
+        This project creation function is not validating project entity on
+        creation. It is because project entity is created blindly with only
+        minimum required information about project which is name and code.
+
+        Entered project name must be unique and project must not exist yet.
+
+        Note:
+            This function is here to be OP v4 ready but in v3 has more logic
+                to do. That's why inner imports are in the body.
+
+        Args:
+            project_name (str): New project name. Should be unique.
+            project_code (str): Project's code should be unique too.
+            library_project (Optional[bool]): Project is library project.
+            preset_name (Optional[str]): Name of anatomy preset. Default is
+                used if not passed.
+            data (dict[str, Any]): Project data.
+            skeleton (bool): Project is skeleton project.
+
+        Raises:
+            ValueError: When project name already exists.
+
+        Returns:
+            ProjectDict: Created project entity.
+
+        """
+        if self.get_project(project_name):
+            raise ValueError(
+                f"Project with name \"{project_name}\" already exists"
+            )
+
+        if not PROJECT_NAME_REGEX.match(project_name):
+            raise ValueError(
+                f"Project name \"{project_name}\" contain invalid characters"
+            )
+
+        preset = self.get_project_anatomy_preset(preset_name)
+
+        if data is None:
+            data = {}
+
+        if skeleton:
+            data["skeleton"] = True
+
+        result = self.post(
+            "projects",
+            name=project_name,
+            code=project_code,
+            anatomy=preset,
+            library=library_project,
+            data=data,
+        )
+
+        if result.status != 201:
+            details = f"Unknown details ({result.status})"
+            if result.data:
+                details = result.data.get("detail") or details
+            raise ValueError(
+                f"Failed to create project \"{project_name}\": {details}"
+            )
+
+        return self.get_project(project_name)
+
+    def update_project(
+        self,
+        project_name: str,
+        library: Optional[bool] = None,
+        folder_types: Optional[list[dict[str, Any]]] = None,
+        task_types: Optional[list[dict[str, Any]]] = None,
+        link_types: Optional[list[dict[str, Any]]] = None,
+        statuses: Optional[list[dict[str, Any]]] = None,
+        tags: Optional[list[dict[str, Any]]] = None,
+        config: Optional[dict[str, Any]] = None,
+        attrib: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        active: Optional[bool] = None,
+        project_code: Optional[str] = None,
+        **changes
+    ) -> None:
+        """Update project entity on server.
+
+        Args:
+            project_name (str): Name of project.
+            library (Optional[bool]): Change library state.
+            folder_types (Optional[list[dict[str, Any]]]): Folder type
+                definitions.
+            task_types (Optional[list[dict[str, Any]]]): Task type
+                definitions.
+            link_types (Optional[list[dict[str, Any]]]): Link type
+                definitions.
+            statuses (Optional[list[dict[str, Any]]]): Status definitions.
+            tags (Optional[list[dict[str, Any]]]): List of tags available to
+                set on entities.
+            config (Optional[dict[str, Any]]): Project anatomy config
+                with templates and roots.
+            attrib (Optional[dict[str, Any]]): Project attributes to change.
+            data (Optional[dict[str, Any]]): Custom data of a project. This
+                value will 100% override project data.
+            active (Optional[bool]): Change active state of a project.
+            project_code (Optional[str]): Change project code. Not recommended
+                during production.
+            **changes: Other changed keys based on Rest API documentation.
+
+        """
+        changes.update({
+            key: value
+            for key, value in (
+                ("library", library),
+                ("folderTypes", folder_types),
+                ("taskTypes", task_types),
+                ("linkTypes", link_types),
+                ("statuses", statuses),
+                ("tags", tags),
+                ("config", config),
+                ("attrib", attrib),
+                ("data", data),
+                ("active", active),
+                ("code", project_code),
+            )
+            if value is not None
+        })
+        response = self.patch(
+            f"projects/{project_name}",
+            **changes
+        )
+        response.raise_for_status()
+
+    def delete_project(self, project_name: str):
+        """Delete project from server.
+
+        This will completely remove project from server without any step back.
+
+        Args:
+            project_name (str): Project name that will be removed.
+
+        """
+        if not self.get_project(project_name):
+            raise ValueError(
+                f"Project with name \"{project_name}\" was not found"
+            )
+
+        result = self.delete(f"projects/{project_name}")
+        if result.status_code != 204:
+            detail = result.data["detail"]
+            raise ValueError(
+                f"Failed to delete project \"{project_name}\". {detail}"
+            )
+
+    def rename_project(
+        self,
+        project_name: str,
+        new_project_name: str,
+        new_project_code: Optional[str] = None,
+    ) -> None:
+        """Rename project.
+
+        Args:
+            project_name (str): Current project name.
+            new_project_name (str): New project name.
+            new_project_code (Optional[str]): New project code. Project code
+                is unchanged if not passed.
+
+        Raises:
+            UnsupportedServerVersion: Server version is lower than 1.15.0.
+
+        """
+        if self.get_server_version_tuple() < (1, 15, 0):
+            raise UnsupportedServerVersion(
+                "Function 'rename_project' is supported"
+                " for AYON server 1.15.0 and above."
+            )
+        body = {"name": new_project_name}
+        if new_project_code is not None:
+            body["code"] = new_project_code
+        response = self.post(f"projects/{project_name}/rename", **body)
+        response.raise_for_status()
+
+    def get_project_anatomy(self, project_name: str) -> AnatomyPresetDict:
+        """Get project anatomy.
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            AnatomyPresetDict: Project anatomy in anatomy preset format.
+
+        """
+        response = self.get(f"projects/{project_name}/anatomy")
+        response.raise_for_status()
+        return response.data
+
+    def set_project_anatomy(
+        self, project_name: str, anatomy: AnatomyPresetDict
+    ) -> None:
+        """Set project anatomy.
+
+        Args:
+            project_name (str): Project name.
+            anatomy (AnatomyPresetDict): Anatomy data in anatomy
+                preset format.
+
+        """
+        response = self.raw_post(
+            f"projects/{project_name}/anatomy",
+            json=anatomy,
+        )
+        response.raise_for_status()
+
+    def get_project_stats(self, project_name: str) -> dict[str, Any]:
+        """Get project statistics.
+
+        Example output::
+
+            {
+                "counts": {
+                    "folders": 10,
+                    "products": 20,
+                    "versions": 30,
+                    "representations": 40,
+                    "tasks": 50
+                }
+            }
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            dict[str, Any]: Project statistics.
+
+        """
+        response = self.get(f"projects/{project_name}/stats")
+        response.raise_for_status()
+        return response.data
+
+    def get_project_tags(self, project_name: str) -> dict[str, list[str]]:
+        """Get tags used on entities in project.
+
+        Example output::
+
+            {
+                "folders": ["tag1"],
+                "tasks": [],
+                "products": [],
+                "versions": ["tag2"],
+                "representations": [],
+                "workfiles": []
+            }
+
+        Args:
+            project_name (str): Project name.
+
+        Returns:
+            dict[str, list[str]]: Used tags by entity type (plural).
+
+        """
+        response = self.get(f"projects/{project_name}/tags")
+        response.raise_for_status()
+        return response.data
+
+    def get_project_bundle(
+        self, project_name: str, variant: str = "production"
+    ) -> dict[str, Any]:
+        """Get project bundle information.
+
+        Information contains addon versions used by project, installer
+            version, dependency packages and available options for each.
+
+        Args:
+            project_name (str): Project name.
+            variant (str): Bundle variant 'production' or 'staging'.
+
+        Returns:
+            dict[str, Any]: Project bundle information.
+
+        """
+        query = prepare_query_string({"variant": variant})
+        response = self.get(f"projects/{project_name}/bundle{query}")
+        response.raise_for_status()
+        return response.data
+
+    def set_project_bundle(
+        self,
+        project_name: str,
+        addons: dict[str, Optional[str]],
+        installer_version: Optional[str] = None,
+        dependency_packages: Optional[dict[str, Optional[str]]] = None,
+        variant: str = "production",
+    ) -> None:
+        """Set (freeze) project bundle.
+
+        Args:
+            project_name (str): Project name.
+            addons (dict[str, Optional[str]]): Addon versions by addon name.
+                Use 'None' to disable an addon.
+            installer_version (Optional[str]): Installer version.
+            dependency_packages (Optional[dict[str, Optional[str]]]):
+                Dependency package names by platform name.
+            variant (str): Bundle variant 'production' or 'staging'.
+
+        """
+        body = {"addons": addons}
+        if installer_version is not None:
+            body["installerVersion"] = installer_version
+        if dependency_packages is not None:
+            body["dependencyPackages"] = dependency_packages
+        query = prepare_query_string({"variant": variant})
+        response = self.post(
+            f"projects/{project_name}/bundle{query}",
+            **body
+        )
+        response.raise_for_status()
+
+    def unset_project_bundle(
+        self, project_name: str, variant: str = "production"
+    ) -> None:
+        """Unset (unfreeze) project bundle.
+
+        Args:
+            project_name (str): Project name.
+            variant (str): Bundle variant 'production' or 'staging'.
+
+        """
+        query = prepare_query_string({"variant": variant})
+        response = self.delete(f"projects/{project_name}/bundle{query}")
+        response.raise_for_status()
+
+    def get_project_entity_uris(
+        self,
+        project_name: str,
+        entity_type: str,
+        entity_ids: Iterable[str],
+    ) -> list[dict[str, str]]:
+        """Get AYON URIs for project entities.
+
+        Example output::
+
+            [
+                {
+                    "id": "0254c370005811ee9a740242ac130004",
+                    "uri": "ayon+entity://demo/assets/hero"
+                },
+                ...
+            ]
+
+        Args:
+            project_name (str): Project name.
+            entity_type (str): Entity type, e.g. 'folder', 'task',
+                'product', 'version', 'representation' or 'workfile'.
+            entity_ids (Iterable[str]): Entity ids.
+
+        Returns:
+            list[dict[str, str]]: Entity URIs with entity ids.
+
+        """
+        response = self.post(
+            f"projects/{project_name}/uris",
+            entityType=entity_type,
+            ids=list(entity_ids),
+        )
+        response.raise_for_status()
+        return response.data["uris"]
+
+    def resolve_uris(
+        self,
+        uris: Iterable[str],
+        resolve_roots: bool = False,
+        path_only: bool = False,
+        site_id: Optional[str] = None,
+    ) -> list[dict[str, Any]]:
+        """Resolve AYON URIs to entities.
+
+        Each URI starts with 'ayon://{project_name}/{path}' with optional
+            query arguments 'product', 'version', 'representation' or
+            'task', 'workfile'.
+
+        Example output::
+
+            [
+                {
+                    "uri": "ayon://demo/assets/hero?product=modelMain",
+                    "entities": [
+                        {
+                            "projectName": "demo",
+                            "folderId": "0254c370005811ee9a740242ac130004",
+                            "productId": "0255ce50005811ee9a740242ac130004",
+                            "target": "product"
+                        }
+                    ]
+                },
+                ...
+            ]
+
+        Args:
+            uris (Iterable[str]): AYON URIs to resolve.
+            resolve_roots (bool): Resolve roots in representation paths.
+                Requires site id.
+            path_only (bool): Return only file paths of entities.
+            site_id (Optional[str]): Site id used to resolve roots. Site id
+                set on connection is used if not passed.
+
+        Returns:
+            list[dict[str, Any]]: Resolved URIs.
+
+        """
+        query = prepare_query_string({
+            "pathOnly": "true" if path_only else None,
+            "site_id": site_id,
+        })
+        response = self.post(
+            f"resolve{query}",
+            uris=list(uris),
+            resolveRoots=resolve_roots,
+        )
+        response.raise_for_status()
+        return response.data
+
+    def get_project_file_info(
+        self, project_name: str, file_id: str
+    ) -> dict[str, Any]:
+        """Get information about project file.
+
+        Example output::
+
+            {
+                "size": 1024,
+                "filename": "image.png",
+                "contentType": "image/png",
+                "mediaInfo": None
+            }
+
+        Args:
+            project_name (str): Project name.
+            file_id (str): File id.
+
+        Returns:
+            dict[str, Any]: File information.
+
+        """
+        response = self.get(f"projects/{project_name}/files/{file_id}/info")
+        response.raise_for_status()
+        return response.data
+
+    def get_raw_project_folders(self) -> dict[str, Any]:
+        """Get project folders (raw data)."""
+        response = self.get("projectFolders")
+        response.raise_for_status()
+        return response.data
+
+    def get_project_folders(self) -> list[dict[str, Any]]:
+        data = self.get_raw_project_folders()
+        return data["folders"]
+
+    def create_project_folder(
+        self,
+        label: str,
+        parent_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> str:
+        """Create project folder."""
+        kwargs = {}
+        if parent_id is not None:
+            kwargs["parentId"] = parent_id
+        if data:
+            kwargs["data"] = data
+
+        response = self.post("projectFolders", label=label, **kwargs)
+        response.raise_for_status()
+        return response.data["id"]
+
+    def update_project_folder(
+        self,
+        folder_id: str,
+        label: str | None = None,
+        parent_id: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> None:
+        body = {
+            key: value
+            for key, value in (
+                ("label", label),
+                ("parentId", parent_id),
+                ("data", data),
+            )
+            if value is not None
+        }
+        response = self.patch(f"projectFolders/{folder_id}", **body)
+        response.raise_for_status()
+
+    def set_project_folders_order(self, folder_ids: list[str]) -> None:
+        """Set project folders order."""
+        response = self.post("projectFolders/order", order=folder_ids)
+        response.raise_for_status()
+
+    def assign_projects_to_project_folder(
+        self, folder_id: str, project_names: list[str],
+    ) -> None:
+        """Assign project folder to project."""
+        response = self.post(
+            "projectFolders/assign",
+            folderId=folder_id,
+            projectNames=project_names,
+        )
+        response.raise_for_status()
+
+    def delete_project_folder(self, folder_id: str):
+        """Delete project folder."""
+        response = self.delete(f"projectFolders/{folder_id}")
+        response.raise_for_status()
+
+    def get_project_root_overrides(
+        self, project_name: str
+    ) -> dict[str, dict[str, str]]:
+        """Root overrides per site name.
+
+        Method is based on logged user and can't be received for any other
+            user on server.
+
+        Output will contain only roots per site id used by logged user.
+
+        Args:
+            project_name (str): Name of project.
+
+        Returns:
+             dict[str, dict[str, str]]: Root values by root name by site id.
+
+        """
+        result = self.get(f"projects/{project_name}/roots")
+        result.raise_for_status()
+        return result.data
+
+    def get_project_roots_by_site(
+        self, project_name: str
+    ) -> dict[str, dict[str, str]]:
+        """Root overrides per site name.
+
+        Method is based on logged user and can't be received for any other
+        user on server.
+
+        Output will contain only roots per site id used by logged user.
+
+        Deprecated:
+            Use 'get_project_root_overrides' instead. Function
+                deprecated since 1.0.6
+
+        Args:
+            project_name (str): Name of project.
+
+        Returns:
+             dict[str, dict[str, str]]: Root values by root name by site id.
+
+        """
+        warnings.warn(
+            (
+                "Method 'get_project_roots_by_site' is deprecated."
+                " Please use 'get_project_root_overrides' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_project_root_overrides(project_name)
+
+    def get_project_root_overrides_by_site_id(
+        self, project_name: str, site_id: Optional[str] = None
+    ) -> dict[str, str]:
+        """Root overrides for site.
+
+        If site id is not passed a site set in current api object is used
+        instead.
+
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Site id for which want to receive
+                site overrides.
+
+        Returns:
+            dict[str, str]: Root values by root name or None if
+                site does not have overrides.
+
+        """
+        if site_id is None:
+            site_id = self.get_site_id()
+
+        if site_id is None:
+            return {}
+        roots = self.get_project_root_overrides(project_name)
+        return roots.get(site_id, {})
+
+    def set_project_root_overrides(
+        self,
+        project_name: str,
+        site_id: str,
+        roots: dict[str, Optional[str]],
+    ) -> None:
+        """Set root overrides of logged user for a site.
+
+        Roots defined in project anatomy with empty value are removed,
+            and all overrides for the site are removed if no root value
+            is left.
+
+        Args:
+            project_name (str): Project name.
+            site_id (str): Site id for which overrides are set.
+            roots (dict[str, Optional[str]]): Root values by root name.
+
+        """
+        response = self.raw_put(
+            f"projects/{project_name}/roots/{site_id}",
+            json=roots,
+        )
+        response.raise_for_status()
+
+    def get_project_roots_for_site(
+        self, project_name: str, site_id: Optional[str] = None
+    ) -> dict[str, str]:
+        """Root overrides for site.
+
+        If site id is not passed a site set in current api object is used
+        instead.
+
+        Deprecated:
+            Use 'get_project_root_overrides_by_site_id' instead. Function
+                deprecated since 1.0.6
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Site id for which want to receive
+                site overrides.
+
+        Returns:
+            dict[str, str]: Root values by root name, root name is not
+                available if it does not have overrides.
+
+        """
+        warnings.warn(
+            (
+                "Method 'get_project_roots_for_site' is deprecated."
+                " Please use 'get_project_root_overrides_by_site_id' instead."
+            ),
+            DeprecationWarning
+        )
+        return self.get_project_root_overrides_by_site_id(project_name)
+
+    def get_project_roots_by_site_id(
+        self, project_name: str, site_id: Optional[str] = None
+    ) -> dict[str, str]:
+        """Root values for a site.
+
+        If site id is not passed a site set in current api object is used
+        instead. If site id is not available, default roots are returned
+        for current platform.
+
+        Args:
+            project_name (str): Name of project.
+            site_id (Optional[str]): Site id for which want to receive
+                root values.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        if site_id is None:
+            site_id = self.get_site_id()
+
+        return self._get_project_roots_values(project_name, site_id=site_id)
+
+    def get_project_roots_by_platform(
+        self, project_name: str, platform_name: Optional[str] = None
+    ) -> dict[str, str]:
+        """Root values for a site.
+
+        If platform name is not passed current platform name is used instead.
+
+        This function does return root values without site overrides. It is
+            possible to use the function to receive default root values.
+
+        Args:
+            project_name (str): Name of project.
+            platform_name (Optional[Literal["windows", "linux", "darwin"]]):
+                Platform name for which want to receive root values. Current
+                platform name is used if not passed.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        return self._get_project_roots_values(
+            project_name, platform_name=platform_name
+        )
+
+    def _get_project_graphql_fields(
+        self, fields: Optional[set[str]]
+    ) -> tuple[set[str], ProjectFetchType]:
+        """Find out if project can be fetched with GraphQl, REST or both.
+
+        Returns:
+            set[str]: GraphQl fields.
+
+        """
+        if fields is None:
+            return set(), ProjectFetchType.REST
+
+        rest_fields = {
+            "name",
+            "code",
+            "active",
+            "createdAt",
+            "updatedAt",
+        }
+        graphql_fields = set()
+        if len(fields - rest_fields) == 0:
+            return graphql_fields, ProjectFetchType.RESTList
+
+        must_use_graphql = False
+        add_all_attrib = False
+        for field in tuple(fields):
+            # Product types are available only in GraphQl
+            if field == "usedTags":
+                graphql_fields.add("usedTags")
+            elif field == "productTypes":
+                must_use_graphql = True
+                fields.discard(field)
+                for f_name in DEFAULT_PRODUCT_TYPE_FIELDS:
+                    graphql_fields.add(f"{field}.{f_name}")
+
+            elif field.startswith("productTypes"):
+                must_use_graphql = True
+                graphql_fields.add(field)
+
+            elif field == "productBaseTypes":
+                must_use_graphql = True
+                fields.discard(field)
+                # for f_name in DEFAULT_PRODUCT_BASE_TYPE_FIELDS:
+                for f_name in self._get_project_product_base_type_fields():
+                    graphql_fields.add(f"{field}.{f_name}")
+
+            elif field.startswith("productBaseTypes"):
+                must_use_graphql = True
+                graphql_fields.add(field)
+
+            elif field == "bundle" or field == "bundles":
+                fields.discard(field)
+                graphql_fields.add("bundle.production")
+                graphql_fields.add("bundle.staging")
+
+            elif field.startswith("bundle"):
+                graphql_fields.add(field)
+
+            elif field == "attrib" or field.startswith("attrib."):
+                fields.discard(field)
+                add_all_attrib = True
+
+        if add_all_attrib:
+            graphql_fields.add("allAttrib")
+
+        # NOTE 'config' in GraphQl is NOT the same as from REST api.
+        # - At the moment of this comment there is missing 'productBaseTypes'.
+        inters = fields & {
+            "name",
+            "code",
+            "active",
+            "library",
+            "usedTags",
+            "data",
+        }
+        remainders = fields - (inters | graphql_fields)
+        if not remainders:
+            graphql_fields |= inters
+            return graphql_fields, ProjectFetchType.GraphQl
+
+        if must_use_graphql:
+            graphql_fields.add("name")
+            return graphql_fields, ProjectFetchType.GraphQlAndREST
+
+        return set(), ProjectFetchType.REST
+
+    def _fill_project_entity_data(self, project: dict[str, Any]) -> None:
+        # Add fake scope to statuses if not available
+        if "statuses" in project:
+            for status in project["statuses"]:
+                scope = status.get("scope")
+                if scope is None:
+                    status["scope"] = [
+                        "folder",
+                        "task",
+                        "product",
+                        "version",
+                        "representation",
+                        "workfile"
+                    ]
+
+        # Convert 'data' from string to dict if needed
+        if "data" in project:
+            project_data = project["data"]
+            if project_data is None:
+                project["data"] = {}
+            elif isinstance(project_data, str):
+                project_data = json.loads(project_data)
+                project["data"] = project_data
+
+            # Fill 'bundle' from data if is not filled
+            if "bundle" not in project:
+                bundle_data = project["data"].get("bundle") or {}
+                prod_bundle = bundle_data.get("production")
+                staging_bundle = bundle_data.get("staging")
+                project["bundle"] = {
+                    "production": prod_bundle,
+                    "staging": staging_bundle,
+                }
+
+        # Convert 'config' from string to dict if needed
+        if "config" in project:
+            config = project["config"]
+            if config is None:
+                project["config"] = {}
+            elif isinstance(config, str):
+                project["config"] = json.loads(config)
+
+        # Unifiy 'linkTypes' data structure from REST and GraphQL
+        if "linkTypes" in project:
+            for link_type in project["linkTypes"]:
+                if "data" in link_type:
+                    link_data = link_type.pop("data")
+                    link_type.update(link_data)
+                    if "style" not in link_type:
+                        link_type["style"] = None
+                    if "color" not in link_type:
+                        link_type["color"] = None
+
+    def _get_graphql_projects(
+        self,
+        active: bool | None,
+        library: bool | None,
+        include_skeleton: bool,
+        fields: set[str],
+        own_attributes: bool,
+        project_name: Optional[str] = None
+    ) -> Generator[ProjectDict, None, None]:
+        if active is not None:
+            fields.add("active")
+
+        if library is not None:
+            fields.add("library")
+
+        self._prepare_fields("project", fields, own_attributes)
+
+        query = projects_graphql_query(fields)
+        if project_name is not None:
+            query.set_variable_value("projectName", project_name)
+
+        if include_skeleton:
+            query.set_variable_value("skeleton", True)
+
+        attributes = {}
+        if "allAttrib" in fields:
+            attributes = self.get_attributes_for_type("project")
+
+        for parsed_data in query.continuous_query(self):
+            for project in parsed_data["projects"]:
+                if active is not None and active is not project["active"]:
+                    continue
+
+                if library is not None and library is not project["library"]:
+                    continue
+
+                attrib = None
+                all_attrib = project.get("allAttrib")
+                if isinstance(all_attrib, str):
+                    attrib = json.loads(all_attrib)
+
+                if attrib is not None:
+                    # NOTE 'ownAttrib' logic might change in the future if
+                    #   allAttrib would return all attribute values.
+                    project["ownAttrib"] = list(attrib)
+                    project["attrib"] = attrib
+                    for name, attr_data in attributes.items():
+                        # NOTE 'default' can be 'None'
+                        attrib.setdefault(name, attr_data["default"])
+
+                if own_attributes:
+                    fill_own_attribs(project)
+
+                self._fill_project_entity_data(project)
+                yield project
+
+    def _merge_project_graphql_data(
+        self,
+        rest_project: dict[str, Any],
+        graphql_project: Optional[dict[str, Any]],
+    ) -> None:
+        if not graphql_project:
+            return
+
+        for key, value in graphql_project.items():
+            if (
+                key not in rest_project
+                or key in (
+                    "productBaseTypes",
+                    "productTypes",
+                    "usedTags",
+                )
+            ):
+                rest_project[key] = value
+
+    def _get_project_roots_values(
+        self,
+        project_name: str,
+        site_id: Optional[str] = None,
+        platform_name: Optional[str] = None,
+    ) -> dict[str, str]:
+        """Root values for site or platform.
+
+        Helper function that treats 'siteRoots' endpoint. The endpoint
+            requires to pass exactly one query value of site id
+            or platform name.
+
+        When using platform name, it does return default project roots without
+            any site overrides.
+
+        Output should contain all project roots with all filled values. If
+            value does not have override on a site, it should be filled with
+            project default value.
+
+        Args:
+            project_name (str): Project name.
+            site_id (Optional[str]): Site id for which want to receive
+                site overrides.
+            platform_name (Optional[str]): Platform for which want to receive
+                roots.
+
+        Returns:
+            dict[str, str]: Root values.
+
+        """
+        query_data = {}
+        if site_id is not None:
+            query_data["site_id"] = site_id
+        else:
+            if platform_name is None:
+                platform_name = platform.system()
+            query_data["platform"] = platform_name.lower()
+
+        query = prepare_query_string(query_data)
+        response = self.get(
+            f"projects/{project_name}/siteRoots{query}"
+        )
+        response.raise_for_status()
+        return response.data
+
+    def _get_project_product_base_type_fields(self) -> set[str]:
+        if self._project_product_base_type_fields is not None:
+            return self._project_product_base_type_fields
+
+        graphql_schema = self.get_graphql_schema()
+
+        field_names = {"name"}
+        for type_def in graphql_schema["__schema"]["types"]:
+            if type_def["name"] == "ProductBaseType":
+                field_names = {field["name"] for field in type_def["fields"]}
+                break
+        self._project_product_base_type_fields = field_names
+        return field_names

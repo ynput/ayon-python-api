@@ -2,5 +2,5 @@
 
 pushd %~dp0
 
-poetry run sphinx-apidoc -f -e -M -o .\source\ ..\ayon_api\
+sphinx-apidoc -f -e -M -o .\source\ ..\ayon_api\
 

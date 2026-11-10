@@ -1,4 +1,19 @@
+from __future__ import annotations
+
 import copy
+
+try:
+    # This should be used if 'requests' have it available
+    from requests.exceptions import JSONDecodeError
+except ImportError:
+    # Older versions of 'requests' don't have custom exception for json
+    #   decode error
+    try:
+        from simplejson import JSONDecodeError
+    except ImportError:
+        from json import JSONDecodeError
+
+RequestsJSONDecodeError = JSONDecodeError
 
 
 class UrlError(Exception):
@@ -8,13 +23,23 @@ class UrlError(Exception):
     UI if needed.
     """
 
-    def __init__(self, message, title, hints=None):
+
+    def __init__(
+        self,
+        message: str,
+        title: str,
+        hints: list[str] | None = None,
+    ) -> None:
         if hints is None:
             hints = []
 
         self.title = title
         self.hints = hints
-        super(UrlError, self).__init__(message)
+        super().__init__(message)
+
+
+class UrlNotReached(UrlError):
+    pass
 
 
 class ServerError(Exception):
@@ -53,7 +78,11 @@ class HTTPRequestError(RequestError):
     pass
 
 
-class GraphQlQueryFailed(Exception):
+class GraphQlQueryError(Exception):
+    pass
+
+
+class GraphQlQueryFailed(GraphQlQueryError):
     def __init__(self, errors, query, variables):
         if variables is None:
             variables = {}
