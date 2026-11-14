@@ -26,6 +26,7 @@ class ListsAPI(BaseServerAPI):
         project_name: str,
         *,
         list_ids: Optional[Iterable[str]] = None,
+        labels: Optional[Iterable[str]] = None,
         active: Optional[bool] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Generator[dict[str, Any], None, None]:
@@ -43,6 +44,9 @@ class ListsAPI(BaseServerAPI):
             project_name (str): Project name where entity lists are.
             list_ids (Optional[Iterable[str]]): List of entity list ids to
                 fetch.
+            labels (Optional[Iterable[str]]): Labels of entity lists to
+                fetch. Label must match exactly. Filtered on server since
+                AYON server 1.8.3, on client for older servers.
             active (Optional[bool]): Filter by active state of entity lists.
             fields (Optional[Iterable[str]]): Fields to fetch from server.
 
@@ -84,9 +88,30 @@ class ListsAPI(BaseServerAPI):
 
         filters: dict[str, Any] = {"projectName": project_name}
         if list_ids is not None:
+            list_ids = set(list_ids)
             if not list_ids:
                 return
-            filters["listIds"] = list(set(list_ids))
+            filters["listIds"] = list(list_ids)
+
+        # Labels are filtered on client for servers without 'filter'
+        #   argument on 'entityLists'
+        client_labels = None
+        if labels is not None:
+            labels = set(labels)
+            if not labels:
+                return
+
+            if self.get_server_version_tuple() < (1, 8, 3):
+                client_labels = labels
+                fields.add("label")
+            else:
+                filters["filter"] = json.dumps({
+                    "conditions": [{
+                        "key": "label",
+                        "operator": "in",
+                        "value": list(labels),
+                    }],
+                })
 
         query = entity_lists_graphql_query(fields)
         for attr, filter_value in filters.items():
@@ -95,6 +120,12 @@ class ListsAPI(BaseServerAPI):
         for parsed_data in query.continuous_query(self):
             for entity_list in parsed_data["project"]["entityLists"]:
                 if active is not None and entity_list["active"] != active:
+                    continue
+
+                if (
+                    client_labels is not None
+                    and entity_list["label"] not in client_labels
+                ):
                     continue
 
                 attributes = entity_list.get("attributes")

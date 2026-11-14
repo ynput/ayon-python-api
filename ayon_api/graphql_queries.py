@@ -657,12 +657,14 @@ def entity_lists_graphql_query(fields):
     query = GraphQlQuery("EntityLists")
     project_name_var = query.add_variable("projectName", "String!")
     entity_list_ids = query.add_variable("listIds", "[String!]")
+    filter_var = query.add_variable("filter", "String!")
 
     project_field = query.add_field("project")
     project_field.set_filter("name", project_name_var)
 
     entity_lists_field = project_field.add_field_with_edges("entityLists")
     entity_lists_field.set_filter("ids", entity_list_ids)
+    entity_lists_field.set_filter("filter", filter_var)
 
     fields = set(fields)
     items_field_names = set()

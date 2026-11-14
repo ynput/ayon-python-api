@@ -1,4 +1,4 @@
-"""Tests of reviewables, task assignees and entity list order endpoints.
+"""Tests of reviewables, task assignees and entity list endpoints.
 
 Tests run against a real AYON server and use the test project created
 by 'project_entity_fixture'. Every entity created by the tests is
@@ -25,9 +25,11 @@ from ayon_api import (
     delete_entity_list,
     delete_folder,
     get_entity_list_rest,
+    get_entity_lists,
     get_folder_reviewables,
     get_product_reviewables,
     get_reviewables,
+    get_server_api_connection,
     get_server_version_tuple,
     get_task_by_id,
     get_task_reviewables,
@@ -573,3 +575,55 @@ def test_materialize_entity_list(entity_list_fixture):
     assert summary["entityType"] == "folder"
     assert "label" in summary
     assert summary["count"] >= len(item_ids)
+
+
+@pytest.mark.parametrize("client_filter", [False, True])
+def test_get_entity_lists_by_labels(
+    project_entity_fixture,  # noqa: F811
+    monkeypatch,
+    client_filter,
+):
+    """Entity lists are filtered by exact label match.
+
+    Filtering on client is used for servers older than 1.8.3.
+
+    """
+    if client_filter:
+        monkeypatch.setattr(
+            get_server_api_connection(),
+            "get_server_version_tuple",
+            lambda: (1, 8, 2, "", ""),
+        )
+    elif get_server_version_tuple() < (1, 8, 3):
+        pytest.skip("Labels filter on server requires AYON server 1.8.3+")
+
+    project_name = project_entity_fixture["name"]
+    prefix = _unique_name("label")
+    labels = [
+        f"{prefix} a",
+        f"{prefix} O'Brien \"quoted\"",
+        f"{prefix} %_",
+        f"{prefix} b",
+    ]
+    list_ids = [
+        create_entity_list(project_name, "folder", label)
+        for label in labels
+    ]
+    try:
+        def _get_ids(filter_labels):
+            return {
+                entity_list["id"]
+                for entity_list in get_entity_lists(
+                    project_name, labels=filter_labels, fields={"id"}
+                )
+            }
+
+        assert _get_ids([labels[0]]) == {list_ids[0]}
+        assert _get_ids(iter(labels[1:3])) == set(list_ids[1:3])
+        assert _get_ids([labels[3], f"{prefix} c"]) == {list_ids[3]}
+        assert _get_ids([f"{prefix} %"]) == set()
+        assert _get_ids([f"{prefix} A"]) == set()
+        assert _get_ids([]) == set()
+    finally:
+        for list_id in list_ids:
+            delete_entity_list(project_name, list_id)
