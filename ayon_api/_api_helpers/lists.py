@@ -13,6 +13,7 @@ from .base import BaseServerAPI
 
 if typing.TYPE_CHECKING:
     from ayon_api.typing import (
+        AdvancedFilterDict,
         EntityListEntityType,
         EntityListAttributeDefinitionDict,
         EntityListItemMode,
@@ -27,6 +28,7 @@ class ListsAPI(BaseServerAPI):
         *,
         list_ids: Optional[Iterable[str]] = None,
         active: Optional[bool] = None,
+        filters: Optional[AdvancedFilterDict] = None,
         fields: Optional[Iterable[str]] = None,
     ) -> Generator[dict[str, Any], None, None]:
         """Fetch entity lists from AYON server.
@@ -44,6 +46,8 @@ class ListsAPI(BaseServerAPI):
             list_ids (Optional[Iterable[str]]): List of entity list ids to
                 fetch.
             active (Optional[bool]): Filter by active state of entity lists.
+            filters (Optional[AdvancedFilterDict]): Advanced filtering options.
+                Requires AYON server 1.8.3 or newer.
             fields (Optional[Iterable[str]]): Fields to fetch from server.
 
         Returns:
@@ -82,14 +86,18 @@ class ListsAPI(BaseServerAPI):
         if active is not None:
             fields.add("active")
 
-        filters: dict[str, Any] = {"projectName": project_name}
+        graphql_filters: dict[str, Any] = {"projectName": project_name}
         if list_ids is not None:
             if not list_ids:
                 return
-            filters["listIds"] = list(set(list_ids))
+            graphql_filters["listIds"] = list(set(list_ids))
+
+        filters = self._prepare_advanced_filters(filters)
+        if filters:
+            graphql_filters["filter"] = filters
 
         query = entity_lists_graphql_query(fields)
-        for attr, filter_value in filters.items():
+        for attr, filter_value in graphql_filters.items():
             query.set_variable_value(attr, filter_value)
 
         for parsed_data in query.continuous_query(self):
