@@ -9348,8 +9348,8 @@ def get_entity_lists(
     project_name: str,
     *,
     list_ids: Optional[Iterable[str]] = None,
-    labels: Optional[Iterable[str]] = None,
     active: Optional[bool] = None,
+    filters: Optional[AdvancedFilterDict] = None,
     fields: Optional[Iterable[str]] = None,
 ) -> Generator[dict[str, Any], None, None]:
     """Fetch entity lists from AYON server.
@@ -9366,10 +9366,9 @@ def get_entity_lists(
         project_name (str): Project name where entity lists are.
         list_ids (Optional[Iterable[str]]): List of entity list ids to
             fetch.
-        labels (Optional[Iterable[str]]): Labels of entity lists to
-            fetch. Label must match exactly. Filtered on server since
-            AYON server 1.8.3, on client for older servers.
         active (Optional[bool]): Filter by active state of entity lists.
+        filters (Optional[AdvancedFilterDict]): Advanced filtering options.
+            Requires AYON server 1.8.3 or newer.
         fields (Optional[Iterable[str]]): Fields to fetch from server.
 
     Returns:
@@ -9381,8 +9380,8 @@ def get_entity_lists(
     return con.get_entity_lists(
         project_name=project_name,
         list_ids=list_ids,
-        labels=labels,
         active=active,
+        filters=filters,
         fields=fields,
     )
 
