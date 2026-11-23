@@ -7,8 +7,8 @@ import json
 import logging
 import os
 import re
+import signal
 import threading
-import time
 import typing
 from typing import Any, Callable
 import weakref
@@ -493,7 +493,10 @@ class EventCallback:
 #   when nothing was received for this amount of time.
 _PING_INTERVAL: float = 5.0
 # Connection is considered dead if nothing (not even pong) was received
-#   for this amount of time.
+#   while waiting on the socket for this amount of time. Wall-clock time
+#   is not used, the thread might not run for a long time (e.g. DCC main
+#   thread holds the GIL while rendering) while server messages are
+#   waiting in the socket.
 _RECV_TIMEOUT: float = 15.0
 # Timeout for opening websocket connection and for the auth check request.
 _CONNECT_TIMEOUT: float = 5.0
@@ -531,9 +534,8 @@ class _LoopState:
     auth_required: bool = False
     # Some message was received with current websocket connection
     received_message: bool = False
-    # When last frame (message, ping or pong) was received
-    #   ('time.monotonic')
-    last_received: float = 0.0
+    # Receive timeouts in a row with current websocket connection
+    recv_timeouts: int = 0
     # Connection state reported via events
     #   - 'None' means unknown (nothing was reported yet)
     connected: bool | None = None
@@ -572,6 +574,9 @@ class EventHub:
     Internal topics:
         - 'connection.opened' first message received after (re)connection.
         - 'connection.closed' connection was lost or could not be created.
+        - 'connection.interrupted' connection was lost and is reconnected
+            without reporting it as closed. Events might have been missed,
+            'connection.opened' is emitted once reconnected.
         - 'auth.failed' server rejected the token.
 
     Args:
@@ -581,6 +586,7 @@ class EventHub:
     # Topics emitted by the hub itself
     TOPIC_CONNECTION_OPENED: str = "connection.opened"
     TOPIC_CONNECTION_CLOSED: str = "connection.closed"
+    TOPIC_CONNECTION_INTERRUPTED: str = "connection.interrupted"
     TOPIC_AUTH_FAILED: str = "auth.failed"
     # Topic sent by server
     TOPIC_SERVER_RESTART_REQUESTED: str = "server.restart_requested"
@@ -941,11 +947,28 @@ class EventHub:
         if stop_event.is_set():
             return
 
+        reason = exc if exc is not None else "Closed by server"
+        # Working connection can be closed by the server when the client
+        #   did not answer its pings (host held the GIL for a long time),
+        #   by a proxy or a network hiccup. Report it as lost only if
+        #   reconnecting fails. Server restart is reported right away, the
+        #   restart overlay is hidden only by 'connection.opened'.
+        if received_message and not state.server_is_restarting:
+            self._log.info(
+                "Websocket connection closed, reconnecting: %s", reason
+            )
+            # State is unknown until reconnected, 'connection.opened' is
+            #   emitted on first message
+            with self._state_lock:
+                state.connected = None
+            self.emit_event(Event(self.TOPIC_CONNECTION_INTERRUPTED))
+            self._wait(stop_event, _RECONNECT_DELAYS[0])
+            return
+
         # Log only first failure, reconnection attempts would spam the log
         if state.connected is not False:
             self._log.warning(
-                "Lost connection to AYON server websocket: %s",
-                exc if exc is not None else "Closed by server",
+                "Lost connection to AYON server websocket: %s", reason
             )
         self._set_connected(False)
 
@@ -973,6 +996,11 @@ class EventHub:
         wake_event.clear()
 
     def _thread_loop(self, stop_event: threading.Event) -> None:
+        # Writing to a connection closed by the server raises SIGPIPE.
+        #   Python ignores it, but some hosts reset it to the default
+        #   action which terminates the process (e.g. Silhouette on Linux).
+        if hasattr(signal, "pthread_sigmask"):
+            signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGPIPE})
         try:
             self._loop(stop_event)
         except Exception:
@@ -1004,7 +1032,7 @@ class EventHub:
                         break
                     self._ws_connection = ws_con
                 state.received_message = False
-                state.last_received = time.monotonic()
+                state.recv_timeouts = 0
                 state.auth_required = True
 
             if state.auth_required:
@@ -1023,8 +1051,8 @@ class EventHub:
             try:
                 op_code, message = ws_con.recv_data(control_frame=True)
             except WebSocketTimeoutException as exc:
-                elapsed = time.monotonic() - state.last_received
-                if elapsed >= _RECV_TIMEOUT:
+                state.recv_timeouts += 1
+                if state.recv_timeouts * _PING_INTERVAL >= _RECV_TIMEOUT:
                     # Server did not respond to ping
                     self._on_connection_lost(stop_event, exc)
                     continue
@@ -1040,7 +1068,7 @@ class EventHub:
                 self._on_connection_lost(stop_event, exc)
                 continue
 
-            state.last_received = time.monotonic()
+            state.recv_timeouts = 0
             if op_code == ABNF.OPCODE_CLOSE:
                 self._on_connection_lost(stop_event)
                 continue
