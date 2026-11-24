@@ -570,6 +570,10 @@ class EventHub:
         Callbacks are triggered in the websocket thread! Use own queue
             to process them in main thread, especially if a callback
             touches Qt widgets.
+        SIGPIPE is blocked in the websocket thread (see '_thread_loop').
+            Threads and subprocesses started from a callback inherit the
+            blocked signal, e.g. 'yes | head' prints 'Broken pipe' instead
+            of exiting quietly.
 
     Internal topics:
         - 'connection.opened' first message received after (re)connection.
