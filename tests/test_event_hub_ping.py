@@ -141,6 +141,18 @@ def test_no_response_to_ping_interrupts_connection(run_hub):
     assert fake_ws.pings == 2
 
 
+class StalledClock:
+    """Clock jumping forward on each read, as if the GIL was held."""
+
+    def __init__(self, stall: float) -> None:
+        self._stall = stall
+        self._value = 1000.0
+
+    def monotonic(self) -> float:
+        self._value += self._stall
+        return self._value
+
+
 def test_timeouts_are_counted_not_measured(run_hub, monkeypatch):
     """Time spent outside of socket wait does not count as silence.
 
@@ -148,8 +160,11 @@ def test_timeouts_are_counted_not_measured(run_hub, monkeypatch):
         are received once the thread runs again.
 
     """
-    monkeypatch.setattr(events_module, "_RECV_TIMEOUT", 15.0)
-    monkeypatch.setattr(events_module, "_PING_INTERVAL", 5.0)
+    # Wall-clock based detection would report the connection as lost
+    #   on first timeout. Module does not import 'time' anymore.
+    monkeypatch.setattr(
+        events_module, "time", StalledClock(300.0), raising=False
+    )
     responses = [HEARTBEAT] + [TIMEOUT, TIMEOUT, HEARTBEAT] * 5
     topics, (fake_ws,) = run_hub(responses)
 

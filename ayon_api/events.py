@@ -576,7 +576,9 @@ class EventHub:
         - 'connection.closed' connection was lost or could not be created.
         - 'connection.interrupted' connection was lost and is reconnected
             without reporting it as closed. Events might have been missed,
-            'connection.opened' is emitted once reconnected.
+            'connection.opened' is emitted once reconnected. Anything that
+            caches server data and resyncs on 'connection.closed' should
+            handle it the same way.
         - 'auth.failed' server rejected the token.
 
     Args:
@@ -953,7 +955,13 @@ class EventHub:
         #   by a proxy or a network hiccup. Report it as lost only if
         #   reconnecting fails. Server restart is reported right away, the
         #   restart overlay is hidden only by 'connection.opened'.
-        if received_message and not state.server_is_restarting:
+        #   Connection closed because the token was removed (logout) is
+        #   reported as closed right away too.
+        if (
+            received_message
+            and not state.server_is_restarting
+            and self._connection.access_token
+        ):
             self._log.info(
                 "Websocket connection closed, reconnecting: %s", reason
             )
