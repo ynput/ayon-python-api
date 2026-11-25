@@ -160,6 +160,19 @@ def test_token_change_wakes_hub_after_auth_failure(con, sockets, hubs):
     assert sockets[-1].tokens == ["token-b"]
 
 
+def test_reset_token_reports_connection_closed(con, sockets, hubs):
+    """Logout is reported as closed, not as interrupted connection."""
+    hub = con.get_event_hub()
+    recorder = _start_hub(hub, hubs)
+    assert wait_for(lambda: recorder.count(EventHub.TOPIC_CONNECTION_OPENED))
+
+    con.reset_token()
+
+    assert wait_for(lambda: recorder.count(EventHub.TOPIC_CONNECTION_CLOSED))
+    assert recorder.count(EventHub.TOPIC_CONNECTION_INTERRUPTED) == 0
+    assert hub.get_connection_state() is False
+
+
 def test_stopped_hub_is_garbage_collected(sockets):
     con = ServerAPI("http://server-a:0", "token-a", create_session=False)
     hub = con.get_event_hub()
